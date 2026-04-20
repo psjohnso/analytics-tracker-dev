@@ -3388,7 +3388,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0065';
+const APP_VERSION = '0.11.0.0066';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -10264,7 +10264,7 @@ function renderProjectDetail(id) {
             <button onclick="addTaskToProject(${p.objectId}, '${esc(p.title).replace(/'/g, "\\'")}')" class="btn-navy-md">＋ Add Task</button>
           </div>
         </div>
-        <div id="batch-action-bar" style="display:none;background:#EEF2FF;border:1px solid #BFDBFE;border-radius:10px;padding:10px 16px;margin-bottom:10px;display:none;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div id="batch-action-bar" style="display:none;background:#EEF2FF;border:1px solid #BFDBFE;border-radius:10px;padding:10px 16px;margin-bottom:10px;display:none;align-items:center;gap:10px;flex-wrap:nowrap;">
           <span style="font-size:12px;font-weight:700;color:var(--navy);" id="batch-count">0 selected</span>
           <select id="batch-status" class="fm-input" style="font-size:11px;padding:4px 8px;width:auto;min-width:100px;">
             <option value="">Set status…</option>
@@ -10293,7 +10293,7 @@ function renderProjectDetail(id) {
               var label = (pr.project_number ? pr.project_number + ' — ' : '') + pr.title;
               return '<div class="fm-search-option" data-value="' + esc(pr.title) + '"><span class="fm-search-option-name">' + esc(label) + '</span></div>';
             }).join('');
-            return '<div class="fm-search-select" id="batch-project-wrap" style="min-width:180px;max-width:260px;">' +
+            return '<div class="fm-search-select" id="batch-project-wrap" style="flex:1;min-width:180px;">' +
               '<input type="text" id="batch-project" class="fm-input" style="font-size:11px;padding:4px 8px;" placeholder="Move to project…" autocomplete="off">' +
               '<input type="hidden" id="batch-project-val" value="">' +
               '<div class="fm-search-dropdown" id="batch-project-dropdown">' + bpOpts + '</div>' +
