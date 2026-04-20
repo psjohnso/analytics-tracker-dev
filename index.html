@@ -3388,7 +3388,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0066';
+const APP_VERSION = '0.11.0.0067';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -10285,9 +10285,12 @@ function renderProjectDetail(id) {
             ${(RESOURCES_DATA ? Object.keys(RESOURCES_DATA.people).filter(function(n) { return RESOURCES_DATA.people[n].active !== false; }).sort() : []).map(function(n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('')}
           </select>
           ${(() => {
-            var bpProjects = Auth.isTeamLead
-              ? PROJECTS.filter(function(pr) { return pr.status !== 'Complete' && pr.status !== 'Canceled'; })
-              : PROJECTS.filter(function(pr) { return pr.contact === Auth.fullName && pr.status !== 'Complete' && pr.status !== 'Canceled'; });
+            var bpProjects = PROJECTS.filter(function(pr) {
+              if (pr.status === 'Complete' || pr.status === 'Canceled') return false;
+              if (pr.contact === Auth.fullName) return true;
+              if (pr.other_members && pr.other_members.split(',').some(function(m) { return m.trim() === Auth.fullName; })) return true;
+              return false;
+            });
             bpProjects.sort(function(a,b) { return (a.title||'').localeCompare(b.title||''); });
             var bpOpts = bpProjects.map(function(pr) {
               var label = (pr.project_number ? pr.project_number + ' — ' : '') + pr.title;
