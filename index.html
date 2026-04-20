@@ -3376,7 +3376,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0060';
+const APP_VERSION = '0.11.0.0061';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -4596,6 +4596,7 @@ function switchTab(tab, preserveFilters) {
   const isTask = tab === 'tasks';
   reorderSidebarFilters(tab);
   buildSidebarFilters();
+  window.scrollTo(0, 0);
   render();
 }
 
