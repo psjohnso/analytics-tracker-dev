@@ -3376,7 +3376,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0053';
+const APP_VERSION = '0.11.0.0054';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9797,9 +9797,10 @@ async function applyBatchUpdate() {
   var newStatus = document.getElementById('batch-status').value;
   var newPriority = document.getElementById('batch-priority').value;
   var newAssignee = document.getElementById('batch-assignee').value;
+  var newProject = document.getElementById('batch-project').value;
 
-  if (!newStatus && !newPriority && !newAssignee) {
-    showToast('Select a status, priority, or assignee to apply.', 'warn');
+  if (!newStatus && !newPriority && !newAssignee && !newProject) {
+    showToast('Select a status, priority, assignee, or project to apply.', 'warn');
     return;
   }
 
@@ -9807,6 +9808,7 @@ async function applyBatchUpdate() {
   if (newStatus) label.push('status → ' + newStatus);
   if (newPriority) label.push('priority → ' + newPriority);
   if (newAssignee) label.push('assignee → ' + newAssignee);
+  if (newProject) label.push('move to → ' + newProject);
   if (!confirm('Update ' + ids.length + ' task(s)?\n\n' + label.join('\n'))) return;
 
   var today = new Date();
@@ -9818,6 +9820,7 @@ async function applyBatchUpdate() {
     if (newStatus) fields.status = newStatus;
     if (newPriority) fields.priority = newPriority;
     if (newAssignee) fields.assignee = newAssignee;
+    if (newProject) fields.project = newProject;
     if (newStatus === 'Complete') fields.actual_end = todayStr;
     try {
       await DataStore.updateTask(ids[i], fields);
@@ -9827,7 +9830,7 @@ async function applyBatchUpdate() {
     }
   }
 
-  showToast('Updated ' + updated + ' task(s).', 'success');
+  showToast('Updated ' + updated + ' task(s).' + (newProject ? ' Moved to ' + newProject + '.' : ''), 'success');
   markDataDirty();
   render();
 }
@@ -10248,6 +10251,10 @@ function renderProjectDetail(id) {
           <select id="batch-assignee" class="fm-input" style="font-size:11px;padding:4px 8px;width:auto;min-width:120px;">
             <option value="">Set assignee…</option>
             ${(RESOURCES_DATA ? Object.keys(RESOURCES_DATA.people).filter(function(n) { return RESOURCES_DATA.people[n].active !== false; }).sort() : []).map(function(n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('')}
+          </select>
+          <select id="batch-project" class="fm-input" style="font-size:11px;padding:4px 8px;width:auto;min-width:140px;">
+            <option value="">Move to project…</option>
+            ${PROJECTS.filter(function(pr) { return pr.contact === Auth.fullName && pr.status !== 'Complete' && pr.status !== 'Canceled'; }).sort(function(a,b) { return (a.title||'').localeCompare(b.title||''); }).map(function(pr) { return '<option value="' + esc(pr.title) + '">' + esc((pr.project_number ? pr.project_number + ' — ' : '') + pr.title) + '</option>'; }).join('')}
           </select>
           <button onclick="applyBatchUpdate()" style="padding:5px 14px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Apply</button>
           <button onclick="batchDeleteTasks()" style="padding:5px 14px;background:#FEE2E2;color:#991B1B;border:1px solid #FECACA;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Delete Selected</button>
