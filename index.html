@@ -1835,7 +1835,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 
 /* ── Form Availability Panel ─────────────────────── */
 .fm-ta-row { display:flex; align-items:center; gap:10px; padding:8px 12px; border-bottom:0.5px solid #F3F1EB;
-  cursor:pointer; transition:background 0.1s; }
+  transition:background 0.1s; }
 .fm-ta-row:last-child { border-bottom:none; }
 .fm-ta-row:hover { background:#F8FAFC; }
 .fm-ta-row.fm-ta-checked { background:#EFF6FF; }
@@ -3376,7 +3376,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0052';
+const APP_VERSION = '0.11.0.0053';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -8881,8 +8881,8 @@ function renderTeamAvailList(currentOtherMembers, currentContact) {
     }
 
     var rowClass = 'fm-ta-row' + (checked ? ' fm-ta-checked' : '') + (isContact ? ' fm-ta-contact' : '');
-    html += '<div class="' + rowClass + '" onclick="fmToggleMember(\'' + esc(name).replace(/'/g, "\\'") + '\')">';
-    html += '<input type="checkbox" class="fm-ta-cb" name="fm-other-members" value="' + esc(name) + '"' + (checked ? ' checked' : '') + ' onclick="event.stopPropagation();fmToggleMember(\'' + esc(name).replace(/'/g, "\\'") + '\')">';
+    html += '<div class="' + rowClass + '">';
+    html += '<input type="checkbox" class="fm-ta-cb" name="fm-other-members" value="' + esc(name) + '"' + (checked ? ' checked' : '') + ' onclick="event.stopPropagation();fmMemberCbChanged()">';
     html += '<div class="fm-ta-avatar">' + initials + '</div>';
     html += '<div style="flex:1;min-width:0;">';
     html += '<div class="fm-ta-name">' + esc(name) + (isContact ? ' <span style="font-size:9px;background:#002669;color:#fff;padding:1px 5px;border-radius:4px;font-weight:700;vertical-align:middle;">LEAD</span>' : '') + '</div>';
@@ -8900,6 +8900,13 @@ function fmToggleMember(name) {
   var cb = document.querySelector('input[name="fm-other-members"][value="' + name + '"]');
   if (!cb) return;
   cb.checked = !cb.checked;
+  var currentMembers = [...document.querySelectorAll('input[name="fm-other-members"]:checked')].map(function(c) { return c.value; }).join(', ');
+  var contact = getVal('fm-contact') || '';
+  renderTeamAvailList(currentMembers, contact);
+}
+
+function fmMemberCbChanged() {
+  // Called when checkbox is clicked directly — browser already toggled it, just re-render
   var currentMembers = [...document.querySelectorAll('input[name="fm-other-members"]:checked')].map(function(c) { return c.value; }).join(', ');
   var contact = getVal('fm-contact') || '';
   renderTeamAvailList(currentMembers, contact);
