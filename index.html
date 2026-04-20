@@ -1356,7 +1356,9 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .fm-textarea { resize:vertical; min-height:80px; line-height:1.6; }
 /* Searchable dropdown */
 .fm-search-select { position:relative; }
-.fm-search-select input { width:100%; box-sizing:border-box; }
+.fm-search-select input { width:100%; box-sizing:border-box;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239CA3AF'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 10px center; padding-right:26px !important; }
 .fm-search-dropdown {
   display:none; position:absolute; top:100%; left:0; right:0; z-index:20;
   background:#fff; border:1.5px solid var(--navy); border-top:none; border-radius:0 0 7px 7px;
@@ -3388,7 +3390,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0067';
+const APP_VERSION = '0.11.0.0068';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
