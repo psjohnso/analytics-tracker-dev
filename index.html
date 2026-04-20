@@ -3376,7 +3376,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0058';
+const APP_VERSION = '0.11.0.0059';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13436,6 +13436,12 @@ function renderMyWork(area) {
   // ── Attention Needed alerts ──────────────────────────────────
   const alerts = [];
 
+  // Helper: determine if the user is Lead on a project
+  function isLeadOnProject(projTitle) {
+    var proj = PROJECTS.find(function(p) { return p.title === projTitle; });
+    return proj && proj.contact === name;
+  }
+
   // Overdue open tasks (Active, On Hold, Waiting for Response)
   overdueTasks.forEach(function(t) {
     const d = effectiveDue(t);
@@ -13446,6 +13452,7 @@ function renderMyWork(area) {
       meta: 'Due ' + d + (t.working_due && t.working_due !== t.due ? ' (orig: ' + t.due + ')' : ''),
       reason: daysOver + ' day' + (daysOver !== 1 ? 's' : '') + ' overdue',
       priority: 0,
+      isLead: isLeadOnProject(t.project),
     });
   });
 
@@ -13460,6 +13467,7 @@ function renderMyWork(area) {
       meta: 'Due ' + d,
       reason: daysLeft === 0 ? 'Due today' : 'Due in ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : ''),
       priority: 1,
+      isLead: isLeadOnProject(t.project),
     });
   });
 
@@ -13479,6 +13487,7 @@ function renderMyWork(area) {
         meta: 'Project · ' + (p.status || 'No status'),
         reason: 'Missing: ' + missing.join(', '),
         priority: 2,
+        isLead: p.contact === name,
       });
     }
   });
@@ -13496,6 +13505,7 @@ function renderMyWork(area) {
         meta: 'Task · ' + (t.status || 'No status'),
         reason: 'Missing: ' + missing.join(', '),
         priority: 3,
+        isLead: isLeadOnProject(t.project),
       });
     }
   });
@@ -13512,6 +13522,7 @@ function renderMyWork(area) {
       meta: 'Due ' + d + (p.working_due && p.working_due !== p.end ? ' (orig: ' + p.end + ')' : ''),
       reason: daysOver + ' day' + (daysOver !== 1 ? 's' : '') + ' overdue',
       priority: 0,
+      isLead: p.contact === name,
     });
   });
 
@@ -13528,6 +13539,7 @@ function renderMyWork(area) {
         meta: 'Due ' + d,
         reason: daysLeft === 0 ? 'Due today' : 'Due in ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : ''),
         priority: 1,
+        isLead: p.contact === name,
       });
     }
   });
@@ -13556,6 +13568,7 @@ function renderMyWork(area) {
         meta: 'Project · ' + p.status,
         reason: 'No project or task updates in ' + daysSinceUpdate + ' days (last: ' + dateStr + ')',
         priority: 2,
+        isLead: p.contact === name,
       });
     }
   });
@@ -13572,6 +13585,7 @@ function renderMyWork(area) {
         meta: 'Project · ' + p.status,
         reason: daysPast === 0 ? 'Start date is today — ready to activate' : 'Start date was ' + daysPast + ' day' + (daysPast !== 1 ? 's' : '') + ' ago — should be Active',
         priority: 1,
+        isLead: p.contact === name,
       });
     }
   });
@@ -13676,24 +13690,35 @@ function renderMyWork(area) {
   if (alerts.length === 0) {
     html += '<div class="mywork-empty">All caught up! No items need your attention right now.</div>';
   } else {
-    html += '<div class="mywork-alert-grid">';
-    alerts.forEach(function(a, idx) {
-      const onclick = a.type === 'project' ? 'openProject(' + a.id + ')' : 'openTask(' + a.id + ')';
-      const hiddenStyle = idx >= 15 ? ' style="display:none;"' : '';
-      const extraClass = idx >= 15 ? ' attention-overflow' : '';
-      html += '<div class="mywork-alert-card' + extraClass + '"' + hiddenStyle + ' onclick="' + onclick + '">';
-      html += '<div class="mywork-alert-icon">' + a.icon + '</div>';
-      html += '<div class="mywork-alert-body">';
-      const typeLabel = a.type === 'project' ? 'Project: ' : 'Task: ';
-      html += '<div class="mywork-alert-title"><span style="font-weight:700;color:var(--text-muted);">' + typeLabel + '</span>' + esc(a.title) + '</div>';
-      html += '<div class="mywork-alert-meta">' + esc(a.meta) + '</div>';
-      html += '<div class="mywork-alert-reason">' + esc(a.reason) + '</div>';
-      html += '</div></div>';
-    });
-    html += '</div>';
-    if (alerts.length > 15) {
-      const remaining = alerts.length - 15;
-      html += '<button class="mywork-expand-btn" id="attention-more-toggle" onclick="toggleAttentionMore()">Show ' + remaining + ' more item' + (remaining !== 1 ? 's' : '') + '</button>';
+    var leadAlerts = alerts.filter(function(a) { return a.isLead; });
+    var contribAlerts = alerts.filter(function(a) { return !a.isLead; });
+
+    function renderAlertCards(list, maxVisible) {
+      var out = '<div class="mywork-alert-grid">';
+      list.forEach(function(a, idx) {
+        var onclick = a.type === 'project' ? 'openProject(' + a.id + ')' : 'openTask(' + a.id + ')';
+        var hiddenStyle = idx >= maxVisible ? ' style="display:none;"' : '';
+        var extraClass = idx >= maxVisible ? ' attention-overflow' : '';
+        out += '<div class="mywork-alert-card' + extraClass + '"' + hiddenStyle + ' onclick="' + onclick + '">';
+        out += '<div class="mywork-alert-icon">' + a.icon + '</div>';
+        out += '<div class="mywork-alert-body">';
+        var typeLabel = a.type === 'project' ? 'Project: ' : 'Task: ';
+        out += '<div class="mywork-alert-title"><span style="font-weight:700;color:var(--text-muted);">' + typeLabel + '</span>' + esc(a.title) + '</div>';
+        out += '<div class="mywork-alert-meta">' + esc(a.meta) + '</div>';
+        out += '<div class="mywork-alert-reason">' + esc(a.reason) + '</div>';
+        out += '</div></div>';
+      });
+      out += '</div>';
+      return out;
+    }
+
+    if (leadAlerts.length > 0) {
+      html += '<div style="font-size:12px;font-weight:700;color:#0C447C;background:#E6F1FB;padding:6px 12px;border-radius:6px;margin-bottom:6px;">As Lead (' + leadAlerts.length + ')</div>';
+      html += renderAlertCards(leadAlerts, 15);
+    }
+    if (contribAlerts.length > 0) {
+      html += '<div style="font-size:12px;font-weight:700;color:#5F5E5A;background:#F1EFE8;padding:6px 12px;border-radius:6px;margin:' + (leadAlerts.length > 0 ? '12px' : '0') + ' 0 6px;">As Contributor (' + contribAlerts.length + ')</div>';
+      html += renderAlertCards(contribAlerts, 15);
     }
   }
   html += '</div>';
