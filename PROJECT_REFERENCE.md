@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.11.0.0055 (see Version History at bottom)
+> **Current Version:** 0.11.0.0056 (see Version History at bottom)
 
 ---
 
@@ -1448,6 +1448,7 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.11.0.0053 | Fix team member checkbox: clicking checkbox now toggles selection (was double-toggling to no effect); row click no longer toggles — only the checkbox does |
 | 0.11.0.0054 | Bulk "Move to project" dropdown in task batch action bar; only shows non-closed projects where current user is lead; updates task project field via DataStore.updateTask |
 | 0.11.0.0055 | Updated deliverables list: added Policy/Framework, Template/Theme, Catalog/Inventory, Server/Infrastructure, Other; renamed Training to Training/Curriculum; removed Mobile App; legacy value mapping for backward compatibility |
+| 0.11.0.0056 | Strategic Alignment section collapsed by default in project form; Data Program checkbox admin-only (disabled with hint text for non-team-leads) |
 
 ---
 

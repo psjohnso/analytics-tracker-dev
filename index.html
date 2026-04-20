@@ -3376,7 +3376,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0055';
+const APP_VERSION = '0.11.0.0056';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9015,11 +9015,14 @@ function buildProjectForm(p) {
       fmField('ITD Team', fmSelect('fm-itd-team', FM_ITD_TEAMS, v('itd_team'), 'Select team…')) +
     '</div>' +
     '<div style="margin-top:12px;">' +
-      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;background:#FFF7ED;border-radius:8px;border:1px solid #FED7AA;">' +
+      '<label style="display:flex;align-items:center;gap:8px;' + (Auth.isTeamLead ? 'cursor:pointer;' : 'cursor:not-allowed;opacity:0.7;') + 'padding:8px 12px;background:#FFF7ED;border-radius:8px;border:1px solid #FED7AA;">' +
         '<input type="checkbox" id="fm-data-program" ' + (dpChecked ? 'checked' : '') +
-        ' style="width:16px;height:16px;accent-color:var(--navy);cursor:pointer;">' +
+        (Auth.isTeamLead ? '' : ' disabled') +
+        ' style="width:16px;height:16px;accent-color:var(--navy);cursor:' + (Auth.isTeamLead ? 'pointer' : 'not-allowed') + ';">' +
         '<span style="font-size:13px;font-weight:600;color:#9A3412;">Data Program project</span></label>' +
-      '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Reviewed by the full data team — Snowflake, DBAs, data architects, and data intelligence</div>' +
+      '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">' +
+        (Auth.isTeamLead ? 'Reviewed by the full data team — Snowflake, DBAs, data architects, and data intelligence' : 'Only team leads can change this designation') +
+      '</div>' +
     '</div>') +
   fmSec('Details', '<div class="fm-grid">' +
       fmField('Problem Statement', fmMdTextarea('fm-problem', v('problem_statement'), 'Describe the problem this project solves…', 3, 4000), false, true) +
@@ -9045,7 +9048,7 @@ function buildProjectForm(p) {
         'What Works Cities foundational practice areas') +
     '</div>' +
     fmField('WWC Criteria', fmWwcCriteriaGrouped(v('wwc_criteria')), false, false,
-        'Specific What Works Cities certification criteria — grouped by practice area'));
+        'Specific What Works Cities certification criteria — grouped by practice area'), true);
 }
 
 function fmSec(label, bodyHtml, startCollapsed, extraClass) {
