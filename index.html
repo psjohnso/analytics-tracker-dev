@@ -3376,7 +3376,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0059';
+const APP_VERSION = '0.11.0.0060';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -4742,6 +4742,8 @@ function render() {
     } else if (currentDetail.type === 'idea-review') {
       area.innerHTML = renderIdeaReview();
     }
+    window.scrollTo(0, 0);
+    area.scrollTop = 0;
     return;
   }
   document.querySelector('.app-body').classList.remove('detail-mode');
