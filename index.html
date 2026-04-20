@@ -3376,7 +3376,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0057';
+const APP_VERSION = '0.11.0.0058';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -4529,18 +4529,19 @@ function getActiveFilterCount() {
 
 function updateFilterIndicator() {
   var count = getActiveFilterCount();
+  var isFilterTab = currentTab === 'projects' || currentTab === 'tasks';
   // Sidebar banner
   var indicator = document.getElementById('sidebar-active-indicator');
   var countEl = document.getElementById('active-filter-count');
   if (indicator) {
-    indicator.style.display = count > 0 ? '' : 'none';
+    indicator.style.display = count > 0 && isFilterTab ? '' : 'none';
     if (countEl) countEl.textContent = count + ' filter' + (count !== 1 ? 's' : '') + ' active';
   }
-  // Toolbar clear button
+  // Toolbar clear button — only on filter-enabled tabs
   var clearBtn = document.getElementById('clear-filters-btn');
   var clearCount = document.getElementById('clear-filters-count');
   if (clearBtn) {
-    clearBtn.style.display = count > 0 ? 'flex' : 'none';
+    clearBtn.style.display = count > 0 && isFilterTab ? 'flex' : 'none';
     if (clearCount) clearCount.textContent = count;
   }
 }
@@ -4594,16 +4595,6 @@ function switchTab(tab, preserveFilters) {
   }
   const isTask = tab === 'tasks';
   reorderSidebarFilters(tab);
-  // Reset filters on normal tab switch, but preserve them when navigating back from detail
-  if (!preserveFilters) {
-    resetQuickFilterBtn('weekly-filter-btn', 'var(--navy)');
-    resetQuickFilterBtn('open-projects-btn', '#83AC16');
-    resetQuickFilterBtn('open-tasks-btn', '#C24200');
-    activeFilters.status = [];
-    activeFilters.taskStatus = [];
-    activeFilters.taskCategory = [];
-    activeFilters.taskTool = [];
-  }
   buildSidebarFilters();
   render();
 }
