@@ -3388,7 +3388,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0063';
+const APP_VERSION = '0.11.0.0064';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -5241,7 +5241,6 @@ function projectNumChip(num) {
 
 async function backfillProjectTaskNumbers() {
   if (!Auth.loggedIn) { showToast('You must be signed in.', 'warn'); return; }
-  if (!confirm('This will assign project numbers (P-001, P-002…) to all projects without one, and task numbers (P-XXX-001…) to all tasks without one.\n\nProjects are numbered by creation order. Continue?')) return;
 
   var projCount = 0;
   var taskCount = 0;
@@ -9670,10 +9669,10 @@ async function markTaskComplete(taskId) {
   if (!Auth.loggedIn) { showToast('You must be signed in.', 'warn'); return; }
   const task = TASKS.find(function(t) { return t.objectId == taskId; });
   if (!task) return;
-  if (!confirm('Mark "' + task.title + '" as Complete?')) return;
   const today = new Date();
   const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
   await DataStore.updateTask(taskId, { status: 'Complete', actual_end: todayStr });
+  showToast('Marked "' + task.title + '" as Complete.', 'success');
   markDataDirty();
   render();
 }
@@ -9682,10 +9681,10 @@ async function markProjectComplete(objectId) {
   if (!Auth.loggedIn) { showToast('You must be signed in.', 'warn'); return; }
   const proj = PROJECTS.find(function(p) { return p.objectId == objectId; });
   if (!proj) return;
-  if (!confirm('Mark "' + proj.title + '" as Complete?')) return;
   const today = new Date();
   const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
   await DataStore.updateProject(objectId, { status: 'Complete', actual_end: todayStr });
+  showToast('Marked "' + proj.title + '" as Complete.', 'success');
   markDataDirty();
   render();
 }
@@ -9837,13 +9836,6 @@ async function applyBatchUpdate() {
     showToast('Select a status, priority, assignee, or project to apply.', 'warn');
     return;
   }
-
-  var label = [];
-  if (newStatus) label.push('status → ' + newStatus);
-  if (newPriority) label.push('priority → ' + newPriority);
-  if (newAssignee) label.push('assignee → ' + newAssignee);
-  if (newProject) label.push('move to → ' + newProject);
-  if (!confirm('Update ' + ids.length + ' task(s)?\n\n' + label.join('\n'))) return;
 
   var today = new Date();
   var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
