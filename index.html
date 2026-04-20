@@ -3376,7 +3376,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0054';
+const APP_VERSION = '0.11.0.0055';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -8305,8 +8305,10 @@ function fmCheckCharLimits() {
 
 const FM_DELIVERABLE_OPTIONS = [
   'Dashboard', 'Dataset', 'Web Application', 'Report', 'Map / Web Map',
-  'ETL Pipeline', 'API / Service', 'Documentation', 'Training', 'Analysis / Study',
-  'Mobile App', 'Script / Automation', 'Data Model', 'Integration'
+  'ETL Pipeline', 'API / Service', 'Documentation', 'Training / Curriculum',
+  'Analysis / Study', 'Script / Automation', 'Data Model', 'Integration',
+  'Policy / Framework', 'Template / Theme', 'Catalog / Inventory',
+  'Server / Infrastructure', 'Other'
 ];
 
 // ── Strategic Alignment Options ──────────────────────────────────────
@@ -8363,7 +8365,12 @@ function collectCheckboxGroup(name) {
 }
 
 function fmDeliverables(id, currentVal) {
-  var selected = (currentVal || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+  // Map legacy deliverable names to current names
+  var legacyMap = { 'Training': 'Training / Curriculum', 'Mobile App': 'Other' };
+  var selected = (currentVal || '').split(',').map(function(s) {
+    var v = s.trim();
+    return legacyMap[v] || v;
+  }).filter(Boolean);
   var html = '<div class="fm-deliverables-grid" id="' + id + '-wrap">';
   FM_DELIVERABLE_OPTIONS.forEach(function(opt) {
     var checked = selected.includes(opt) ? ' checked' : '';
