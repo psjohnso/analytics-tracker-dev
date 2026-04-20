@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.11.0.0057 (see Version History at bottom)
+> **Current Version:** 0.11.0.0062 (see Version History at bottom)
 
 ---
 
@@ -1450,6 +1450,11 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.11.0.0055 | Updated deliverables list: added Policy/Framework, Template/Theme, Catalog/Inventory, Server/Infrastructure, Other; renamed Training to Training/Curriculum; removed Mobile App; legacy value mapping for backward compatibility |
 | 0.11.0.0056 | Strategic Alignment section collapsed by default in project form; Data Program checkbox admin-only (disabled with hint text for non-team-leads) |
 | 0.11.0.0057 | Default filters on login: current user's open projects (Active, On Hold, Idea, Future, Scheduled) and their tasks; enhanced task filtering — member filter now shows all tasks on the user's projects (not just directly assigned); project status filter now also scopes task list to matching projects |
+| 0.11.0.0058 | Fix filters resetting on tab switch; hide Clear Filters on non-filter tabs |
+| 0.11.0.0059 | Split Attention Needed into Lead vs Contributor groups with role-colored headers |
+| 0.11.0.0060 | Scroll to top when opening project or task detail pages |
+| 0.11.0.0061 | Scroll to top on all tab switches |
+| 0.11.0.0062 | My Projects section split by role: Leading (blue), Contributing (gray), Reviewing (purple); each group has own status sub-headers and expand/collapse |
 
 ---
 

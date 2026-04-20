@@ -3376,7 +3376,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0061';
+const APP_VERSION = '0.11.0.0062';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13803,27 +13803,38 @@ function renderMyWork(area) {
   html += '<div>';
   html += '<div class="mywork-section" id="mw-projects">';
   html += '<div class="mywork-section-header">📁 My Projects <span class="badge-count">' + myProjects.length + '</span></div>';
-  const projByStatus = {};
+
+  // Split projects by role
+  var leadProjects = [];
+  var contribProjects = [];
+  var reviewerProjects = [];
   myProjects.forEach(function(p) {
-    const s = p.status || 'Unknown';
-    if (!projByStatus[s]) projByStatus[s] = [];
-    projByStatus[s].push(p);
+    if (p.contact === name) {
+      leadProjects.push(p);
+    } else {
+      // Check allocation records for role
+      var role = 'Contributor';
+      if (RESOURCES_DATA && RESOURCES_DATA.people[name] && RESOURCES_DATA.people[name].allocations) {
+        var alloc = RESOURCES_DATA.people[name].allocations.find(function(a) { return a.project === p.title; });
+        if (alloc && alloc.role === 'Reviewer') role = 'Reviewer';
+      }
+      if (role === 'Reviewer') reviewerProjects.push(p);
+      else contribProjects.push(p);
+    }
   });
 
   // Helper to render a group of projects by status
-  function renderProjGroup(status) {
-    const list = projByStatus[status];
-    if (!list || !list.length) return '';
+  function renderProjGroup(status, list) {
+    var filtered = list.filter(function(p) { return p.status === status; });
+    if (!filtered.length) return '';
     const statusColor = STATUS_COLOR(status);
-    let out = '<div class="mywork-status-header" style="color:' + statusColor + ';">' + esc(status) + ' (' + list.length + ')</div>';
-    list.forEach(function(p) {
+    let out = '<div class="mywork-status-header" style="color:' + statusColor + ';">' + esc(status) + ' (' + filtered.length + ')</div>';
+    filtered.forEach(function(p) {
       const taskCount = TASKS.filter(function(t) { return t.project === p.title || (!t.project && t.project_id == p.id); });
       const doneCount = taskCount.filter(function(t) { return t.status === 'Complete'; }).length;
       const totalCount = taskCount.length;
       const taskLabel = totalCount > 0 ? doneCount + '/' + totalCount + ' tasks done' : 'No tasks';
-      const isContact = p.contact === name;
       out += '<div class="mywork-compact-row">';
-      // Inline status dropdown
       out += '<select class="mw-status-select" data-type="project" data-id="' + p.objectId + '" onchange="mwQuickStatus(this)" onclick="event.stopPropagation()" style="background:' + statusColor + '18;color:' + statusColor + ';border-color:' + statusColor + '44;">';
       ['Active', 'Scheduled', 'On Hold', 'Future', 'Complete', 'Canceled'].forEach(function(s) {
         out += '<option value="' + s + '"' + (p.status === s ? ' selected' : '') + '>' + s + '</option>';
@@ -13831,34 +13842,49 @@ function renderMyWork(area) {
       out += '</select>';
       out += '<span class="mywork-compact-title" onclick="openProject(' + p.objectId + ')" style="cursor:pointer;">' + projectNumChip(p.project_number) + esc(p.title) + '</span>';
       out += '<span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">' + taskLabel + '</span>';
-      if (isContact) out += '<span class="mywork-lead-badge">Lead</span>';
       out += '</div>';
     });
     return out;
   }
 
-  // Default visible: Active, Scheduled, Idea
-  const defaultProjStatuses = ['Active', 'Scheduled', 'Idea'];
-  let hasDefaultProj = false;
-  defaultProjStatuses.forEach(function(status) {
-    const chunk = renderProjGroup(status);
-    if (chunk) { hasDefaultProj = true; html += chunk; }
-  });
-  if (!hasDefaultProj && myProjects.length === 0) {
-    html += '<div class="mywork-empty">No projects assigned to you.</div>';
+  // Render a role section with status sub-groups
+  function renderRoleSection(roleLabel, roleStyle, projects, defaultStatuses, expandStatuses) {
+    if (!projects.length) return '';
+    var out = '<div style="font-size:12px;font-weight:700;' + roleStyle + 'padding:6px 12px;border-radius:6px;margin:10px 0 6px;">' + roleLabel + ' (' + projects.length + ')</div>';
+    var hasDefault = false;
+    defaultStatuses.forEach(function(status) {
+      var chunk = renderProjGroup(status, projects);
+      if (chunk) { hasDefault = true; out += chunk; }
+    });
+    if (!hasDefault) {
+      out += '<div class="mywork-empty" style="padding:8px 0;">No ' + roleLabel.toLowerCase() + ' projects in active statuses.</div>';
+    }
+    // Expandable statuses
+    var expandItems = expandStatuses.filter(function(s) { return projects.some(function(p) { return p.status === s; }); });
+    if (expandItems.length > 0) {
+      var expandId = 'mw-proj-expand-' + roleLabel.toLowerCase().replace(/\s/g, '-');
+      var expandLabel = expandItems.map(function(s) { return s + ' (' + projects.filter(function(p) { return p.status === s; }).length + ')'; }).join(', ');
+      out += '<div id="' + expandId + '" style="display:none;">';
+      expandItems.forEach(function(status) { out += renderProjGroup(status, projects); });
+      out += '</div>';
+      out += '<button class="mywork-expand-btn" onclick="var el=document.getElementById(\'' + expandId + '\');var v=el.style.display===\'none\';el.style.display=v?\'\':\'none\';this.textContent=v?\'Show fewer\':\'Show more (' + expandLabel + ')\';">' +
+        'Show more (' + expandLabel + ')' +
+      '</button>';
+    }
+    return out;
   }
 
-  // Expandable: On Hold, Future
-  const expandProjStatuses = ['On Hold', 'Future'];
-  const expandProjItems = expandProjStatuses.filter(function(s) { return projByStatus[s] && projByStatus[s].length > 0; });
-  if (expandProjItems.length > 0) {
-    const expandProjLabel = expandProjItems.map(function(s) { return s + ' (' + projByStatus[s].length + ')'; }).join(', ');
-    html += '<div id="mywork-proj-expand" style="display:none;">';
-    expandProjItems.forEach(function(status) { html += renderProjGroup(status); });
-    html += '</div>';
-    html += '<button class="mywork-expand-btn" id="mywork-proj-toggle" onclick="toggleMyWorkProjects()">' +
-      'Show more (' + expandProjLabel + ')' +
-    '</button>';
+  var defaultProjStatuses = ['Active', 'Scheduled', 'Idea'];
+  var expandProjStatuses = ['On Hold', 'Future'];
+
+  if (myProjects.length === 0) {
+    html += '<div class="mywork-empty">No projects assigned to you.</div>';
+  } else {
+    html += renderRoleSection('Leading', 'color:#0C447C;background:#E6F1FB;', leadProjects, defaultProjStatuses, expandProjStatuses);
+    html += renderRoleSection('Contributing', 'color:#5F5E5A;background:#F1EFE8;', contribProjects, defaultProjStatuses, expandProjStatuses);
+    if (reviewerProjects.length > 0) {
+      html += renderRoleSection('Reviewing', 'color:#534AB7;background:#EEEDFE;', reviewerProjects, defaultProjStatuses, expandProjStatuses);
+    }
   }
 
   html += '</div>';
