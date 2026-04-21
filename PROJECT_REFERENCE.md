@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.11.0.0062 (see Version History at bottom)
+> **Current Version:** 0.11.0.0071 (see Version History at bottom)
 
 ---
 
@@ -1455,6 +1455,15 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.11.0.0060 | Scroll to top when opening project or task detail pages |
 | 0.11.0.0061 | Scroll to top on all tab switches |
 | 0.11.0.0062 | My Projects section split by role: Leading (blue), Contributing (gray), Reviewing (purple); each group has own status sub-headers and expand/collapse |
+| 0.11.0.0063 | Stronger visual role group distinction: CSS classes mw-role-group, mw-role-lead, mw-role-contrib, mw-role-review with 4px left border accent, colored headers, indented content |
+| 0.11.0.0064 | Removed confirm dialogs from non-destructive actions (mark complete, bulk update, assign numbers); kept only for deletes/removes |
+| 0.11.0.0065 | Bulk task reassignment: searchable project picker using fmSearchableSelect pattern; admins see all projects |
+| 0.11.0.0066 | Batch project search fills remaining row width (flex:1, flex-wrap:nowrap) |
+| 0.11.0.0067 | Bulk reassignment shows user's lead AND contributor projects (removed admin override) |
+| 0.11.0.0068 | Dropdown arrow added to all searchable select inputs via CSS background-image |
+| 0.11.0.0069 | Task filters hidden on Projects tab, project filters hidden on Tasks tab |
+| 0.11.0.0070 | Timeline jump link expands collapsed gantt section (expandGantt function) |
+| 0.11.0.0071 | Timeline font sizes increased: project names 11px→13px, task names 10px→12px, task count 9px→10px |
 
 ---
 
