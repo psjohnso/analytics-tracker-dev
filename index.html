@@ -3409,7 +3409,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0004';
+const APP_VERSION = '0.12.0.0006';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -3738,6 +3738,12 @@ const Auth = {
   devMode: false,
   dataLoaded: false,
 };
+
+// Users allowed to edit Data Program, IT Initiative, DP Goal, WWC Practice/Criteria fields
+const STRATEGIC_ALIGNMENT_EDITORS = ['Peter Johnson'];
+function isStrategicAlignmentEditor() {
+  return Auth.fullName && STRATEGIC_ALIGNMENT_EDITORS.indexOf(Auth.fullName) !== -1;
+}
 
 // ── Editor State ────────────────────────────────────────────────────
 const Editor = {
@@ -8418,12 +8424,14 @@ const FM_WWC_CRITERIA = [
   'RDC6 Making Informed Contracting Decisions', 'RDC7 Open and Shared Procurement Data', 'RDC8 Supporting Vendor Participation and Competition'
 ];
 
-function fmCheckboxGroup(name, options, currentVal) {
+function fmCheckboxGroup(name, options, currentVal, disabled) {
   var selected = (currentVal || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
-  var html = '<div class="fm-deliverables-grid" id="' + name + '-wrap">';
+  var disabledAttr = disabled ? ' disabled' : '';
+  var wrapStyle = disabled ? ' style="opacity:0.6;pointer-events:none;"' : '';
+  var html = '<div class="fm-deliverables-grid" id="' + name + '-wrap"' + wrapStyle + '>';
   options.forEach(function(opt) {
     var checked = selected.includes(opt) ? ' checked' : '';
-    html += '<label class="fm-deliv-check"><input type="checkbox" name="' + name + '" value="' + esc(opt) + '"' + checked + '>' + esc(opt) + '</label>';
+    html += '<label class="fm-deliv-check"><input type="checkbox" name="' + name + '" value="' + esc(opt) + '"' + checked + disabledAttr + '>' + esc(opt) + '</label>';
   });
   html += '</div>';
   return html;
@@ -9087,13 +9095,13 @@ function buildProjectForm(p) {
       fmField('ITD Team', fmSelect('fm-itd-team', FM_ITD_TEAMS, v('itd_team'), 'Select team…')) +
     '</div>' +
     '<div style="margin-top:12px;">' +
-      '<label style="display:flex;align-items:center;gap:8px;' + (Auth.isTeamLead ? 'cursor:pointer;' : 'cursor:not-allowed;opacity:0.7;') + 'padding:8px 12px;background:#FFF7ED;border-radius:8px;border:1px solid #FED7AA;">' +
+      '<label style="display:flex;align-items:center;gap:8px;' + (isStrategicAlignmentEditor() ? 'cursor:pointer;' : 'cursor:not-allowed;opacity:0.7;') + 'padding:8px 12px;background:#FFF7ED;border-radius:8px;border:1px solid #FED7AA;">' +
         '<input type="checkbox" id="fm-data-program" ' + (dpChecked ? 'checked' : '') +
-        (Auth.isTeamLead ? '' : ' disabled') +
-        ' style="width:16px;height:16px;accent-color:var(--navy);cursor:' + (Auth.isTeamLead ? 'pointer' : 'not-allowed') + ';">' +
+        (isStrategicAlignmentEditor() ? '' : ' disabled') +
+        ' style="width:16px;height:16px;accent-color:var(--navy);cursor:' + (isStrategicAlignmentEditor() ? 'pointer' : 'not-allowed') + ';">' +
         '<span style="font-size:13px;font-weight:600;color:#9A3412;">Data Program project</span></label>' +
       '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">' +
-        (Auth.isTeamLead ? 'Reviewed by the full data team — Snowflake, DBAs, data architects, and data intelligence' : 'Only team leads can change this designation') +
+        (isStrategicAlignmentEditor() ? 'Reviewed by the full data team — Snowflake, DBAs, data architects, and data intelligence' : 'Only the data team manager can change this designation') +
       '</div>' +
     '</div>') +
   fmSec('Details', '<div class="fm-grid">' +
@@ -9106,20 +9114,22 @@ function buildProjectForm(p) {
     '</div>', isEdit) +
   fmSec('Strategic Alignment',
     '<div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">' +
-      '<div style="font-size:11px;color:var(--text-muted);">Tag this project with the strategic initiatives, goals, and criteria it supports.</div>' +
-      '<button type="button" onclick="suggestAlignment()" style="font-size:11px;font-weight:700;font-family:Lato,sans-serif;padding:5px 12px;border-radius:6px;border:1px solid #FDE68A;background:#FFFBEB;color:#92400E;cursor:pointer;white-space:nowrap;">✨ Suggest</button>' +
+      '<div style="font-size:11px;color:var(--text-muted);">Tag this project with the strategic initiatives, goals, and criteria it supports.' +
+        (!isStrategicAlignmentEditor() ? ' <span style="font-weight:700;color:#9A3412;">Some fields are managed by team leads only.</span>' : '') +
+      '</div>' +
+      (isStrategicAlignmentEditor() ? '<button type="button" onclick="suggestAlignment()" style="font-size:11px;font-weight:700;font-family:Lato,sans-serif;padding:5px 12px;border-radius:6px;border:1px solid #FDE68A;background:#FFFBEB;color:#92400E;cursor:pointer;white-space:nowrap;">✨ Suggest</button>' : '') +
     '</div>' +
     '<div id="alignment-suggest-panel" style="display:none;"></div>' +
     '<div class="fm-grid">' +
-      fmField('IT Initiative', fmCheckboxGroup('fm-it-initiative', FM_IT_INITIATIVES, v('it_initiative')), false, true) +
+      fmField('IT Initiative', fmCheckboxGroup('fm-it-initiative', FM_IT_INITIATIVES, v('it_initiative'), !isStrategicAlignmentEditor()), false, true) +
       fmField('City Initiative', fmCheckboxGroup('fm-city-initiative', FM_CITY_INITIATIVES, v('city_initiative')), false, true) +
       fmField('IT Priority Project', fmCheckboxGroup('fm-it-priority', FM_IT_PRIORITY_PROJECTS, v('it_priority_project')), false, true) +
-      fmField('Data Program Goal', fmCheckboxGroup('fm-dp-goal', FM_DP_GOALS, v('dp_goal')), false, true,
+      fmField('Data Program Goal', fmCheckboxGroup('fm-dp-goal', FM_DP_GOALS, v('dp_goal'), !isStrategicAlignmentEditor()), false, true,
         'Which Data Program goals does this project advance?') +
-      fmField('WWC Foundational Practice', fmCheckboxGroup('fm-wwc-practice', FM_WWC_PRACTICES, v('wwc_practice')), false, true,
+      fmField('WWC Foundational Practice', fmCheckboxGroup('fm-wwc-practice', FM_WWC_PRACTICES, v('wwc_practice'), !isStrategicAlignmentEditor()), false, true,
         'What Works Cities foundational practice areas') +
     '</div>' +
-    fmField('WWC Criteria', fmWwcCriteriaGrouped(v('wwc_criteria')), false, false,
+    fmField('WWC Criteria', fmWwcCriteriaGrouped(v('wwc_criteria'), !isStrategicAlignmentEditor()), false, false,
         'Specific What Works Cities certification criteria — grouped by practice area'), true);
 }
 
@@ -9145,9 +9155,10 @@ var WWC_CRITERIA_GROUPS = [
   { prefix: 'RDC', label: 'Results-driven contracting', items: FM_WWC_CRITERIA.filter(function(c) { return c.indexOf('RDC') === 0; }) }
 ];
 
-function fmWwcCriteriaGrouped(currentVal) {
+function fmWwcCriteriaGrouped(currentVal, disabled) {
   var selected = (currentVal || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
-  var html = '';
+  var disabledAttr = disabled ? ' disabled' : '';
+  var html = disabled ? '<div style="opacity:0.6;pointer-events:none;">' : '';
   WWC_CRITERIA_GROUPS.forEach(function(grp) {
     var grpSelected = grp.items.filter(function(c) { return selected.includes(c); }).length;
     var startOpen = grpSelected > 0;
@@ -9160,10 +9171,11 @@ function fmWwcCriteriaGrouped(currentVal) {
     html += '<div class="wwc-group-body"><div class="fm-deliverables-grid">';
     grp.items.forEach(function(opt) {
       var checked = selected.includes(opt) ? ' checked' : '';
-      html += '<label class="fm-deliv-check"><input type="checkbox" name="fm-wwc-criteria" value="' + esc(opt) + '"' + checked + '>' + esc(opt) + '</label>';
+      html += '<label class="fm-deliv-check"><input type="checkbox" name="fm-wwc-criteria" value="' + esc(opt) + '"' + checked + disabledAttr + '>' + esc(opt) + '</label>';
     });
     html += '</div></div></div>';
   });
+  if (disabled) html += '</div>';
   return html;
 }
 
