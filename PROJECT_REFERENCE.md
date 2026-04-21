@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.11.1.0003 (see Version History at bottom)
+> **Current Version:** 0.11.2.0001 (see Version History at bottom)
 
 ---
 
@@ -1490,6 +1490,9 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.11.1.0001 | AI Phase Assignment feature: admin toggle in Settings (stored in app_config); suggestPhaseRequirements() calls Cloudflare Worker after task creation; suggestion panel on task detail page with Accept/Dismiss buttons; fires only on new tasks without manual phase requirements |
 | 0.11.1.0002 | Fix: AI phase functions (suggestPhaseRequirements, acceptPhaseSuggestions, dismissPhaseSuggestions) were accidentally nested inside ensureProjectContributor function scope — moved to top-level so they're callable from handleFormSubmit |
 | 0.11.1.0003 | Task display on project detail: flat list view as default with phase chips on each task row; List view / Phase view toggle buttons; phase view available for Active/Scheduled projects; toggle state persists via _taskViewMode variable |
+| 0.11.1.0004 | Fix: task view toggle re-renders in place without scrolling to top |
+| 0.11.1.0005 | Fix scroll position on page reload (history.scrollRestoration = manual); status distribution cards ordered with Canceled last |
+| 0.11.2.0001 | Settings tab reorganized: two-column layout with sidebar navigation (People, Project Config, System groups) and content panel; 7 sections load independently; only active section renders; sidebar shows team member count; eliminates long scroll |
 
 ---
 

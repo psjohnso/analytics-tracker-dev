@@ -2383,7 +2383,17 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   border-radius:6px; margin-bottom:6px; }
 .te-entry-row:hover { border-color:var(--navy); background:#F8FAFF; }
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-.settings-page { padding:20px 0; max-width:1100px; }
+.settings-page { padding:0; max-width:none; display:flex; min-height:calc(100vh - 200px); }
+.settings-nav { width:200px; flex-shrink:0; border-right:1px solid #E8E6DF; background:#FDFCF8; padding:16px 0; }
+.settings-nav-group { padding:0 12px; margin-bottom:16px; }
+.settings-nav-label { font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; padding:4px 10px; margin-bottom:2px; }
+.settings-nav-item { font-size:13px; padding:8px 10px; border-radius:6px; cursor:pointer; color:#5F5E5A; display:flex; align-items:center; gap:8px; transition:background 0.1s; }
+.settings-nav-item:hover { background:#F3F1EB; color:var(--navy); }
+.settings-nav-item.active { background:#E6F1FB; color:#0C447C; font-weight:700; }
+.settings-nav-count { font-size:10px; background:#E8E6DF; color:#5F5E5A; padding:1px 6px; border-radius:4px; margin-left:auto; }
+.settings-panel { flex:1; padding:24px 28px; overflow-y:auto; min-width:0; }
+.settings-panel-title { font-family:'Lato',sans-serif; font-size:20px; font-weight:800; color:var(--navy); margin-bottom:4px; }
+.settings-panel-desc { font-size:12px; color:var(--text-muted); margin-bottom:20px; }
 .settings-section { margin-bottom:32px; }
 .settings-section-header { font-family:'Lato',sans-serif; font-size:20px; font-weight:800; color:var(--navy); margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
 .member-table { width:100%; border-collapse:collapse; background:#fff; border:1px solid #E8E6DF; border-radius:10px; overflow:hidden; font-size:13px; }
@@ -3399,7 +3409,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.1.0005';
+const APP_VERSION = '0.11.2.0001';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -14342,6 +14352,12 @@ async function toggleAiPhaseAssignment(enabled) {
   if (ok) showToast('AI Phase Assignment ' + (enabled ? 'enabled' : 'disabled') + '.', 'success');
 }
 
+var _settingsSection = 'team';
+function switchSettingsSection(section) {
+  _settingsSection = section;
+  renderSettingsPage(document.getElementById('content-area'));
+}
+
 // Restore dev mode from session on load
 if (sessionStorage.getItem('dev_mode') === '1') Auth.devMode = true;
 
@@ -14355,223 +14371,219 @@ function renderSettingsPage(area) {
     return;
   }
 
-  const people = RESOURCES_DATA.people;
-  const allNames = Object.keys(people).sort();
-  const showFormerSettings = document.getElementById('settings-show-former');
-  const includeInactiveSettings = showFormerSettings && showFormerSettings.checked;
-  const names = includeInactiveSettings ? allNames : allNames.filter(function(n) { return people[n].active !== false; });
-  const inactiveCount = allNames.length - allNames.filter(function(n) { return people[n].active !== false; }).length;
+  var people = RESOURCES_DATA.people;
+  var allNames = Object.keys(people).sort();
+  var activeCount = allNames.filter(function(n) { return people[n].active !== false; }).length;
 
-  // Team Members table
-  let memberRows = names.map(function(name) {
-    const p = people[name];
-    const isLight = p.tracking_level === 'light';
-    let schedLabel = isLight ? '—' : (p.schedule_type || '5/8');
-    if (!isLight && p.rdo_day) schedLabel += ' · ' + p.rdo_day + ' off';
-    const ttChecked = p.time_tracking ? ' checked' : '';
-    const isInactive = p.active === false;
-    const rowStyle = isInactive ? ' style="opacity:0.5;"' : '';
-    const activeLabel = isInactive ? '<span style="color:#EF4444;font-weight:700;font-size:10px;">Inactive</span>' : '<span style="color:#83AC16;font-weight:700;font-size:10px;">Active</span>';
-    const trackingLabel = isLight
-      ? '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF7ED;color:#9A3412;">Light</span>'
-      : '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#EEF2FF;color:#002669;">Full</span>';
-    return '<tr' + rowStyle + '>' +
-      '<td style="font-weight:700;color:var(--navy);">' + esc(name) + '</td>' +
-      '<td>' + esc(p.role) + '</td>' +
-      '<td>' + esc(p.team) + '</td>' +
-      '<td style="text-align:center;">' + trackingLabel + '</td>' +
-      '<td>' + (isLight ? '—' : Math.round(p.proj_pct * 100) + '%') + '</td>' +
-      '<td>' + esc(schedLabel) + '</td>' +
-      '<td style="text-align:center;">' + (isLight ? '—' : '<input type="checkbox"' + ttChecked + ' onchange="toggleTimeTracking(\'' + name.replace(/'/g, "\\'") + '\', this.checked)" style="width:16px;height:16px;cursor:pointer;">') + '</td>' +
-      '<td style="text-align:center;cursor:pointer;" onclick="toggleMemberActive(\'' + name.replace(/'/g, "\\'") + '\')" title="Click to toggle">' + activeLabel + '</td>' +
-      '<td style="text-align:right;white-space:nowrap;">' +
-        '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="openAbsenceEditor(\'' + name.replace(/'/g, "\\'") + '\')">📅 Absences</button>' +
-        '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="openMemberForm(\'edit\',\'' + name.replace(/'/g, "\\'") + '\')">✏️ Edit</button>' +
-        '<button class="settings-btn settings-btn-danger" onclick="deleteMember(\'' + name.replace(/'/g, "\\'") + '\')">🗑</button>' +
-      '</td>' +
-    '</tr>';
-  }).join('');
+  // ── Sidebar navigation ──────────────────────────────────
+  function navItem(id, label, count) {
+    var cls = 'settings-nav-item' + (_settingsSection === id ? ' active' : '');
+    var badge = count != null ? '<span class="settings-nav-count">' + count + '</span>' : '';
+    return '<div class="' + cls + '" onclick="switchSettingsSection(\'' + id + '\')">' + label + badge + '</div>';
+  }
 
-  let html = '<div class="settings-page">' +
-    '<div class="settings-section">' +
-      '<div class="settings-section-header">' +
-        '<span>Team Members</span>' +
-        '<div style="display:flex;align-items:center;gap:12px;">' +
-          (inactiveCount > 0 ? '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);cursor:pointer;font-weight:600;">' +
-            '<input type="checkbox" id="settings-show-former"' + (includeInactiveSettings ? ' checked' : '') + ' onchange="renderSettingsPage(document.getElementById(\'content-area\'))" style="width:14px;height:14px;cursor:pointer;">' +
-            'Show former (' + inactiveCount + ')' +
-          '</label>' : '') +
-          '<button class="settings-btn settings-btn-primary" onclick="openMemberForm(\'add\')">＋ Add Member</button>' +
-        '</div>' +
+  var navHtml = '<div class="settings-nav">' +
+    '<div class="settings-nav-group">' +
+      '<div class="settings-nav-label">People</div>' +
+      navItem('team', 'Team members', activeCount) +
+      navItem('allocations', 'Allocations') +
+      navItem('timetracking', 'Time tracking') +
+    '</div>' +
+    '<div class="settings-nav-group">' +
+      '<div class="settings-nav-label">Project config</div>' +
+      navItem('lists', 'Dropdown lists') +
+      navItem('categories', 'Categories and tools') +
+    '</div>' +
+    '<div class="settings-nav-group">' +
+      '<div class="settings-nav-label">System</div>' +
+      navItem('ai', 'AI features') +
+      navItem('developer', 'Developer') +
+    '</div>' +
+  '</div>';
+
+  // ── Panel content (only active section) ──────────────────
+  var panelHtml = '';
+
+  if (_settingsSection === 'team') {
+    var showFormerSettings = document.getElementById('settings-show-former');
+    var includeInactiveSettings = showFormerSettings && showFormerSettings.checked;
+    var names = includeInactiveSettings ? allNames : allNames.filter(function(n) { return people[n].active !== false; });
+    var inactiveCount = allNames.length - activeCount;
+
+    var memberRows = names.map(function(name) {
+      var p = people[name];
+      var isLight = p.tracking_level === 'light';
+      var schedLabel = isLight ? '—' : (p.schedule_type || '5/8');
+      if (!isLight && p.rdo_day) schedLabel += ' · ' + p.rdo_day + ' off';
+      var ttChecked = p.time_tracking ? ' checked' : '';
+      var isInactive = p.active === false;
+      var rowStyle = isInactive ? ' style="opacity:0.5;"' : '';
+      var activeLabel = isInactive ? '<span style="color:#EF4444;font-weight:700;font-size:10px;">Inactive</span>' : '<span style="color:#83AC16;font-weight:700;font-size:10px;">Active</span>';
+      var trackingLabel = isLight
+        ? '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF7ED;color:#9A3412;">Light</span>'
+        : '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#EEF2FF;color:#002669;">Full</span>';
+      return '<tr' + rowStyle + '>' +
+        '<td style="font-weight:700;color:var(--navy);">' + esc(name) + '</td>' +
+        '<td>' + esc(p.role) + '</td>' +
+        '<td>' + esc(p.team) + '</td>' +
+        '<td style="text-align:center;">' + trackingLabel + '</td>' +
+        '<td>' + (isLight ? '—' : Math.round(p.proj_pct * 100) + '%') + '</td>' +
+        '<td>' + esc(schedLabel) + '</td>' +
+        '<td style="text-align:center;">' + (isLight ? '—' : '<input type="checkbox"' + ttChecked + ' onchange="toggleTimeTracking(\'' + name.replace(/'/g, "\\'") + '\', this.checked)" style="width:16px;height:16px;cursor:pointer;">') + '</td>' +
+        '<td style="text-align:center;cursor:pointer;" onclick="toggleMemberActive(\'' + name.replace(/'/g, "\\'") + '\')" title="Click to toggle">' + activeLabel + '</td>' +
+        '<td style="text-align:right;white-space:nowrap;">' +
+          '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="openAbsenceEditor(\'' + name.replace(/'/g, "\\'") + '\')">📅 Absences</button>' +
+          '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="openMemberForm(\'edit\',\'' + name.replace(/'/g, "\\'") + '\')">✏️ Edit</button>' +
+          '<button class="settings-btn settings-btn-danger" onclick="deleteMember(\'' + name.replace(/'/g, "\\'") + '\')">🗑</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+
+    panelHtml = '<div class="settings-panel-title">Team members</div>' +
+      '<div class="settings-panel-desc">Manage your team roster, roles, schedules, and tracking settings.</div>' +
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
+        (inactiveCount > 0 ? '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);cursor:pointer;font-weight:600;">' +
+          '<input type="checkbox" id="settings-show-former"' + (includeInactiveSettings ? ' checked' : '') + ' onchange="renderSettingsPage(document.getElementById(\'content-area\'))" style="width:14px;height:14px;cursor:pointer;">' +
+          'Show former (' + inactiveCount + ')' +
+        '</label>' : '') +
+        '<button class="settings-btn settings-btn-primary" onclick="openMemberForm(\'add\')">＋ Add Member</button>' +
       '</div>' +
       '<table class="member-table">' +
         '<thead><tr><th>Name</th><th>Role</th><th>Team</th><th>Tracking</th><th>Project %</th><th>Schedule</th><th style="text-align:center;">⏱️</th><th style="text-align:center;">Status</th><th style="text-align:right;">Actions</th></tr></thead>' +
         '<tbody>' + memberRows + '</tbody>' +
       '</table>' +
-    '</div>';
-
-  // Absence editor section (shown when a member is selected)
-  html += '<div id="settings-absence-section"></div>';
-
-  // ── Dropdown List Editor ──────────────────────────────────────
-  html += '<div class="settings-section">' +
-    '<div class="settings-section-header"><span>Manage Dropdown Lists</span></div>' +
-    '<div class="list-editor-grid">' +
-      '<div id="list-editor-dept"></div>' +
-      '<div id="list-editor-team"></div>' +
-    '</div>' +
-    '<div class="list-editor-note">Changes are saved to ArcGIS Online and shared across all users. Values used in existing projects will always appear in the dropdown even if removed here.</div>' +
-  '</div>';
-
-  // ── Category & Tool Editors ──────────────────────────────────────
-  html += '<div class="settings-section">' +
-    '<div class="settings-section-header"><span>Manage Categories & Tools</span></div>' +
-    '<p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Add, edit, or remove categories and tools. Each item has a name and description. The description appears in the searchable dropdown when creating or editing projects and tasks.</p>' +
-    '<div id="desc-editor-proj-cat" style="margin-bottom:20px;"></div>' +
-    '<div class="list-editor-grid">' +
-      '<div id="desc-editor-task-cat"></div>' +
-      '<div id="desc-editor-task-tool"></div>' +
-    '</div>' +
-    '<div class="list-editor-note">Changes are saved to ArcGIS Online and shared across all users. Values used in existing projects or tasks will always appear in the dropdown even if removed here. The "Help me choose" wizard uses a fixed decision tree — adding items here will make them available in the dropdown but not automatically in the wizard.</div>' +
-  '</div>';
-
-  // ── Allocation Defaults Editor ──────────────────────────────
-  html += '<div class="settings-section">' +
-    '<div class="settings-section-header"><span>Allocation Defaults by Project Size</span></div>' +
-    '<p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Default weekly allocation percentages applied when auto-filling allocations. Values represent the percentage of a person\'s project-available time dedicated to a single project per week.</p>' +
-    '<div id="alloc-defaults-editor"></div>' +
-  '</div>';
-
-  // ── Time Tracking Dashboard ─────────────────────────────
-  var activeNames = allNames.filter(function(n) { return isFullMember(n); });
-  var ttEnabled = activeNames.filter(function(n) { return people[n].time_tracking === true; });
-  var ttWithEntries = ttEnabled.filter(function(n) { return TEAM_TIME_STATS[n] && TEAM_TIME_STATS[n].entryCount > 0; });
-
-  var todayStr = (function() {
-    var d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-  })();
-
-  function ttDaysAgo(dateStr) {
-    if (!dateStr) return 'Never';
-    var d = new Date(dateStr + 'T12:00:00');
-    var now = new Date(); now.setHours(12,0,0,0);
-    var diff = Math.floor((now - d) / 86400000);
-    if (diff === 0) return 'Today';
-    if (diff === 1) return 'Yesterday';
-    if (diff < 7) return diff + ' days ago';
-    return dateStr;
+      '<div id="settings-absence-section"></div>';
   }
 
-  var ttRows = activeNames.map(function(name) {
-    var p = people[name];
-    var enabled = p.time_tracking === true;
-    var stats = TEAM_TIME_STATS[name] || { totalHours: 0, weekHours: 0, lastDate: '', entryCount: 0 };
-    var initials = name.split(' ').map(function(w) { return w[0]; }).join('').slice(0,2).toUpperCase();
+  else if (_settingsSection === 'allocations') {
+    panelHtml = '<div class="settings-panel-title">Allocation defaults</div>' +
+      '<div class="settings-panel-desc">Default weekly allocation percentages applied when auto-filling allocations. Values represent the percentage of a person\'s project-available time dedicated to a single project per week.</div>' +
+      '<div id="alloc-defaults-editor"></div>';
+  }
 
-    var statusBadge = '';
-    if (!enabled) {
-      statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#F3F1EB;color:#9CA3AF;">Disabled</span>';
-    } else if (stats.lastDate === todayStr) {
-      statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#D1FAE5;color:#065F46;">Logging today</span>';
-    } else if (stats.weekHours > 0) {
-      statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#DBEAFE;color:#1E40AF;">Active this week</span>';
-    } else if (stats.entryCount > 0) {
-      statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#FEF3C7;color:#92400E;">Inactive</span>';
-    } else {
-      statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#FEE2E2;color:#991B1B;">No entries</span>';
+  else if (_settingsSection === 'timetracking') {
+    var activeNamesArr = allNames.filter(function(n) { return isFullMember(n); });
+    var ttEnabled = activeNamesArr.filter(function(n) { return people[n].time_tracking === true; });
+    var ttWithEntries = ttEnabled.filter(function(n) { return TEAM_TIME_STATS[n] && TEAM_TIME_STATS[n].entryCount > 0; });
+    var todayStr = (function() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
+    function ttDaysAgo(dateStr) {
+      if (!dateStr) return 'Never';
+      var d = new Date(dateStr + 'T12:00:00');
+      var now = new Date(); now.setHours(12,0,0,0);
+      var diff = Math.floor((now - d) / 86400000);
+      if (diff === 0) return 'Today';
+      if (diff === 1) return 'Yesterday';
+      if (diff < 7) return diff + ' days ago';
+      return dateStr;
     }
+    var ttRows = activeNamesArr.map(function(name) {
+      var p2 = people[name];
+      var enabled = p2.time_tracking === true;
+      var stats = TEAM_TIME_STATS[name] || { totalHours: 0, weekHours: 0, lastDate: '', entryCount: 0 };
+      var initials = name.split(' ').map(function(w) { return w[0]; }).join('').slice(0,2).toUpperCase();
+      var statusBadge = '';
+      if (!enabled) statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#F3F1EB;color:#9CA3AF;">Disabled</span>';
+      else if (stats.lastDate === todayStr) statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#D1FAE5;color:#065F46;">Logging today</span>';
+      else if (stats.weekHours > 0) statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#DBEAFE;color:#1E40AF;">Active this week</span>';
+      else if (stats.entryCount > 0) statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#FEF3C7;color:#92400E;">Inactive</span>';
+      else statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#FEE2E2;color:#991B1B;">No entries</span>';
+      return '<tr>' +
+        '<td style="font-weight:700;color:var(--navy);"><div style="display:flex;align-items:center;gap:8px;"><div style="width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">' + initials + '</div>' + esc(name) + '</div></td>' +
+        '<td style="text-align:center;">' + statusBadge + '</td>' +
+        '<td style="text-align:right;font-weight:700;">' + (enabled ? Math.round(stats.weekHours * 10) / 10 + 'h' : '—') + '</td>' +
+        '<td style="text-align:right;">' + (enabled ? Math.round(stats.totalHours * 10) / 10 + 'h' : '—') + '</td>' +
+        '<td style="text-align:right;color:var(--text-muted);font-size:12px;">' + (enabled ? ttDaysAgo(stats.lastDate) : '—') + '</td>' +
+        '<td style="text-align:right;color:var(--text-muted);">' + (enabled ? stats.entryCount : '—') + '</td>' +
+      '</tr>';
+    }).join('');
 
-    return '<tr>' +
-      '<td style="font-weight:700;color:var(--navy);">' +
-        '<div style="display:flex;align-items:center;gap:8px;">' +
-          '<div style="width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">' + initials + '</div>' +
-          esc(name) +
+    panelHtml = '<div class="settings-panel-title">Time tracking</div>' +
+      '<div class="settings-panel-desc">Monitor team time tracking adoption and activity.</div>' +
+      '<div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">' +
+        '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center;">' +
+          '<div style="font-size:22px;font-weight:800;color:var(--navy);">' + ttEnabled.length + '<span style="font-size:13px;font-weight:600;color:var(--text-muted);">/' + activeNamesArr.length + '</span></div>' +
+          '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Enabled</div>' +
         '</div>' +
-      '</td>' +
-      '<td style="text-align:center;">' + statusBadge + '</td>' +
-      '<td style="text-align:right;font-weight:700;">' + (enabled ? Math.round(stats.weekHours * 10) / 10 + 'h' : '—') + '</td>' +
-      '<td style="text-align:right;">' + (enabled ? Math.round(stats.totalHours * 10) / 10 + 'h' : '—') + '</td>' +
-      '<td style="text-align:right;color:var(--text-muted);font-size:12px;">' + (enabled ? ttDaysAgo(stats.lastDate) : '—') + '</td>' +
-      '<td style="text-align:right;color:var(--text-muted);">' + (enabled ? stats.entryCount : '—') + '</td>' +
-    '</tr>';
-  }).join('');
-
-  html += '<div class="settings-section">' +
-    '<div class="settings-section-header"><span>Time Tracking Dashboard</span></div>' +
-    '<div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">' +
-      '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center;">' +
-        '<div style="font-size:22px;font-weight:800;color:var(--navy);">' + ttEnabled.length + '<span style="font-size:13px;font-weight:600;color:var(--text-muted);">/' + activeNames.length + '</span></div>' +
-        '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Enabled</div>' +
+        '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center;">' +
+          '<div style="font-size:22px;font-weight:800;color:var(--navy);">' + ttWithEntries.length + '</div>' +
+          '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Have logged time</div>' +
+        '</div>' +
+        '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center;">' +
+          '<div style="font-size:22px;font-weight:800;color:var(--navy);">' + Math.round(activeNamesArr.reduce(function(s, n) { return s + ((TEAM_TIME_STATS[n] || {}).weekHours || 0); }, 0) * 10) / 10 + 'h</div>' +
+          '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Team hours this week</div>' +
+        '</div>' +
       '</div>' +
-      '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center;">' +
-        '<div style="font-size:22px;font-weight:800;color:var(--navy);">' + ttWithEntries.length + '</div>' +
-        '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Have Logged Time</div>' +
+      '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:#fff;">' +
+        '<table class="member-table" style="margin:0;">' +
+          '<thead><tr><th style="text-align:left;">Team Member</th><th style="text-align:center;">Status</th><th style="text-align:right;">This Week</th><th style="text-align:right;">All Time</th><th style="text-align:right;">Last Entry</th><th style="text-align:right;">Entries</th></tr></thead>' +
+          '<tbody>' + ttRows + '</tbody>' +
+        '</table>' +
+      '</div>';
+  }
+
+  else if (_settingsSection === 'lists') {
+    panelHtml = '<div class="settings-panel-title">Dropdown lists</div>' +
+      '<div class="settings-panel-desc">Manage Partner Departments and ITD Teams that appear in project forms.</div>' +
+      '<div class="list-editor-grid">' +
+        '<div id="list-editor-dept"></div>' +
+        '<div id="list-editor-team"></div>' +
       '</div>' +
-      '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center;">' +
-        '<div style="font-size:22px;font-weight:800;color:var(--navy);">' + Math.round(activeNames.reduce(function(s, n) { return s + ((TEAM_TIME_STATS[n] || {}).weekHours || 0); }, 0) * 10) / 10 + 'h</div>' +
-        '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Team Hours This Week</div>' +
+      '<div class="list-editor-note">Changes are saved to ArcGIS Online and shared across all users. Values used in existing projects will always appear in the dropdown even if removed here.</div>';
+  }
+
+  else if (_settingsSection === 'categories') {
+    panelHtml = '<div class="settings-panel-title">Categories and tools</div>' +
+      '<div class="settings-panel-desc">Add, edit, or remove categories and tools. Each item has a name and description that appears in the searchable dropdown.</div>' +
+      '<div id="desc-editor-proj-cat" style="margin-bottom:20px;"></div>' +
+      '<div class="list-editor-grid">' +
+        '<div id="desc-editor-task-cat"></div>' +
+        '<div id="desc-editor-task-tool"></div>' +
       '</div>' +
-    '</div>' +
-    '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:#fff;">' +
-      '<table class="member-table" style="margin:0;">' +
-        '<thead><tr>' +
-          '<th style="text-align:left;">Team Member</th>' +
-          '<th style="text-align:center;">Status</th>' +
-          '<th style="text-align:right;">This Week</th>' +
-          '<th style="text-align:right;">All Time</th>' +
-          '<th style="text-align:right;">Last Entry</th>' +
-          '<th style="text-align:right;">Entries</th>' +
-        '</tr></thead>' +
-        '<tbody>' + ttRows + '</tbody>' +
-      '</table>' +
-    '</div>' +
-  '</div>';
+      '<div class="list-editor-note">Changes are saved to ArcGIS Online and shared across all users. The "Help me choose" wizard uses a fixed decision tree — adding items here will make them available in the dropdown but not automatically in the wizard.</div>';
+  }
 
-  // ── AI Features ──────────────────────────────────────────
-  const aiPhaseChecked = _aiPhaseAssignment ? ' checked' : '';
-  html += '<div class="settings-section">' +
-    '<div class="settings-section-header"><span>AI Features</span></div>' +
-    '<div style="display:flex;flex-direction:column;gap:12px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;">' +
-      '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-body);">' +
-        '<input type="checkbox" id="ai-phase-toggle"' + aiPhaseChecked + ' onchange="toggleAiPhaseAssignment(this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy);">' +
-        'AI Phase Assignment' +
-      '</label>' +
-      '<span class="text-muted-sm" style="margin-left:28px;">When enabled, the system will suggest lifecycle phase requirements for newly created tasks using AI. Suggestions appear on the task detail page after creation with Accept/Dismiss options.</span>' +
-    '</div>' +
-  '</div>';
+  else if (_settingsSection === 'ai') {
+    var aiPhaseChecked = _aiPhaseAssignment ? ' checked' : '';
+    panelHtml = '<div class="settings-panel-title">AI features</div>' +
+      '<div class="settings-panel-desc">Configure AI-assisted features across the application.</div>' +
+      '<div style="display:flex;flex-direction:column;gap:12px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;">' +
+        '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-body);">' +
+          '<input type="checkbox" id="ai-phase-toggle"' + aiPhaseChecked + ' onchange="toggleAiPhaseAssignment(this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy);">' +
+          'AI Phase Assignment' +
+        '</label>' +
+        '<span class="text-muted-sm" style="margin-left:28px;">When enabled, the system will suggest lifecycle phase requirements for newly created tasks using AI. Suggestions appear on the task detail page after creation with Accept/Dismiss options.</span>' +
+      '</div>';
+  }
 
-  // ── Developer Mode ──────────────────────────────────────
-  const devChecked = Auth.devMode ? ' checked' : '';
-  html += '<div class="settings-section">' +
-    '<div class="settings-section-header"><span>Developer Mode</span></div>' +
-    '<div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;">' +
-      '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-body);">' +
-        '<input type="checkbox" id="dev-mode-toggle"' + devChecked + ' onchange="toggleDevMode(this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy);">' +
-        'Enable Developer Mode' +
-      '</label>' +
-      '<span class="text-muted-sm">Activates advanced tools across the application. Currently enables: Edit History on project timelines.</span>' +
-    '</div>' +
-  '</div>';
+  else if (_settingsSection === 'developer') {
+    var devChecked = Auth.devMode ? ' checked' : '';
+    panelHtml = '<div class="settings-panel-title">Developer</div>' +
+      '<div class="settings-panel-desc">Advanced tools and diagnostic features.</div>' +
+      '<div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;">' +
+        '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-body);">' +
+          '<input type="checkbox" id="dev-mode-toggle"' + devChecked + ' onchange="toggleDevMode(this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy);">' +
+          'Enable Developer Mode' +
+        '</label>' +
+        '<span class="text-muted-sm">Activates advanced tools across the application. Currently enables: Edit History on project timelines.</span>' +
+      '</div>';
+  }
 
-  html += '</div>';
+  area.innerHTML = '<div class="settings-page">' + navHtml + '<div class="settings-panel">' + panelHtml + '</div></div>';
 
-  area.innerHTML = html;
-
-  // Render the dropdown list editors
-  renderListEditor('list-editor-dept', 'Partner Departments', _customPartnerDepts, 'dept');
-  renderListEditor('list-editor-team', 'ITD Teams', _customItdTeams, 'team');
-
-  // Render the category & tool editors
-  renderDescListEditor('proj_cat');
-  renderDescListEditor('task_cat');
-  renderDescListEditor('task_tool');
-
-  // Render allocation defaults editor
-  renderAllocDefaultsEditor();
-
-  // If a member was selected for absence editing, re-render that section
-  if (Editor.selectedMember && people[Editor.selectedMember]) {
+  // Post-render initializations for active section
+  if (_settingsSection === 'lists') {
+    renderListEditor('list-editor-dept', 'Partner Departments', _customPartnerDepts, 'dept');
+    renderListEditor('list-editor-team', 'ITD Teams', _customItdTeams, 'team');
+  }
+  if (_settingsSection === 'categories') {
+    renderDescListEditor('proj_cat');
+    renderDescListEditor('task_cat');
+    renderDescListEditor('task_tool');
+  }
+  if (_settingsSection === 'allocations') {
+    renderAllocDefaultsEditor();
+  }
+  if (_settingsSection === 'team' && Editor.selectedMember && people[Editor.selectedMember]) {
     renderAbsenceEditor(Editor.selectedMember);
   }
 }
