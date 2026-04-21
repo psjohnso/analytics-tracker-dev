@@ -3397,7 +3397,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0074';
+const APP_VERSION = '0.11.0.0075';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13300,7 +13300,7 @@ function buildGanttBars() {
     const rightPct = ganttPct(g.end || todayStr);
     const barWidth = Math.max(1, rightPct - leftPct);
     const isOverdue = g.end && g.end < todayStr;
-    const isCollapsed = _ganttCollapsed[g.title];
+    const isCollapsed = !_ganttCollapsed[g.title];
     const hasTasks = g.tasks && g.tasks.length > 0;
     const arrow = hasTasks ? (isCollapsed ? '▶' : '▼') : '•';
     const arrowClick = hasTasks ? ' onclick="event.stopPropagation();toggleGanttCollapse(\'' + esc(g.title).replace(/'/g, "\\'") + '\')" style="cursor:pointer;margin-right:4px;font-size:9px;opacity:0.6;user-select:none;"' : ' style="margin-right:4px;font-size:7px;opacity:0.4;"';
