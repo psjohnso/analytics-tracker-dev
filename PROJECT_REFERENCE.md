@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.11.0.0078 (see Version History at bottom)
+> **Current Version:** 0.11.1.0001 (see Version History at bottom)
 
 ---
 
@@ -1224,7 +1224,23 @@ git push origin main
 
 ## 18. Development Conventions
 
-- **Version format:** `MAJOR.MINOR.PATCH.BUILD` — BUILD resets to 0000 when any preceding number changes
+- **Version format:** `MAJOR.MINOR.PATCH.BUILD`
+
+  | Part | Increment when… | Resets… | Examples |
+  |------|-----------------|---------|----------|
+  | **Major** | App reaches a new maturity stage (e.g., production-ready, major architecture overhaul) | Minor, Patch, Build | `0` → `1` at full team rollout |
+  | **Minor** | A new capability area is introduced — something the app couldn't do before | Patch, Build | Phase lifecycle, time tracking, issues tab, strategic alignment |
+  | **Patch** | An existing feature area is meaningfully improved — a focused round of refinements, UX overhauls, or important bug fixes to one area | Build | My Work tab role grouping overhaul, filter system rework, allocation editor fixes |
+  | **Build** | Any individual commit — a single discrete change | Nothing | One bug fix, one UI tweak, one new dropdown |
+
+  **Decision guide for Claude:** Before assigning a version number, evaluate the change:
+  1. Does it add something the app fundamentally couldn't do before? → **Minor** bump
+  2. Does it noticeably improve an existing capability (not just a one-line fix)? → **Patch** bump if this is the first change in a new improvement round, otherwise **Build**
+  3. Is it a single fix, tweak, or small addition within an ongoing round? → **Build** bump
+
+  A patch round starts when work shifts to improving an existing area. Subsequent individual changes within that round increment Build. When a new round begins on a different area, bump Patch again.
+
+  Claude makes these determinations autonomously based on the nature of each change.
 - **Git commit:** Include version number and description in every commit
 - **After every change:**
   1. Check if `guide.html` needs updating
@@ -1471,6 +1487,7 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.11.0.0076 | Fix: allocation editor now cross-references project status against live PROJECTS array instead of stale cached status from RESOURCES_DATA; changing a project to Canceled/Complete immediately removes it from the allocation editor without requiring a full page reload |
 | 0.11.0.0077 | Timeline section grouped by role: Leading, Contributing, Reviewing with role headers |
 | 0.11.0.0078 | Fix: allocation editor totals row moved from separate flex div to table tfoot with sticky positioning; guaranteed column alignment with project rows; eliminates scrollbar-width offset issue |
+| 0.11.1.0001 | AI Phase Assignment feature: admin toggle in Settings (stored in app_config); suggestPhaseRequirements() calls Cloudflare Worker after task creation; suggestion panel on task detail page with Accept/Dismiss buttons; fires only on new tasks without manual phase requirements |
 
 ---
 

@@ -3399,7 +3399,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0078';
+const APP_VERSION = '0.11.1.0001';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9660,7 +9660,13 @@ async function handleFormSubmit(andDownload) {
   // After an EDIT: just show the updated grid (filters already cleared above)
   if (!isEdit) {
     if (isProject && Editor.editId) openProject(Editor.editId);
-    else if (!isProject && Editor.editId) openTask(Editor.editId);
+    else if (!isProject && Editor.editId) {
+      openTask(Editor.editId);
+      // Fire AI phase suggestion if enabled, task has a project, and no phase reqs were set
+      if (_aiPhaseAssignment && fields.project && !fields.phase_requirements) {
+        suggestPhaseRequirements(Editor.editId);
+      }
+    }
   }
 }
 
@@ -9698,6 +9704,125 @@ function confirmDeleteTask(taskId) {
 }
 
 async function ensureProjectContributor(projectTitle, memberName) {
+
+// ── AI Phase Requirement Suggestion ──────────────────────────────
+async function suggestPhaseRequirements(taskId) {
+  var task = TASKS.find(function(t) { return t.objectId == taskId; });
+  if (!task || !task.project) return;
+  var proj = PROJECTS.find(function(p) { return p.title === task.project; });
+  if (!proj) return;
+
+  // Show loading indicator on the task detail page
+  var panel = document.getElementById('ai-phase-suggest');
+  if (!panel) return;
+  panel.style.display = '';
+  panel.innerHTML = '<div style="text-align:center;padding:16px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;">' +
+    '<div style="font-size:20px;margin-bottom:6px;">🤔</div>' +
+    '<div style="font-size:12px;color:#92400E;font-weight:600;">Analyzing task for phase assignment…</div>' +
+    '<div style="font-size:11px;color:#92400E;opacity:0.7;margin-top:4px;">This may take a few seconds.</div></div>';
+
+  // Build a compact requirements reference
+  var reqList = LIFECYCLE_PHASES.map(function(phase) {
+    return 'Phase ' + phase.id + ' — ' + phase.name + ':\n' +
+      phase.requirements.map(function(r) { return '  ' + r.id + ': ' + r.label; }).join('\n');
+  }).join('\n');
+
+  var prompt = 'You are a project lifecycle advisor for a city government data analytics team. ' +
+    'Analyze the following task and determine which project lifecycle phase requirement(s) it satisfies.\n\n' +
+    'TASK:\n' +
+    'Title: ' + task.title + '\n' +
+    'Category: ' + (task.category || 'Not set') + '\n' +
+    'Description: ' + (task.description || 'Not provided') + '\n\n' +
+    'PROJECT CONTEXT:\n' +
+    'Project: ' + proj.title + '\n' +
+    'Status: ' + (proj.status || 'Unknown') + '\n' +
+    'Category: ' + (proj.category || 'Not set') + '\n\n' +
+    'LIFECYCLE PHASE REQUIREMENTS:\n' + reqList + '\n\n' +
+    'RULES:\n' +
+    '- Select 1-3 requirements that this task DIRECTLY satisfies. Most tasks satisfy exactly 1.\n' +
+    '- Only select requirements where the task\'s work is a clear, direct contribution to completing that requirement.\n' +
+    '- Do NOT force-fit. If no requirement clearly matches, return an empty array.\n' +
+    '- Consider the task title and description most heavily. Category is a secondary signal.\n' +
+    '- A task can span multiple phases if it genuinely contributes to requirements in different phases.\n\n' +
+    'Respond ONLY with a JSON object (no markdown, no backticks):\n' +
+    '{"requirements": [{"id": "P1_GOALS", "reason": "brief reason why this task satisfies this requirement"}]}';
+
+  try {
+    if (AI_PROXY_URL.includes('YOUR_SUBDOMAIN')) {
+      throw new Error('AI proxy not configured.');
+    }
+    var response = await fetch(AI_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 300, messages: [{ role: 'user', content: prompt }] })
+    });
+    var data = await response.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+
+    var text = (data.content || []).map(function(c) { return c.text || ''; }).join('');
+    var clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    var objStart = clean.indexOf('{');
+    var objEnd = clean.lastIndexOf('}');
+    if (objStart === -1 || objEnd === -1) throw new Error('Could not find JSON in response.');
+    var result = JSON.parse(clean.substring(objStart, objEnd + 1));
+
+    var suggestions = (result.requirements || []).filter(function(s) {
+      return s.id && REQUIREMENT_LOOKUP[s.id];
+    });
+
+    if (suggestions.length === 0) {
+      panel.innerHTML = '<div style="padding:12px 16px;background:#F3F1EB;border:1px solid #E8E6DF;border-radius:8px;font-size:12px;color:var(--text-muted);">' +
+        '✨ AI analyzed this task but no clear phase requirement match was found. You can assign one manually via Edit.</div>';
+      setTimeout(function() { if (panel) panel.style.display = 'none'; }, 5000);
+      return;
+    }
+
+    // Store suggestions for accept handler
+    window._pendingPhaseSuggestions = { taskId: taskId, suggestions: suggestions };
+
+    // Render suggestion panel
+    var sugHtml = '<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:14px 16px;">';
+    sugHtml += '<div style="font-size:13px;font-weight:700;color:#92400E;margin-bottom:8px;">✨ Suggested Phase Requirements</div>';
+    suggestions.forEach(function(s) {
+      var info = REQUIREMENT_LOOKUP[s.id];
+      sugHtml += '<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #FDE68A;">';
+      sugHtml += '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#EEF2FF;color:var(--navy);white-space:nowrap;flex-shrink:0;">Phase ' + info.phaseId + '</span>';
+      sugHtml += '<div><div style="font-size:12px;font-weight:600;color:var(--text-body);">' + esc(info.label) + '</div>';
+      if (s.reason) sugHtml += '<div style="font-size:11px;color:#92400E;margin-top:2px;">' + esc(s.reason) + '</div>';
+      sugHtml += '</div></div>';
+    });
+    sugHtml += '<div style="display:flex;gap:8px;margin-top:10px;">';
+    sugHtml += '<button onclick="acceptPhaseSuggestions()" style="padding:6px 16px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Accept</button>';
+    sugHtml += '<button onclick="dismissPhaseSuggestions()" style="padding:6px 16px;background:#F3F1EB;color:var(--text-body);border:1px solid #E8E6DF;border-radius:6px;font-size:12px;font-weight:600;font-family:Lato,sans-serif;cursor:pointer;">Dismiss</button>';
+    sugHtml += '</div></div>';
+    panel.innerHTML = sugHtml;
+  } catch (err) {
+    console.error('[AI Phase] Error:', err);
+    panel.innerHTML = '<div style="padding:12px 16px;background:#FEE2E2;border:1px solid #FECACA;border-radius:8px;font-size:12px;color:#991B1B;">AI phase suggestion failed: ' + esc(err.message) + '</div>';
+    setTimeout(function() { if (panel) panel.style.display = 'none'; }, 5000);
+  }
+}
+
+async function acceptPhaseSuggestions() {
+  var pending = window._pendingPhaseSuggestions;
+  if (!pending) return;
+  var reqIds = pending.suggestions.map(function(s) { return s.id; }).join(', ');
+  try {
+    await DataStore.updateTask(pending.taskId, { phase_requirements: reqIds });
+    showToast('Phase requirements assigned.', 'success');
+    window._pendingPhaseSuggestions = null;
+    markDataDirty();
+    render();
+  } catch (err) {
+    showToast('Failed to save: ' + err.message, 'error');
+  }
+}
+
+function dismissPhaseSuggestions() {
+  window._pendingPhaseSuggestions = null;
+  var panel = document.getElementById('ai-phase-suggest');
+  if (panel) panel.style.display = 'none';
+}
   if (!projectTitle || !memberName) return;
   var proj = PROJECTS.find(function(p) { return p.title === projectTitle; });
   if (!proj) return;
@@ -10480,6 +10605,8 @@ function renderTaskDetail(idx) {
         }).join('');
         return '<div class="detail-section"><div class="detail-section-label">Lifecycle requirements</div>' + chips + '</div>';
       })()}
+
+      <div id="ai-phase-suggest" style="display:none;margin:0 0 16px;"></div>
 
       ${proj ? `<div class="detail-section">
         <div class="detail-section-label">Parent Project</div>
@@ -11696,6 +11823,9 @@ let _allocationDefaults = {
   XL: { Lead: 50, Contributor: 30, Reviewer: 10 }
 };
 
+// ── AI Settings ─────────────────────────────────────────────────
+let _aiPhaseAssignment = false;
+
 // ── Size Wizard Data ────────────────────────────────────────────
 const SIZE_WIZARD_QUESTIONS = [
   { label: 'Step 1 of 4', question: 'How long do you expect this project to take?',
@@ -11856,6 +11986,12 @@ function applyAppConfig(features) {
           _configOids.allocation_defaults = oid;
           console.log('[Config] Loaded allocation_defaults:', JSON.stringify(parsed));
         }
+        return;
+      }
+      if (key === 'ai_phase_assignment') {
+        _aiPhaseAssignment = !!parsed;
+        _configOids.ai_phase_assignment = oid;
+        console.log('[Config] Loaded ai_phase_assignment:', _aiPhaseAssignment);
         return;
       }
       if (!Array.isArray(parsed)) return;
@@ -14154,6 +14290,12 @@ function toggleDevMode(enabled) {
   }
 }
 
+async function toggleAiPhaseAssignment(enabled) {
+  _aiPhaseAssignment = enabled;
+  var ok = await saveConfigKey('ai_phase_assignment', enabled);
+  if (ok) showToast('AI Phase Assignment ' + (enabled ? 'enabled' : 'disabled') + '.', 'success');
+}
+
 // Restore dev mode from session on load
 if (sessionStorage.getItem('dev_mode') === '1') Auth.devMode = true;
 
@@ -14337,6 +14479,19 @@ function renderSettingsPage(area) {
         '</tr></thead>' +
         '<tbody>' + ttRows + '</tbody>' +
       '</table>' +
+    '</div>' +
+  '</div>';
+
+  // ── AI Features ──────────────────────────────────────────
+  const aiPhaseChecked = _aiPhaseAssignment ? ' checked' : '';
+  html += '<div class="settings-section">' +
+    '<div class="settings-section-header"><span>AI Features</span></div>' +
+    '<div style="display:flex;flex-direction:column;gap:12px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;">' +
+      '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-body);">' +
+        '<input type="checkbox" id="ai-phase-toggle"' + aiPhaseChecked + ' onchange="toggleAiPhaseAssignment(this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy);">' +
+        'AI Phase Assignment' +
+      '</label>' +
+      '<span class="text-muted-sm" style="margin-left:28px;">When enabled, the system will suggest lifecycle phase requirements for newly created tasks using AI. Suggestions appear on the task detail page after creation with Accept/Dismiss options.</span>' +
     '</div>' +
   '</div>';
 
