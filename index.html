@@ -3399,7 +3399,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.1.0003';
+const APP_VERSION = '0.11.1.0005';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -5091,7 +5091,16 @@ function renderOverview(area) {
   TASKS.forEach(t => { if(t.assignee && isActiveName(t.assignee)) byMember[t.assignee] = (byMember[t.assignee]||0)+(parseFloat(t.Hours_Worked)||0); });
   const totalHours = Object.values(byMember).reduce((a,b)=>a+b,0);
 
-  const statCards = Object.entries(statuses).map(([s,c]) => {
+  const statusOrder = ['Active', 'Scheduled', 'On Hold', 'Future', 'Idea', 'Complete', 'Canceled'];
+  const statusEntries = statusOrder
+    .filter(function(s) { return statuses[s]; })
+    .map(function(s) { return [s, statuses[s]]; });
+  // Include any statuses not in the predefined order
+  Object.entries(statuses).forEach(function(e) {
+    if (statusOrder.indexOf(e[0]) === -1) statusEntries.push(e);
+  });
+
+  const statCards = statusEntries.map(([s,c]) => {
     const pct = Math.round(c/PROJECTS.length*100);
     const color = STATUS_COLOR(s)||'#9CA3AF';
     return `<div class="stat-card">
@@ -10075,6 +10084,10 @@ async function batchDeleteTasks() {
 // ── Bootstrap ──
 // ── Application Init: Authenticate, then load ArcGIS Online data ──
 (async function appInit() {
+  // Prevent browser from restoring scroll position on reload
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.scrollTo(0, 0);
+
   // Display version
   const versionEl = document.getElementById('app-version');
   if (versionEl) versionEl.textContent = 'v' + APP_VERSION;
@@ -10130,6 +10143,7 @@ async function batchDeleteTasks() {
 
   markDataDirty();
   render(); // re-render with time data
+  window.scrollTo(0, 0); // ensure page starts at top after full load
 })();
 
 
@@ -13357,8 +13371,12 @@ function expandGantt() {
 
 function toggleTaskView(mode) {
   _taskViewMode = mode;
-  markDataDirty();
-  render();
+  // Re-render the detail page in place without scrolling to top
+  var area = document.getElementById('content-area');
+  if (currentDetail && currentDetail.type === 'project' && area) {
+    area.innerHTML = renderProjectDetail(currentDetail.id);
+    initSearchableSelect('batch-project');
+  }
 }
 
 function toggleGantt() {
