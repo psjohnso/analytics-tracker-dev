@@ -3390,7 +3390,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0069';
+const APP_VERSION = '0.11.0.0070';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13127,6 +13127,15 @@ async function inlineTaskDueDate(inputEl) {
   }
 }
 
+function expandGantt() {
+  var gp = document.getElementById('mywork-gantt');
+  var ga = document.getElementById('gantt-arrow');
+  if (gp && gp.style.display === 'none') {
+    gp.style.display = '';
+    if (ga) ga.textContent = '▼';
+  }
+}
+
 function toggleGantt() {
   const panel = document.getElementById('mywork-gantt');
   const arrow = document.getElementById('gantt-arrow');
@@ -13674,7 +13683,8 @@ function renderMyWork(area) {
   html += '<div class="mywork-jump-nav">';
   html += '<a href="#" class="mywork-jump-link" onclick="event.preventDefault();window.scrollTo({top:0,behavior:\'smooth\'});">↑ Top</a>';
   jumpLinks.forEach(function(link) {
-    html += '<a href="#' + link.id + '" class="mywork-jump-link" onclick="event.preventDefault();var el=document.getElementById(\'' + link.id + '\');if(el){var sh=document.querySelector(\'.mywork-sticky-header\');var offset=64+49+(sh?sh.offsetHeight:0)+10;var y=el.getBoundingClientRect().top+window.pageYOffset-offset;window.scrollTo({top:y,behavior:\'smooth\'});}">' + link.label + '</a>';
+    var extraAction = link.id === 'mw-timeline' ? 'expandGantt();' : '';
+    html += '<a href="#' + link.id + '" class="mywork-jump-link" onclick="event.preventDefault();' + extraAction + 'var el=document.getElementById(\'' + link.id + '\');if(el){var sh=document.querySelector(\'.mywork-sticky-header\');var offset=64+49+(sh?sh.offsetHeight:0)+10;var y=el.getBoundingClientRect().top+window.pageYOffset-offset;window.scrollTo({top:y,behavior:\'smooth\'});}">' + link.label + '</a>';
   });
   html += '</div>';
 
