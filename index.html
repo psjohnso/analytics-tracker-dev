@@ -3397,7 +3397,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0076';
+const APP_VERSION = '0.11.0.0077';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13299,8 +13299,24 @@ function buildGanttBars() {
     html += '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:12px;">No projects selected. Use the checkboxes above to show projects.</div>';
   }
 
+  // Group by role: Leading first, then Contributing, then Reviewing
+  var roleOrder = ['Leading', 'Contributing', 'Reviewing'];
+  var roleStyles = {
+    'Leading': { color: '#0C447C', bg: '#E6F1FB', border: '#185FA5' },
+    'Contributing': { color: '#444441', bg: '#F1EFE8', border: '#888780' },
+    'Reviewing': { color: '#3C3489', bg: '#EEEDFE', border: '#534AB7' }
+  };
+  var hasMultipleRoles = roleOrder.filter(function(r) { return ganttItems.some(function(g) { return g.role === r; }); }).length > 1;
+
   // Rows
-  ganttItems.forEach(function(g) {
+  roleOrder.forEach(function(role) {
+    var roleItems = ganttItems.filter(function(g) { return g.role === role; });
+    if (roleItems.length === 0) return;
+    var rs = roleStyles[role];
+    if (hasMultipleRoles) {
+      html += '<div style="border-left:4px solid ' + rs.border + ';padding:4px 10px;margin:8px 0 4px;background:' + rs.bg + ';font-size:12px;font-weight:700;color:' + rs.color + ';">' + role + ' (' + roleItems.length + ')</div>';
+    }
+    roleItems.forEach(function(g) {
     const sc = STATUS_COLOR(g.status) || '#3B82F6';
     const leftPct = ganttPct(g.start || todayStr);
     const rightPct = ganttPct(g.end || todayStr);
@@ -13341,6 +13357,7 @@ function buildGanttBars() {
 
     html += '<div style="height:6px;"></div>';
   });
+  }); // end roleOrder.forEach
 
   // Today marker
   if (todayPct > 0 && todayPct < 100) {
@@ -14013,9 +14030,17 @@ function renderMyWork(area) {
     const projTasks = myTasks.filter(function(t) {
       return (t.project === p.title) && t.status !== 'Complete' && t.status !== 'Canceled';
     });
+    // Determine role
+    var role = 'Contributing';
+    if (p.contact === name) {
+      role = 'Leading';
+    } else if (RESOURCES_DATA && RESOURCES_DATA.people[name] && RESOURCES_DATA.people[name].allocations) {
+      var alloc = RESOURCES_DATA.people[name].allocations.find(function(a) { return a.project === p.title; });
+      if (alloc && alloc.role === 'Reviewer') role = 'Reviewing';
+    }
     ganttItems.push({
       type: 'project', id: p.objectId, title: p.title, status: p.status,
-      start: pStart, end: pEnd, tasks: projTasks
+      start: pStart, end: pEnd, tasks: projTasks, role: role
     });
   });
 
