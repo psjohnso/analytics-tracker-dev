@@ -3399,7 +3399,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.1.0002';
+const APP_VERSION = '0.11.1.0003';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -10305,7 +10305,15 @@ function renderProjectDetail(id) {
       <div style="text-align:center;" onclick="event.stopPropagation()">
         <input type="checkbox" class="batch-task-cb" data-task-id="${t.objectId}" onchange="updateBatchBar()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--navy);">
       </div>
-      <div class="detail-task-title" onclick="openTaskFromProject(${t.objectId})" style="cursor:pointer;">${projectNumChip(t.task_number)}${esc(t.title)}${t.resolution ? '<div style="font-size:11px;font-weight:400;color:var(--text-muted);margin-top:2px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + esc(t.resolution.length > 150 ? t.resolution.slice(0, 150) + '…' : t.resolution) + '</div>' : ''}</div>
+      <div class="detail-task-title" onclick="openTaskFromProject(${t.objectId})" style="cursor:pointer;">${(() => {
+        var reqs = parsePhaseReqs(t);
+        var phaseChip = '';
+        if (reqs.length > 0) {
+          var info = REQUIREMENT_LOOKUP[reqs[0]];
+          if (info) phaseChip = '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#EEEDFE;color:#3C3489;margin-right:6px;white-space:nowrap;">P' + info.phaseId + '</span>';
+        }
+        return phaseChip;
+      })()}${projectNumChip(t.task_number)}${esc(t.title)}${t.resolution ? '<div style="font-size:11px;font-weight:400;color:var(--text-muted);margin-top:2px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + esc(t.resolution.length > 150 ? t.resolution.slice(0, 150) + '…' : t.resolution) + '</div>' : ''}</div>
       <div onclick="event.stopPropagation()">
         <select class="mw-status-select" data-type="task" data-id="${t.objectId}" onchange="mwQuickStatus(this)" style="font-size:10px;padding:2px 4px;min-width:100px;background:${sc2}18;color:${sc2};border-color:${sc2}44;">
           ${['Active','Pending','On Hold','Waiting for Response','Complete','Canceled'].map(function(s) { return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('')}
@@ -10497,17 +10505,30 @@ function renderProjectDetail(id) {
         </div>
         <div class="detail-tasks-table">
           ${(() => {
-            var phaseHtml = (p.status === 'Active' || p.status === 'Scheduled') ? renderPhaseGroupedTasks(p.title, relTasks) : '';
-            if (phaseHtml) {
-              return `<div class="detail-tasks-header">
-                <div style="text-align:center;"><input type="checkbox" id="batch-select-all" onchange="toggleSelectAllTasks(this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:#fff;" title="Select all"></div>
-                <div>Task</div><div>Status</div><div>Priority</div><div>Assignee</div><div>Due Date</div><div>Hours</div>
-              </div>` + phaseHtml + projHrsRow;
+            var isActiveOrScheduled = p.status === 'Active' || p.status === 'Scheduled';
+            var phaseHtml = isActiveOrScheduled ? renderPhaseGroupedTasks(p.title, relTasks) : '';
+            var hasPhaseView = !!phaseHtml;
+            var showPhaseView = hasPhaseView && _taskViewMode === 'phase';
+
+            var toggleBtns = '';
+            if (hasPhaseView && relTasks.length > 0) {
+              var listActive = _taskViewMode === 'list' ? 'background:var(--navy);color:#fff;border-color:var(--navy);' : '';
+              var phaseActive = _taskViewMode === 'phase' ? 'background:var(--navy);color:#fff;border-color:var(--navy);' : '';
+              toggleBtns = '<div style="display:flex;gap:4px;margin-bottom:8px;">' +
+                '<button onclick="toggleTaskView(\'list\')" style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-family:Lato,sans-serif;' + listActive + '">List view</button>' +
+                '<button onclick="toggleTaskView(\'phase\')" style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-family:Lato,sans-serif;' + phaseActive + '">Phase view</button>' +
+              '</div>';
             }
-            return (relTasks.length ? `<div class="detail-tasks-header">
+
+            var header = relTasks.length ? `<div class="detail-tasks-header">
               <div style="text-align:center;"><input type="checkbox" id="batch-select-all" onchange="toggleSelectAllTasks(this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:#fff;" title="Select all"></div>
               <div>Task</div><div>Status</div><div>Priority</div><div>Assignee</div><div>Due Date</div><div>Hours</div>
-            </div>` : '') + taskRows + projHrsRow;
+            </div>` : '';
+
+            if (showPhaseView) {
+              return toggleBtns + header + phaseHtml + projHrsRow;
+            }
+            return toggleBtns + header + taskRows + projHrsRow;
           })()}
         </div>
       </div>
@@ -13185,6 +13206,7 @@ function toggleEditTimeEntry(oid) {
 
 let _myWorkViewUser = null; // Admin view-as override; null = view own work
 let _ganttFilter = {};     // { projectTitle: true/false } — which projects show on gantt; empty = all visible
+let _taskViewMode = 'list'; // 'list' or 'phase' — controls task display on project detail page
 let _ganttCollapsed = {};  // { projectTitle: true/false } — which projects have tasks hidden
 
 function getMyProjects(viewName) {
@@ -13331,6 +13353,12 @@ function expandGantt() {
     gp.style.display = '';
     if (ga) ga.textContent = '▼';
   }
+}
+
+function toggleTaskView(mode) {
+  _taskViewMode = mode;
+  markDataDirty();
+  render();
 }
 
 function toggleGantt() {
