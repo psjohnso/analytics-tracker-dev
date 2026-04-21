@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.11.0.0073 (see Version History at bottom)
+> **Current Version:** 0.11.0.0074 (see Version History at bottom)
 
 ---
 
@@ -1466,6 +1466,7 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.11.0.0071 | Timeline font sizes increased: project names 11px→13px, task names 10px→12px, task count 9px→10px |
 | 0.11.0.0072 | Issues tab: added User Testing status between In Progress and Done; replaced advance button with status dropdown; changeIssueStatus replaces advanceIssueStatus |
 | 0.11.0.0073 | Auto-add task assignee as project contributor: ensureProjectContributor helper called from form save, inline assignee change, and batch update |
+| 0.11.0.0074 | Attention Needed: split alerts by type (Projects/Tasks) within each role group; type sub-headers with blue (projects) and teal (tasks) accents; card left-border color matches type; removed redundant type label prefix from card titles |
 
 ---
 
