@@ -3399,7 +3399,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.1.0004';
+const APP_VERSION = '0.11.1.0003';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13357,12 +13357,8 @@ function expandGantt() {
 
 function toggleTaskView(mode) {
   _taskViewMode = mode;
-  // Re-render the detail page in place without scrolling to top
-  var area = document.getElementById('content-area');
-  if (currentDetail && currentDetail.type === 'project' && area) {
-    area.innerHTML = renderProjectDetail(currentDetail.id);
-    initSearchableSelect('batch-project');
-  }
+  markDataDirty();
+  render();
 }
 
 function toggleGantt() {
