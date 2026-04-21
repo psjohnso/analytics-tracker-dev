@@ -3397,7 +3397,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0074';
+const APP_VERSION = '0.11.0.0076';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -5630,6 +5630,12 @@ function renderResources(area) {
       hours:        new Array(N).fill(0),
       analytics_id: proj.id,
     };
+  });
+  // Cross-reference allocation status with live PROJECTS array
+  // (allocation records cache project_status from load time, which can be stale)
+  Object.keys(allocsByName).forEach(function(projTitle) {
+    var liveProj = PROJECTS.find(function(pr) { return pr.title === projTitle; });
+    if (liveProj) allocsByName[projTitle].status = liveProj.status;
   });
   const allocs = Object.values(allocsByName).filter(a => a.status === 'Active' || a.status === 'On Hold');
 
@@ -13300,7 +13306,7 @@ function buildGanttBars() {
     const rightPct = ganttPct(g.end || todayStr);
     const barWidth = Math.max(1, rightPct - leftPct);
     const isOverdue = g.end && g.end < todayStr;
-    const isCollapsed = _ganttCollapsed[g.title];
+    const isCollapsed = !_ganttCollapsed[g.title];
     const hasTasks = g.tasks && g.tasks.length > 0;
     const arrow = hasTasks ? (isCollapsed ? '▶' : '▼') : '•';
     const arrowClick = hasTasks ? ' onclick="event.stopPropagation();toggleGanttCollapse(\'' + esc(g.title).replace(/'/g, "\\'") + '\')" style="cursor:pointer;margin-right:4px;font-size:9px;opacity:0.6;user-select:none;"' : ' style="margin-right:4px;font-size:7px;opacity:0.4;"';
