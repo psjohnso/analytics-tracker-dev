@@ -1942,6 +1942,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .issue-status-Submitted { background:#FEF3C7; color:#92400E; }
 .issue-status-Accepted { background:#DBEAFE; color:#1E40AF; }
 .issue-status-InProgress { background:#F0E6FF; color:#6B21A8; }
+.issue-status-UserTesting { background:#FFF1E6; color:#9A3412; }
 .issue-status-Done { background:#D1FAE5; color:#065F46; }
 .issue-priority-chip { font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; background:#F3F1EB; color:#374151; }
 .issue-card-actions { display:flex; gap:4px; margin-left:auto; flex-shrink:0; }
@@ -3390,7 +3391,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0071';
+const APP_VERSION = '0.11.0.0072';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -15215,11 +15216,12 @@ function buildIssuesPage() {
 
       // Actions
       html += '<div class="issue-card-actions">';
-      var statuses = ['Submitted', 'Accepted', 'In Progress', 'Done'];
-      var nextIdx = statuses.indexOf(iss.status) + 1;
-      if (nextIdx > 0 && nextIdx < statuses.length) {
-        html += '<button class="issue-action-btn" onclick="advanceIssueStatus(' + iss.objectId + ')" title="Move to ' + statuses[nextIdx] + '">→ ' + statuses[nextIdx] + '</button>';
-      }
+      var statuses = ['Submitted', 'Accepted', 'In Progress', 'User Testing', 'Done'];
+      html += '<select class="issue-action-btn" style="padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:11px;font-weight:600;font-family:Lato,sans-serif;cursor:pointer;color:var(--navy);" onchange="changeIssueStatus(' + iss.objectId + ',this.value)" onclick="event.stopPropagation()">';
+      statuses.forEach(function(s) {
+        html += '<option value="' + s + '"' + (iss.status === s ? ' selected' : '') + '>' + s + '</option>';
+      });
+      html += '</select>';
       html += '<button class="issue-action-btn" onclick="openIssueForm(' + iss.objectId + ')" title="Edit">✏</button>';
       html += '<button class="issue-action-btn" onclick="deleteIssue(' + iss.objectId + ')" title="Delete" style="color:#EF4444;">🗑</button>';
       html += '</div>';
@@ -15277,7 +15279,7 @@ function openIssueForm(issueId) {
     html += '<div class="issue-form-field">';
     html += '<label class="issue-form-label">Status</label>';
     html += '<select id="issue-status" class="fm-input">';
-    ['Submitted', 'Accepted', 'In Progress', 'Done'].forEach(function(s) {
+    ['Submitted', 'Accepted', 'In Progress', 'User Testing', 'Done'].forEach(function(s) {
       html += '<option value="' + s + '"' + (iss.status === s ? ' selected' : '') + '>' + s + '</option>';
     });
     html += '</select></div>';
@@ -15350,13 +15352,9 @@ async function submitIssueForm() {
   }
 }
 
-async function advanceIssueStatus(issueId) {
+async function changeIssueStatus(issueId, newStatus) {
   var iss = ISSUES.find(function(i) { return i.objectId == issueId; });
-  if (!iss) return;
-  var statuses = ['Submitted', 'Accepted', 'In Progress', 'Done'];
-  var idx = statuses.indexOf(iss.status);
-  if (idx < 0 || idx >= statuses.length - 1) return;
-  var newStatus = statuses[idx + 1];
+  if (!iss || iss.status === newStatus) return;
 
   var attrs = { OBJECTID: issueId, status: newStatus };
   if (newStatus === 'Done') {
