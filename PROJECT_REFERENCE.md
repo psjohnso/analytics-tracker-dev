@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.12.0.0004 (see Version History at bottom)
+> **Current Version:** 0.12.0.0009 (see Version History at bottom)
 
 ---
 
@@ -1497,6 +1497,11 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.12.0.0002 | Hide Resources, Forecast, Issues tabs from non-admin users |
 | 0.12.0.0003 | Fix: Issues visible to all, Insights admin-only (was reversed) |
 | 0.12.0.0004 | Remove lifecycle profiles feature (not ready for production); revert to single standard 10-phase lifecycle; remove LIFECYCLE_PROFILES, CATEGORY_LIFECYCLE_MAP, LEGACY_REQ_MAP; remove lifecycle dropdown from project form; remove lifecycle badges from project detail; revert phase stepper and grouped tasks to use LIFECYCLE_PHASES directly |
+| 0.12.0.0005 | Restrict strategic alignment fields (IT Initiative, DP Goal, WWC Practice/Criteria) and Data Program checkbox to team leads only; disabled with opacity for non-leads |
+| 0.12.0.0006 | Restrict strategic alignment fields to specific editors via STRATEGIC_ALIGNMENT_EDITORS allow-list (checks Auth.fullName instead of Auth.isTeamLead) |
+| 0.12.0.0007 | Hide restricted fields entirely for non-editors (instead of grayed out); disable operational fields (Priority, Size, Lead, Team, Timeline, Strategic Alignment) for non-admin Idea editors; Idea status yellow banner |
+| 0.12.0.0008 | Admin preview mode: "Preview as member" toggle in header; Auth.previewMode flag; isAdmin() helper replaces direct Auth.isTeamLead checks in UI rendering |
+| 0.12.0.0009 | Remove Data Program checkbox — is_data_program now derived from dp_goal field; add missing strategic alignment alerts to Needs Attention (IT Initiative, City Initiative, WWC Practice) for strategic alignment editors only |
 
 ---
 
