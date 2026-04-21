@@ -2571,6 +2571,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
         <span id="user-role-badge" style="display:none;font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;background:rgba(131,172,22,0.85);color:#fff;padding:1px 6px;border-radius:3px;line-height:1.4;">Admin</span>
       </span>
     </span>
+    <button id="preview-mode-btn" onclick="togglePreviewMode()" style="display:none;padding:3px 10px;border-radius:4px;border:1px solid rgba(255,255,255,0.4);background:transparent;color:rgba(255,255,255,0.7);font-size:10px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;letter-spacing:0.03em;white-space:nowrap;" title="Preview the app as a regular team member">👁 Preview as member</button>
     <button id="auth-toggle-btn" onclick="toggleAuth()" style="padding:5px 14px;border-radius:5px;border:1.5px solid rgba(255,255,255,0.5);background:transparent;color:rgba(255,255,255,0.9);font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;letter-spacing:0.03em;transition:background 0.15s,border-color 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.borderColor='rgba(255,255,255,0.8)'" onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,255,255,0.5)'">Sign In</button>
   </div>
 </header>
@@ -3409,7 +3410,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0006';
+const APP_VERSION = '0.12.0.0008';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -3737,11 +3738,16 @@ const Auth = {
   isTeamLead: false,
   devMode: false,
   dataLoaded: false,
+  previewMode: false, // When true, admin sees the app as a regular team member
 };
+
+// Check admin status respecting preview mode
+function isAdmin() { return Auth.isTeamLead && !Auth.previewMode; }
 
 // Users allowed to edit Data Program, IT Initiative, DP Goal, WWC Practice/Criteria fields
 const STRATEGIC_ALIGNMENT_EDITORS = ['Peter Johnson'];
 function isStrategicAlignmentEditor() {
+  if (Auth.previewMode) return false;
   return Auth.fullName && STRATEGIC_ALIGNMENT_EDITORS.indexOf(Auth.fullName) !== -1;
 }
 
@@ -6826,6 +6832,8 @@ async function fetchAgolUserInfo(token) {
           if (Auth.canPromote) {
             const badge = document.getElementById('user-role-badge');
             if (badge) badge.style.display = 'inline-block';
+            var previewBtn = document.getElementById('preview-mode-btn');
+            if (previewBtn) previewBtn.style.display = '';
           }
           if (Auth.isTeamLead) {
             const settingsTab = document.getElementById('tab-settings');
@@ -9066,6 +9074,7 @@ function removePhaseReq(reqId) { togglePhaseReq(reqId); }
 function buildProjectForm(p) {
   const v = function(k) { return p ? (p[k] || '') : ''; };
   const isEdit = !!p;
+  const isIdea = p && p.status === 'Idea';
   // Original End Date is locked once project reaches Active status
   const isActive = p && (p.status === 'Active' || p.status === 'Complete' || p.status === 'On Hold' || p.status === 'Canceled');
   const endDateField = isActive
@@ -9074,36 +9083,41 @@ function buildProjectForm(p) {
     : '<input id="fm-end" type="date" class="fm-input" value="' + esc(v('end')) + '">';
   const dpChecked = p && p.is_data_program;
 
-  return fmSec('Essentials', '<div class="fm-grid">' +
+  // For Idea status: disable operational fields, keep descriptive fields editable
+  var ideaDisabled = isIdea && !isAdmin();
+  var ideaNote = isIdea ? '<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#92400E;">' +
+    '<span style="font-weight:700;">This project is an Idea.</span> ' +
+    (isAdmin() ? 'Operational fields are available once the idea is reviewed and promoted.' : 'Operational fields like team, timeline, and sizing will become available once this idea is reviewed and promoted.') +
+  '</div>' : '';
+
+  return ideaNote +
+  fmSec('Essentials', '<div class="fm-grid">' +
       fmField('Title', fmInput('fm-title-val', v('title'), 'Project title…'), true, true) +
       fmField('Status', fmSelect('fm-status', FM_PROJ_STATUSES, v('status'), 'Select status…', false)) +
-      fmField('Priority', fmSelect('fm-priority', FM_PROJ_PRIORITIES, v('priority'), 'Select priority…', false)) +
-      fmProjectSizeField(v('project_size')) +
-      fmField('Project Lead', fmSelect('fm-contact', FM_ACTIVE_MEMBERS || FM_TASK_ASSIGNEES, v('contact'), 'Select lead…', false)) +
+      (isIdea && !isAdmin() ? '' : fmField('Priority', fmSelect('fm-priority', FM_PROJ_PRIORITIES, v('priority'), 'Select priority…', false))) +
+      (isIdea && !isAdmin() ? '' : fmProjectSizeField(v('project_size'))) +
+      (isIdea && !isAdmin() ? '' : fmField('Project Lead', fmSelect('fm-contact', FM_ACTIVE_MEMBERS || FM_TASK_ASSIGNEES, v('contact'), 'Select lead…', false))) +
     '</div>') +
-  fmSec('Team', '<div id="fm-team-avail-list"></div>' +
-      '<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Select team members for this project. Availability' + calcInfoIcon('earliestStart') + ' is based on the project size selected above.</div>') +
-  fmSec('Timeline', '<div class="fm-grid">' +
+  (isIdea && !isAdmin() ? '' : fmSec('Team', '<div id="fm-team-avail-list"></div>' +
+      '<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Select team members for this project. Availability' + calcInfoIcon('earliestStart') + ' is based on the project size selected above.</div>')) +
+  (isIdea && !isAdmin() ? '' : fmSec('Timeline', '<div class="fm-grid">' +
       fmField('Start Date', fmInput('fm-start', v('start'), '', 'date')) +
       fmField('Original End Date', endDateField) +
       fmField('Working Due Date', fmInput('fm-working-due', v('working_due'), '', 'date')) +
       (p && p.status === 'Complete' ? fmField('Completion Date', fmInput('fm-actual-end', v('actual_end'), '', 'date'), false, false, 'When this project was actually completed') : '') +
-    '</div>') +
+    '</div>')) +
   fmSec('Classification', '<div class="fm-grid">' +
       fmCategoryField(v('category'), true) +
       fmField('Partner Department', fmSelect('fm-partner-dept', FM_PARTNER_DEPTS, v('partner_dept'), 'Select department…')) +
       fmField('ITD Team', fmSelect('fm-itd-team', FM_ITD_TEAMS, v('itd_team'), 'Select team…')) +
     '</div>' +
-    '<div style="margin-top:12px;">' +
-      '<label style="display:flex;align-items:center;gap:8px;' + (isStrategicAlignmentEditor() ? 'cursor:pointer;' : 'cursor:not-allowed;opacity:0.7;') + 'padding:8px 12px;background:#FFF7ED;border-radius:8px;border:1px solid #FED7AA;">' +
+    (isStrategicAlignmentEditor() ? '<div style="margin-top:12px;">' +
+      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;background:#FFF7ED;border-radius:8px;border:1px solid #FED7AA;">' +
         '<input type="checkbox" id="fm-data-program" ' + (dpChecked ? 'checked' : '') +
-        (isStrategicAlignmentEditor() ? '' : ' disabled') +
-        ' style="width:16px;height:16px;accent-color:var(--navy);cursor:' + (isStrategicAlignmentEditor() ? 'pointer' : 'not-allowed') + ';">' +
+        ' style="width:16px;height:16px;accent-color:var(--navy);cursor:pointer;">' +
         '<span style="font-size:13px;font-weight:600;color:#9A3412;">Data Program project</span></label>' +
-      '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">' +
-        (isStrategicAlignmentEditor() ? 'Reviewed by the full data team — Snowflake, DBAs, data architects, and data intelligence' : 'Only the data team manager can change this designation') +
-      '</div>' +
-    '</div>') +
+      '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Reviewed by the full data team — Snowflake, DBAs, data architects, and data intelligence</div>' +
+    '</div>' : '')) +
   fmSec('Details', '<div class="fm-grid">' +
       fmField('Problem Statement', fmMdTextarea('fm-problem', v('problem_statement'), 'Describe the problem this project solves…', 3, 4000), false, true) +
       fmField('Description', fmMdTextarea('fm-description', v('description'), 'Project description…', 3, 4000), false, true) +
@@ -9112,25 +9126,23 @@ function buildProjectForm(p) {
       fmField('Data Sources', fmMdTextarea('fm-data-sources', v('data_sources'), 'e.g. Hansen, Accela, ArcGIS Enterprise, CSV from partner dept…', 2, 2000), false, true) +
       fmField('Technical Requirements', fmMdTextarea('fm-tech-reqs', v('technical_requirements'), 'e.g. Must integrate with existing system, ADA compliant, real-time updates…', 2, 4000), false, true) +
     '</div>', isEdit) +
-  fmSec('Strategic Alignment',
+  (isIdea && !isAdmin() ? '' : fmSec('Strategic Alignment',
     '<div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">' +
-      '<div style="font-size:11px;color:var(--text-muted);">Tag this project with the strategic initiatives, goals, and criteria it supports.' +
-        (!isStrategicAlignmentEditor() ? ' <span style="font-weight:700;color:#9A3412;">Some fields are managed by team leads only.</span>' : '') +
-      '</div>' +
+      '<div style="font-size:11px;color:var(--text-muted);">Tag this project with the strategic initiatives, goals, and criteria it supports.</div>' +
       (isStrategicAlignmentEditor() ? '<button type="button" onclick="suggestAlignment()" style="font-size:11px;font-weight:700;font-family:Lato,sans-serif;padding:5px 12px;border-radius:6px;border:1px solid #FDE68A;background:#FFFBEB;color:#92400E;cursor:pointer;white-space:nowrap;">✨ Suggest</button>' : '') +
     '</div>' +
     '<div id="alignment-suggest-panel" style="display:none;"></div>' +
     '<div class="fm-grid">' +
-      fmField('IT Initiative', fmCheckboxGroup('fm-it-initiative', FM_IT_INITIATIVES, v('it_initiative'), !isStrategicAlignmentEditor()), false, true) +
+      (isStrategicAlignmentEditor() ? fmField('IT Initiative', fmCheckboxGroup('fm-it-initiative', FM_IT_INITIATIVES, v('it_initiative')), false, true) : '') +
       fmField('City Initiative', fmCheckboxGroup('fm-city-initiative', FM_CITY_INITIATIVES, v('city_initiative')), false, true) +
       fmField('IT Priority Project', fmCheckboxGroup('fm-it-priority', FM_IT_PRIORITY_PROJECTS, v('it_priority_project')), false, true) +
-      fmField('Data Program Goal', fmCheckboxGroup('fm-dp-goal', FM_DP_GOALS, v('dp_goal'), !isStrategicAlignmentEditor()), false, true,
-        'Which Data Program goals does this project advance?') +
-      fmField('WWC Foundational Practice', fmCheckboxGroup('fm-wwc-practice', FM_WWC_PRACTICES, v('wwc_practice'), !isStrategicAlignmentEditor()), false, true,
-        'What Works Cities foundational practice areas') +
+      (isStrategicAlignmentEditor() ? fmField('Data Program Goal', fmCheckboxGroup('fm-dp-goal', FM_DP_GOALS, v('dp_goal')), false, true,
+        'Which Data Program goals does this project advance?') : '') +
+      (isStrategicAlignmentEditor() ? fmField('WWC Foundational Practice', fmCheckboxGroup('fm-wwc-practice', FM_WWC_PRACTICES, v('wwc_practice')), false, true,
+        'What Works Cities foundational practice areas') : '') +
     '</div>' +
-    fmField('WWC Criteria', fmWwcCriteriaGrouped(v('wwc_criteria'), !isStrategicAlignmentEditor()), false, false,
-        'Specific What Works Cities certification criteria — grouped by practice area'), true);
+    (isStrategicAlignmentEditor() ? fmField('WWC Criteria', fmWwcCriteriaGrouped(v('wwc_criteria')), false, false,
+        'Specific What Works Cities certification criteria — grouped by practice area') : ''), true));
 }
 
 function fmSec(label, bodyHtml, startCollapsed, extraClass) {
@@ -9509,6 +9521,11 @@ function openFormModal(mode, id) {
       var curMembers = [...document.querySelectorAll('input[name="fm-other-members"]:checked')].map(function(c) { return c.value; }).join(', ');
       renderTeamAvailList(curMembers, getVal('fm-contact'));
     });
+    // Disable Status dropdown for non-admin users editing Idea projects
+    if (record && record.status === 'Idea' && !isAdmin()) {
+      var statusEl = document.getElementById('fm-status');
+      if (statusEl) { statusEl.disabled = true; statusEl.style.background = '#F3F1EB'; statusEl.style.color = '#6B7280'; statusEl.style.cursor = 'not-allowed'; }
+    }
   }
 }
 
@@ -13933,7 +13950,7 @@ function renderMyWork(area) {
   }
 
   // Admin user selector
-  if (Auth.isTeamLead && RESOURCES_DATA && RESOURCES_DATA.people) {
+  if (isAdmin() && RESOURCES_DATA && RESOURCES_DATA.people) {
     const memberNames = Object.keys(RESOURCES_DATA.people).filter(function(n) { return isFullMember(n); }).sort();
     html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:0;">';
     html += '<div class="mywork-subtitle" style="margin-bottom:0;">' + today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) + '</div>';
@@ -14352,6 +14369,38 @@ function renderMyWork(area) {
   area.innerHTML = html;
 }
 
+function togglePreviewMode() {
+  Auth.previewMode = !Auth.previewMode;
+  var btn = document.getElementById('preview-mode-btn');
+  if (btn) {
+    if (Auth.previewMode) {
+      btn.textContent = '👁 Exit preview';
+      btn.style.background = 'rgba(239,68,68,0.3)';
+      btn.style.borderColor = 'rgba(239,68,68,0.6)';
+      btn.style.color = '#fff';
+    } else {
+      btn.textContent = '👁 Preview as member';
+      btn.style.background = 'transparent';
+      btn.style.borderColor = 'rgba(255,255,255,0.4)';
+      btn.style.color = 'rgba(255,255,255,0.7)';
+    }
+  }
+  // Show/hide admin tabs
+  var adminTabIds = ['tab-settings', 'tab-resources', 'tab-forecast', 'tab-insights'];
+  adminTabIds.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = Auth.previewMode ? 'none' : '';
+  });
+  // If currently on an admin-only tab, switch to overview
+  var adminOnlyTabs = ['settings', 'resources', 'forecast', 'insights'];
+  if (Auth.previewMode && adminOnlyTabs.indexOf(currentTab) !== -1) {
+    switchTab('overview');
+    return;
+  }
+  markDataDirty();
+  render();
+}
+
 function toggleDevMode(enabled) {
   Auth.devMode = enabled;
   if (enabled) {
@@ -14377,7 +14426,7 @@ function switchSettingsSection(section) {
 if (sessionStorage.getItem('dev_mode') === '1') Auth.devMode = true;
 
 function renderSettingsPage(area) {
-  if (!Auth.isTeamLead) {
+  if (!isAdmin()) {
     area.innerHTML = '<div class="empty-state">You do not have access to Settings.</div>';
     return;
   }
