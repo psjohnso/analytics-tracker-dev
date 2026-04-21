@@ -2591,13 +2591,13 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
       <button class="tab-btn" onclick="switchTab('tasks')">
         Tasks <span class="tab-count" id="task-tab-count">1936</span>
       </button>
-      <button class="tab-btn" onclick="switchTab('resources')">
+      <button class="tab-btn" id="tab-resources" onclick="switchTab('resources')" style="display:none;">
         Resources
       </button>
-      <button class="tab-btn" onclick="switchTab('forecast')">
+      <button class="tab-btn" id="tab-forecast" onclick="switchTab('forecast')" style="display:none;">
         📊 Forecast
       </button>
-      <button class="tab-btn" onclick="switchTab('insights')">
+      <button class="tab-btn" id="tab-insights" onclick="switchTab('insights')" style="display:none;">
         💡 Insights
       </button>
       <button class="tab-btn" onclick="switchTab('issues')">
@@ -3409,7 +3409,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0001';
+const APP_VERSION = '0.12.0.0003';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -6903,7 +6903,8 @@ function toggleAuth() {
     if (settingsTab) settingsTab.style.display = 'none';
     const myWorkTab = document.getElementById('tab-mywork');
     if (myWorkTab) myWorkTab.style.display = 'none';
-    if (currentTab === 'settings' || currentTab === 'mywork') switchTab('overview');
+    ['tab-resources', 'tab-forecast', 'tab-insights'].forEach(function(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    if (currentTab === 'settings' || currentTab === 'mywork' || currentTab === 'resources' || currentTab === 'forecast' || currentTab === 'insights') switchTab('overview');
     applyAuthState();
   } else {
     // Log in: redirect to ArcGIS Online OAuth (replace to avoid back-button loop)
@@ -7026,6 +7027,8 @@ async function fetchAgolUserInfo(token) {
           if (Auth.isTeamLead) {
             const settingsTab = document.getElementById('tab-settings');
             if (settingsTab) settingsTab.style.display = '';
+            var adminTabs = ['tab-resources', 'tab-forecast', 'tab-insights'];
+            adminTabs.forEach(function(id) { var el = document.getElementById(id); if (el) el.style.display = ''; });
           } else {
             // Non-admin: clear dev mode if it was left in session
             Auth.devMode = false;
