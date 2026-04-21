@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.12.0.0001 (see Version History at bottom)
+> **Current Version:** 0.12.0.0004 (see Version History at bottom)
 
 ---
 
@@ -1494,6 +1494,9 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.11.1.0005 | Fix scroll position on page reload (history.scrollRestoration = manual); status distribution cards ordered with Canceled last |
 | 0.11.2.0001 | Settings tab reorganized: two-column layout with sidebar navigation (People, Project Config, System groups) and content panel; 7 sections load independently; only active section renders; sidebar shows team member count; eliminates long scroll |
 | 0.12.0.0001 | Lifecycle profiles: 5 project lifecycle types (Standard 10-phase, Data pipeline 7-phase, Policy & governance 6-phase, Training & enablement 7-phase, Quick turnaround 4-phase, plus None); LIFECYCLE_PROFILES data structure; CATEGORY_LIFECYCLE_MAP auto-suggests lifecycle from project category; lifecycle dropdown in project form with phase preview card; phase stepper renders lifecycle-specific phases with color-coded badge; phase-grouped tasks use project's lifecycle; lifecycle badge on project detail hero and meta grid; backward compat for legacy requirement IDs via LEGACY_REQ_MAP |
+| 0.12.0.0002 | Hide Resources, Forecast, Issues tabs from non-admin users |
+| 0.12.0.0003 | Fix: Issues visible to all, Insights admin-only (was reversed) |
+| 0.12.0.0004 | Remove lifecycle profiles feature (not ready for production); revert to single standard 10-phase lifecycle; remove LIFECYCLE_PROFILES, CATEGORY_LIFECYCLE_MAP, LEGACY_REQ_MAP; remove lifecycle dropdown from project form; remove lifecycle badges from project detail; revert phase stepper and grouped tasks to use LIFECYCLE_PHASES directly |
 
 ---
 

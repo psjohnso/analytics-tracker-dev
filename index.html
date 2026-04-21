@@ -3409,271 +3409,86 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0003';
+const APP_VERSION = '0.12.0.0004';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
 // ══════════════════════════════════════════════════════════════════════
-// ══════════════════════════════════════════════════════════════════════
-//  LIFECYCLE PROFILES
-// ══════════════════════════════════════════════════════════════════════
-const LIFECYCLE_PROFILES = {
-  standard: {
-    key: 'standard', name: 'Standard', shortName: 'Standard',
-    desc: 'Full build-and-deliver lifecycle for dashboards, web apps, maps, and tools that end users interact with.',
-    color: '#534AB7', bg: '#EEEDFE', phaseCount: 10,
-    phases: [
-      { id: 0, name: 'Not started', shortName: 'Not started', defaultDuration: '—', requirements: [
-        { id: 'STD_P0_SPONSOR', label: 'Sponsor approval received' },
-        { id: 'STD_P0_RESOURCES', label: 'Resources identified and available' },
-        { id: 'STD_P0_TIMELINE', label: 'Timeline and milestones defined' }
-      ]},
-      { id: 1, name: 'Kickoff & discovery', shortName: 'Kickoff', defaultDuration: '2 days', requirements: [
-        { id: 'STD_P1_GOALS', label: 'Goals and success criteria documented' },
-        { id: 'STD_P1_STAKEHOLDERS', label: 'Stakeholders, sponsor, and data owners identified' },
-        { id: 'STD_P1_BACKLOG', label: 'Requirements/backlog created and prioritized' }
-      ]},
-      { id: 2, name: 'Data readiness & preparation', shortName: 'Data prep', defaultDuration: '3 weeks', requirements: [
-        { id: 'STD_P2_DATA_ACCESS', label: 'Data sources located and access secured' },
-        { id: 'STD_P2_QUALITY', label: 'Data quality assessed and approved' },
-        { id: 'STD_P2_MODEL', label: 'Initial data model/structure created' },
-        { id: 'STD_P2_VALIDATED', label: 'Stakeholders validated the data foundation' }
-      ]},
-      { id: 3, name: 'Iterative build & development', shortName: 'Build', defaultDuration: '2 weeks', requirements: [
-        { id: 'STD_P3_PROTOTYPE', label: 'Prototype or working version created' },
-        { id: 'STD_P3_FEATURES', label: 'Prioritized features functional' },
-        { id: 'STD_P3_DEMOS', label: 'Stakeholder demos conducted' },
-        { id: 'STD_P3_FEEDBACK', label: 'Feedback incorporated into build' }
-      ]},
-      { id: 4, name: 'Pre-finalization & internal QA', shortName: 'QA', defaultDuration: '2 days', requirements: [
-        { id: 'STD_P4_SCOPE_FROZEN', label: 'Scope and features frozen' },
-        { id: 'STD_P4_QA', label: 'QA completed (accuracy, security, performance)' },
-        { id: 'STD_P4_GOVERNANCE', label: 'Governance compliance confirmed' },
-        { id: 'STD_P4_DOCS_DRAFT', label: 'Draft documentation prepared' }
-      ]},
-      { id: 5, name: 'Design review — gate check', shortName: 'Design review', defaultDuration: '2 weeks', isGateCheck: true, requirements: [
-        { id: 'STD_P5_STANDARDS', label: 'Meets City standards for design, usability, accessibility (ADA)' },
-        { id: 'STD_P5_DATA_VALID', label: 'Data outputs validated and governance compliant' },
-        { id: 'STD_P5_SECURITY', label: 'Security and privacy addressed' },
-        { id: 'STD_P5_AUDIENCE', label: 'Appropriate for intended audience' },
-        { id: 'STD_P5_DOCS_CLEAR', label: 'Documentation clear for stakeholders' },
-        { id: 'STD_P5_ISSUES', label: 'Outstanding issues minor and resolution plan in place' }
-      ]},
-      { id: 6, name: 'Partner final review', shortName: 'Partner review', defaultDuration: '1 week', requirements: [
-        { id: 'STD_P6_STAKEHOLDERS', label: 'Stakeholders validated requirements are met' },
-        { id: 'STD_P6_FEEDBACK', label: 'Feedback incorporated' },
-        { id: 'STD_P6_DOCS_FINAL', label: 'Documentation finalized and approved' }
-      ]},
-      { id: 7, name: 'Launch & communication', shortName: 'Launch', defaultDuration: '2 days', requirements: [
-        { id: 'STD_P7_DEPLOYED', label: 'Solution deployed to production' },
-        { id: 'STD_P7_ACCESS', label: 'Access and security configured' },
-        { id: 'STD_P7_MONITORING', label: 'Monitoring enabled' },
-        { id: 'STD_P7_COMMS', label: 'Launch communications delivered' },
-        { id: 'STD_P7_TRAINING', label: 'Training or usage guidance provided' }
-      ]},
-      { id: 8, name: 'User acceptance', shortName: 'Acceptance', defaultDuration: '1 week', requirements: [
-        { id: 'STD_P8_EVAL', label: 'Evaluation period completed' },
-        { id: 'STD_P8_TESTED', label: 'Users tested solution in real-world conditions' },
-        { id: 'STD_P8_CAPABILITIES', label: 'All in-scope capabilities function as expected' },
-        { id: 'STD_P8_ISSUES', label: 'Issues tracked and corrective actions defined' }
-      ]},
-      { id: 9, name: 'Closeout & continuous improvement', shortName: 'Closeout', defaultDuration: '2 days', requirements: [
-        { id: 'STD_P9_LESSONS', label: 'Lessons learned documented' },
-        { id: 'STD_P9_OWNERSHIP', label: 'Ongoing ownership and maintenance confirmed' },
-        { id: 'STD_P9_FEEDBACK_LOOP', label: 'Feedback loop established' },
-        { id: 'STD_P9_UPDATE_CYCLE', label: 'Update cycle/process defined' }
-      ]}
-    ]
-  },
-  pipeline: {
-    key: 'pipeline', name: 'Data pipeline', shortName: 'Pipeline',
-    desc: 'For ETL pipelines, data integrations, migrations, and infrastructure work where the deliverable is a system, not a UI.',
-    color: '#0F6E56', bg: '#E1F5EE', phaseCount: 7,
-    phases: [
-      { id: 0, name: 'Scoping', shortName: 'Scope', defaultDuration: '2 days', requirements: [
-        { id: 'PIPE_P0_REQS', label: 'Requirements and success criteria defined' },
-        { id: 'PIPE_P0_SYSTEMS', label: 'Source and target systems identified' }
-      ]},
-      { id: 1, name: 'Data discovery', shortName: 'Discovery', defaultDuration: '1 week', requirements: [
-        { id: 'PIPE_P1_PROFILED', label: 'Data sources profiled' },
-        { id: 'PIPE_P1_ACCESS', label: 'Access to all sources secured' },
-        { id: 'PIPE_P1_QUALITY', label: 'Data quality baseline established' }
-      ]},
-      { id: 2, name: 'Design & architecture', shortName: 'Design', defaultDuration: '1 week', requirements: [
-        { id: 'PIPE_P2_DESIGN', label: 'Pipeline design documented' },
-        { id: 'PIPE_P2_SCHEMA', label: 'Target schema/model defined' }
-      ]},
-      { id: 3, name: 'Build & transform', shortName: 'Build', defaultDuration: '2 weeks', requirements: [
-        { id: 'PIPE_P3_BUILT', label: 'Pipeline/transforms implemented' },
-        { id: 'PIPE_P3_ERROR', label: 'Error handling and logging in place' }
-      ]},
-      { id: 4, name: 'Testing & validation', shortName: 'Test', defaultDuration: '1 week', requirements: [
-        { id: 'PIPE_P4_ACCURACY', label: 'Data accuracy verified end-to-end' },
-        { id: 'PIPE_P4_PERF', label: 'Performance tested under expected load' },
-        { id: 'PIPE_P4_EDGE', label: 'Edge cases and failure modes handled' }
-      ]},
-      { id: 5, name: 'Deployment', shortName: 'Deploy', defaultDuration: '2 days', requirements: [
-        { id: 'PIPE_P5_DEPLOYED', label: 'Deployed to production environment' },
-        { id: 'PIPE_P5_SCHEDULE', label: 'Scheduling/triggers configured' },
-        { id: 'PIPE_P5_MONITOR', label: 'Monitoring and alerting enabled' }
-      ]},
-      { id: 6, name: 'Closeout', shortName: 'Close', defaultDuration: '2 days', requirements: [
-        { id: 'PIPE_P6_DOCS', label: 'Documentation complete' },
-        { id: 'PIPE_P6_HANDOFF', label: 'Operational handoff confirmed' }
-      ]}
-    ]
-  },
-  policy: {
-    key: 'policy', name: 'Policy & governance', shortName: 'Policy',
-    desc: 'For standards, policies, frameworks, and strategic documents. Focused on research, drafting, review, and organizational adoption.',
-    color: '#854F0B', bg: '#FAEEDA', phaseCount: 6,
-    phases: [
-      { id: 0, name: 'Research & context', shortName: 'Research', defaultDuration: '2 weeks', requirements: [
-        { id: 'POL_P0_LANDSCAPE', label: 'Existing policies and landscape reviewed' },
-        { id: 'POL_P0_STAKEHOLDERS', label: 'Stakeholders identified' }
-      ]},
-      { id: 1, name: 'Draft development', shortName: 'Draft', defaultDuration: '2 weeks', requirements: [
-        { id: 'POL_P1_DRAFT', label: 'Initial draft written' },
-        { id: 'POL_P1_INTERNAL', label: 'Internal team review complete' }
-      ]},
-      { id: 2, name: 'Stakeholder review', shortName: 'Review', defaultDuration: '2 weeks', requirements: [
-        { id: 'POL_P2_PRESENTED', label: 'Presented to stakeholders' },
-        { id: 'POL_P2_FEEDBACK', label: 'Feedback collected and incorporated' }
-      ]},
-      { id: 3, name: 'Approval & adoption', shortName: 'Approve', defaultDuration: '1 week', requirements: [
-        { id: 'POL_P3_APPROVED', label: 'Final version approved' },
-        { id: 'POL_P3_PLAN', label: 'Communication/adoption plan defined' }
-      ]},
-      { id: 4, name: 'Publish & communicate', shortName: 'Publish', defaultDuration: '3 days', requirements: [
-        { id: 'POL_P4_PUBLISHED', label: 'Published to appropriate channels' },
-        { id: 'POL_P4_TRAINING', label: 'Training or awareness delivered' }
-      ]},
-      { id: 5, name: 'Monitor & iterate', shortName: 'Monitor', defaultDuration: 'Ongoing', requirements: [
-        { id: 'POL_P5_FEEDBACK', label: 'Feedback loop established' },
-        { id: 'POL_P5_CYCLE', label: 'Update cycle defined' }
-      ]}
-    ]
-  },
-  training: {
-    key: 'training', name: 'Training & enablement', shortName: 'Training',
-    desc: 'For courses, workshops, curricula, and learning programs. Covers audience analysis through delivery and evaluation.',
-    color: '#993C1D', bg: '#FAECE7', phaseCount: 7,
-    phases: [
-      { id: 0, name: 'Needs analysis', shortName: 'Needs', defaultDuration: '1 week', requirements: [
-        { id: 'TRN_P0_AUDIENCE', label: 'Target audience defined' },
-        { id: 'TRN_P0_GAPS', label: 'Knowledge gaps identified' },
-        { id: 'TRN_P0_OBJECTIVES', label: 'Learning objectives set' }
-      ]},
-      { id: 1, name: 'Curriculum design', shortName: 'Design', defaultDuration: '1 week', requirements: [
-        { id: 'TRN_P1_STRUCTURE', label: 'Course structure and modules outlined' },
-        { id: 'TRN_P1_MATERIALS', label: 'Materials list and tools identified' }
-      ]},
-      { id: 2, name: 'Content development', shortName: 'Content', defaultDuration: '2 weeks', requirements: [
-        { id: 'TRN_P2_SLIDES', label: 'Slides and presentation materials built' },
-        { id: 'TRN_P2_EXERCISES', label: 'Exercises and hands-on labs created' }
-      ]},
-      { id: 3, name: 'Pilot delivery', shortName: 'Pilot', defaultDuration: '3 days', requirements: [
-        { id: 'TRN_P3_DELIVERED', label: 'Pilot session conducted' },
-        { id: 'TRN_P3_FEEDBACK', label: 'Participant feedback collected' }
-      ]},
-      { id: 4, name: 'Refinement', shortName: 'Refine', defaultDuration: '1 week', requirements: [
-        { id: 'TRN_P4_REVISED', label: 'Content revised based on feedback' },
-        { id: 'TRN_P4_FINALIZED', label: 'Materials finalized' }
-      ]},
-      { id: 5, name: 'Rollout & scheduling', shortName: 'Rollout', defaultDuration: '3 days', requirements: [
-        { id: 'TRN_P5_SCHEDULED', label: 'Full delivery scheduled' },
-        { id: 'TRN_P5_COMMS', label: 'Communications sent' }
-      ]},
-      { id: 6, name: 'Evaluation', shortName: 'Evaluate', defaultDuration: '1 week', requirements: [
-        { id: 'TRN_P6_MEASURED', label: 'Effectiveness measured' },
-        { id: 'TRN_P6_LESSONS', label: 'Lessons learned documented' }
-      ]}
-    ]
-  },
-  quick: {
-    key: 'quick', name: 'Quick turnaround', shortName: 'Quick',
-    desc: 'For maintenance, consulting, support, and small updates. Minimal overhead — just scope, execute, verify, and close.',
-    color: '#5F5E5A', bg: '#F1EFE8', phaseCount: 4,
-    phases: [
-      { id: 0, name: 'Scope', shortName: 'Scope', defaultDuration: '—', requirements: [] },
-      { id: 1, name: 'Execute', shortName: 'Execute', defaultDuration: '—', requirements: [] },
-      { id: 2, name: 'Verify', shortName: 'Verify', defaultDuration: '—', requirements: [] },
-      { id: 3, name: 'Close', shortName: 'Close', defaultDuration: '—', requirements: [] }
-    ]
-  },
-  none: {
-    key: 'none', name: 'No lifecycle', shortName: 'None',
-    desc: 'No phase tracking. Tasks are managed as a flat list.',
-    color: '#9CA3AF', bg: '#F3F1EB', phaseCount: 0,
-    phases: []
-  }
-};
+const LIFECYCLE_PHASES = [
+  { id: 0, name: 'Not started', shortName: 'Not started', defaultDuration: '—', requirements: [
+    { id: 'P0_SPONSOR', label: 'Sponsor approval received' },
+    { id: 'P0_RESOURCES', label: 'Resources identified and available' },
+    { id: 'P0_TIMELINE', label: 'Timeline and milestones defined' }
+  ]},
+  { id: 1, name: 'Kickoff & discovery', shortName: 'Kickoff', defaultDuration: '2 days', requirements: [
+    { id: 'P1_GOALS', label: 'Goals and success criteria documented' },
+    { id: 'P1_STAKEHOLDERS', label: 'Stakeholders, sponsor, and data owners identified' },
+    { id: 'P1_BACKLOG', label: 'Requirements/backlog created and prioritized' }
+  ]},
+  { id: 2, name: 'Data readiness & preparation', shortName: 'Data prep', defaultDuration: '3 weeks', requirements: [
+    { id: 'P2_DATA_ACCESS', label: 'Data sources located and access secured' },
+    { id: 'P2_QUALITY', label: 'Data quality assessed and approved' },
+    { id: 'P2_MODEL', label: 'Initial data model/structure created' },
+    { id: 'P2_VALIDATED', label: 'Stakeholders validated the data foundation' }
+  ]},
+  { id: 3, name: 'Iterative build & development', shortName: 'Build', defaultDuration: '2 weeks', requirements: [
+    { id: 'P3_PROTOTYPE', label: 'Prototype or working version created' },
+    { id: 'P3_FEATURES', label: 'Prioritized features functional' },
+    { id: 'P3_DEMOS', label: 'Stakeholder demos conducted' },
+    { id: 'P3_FEEDBACK', label: 'Feedback incorporated into build' }
+  ]},
+  { id: 4, name: 'Pre-finalization & internal QA', shortName: 'QA', defaultDuration: '2 days', requirements: [
+    { id: 'P4_SCOPE_FROZEN', label: 'Scope and features frozen' },
+    { id: 'P4_QA', label: 'QA completed (accuracy, security, performance)' },
+    { id: 'P4_GOVERNANCE', label: 'Governance compliance confirmed' },
+    { id: 'P4_DOCS_DRAFT', label: 'Draft documentation prepared' }
+  ]},
+  { id: 5, name: 'Design review — gate check', shortName: 'Design review', defaultDuration: '2 weeks', isGateCheck: true, requirements: [
+    { id: 'P5_STANDARDS', label: 'Meets City standards for design, usability, accessibility (ADA)' },
+    { id: 'P5_DATA_VALID', label: 'Data outputs validated and governance compliant' },
+    { id: 'P5_SECURITY', label: 'Security and privacy addressed' },
+    { id: 'P5_AUDIENCE', label: 'Appropriate for intended audience' },
+    { id: 'P5_DOCS_CLEAR', label: 'Documentation clear for stakeholders' },
+    { id: 'P5_ISSUES', label: 'Outstanding issues minor and resolution plan in place' }
+  ]},
+  { id: 6, name: 'Partner final review', shortName: 'Partner review', defaultDuration: '1 week', requirements: [
+    { id: 'P6_STAKEHOLDERS', label: 'Stakeholders validated requirements are met' },
+    { id: 'P6_FEEDBACK', label: 'Feedback incorporated' },
+    { id: 'P6_DOCS_FINAL', label: 'Documentation finalized and approved' }
+  ]},
+  { id: 7, name: 'Launch & communication', shortName: 'Launch', defaultDuration: '2 days', requirements: [
+    { id: 'P7_DEPLOYED', label: 'Solution deployed to production' },
+    { id: 'P7_ACCESS', label: 'Access and security configured' },
+    { id: 'P7_MONITORING', label: 'Monitoring enabled' },
+    { id: 'P7_COMMS', label: 'Launch communications delivered' },
+    { id: 'P7_TRAINING', label: 'Training or usage guidance provided' }
+  ]},
+  { id: 8, name: 'User acceptance', shortName: 'Acceptance', defaultDuration: '1 week', requirements: [
+    { id: 'P8_EVAL', label: 'Evaluation period completed' },
+    { id: 'P8_TESTED', label: 'Users tested solution in real-world conditions' },
+    { id: 'P8_CAPABILITIES', label: 'All in-scope capabilities function as expected' },
+    { id: 'P8_ISSUES', label: 'Issues tracked and corrective actions defined' }
+  ]},
+  { id: 9, name: 'Closeout & continuous improvement', shortName: 'Closeout', defaultDuration: '2 days', requirements: [
+    { id: 'P9_LESSONS', label: 'Lessons learned documented' },
+    { id: 'P9_OWNERSHIP', label: 'Ongoing ownership and maintenance confirmed' },
+    { id: 'P9_FEEDBACK_LOOP', label: 'Feedback loop established' },
+    { id: 'P9_UPDATE_CYCLE', label: 'Update cycle/process defined' }
+  ]}
+];
 
-// ── Category → Lifecycle auto-suggestion mapping ──────────────────
-const CATEGORY_LIFECYCLE_MAP = {
-  'Data Analysis, Reporting & Insights': 'standard',
-  'AI Enablement, Automation & Machine Intelligence': 'standard',
-  'Spatial Data Services & GIS Product Development': 'standard',
-  'Public Engagement & Open Data': 'standard',
-  'Multi-Application Workflow Development': 'standard',
-  'Data Processing, Integration & Engineering': 'pipeline',
-  'Infrastructure Modernization & Platform Migration': 'pipeline',
-  'Data Governance, Compliance & Policy': 'policy',
-  'Strategic Planning & Architecture': 'policy',
-  'Documentation & Knowledge Management': 'policy',
-  'Training, Enablement & Community': 'training',
-  'Application Update & Enhancement': 'quick',
-  'Operational Support & Sustainment Activities': 'quick',
-  'Interdepartmental Consulting & Support': 'quick',
-  'Enterprise Administration & Platform Management': 'quick',
-  'Other': 'standard'
-};
-
-// ── Backward compatibility: LIFECYCLE_PHASES points to standard profile ──
-const LIFECYCLE_PHASES = LIFECYCLE_PROFILES.standard.phases;
-
-// ── Helper: get lifecycle phases for a project ──────────────────────
-function getProjectLifecycle(project) {
-  if (!project) return LIFECYCLE_PROFILES.standard;
-  var key = project.lifecycle || 'standard';
-  return LIFECYCLE_PROFILES[key] || LIFECYCLE_PROFILES.standard;
-}
-
-function getProjectPhases(project) {
-  return getProjectLifecycle(project).phases;
-}
-
-// ── Build REQUIREMENT_LOOKUP across ALL lifecycle profiles ──────────
 var REQUIREMENT_LOOKUP = {};
-Object.values(LIFECYCLE_PROFILES).forEach(function(profile) {
-  profile.phases.forEach(function(phase) {
-    phase.requirements.forEach(function(req) {
-      REQUIREMENT_LOOKUP[req.id] = { phaseId: phase.id, phaseName: phase.name, label: req.label, lifecycle: profile.key };
-    });
-  });
-});
-
-// ── Legacy requirement ID mapping (old P0_SPONSOR → new STD_P0_SPONSOR) ──
-var LEGACY_REQ_MAP = {};
-LIFECYCLE_PROFILES.standard.phases.forEach(function(phase) {
+LIFECYCLE_PHASES.forEach(function(phase) {
   phase.requirements.forEach(function(req) {
-    // Map old ID (e.g., P0_SPONSOR) to new ID (e.g., STD_P0_SPONSOR)
-    var oldId = req.id.replace('STD_', '');
-    LEGACY_REQ_MAP[oldId] = req.id;
+    REQUIREMENT_LOOKUP[req.id] = { phaseId: phase.id, phaseName: phase.name, label: req.label };
   });
 });
 
 function parsePhaseReqs(task) {
   if (!task || !task.phase_requirements) return [];
-  return task.phase_requirements.split(',').map(function(s) {
-    var id = s.trim();
-    // Map legacy IDs (e.g., P0_SPONSOR → STD_P0_SPONSOR)
-    if (id && !REQUIREMENT_LOOKUP[id] && LEGACY_REQ_MAP[id]) id = LEGACY_REQ_MAP[id];
-    return id;
-  }).filter(Boolean);
+  return task.phase_requirements.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
 }
 
-// Resolve a requirement ID to display info, handling Px_TASK convention
 function resolveReqInfo(rId) {
   var info = REQUIREMENT_LOOKUP[rId];
   if (info) return info;
@@ -3687,36 +3502,30 @@ function resolveReqInfo(rId) {
 }
 
 function getProjectLifecycleStatus(projectTitle) {
-  var proj = PROJECTS.find(function(p) { return p.title === projectTitle; });
-  var lifecyclePhases = getProjectPhases(proj);
   var relTasks = TASKS.filter(function(t) { return t.project === projectTitle; });
   var metReqs = {};
   relTasks.forEach(function(t) {
     if (t.status !== 'Complete') return;
     parsePhaseReqs(t).forEach(function(rId) { metReqs[rId] = true; });
   });
-  var phases = lifecyclePhases.map(function(phase) {
+  var phases = LIFECYCLE_PHASES.map(function(phase) {
     var total = phase.requirements.length;
     var met = phase.requirements.filter(function(r) { return metReqs[r.id]; }).length;
-    // For phases with no requirements (like Quick turnaround), consider complete if all tasks in that phase are done
-    var complete = total > 0 ? (met === total) : false;
-    return { id: phase.id, name: phase.name, shortName: phase.shortName, total: total, met: met, complete: complete, isGateCheck: phase.isGateCheck || false };
+    return { id: phase.id, name: phase.name, shortName: phase.shortName, total: total, met: met, complete: met === total, isGateCheck: phase.isGateCheck || false };
   });
   var currentPhase = 0;
   for (var i = 0; i < phases.length; i++) {
     if (!phases[i].complete) { currentPhase = i; break; }
     if (i === phases.length - 1) currentPhase = i;
   }
-  return { phases: phases, currentPhase: currentPhase, metReqs: metReqs, lifecycle: getProjectLifecycle(proj) };
+  return { phases: phases, currentPhase: currentPhase, metReqs: metReqs };
 }
 
 function getTasksByPhase(projectTitle) {
-  var proj = PROJECTS.find(function(p) { return p.title === projectTitle; });
-  var lifecyclePhases = getProjectPhases(proj);
   var relTasks = TASKS.filter(function(t) { return t.project === projectTitle; });
   var groups = {};
   var ungrouped = [];
-  lifecyclePhases.forEach(function(ph) { groups[ph.id] = []; });
+  LIFECYCLE_PHASES.forEach(function(ph) { groups[ph.id] = []; });
   relTasks.forEach(function(t) {
     var reqs = parsePhaseReqs(t);
     if (reqs.length === 0) { ungrouped.push(t); return; }
@@ -3724,9 +3533,8 @@ function getTasksByPhase(projectTitle) {
     reqs.forEach(function(rId) {
       var info = REQUIREMENT_LOOKUP[rId];
       if (info && info.phaseId < minPhase) minPhase = info.phaseId;
-      // Handle Px_TASK convention for phase-only tasks (no specific requirement)
       if (!info) {
-        var match = rId.match(/^(?:[A-Z]+_)?P(\d+)_TASK$/);
+        var match = rId.match(/^P(\d+)_TASK$/);
         if (match) {
           var phaseNum = parseInt(match[1], 10);
           if (phaseNum < minPhase) minPhase = phaseNum;
@@ -3741,20 +3549,16 @@ function getTasksByPhase(projectTitle) {
 
 function renderPhaseStepper(projectTitle) {
   var lcs = getProjectLifecycleStatus(projectTitle);
-  var lp = lcs.lifecycle;
-  if (!lp || lp.phaseCount === 0) return '';
   var phases = lcs.phases;
-  var lifecyclePhases = lp.phases;
   var cur = lcs.currentPhase;
   var fillPct = phases.length > 1 ? Math.round((cur / (phases.length - 1)) * 100) : 0;
   var html = '<div class="detail-section">';
-  html += '<div class="detail-section-label" style="display:flex;align-items:center;gap:8px;">Project lifecycle <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:' + lp.bg + ';color:' + lp.color + ';">' + esc(lp.name) + '</span></div>';
+  html += '<div class="detail-section-label">Project lifecycle</div>';
   html += '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:16px;">';
   var cp = phases[cur];
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
-  html += '<div style="font-size:13px;font-weight:700;color:var(--navy);">Phase ' + cp.id + ' — ' + esc(lifecyclePhases[cp.id].name) + '</div>';
-  if (cp.total > 0) html += '<div style="font-size:12px;color:#6B7280;">' + cp.met + '/' + cp.total + ' requirements met</div>';
-  else html += '<div style="font-size:12px;color:#6B7280;">Phase ' + (cur + 1) + ' of ' + phases.length + '</div>';
+  html += '<div style="font-size:13px;font-weight:700;color:var(--navy);">Phase ' + cp.id + ' — ' + esc(LIFECYCLE_PHASES[cp.id].name) + '</div>';
+  html += '<div style="font-size:12px;color:#6B7280;">' + cp.met + '/' + cp.total + ' requirements met</div>';
   html += '</div>';
   html += '<div class="phase-stepper">';
   html += '<div class="phase-stepper-track"></div>';
@@ -3775,7 +3579,7 @@ function renderPhaseStepper(projectTitle) {
       if (ph.isGateCheck) dotClass += ' gate';
       dotContent = '<span style="font-size:9px;">' + ph.id + '</span>';
     }
-    html += '<div class="phase-step" onclick="togglePhaseDetail(' + i + ')" title="Phase ' + ph.id + ': ' + esc(lifecyclePhases[ph.id].name) + (ph.total > 0 ? ' (' + ph.met + '/' + ph.total + ')' : '') + '">';
+    html += '<div class="phase-step" onclick="togglePhaseDetail(' + i + ')" title="Phase ' + ph.id + ': ' + esc(LIFECYCLE_PHASES[ph.id].name) + ' (' + ph.met + '/' + ph.total + ')">';
     html += '<div class="' + dotClass + '">' + dotContent + '</div>';
     html += '<span class="' + labelClass + '">' + (ph.isGateCheck && i !== cur ? '⚑ ' : '') + esc(ph.shortName) + '</span>';
     html += '</div>';
@@ -3794,19 +3598,15 @@ function togglePhaseDetail(phaseIndex) {
   }
   panel.setAttribute('data-phase', String(phaseIndex));
   panel.style.display = '';
+  var phase = LIFECYCLE_PHASES[phaseIndex];
+  if (!phase) return;
   var p = PROJECTS.find(function(pr) { return pr.objectId == currentDetail.id; });
   if (!p) return;
-  var lifecyclePhases = getProjectPhases(p);
-  var phase = lifecyclePhases[phaseIndex];
-  if (!phase) return;
   var lcs = getProjectLifecycleStatus(p.title);
   var metReqs = lcs.metReqs;
   var relTasks = TASKS.filter(function(t) { return t.project === p.title; });
   var html = '<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">Phase ' + phase.id + ' — ' + esc(phase.name) + '</div>';
   html += '<div style="font-size:11px;color:#6B7280;margin-bottom:10px;">Default duration: ' + phase.defaultDuration + '</div>';
-  if (phase.requirements.length === 0) {
-    html += '<div style="font-size:12px;color:var(--text-muted);font-style:italic;">No specific requirements — phase completion is tracked by task status.</div>';
-  }
   phase.requirements.forEach(function(req) {
     var isMet = metReqs[req.id];
     var linkedTasks = relTasks.filter(function(t) { return parsePhaseReqs(t).indexOf(req.id) !== -1; });
@@ -3829,15 +3629,12 @@ function togglePhaseDetail(phaseIndex) {
 }
 
 function renderPhaseGroupedTasks(projectTitle, relTasks) {
-  var proj = PROJECTS.find(function(p) { return p.title === projectTitle; });
-  var lp = getProjectLifecycle(proj);
-  if (!lp || lp.phaseCount === 0) return '';
   var grouped = getTasksByPhase(projectTitle);
   var lcs = getProjectLifecycleStatus(projectTitle);
   var hasAnyPhaseReqs = relTasks.some(function(t) { return t.phase_requirements; });
   if (!hasAnyPhaseReqs) return '';
   var html = '';
-  lp.phases.forEach(function(phase) {
+  LIFECYCLE_PHASES.forEach(function(phase) {
     var tasks = grouped.groups[phase.id];
     var phStatus = lcs.phases[phase.id];
     var pillBg = phStatus.complete ? '#DCFCE7' : (phase.id === lcs.currentPhase ? '#EEF2FF' : '#F3F1EB');
@@ -7196,8 +6993,6 @@ function agolProjectToLocal(feature) {
   }
   // Normalize boolean fields from ArcGIS Short Integer (0/1) to JS truthy
   local.is_data_program = local.is_data_program ? 1 : 0;
-  // Default lifecycle to 'standard' if not set
-  if (!local.lifecycle) local.lifecycle = 'standard';
   return local;
 }
 
@@ -9078,39 +8873,6 @@ function sizeWizardApply(sizeKey) {
 // ══════════════════════════════════════════════════════════════════════
 //  Helper: build project size field with wizard link
 // ══════════════════════════════════════════════════════════════════════
-// ── Lifecycle preview and auto-suggestion ────────────────────────
-function updateLifecyclePreview() {
-  var sel = document.getElementById('fm-lifecycle');
-  var preview = document.getElementById('fm-lifecycle-preview');
-  if (!sel || !preview) return;
-  var key = sel.value;
-  var lp = LIFECYCLE_PROFILES[key];
-  if (!lp || lp.phaseCount === 0) {
-    preview.innerHTML = '<div style="font-size:12px;color:var(--text-muted);font-style:italic;">No phase tracking for this lifecycle.</div>';
-    return;
-  }
-  var chips = lp.phases.map(function(ph) {
-    return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:' + lp.bg + ';color:' + lp.color + ';">' + ph.id + ' ' + ph.shortName + '</span>';
-  }).join(' ');
-  preview.innerHTML = '<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 12px;">' +
-    '<div style="font-size:13px;font-weight:700;color:var(--navy);">' + esc(lp.name) + '</div>' +
-    '<div style="font-size:11px;color:var(--text-muted);margin:3px 0 8px;">' + esc(lp.desc) + '</div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:4px;">' + chips + '</div>' +
-  '</div>';
-}
-
-function suggestLifecycleFromCategory() {
-  var catEl = document.getElementById('fm-category-val');
-  var lcEl = document.getElementById('fm-lifecycle');
-  if (!catEl || !lcEl) return;
-  var cat = catEl.value;
-  var suggested = CATEGORY_LIFECYCLE_MAP[cat];
-  if (suggested && LIFECYCLE_PROFILES[suggested]) {
-    lcEl.value = suggested;
-    updateLifecyclePreview();
-  }
-}
-
 function fmProjectSizeField(currentValue) {
   var options = ['S', 'M', 'L', 'XL'];
   var labels = { S: 'S — Small', M: 'M — Medium', L: 'L — Large', XL: 'XL — Extra large' };
@@ -9321,13 +9083,6 @@ function buildProjectForm(p) {
     '</div>') +
   fmSec('Classification', '<div class="fm-grid">' +
       fmCategoryField(v('category'), true) +
-      fmField('Lifecycle', '<select class="fm-input" id="fm-lifecycle" onchange="updateLifecyclePreview()">' +
-        Object.values(LIFECYCLE_PROFILES).map(function(lp) {
-          var sel = lp.key === (v('lifecycle') || 'standard') ? ' selected' : '';
-          return '<option value="' + lp.key + '"' + sel + '>' + lp.name + ' (' + lp.phaseCount + ' phases)</option>';
-        }).join('') +
-      '</select>' +
-      '<div id="fm-lifecycle-preview" style="margin-top:8px;"></div>', false, false, 'Auto-suggested from category. Change anytime.') +
       fmField('Partner Department', fmSelect('fm-partner-dept', FM_PARTNER_DEPTS, v('partner_dept'), 'Select department…')) +
       fmField('ITD Team', fmSelect('fm-itd-team', FM_ITD_TEAMS, v('itd_team'), 'Select team…')) +
     '</div>' +
@@ -9710,15 +9465,6 @@ function openFormModal(mode, id) {
   initSearchableSelect('fm-category');
   // Tool field uses searchable select in task forms
   if (!isProject) initSearchableSelect('fm-tool');
-  // Lifecycle hooks for project forms
-  if (isProject) {
-    updateLifecyclePreview();
-    // Auto-suggest lifecycle from category (only on new projects)
-    var catHidden = document.getElementById('fm-category-val');
-    if (catHidden && !isEdit) {
-      catHidden.addEventListener('change', function() { suggestLifecycleFromCategory(); });
-    }
-  }
   // Render unified team member selector with availability for project forms
   if (isProject) {
     var otherMembers = record ? (record.other_members || '') : '';
@@ -9798,7 +9544,6 @@ function collectProjectFields() {
     technical_requirements: getVal('fm-tech-reqs') || null,
     actual_end:        getVal('fm-actual-end')   || null,
     is_data_program:   document.getElementById('fm-data-program') && document.getElementById('fm-data-program').checked ? 1 : 0,
-    lifecycle:         getVal('fm-lifecycle') || 'standard',
     it_initiative:     collectCheckboxGroup('fm-it-initiative'),
     city_initiative:   collectCheckboxGroup('fm-city-initiative'),
     it_priority_project: collectCheckboxGroup('fm-it-priority'),
@@ -10641,7 +10386,6 @@ function renderProjectDetail(id) {
         </span>
         <span class="priority-badge priority-${p.priority||'null'}">${p.priority||'—'}</span>
         ${p.is_data_program ? '<span class="detail-hero-chip" style="background:rgba(255,165,0,0.25);border:1px solid rgba(255,165,0,0.4);">Data Program</span>' : ''}
-        ${(() => { var lp = getProjectLifecycle(p); return lp.key !== 'none' ? '<span class="detail-hero-chip" style="background:' + lp.bg + '44;border:1px solid ' + lp.bg + '88;color:#fff;">' + lp.name + '</span>' : ''; })()}
         ${projTotalHrs > 0 ? `<span class="detail-hero-chip">⏱ ${hoursLabel(projTotalHrs, projMyHrs)}</span>` : ''}
         ${p.actual_end ? `<span class="detail-hero-chip">✓ Completed ${p.actual_end}</span>` : ''}
       </div>
@@ -10657,7 +10401,6 @@ function renderProjectDetail(id) {
           <div class="detail-meta-item"><label>ITD Team</label><p>${esc(p.itd_team||'—')}</p></div>
           <div class="detail-meta-item"><label>Category</label><p>${esc(p.category||'—')}</p></div>
           <div class="detail-meta-item"><label>Project Size</label><p>${esc(p.project_size||'—')}</p></div>
-          <div class="detail-meta-item"><label>Lifecycle</label><p>${(() => { var lp = getProjectLifecycle(p); return '<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:' + lp.bg + ';color:' + lp.color + ';">' + esc(lp.name) + '</span>'; })()}</p></div>
           <div class="detail-meta-item"><label>Data Program</label><p>${p.is_data_program ? '<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:#FFF7ED;color:#9A3412;">Yes</span>' : '—'}</p></div>
           <div class="detail-meta-item"><label>Start Date</label><p>${p.start||'—'}</p></div>
           <div class="detail-meta-item"><label>Working Due Date</label><p>${p.working_due || p.end || '—'}</p></div>
