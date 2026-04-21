@@ -3399,7 +3399,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.1.0001';
+const APP_VERSION = '0.11.1.0002';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9704,6 +9704,25 @@ function confirmDeleteTask(taskId) {
 }
 
 async function ensureProjectContributor(projectTitle, memberName) {
+  if (!projectTitle || !memberName) return;
+  var proj = PROJECTS.find(function(p) { return p.title === projectTitle; });
+  if (!proj) return;
+  // Already the lead
+  if (proj.contact === memberName) return;
+  // Already a contributor
+  var currentMembers = proj.other_members ? proj.other_members.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
+  if (currentMembers.includes(memberName)) return;
+  // Add as contributor
+  currentMembers.push(memberName);
+  var newOtherMembers = currentMembers.join(', ');
+  try {
+    await DataStore.updateProject(proj.objectId, { other_members: newOtherMembers });
+    proj.other_members = newOtherMembers; // update local cache
+    console.log('[Auto-contrib] Added ' + memberName + ' as contributor to "' + projectTitle + '"');
+  } catch (err) {
+    console.error('[Auto-contrib] Failed to add contributor:', err);
+  }
+}
 
 // ── AI Phase Requirement Suggestion ──────────────────────────────
 async function suggestPhaseRequirements(taskId) {
@@ -9822,25 +9841,6 @@ function dismissPhaseSuggestions() {
   window._pendingPhaseSuggestions = null;
   var panel = document.getElementById('ai-phase-suggest');
   if (panel) panel.style.display = 'none';
-}
-  if (!projectTitle || !memberName) return;
-  var proj = PROJECTS.find(function(p) { return p.title === projectTitle; });
-  if (!proj) return;
-  // Already the lead
-  if (proj.contact === memberName) return;
-  // Already a contributor
-  var currentMembers = proj.other_members ? proj.other_members.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
-  if (currentMembers.includes(memberName)) return;
-  // Add as contributor
-  currentMembers.push(memberName);
-  var newOtherMembers = currentMembers.join(', ');
-  try {
-    await DataStore.updateProject(proj.objectId, { other_members: newOtherMembers });
-    proj.other_members = newOtherMembers; // update local cache
-    console.log('[Auto-contrib] Added ' + memberName + ' as contributor to "' + projectTitle + '"');
-  } catch (err) {
-    console.error('[Auto-contrib] Failed to add contributor:', err);
-  }
 }
 
 async function markTaskComplete(taskId) {

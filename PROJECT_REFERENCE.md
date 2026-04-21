@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.11.1.0001 (see Version History at bottom)
+> **Current Version:** 0.11.1.0002 (see Version History at bottom)
 
 ---
 
@@ -1488,6 +1488,7 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.11.0.0077 | Timeline section grouped by role: Leading, Contributing, Reviewing with role headers |
 | 0.11.0.0078 | Fix: allocation editor totals row moved from separate flex div to table tfoot with sticky positioning; guaranteed column alignment with project rows; eliminates scrollbar-width offset issue |
 | 0.11.1.0001 | AI Phase Assignment feature: admin toggle in Settings (stored in app_config); suggestPhaseRequirements() calls Cloudflare Worker after task creation; suggestion panel on task detail page with Accept/Dismiss buttons; fires only on new tasks without manual phase requirements |
+| 0.11.1.0002 | Fix: AI phase functions (suggestPhaseRequirements, acceptPhaseSuggestions, dismissPhaseSuggestions) were accidentally nested inside ensureProjectContributor function scope — moved to top-level so they're callable from handleFormSubmit |
 
 ---
 
