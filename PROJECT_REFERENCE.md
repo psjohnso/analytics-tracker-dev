@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.11.0.0076 (see Version History at bottom)
+> **Current Version:** 0.11.0.0078 (see Version History at bottom)
 
 ---
 
@@ -1469,6 +1469,8 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.11.0.0074 | Attention Needed: split alerts by type (Projects/Tasks) within each role group; type sub-headers with blue (projects) and teal (tasks) accents; card left-border color matches type; removed redundant type label prefix from card titles |
 | 0.11.0.0075 | Timeline projects default to collapsed; click arrow to expand and show tasks |
 | 0.11.0.0076 | Fix: allocation editor now cross-references project status against live PROJECTS array instead of stale cached status from RESOURCES_DATA; changing a project to Canceled/Complete immediately removes it from the allocation editor without requiring a full page reload |
+| 0.11.0.0077 | Timeline section grouped by role: Leading, Contributing, Reviewing with role headers |
+| 0.11.0.0078 | Fix: allocation editor totals row moved from separate flex div to table tfoot with sticky positioning; guaranteed column alignment with project rows; eliminates scrollbar-width offset issue |
 
 ---
 

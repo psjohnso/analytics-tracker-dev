@@ -1227,6 +1227,8 @@ td.ae-wk-td.ae-cur { background:#F0F4FF; }
 tr.ae-total-row td { background:#F0F4FF; border-top:2px solid #C7D2FE; padding:6px 4px; }
 tr.ae-total-row td.ae-proj-td { font-size:11px; font-weight:800; color:var(--navy); padding:8px 14px 8px 16px; background:#E8EDFF; }
 tr.ae-total-row td.ae-wk-td.ae-cur { background:#E0E8FF; }
+table.ae-grid tfoot { position:sticky; bottom:0; z-index:4; }
+td.ae-total-label { font-size:11px; font-weight:800; color:var(--navy); background:#E8EDFF; border-right:2px solid #E8E6DF; }
 /* Totals bar (outside scroll) */
 .ae-totals-bar {
   display:flex; align-items:center; border-top:2px solid #C7D2FE;
@@ -3397,7 +3399,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0077';
+const APP_VERSION = '0.11.0.0078';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -6006,7 +6008,8 @@ function aeRenderGrid() {
   if (!allocs.length) {
     tbody = '<tr><td colspan="' + (AE_COLS + 1) + '" style="text-align:center;color:var(--text-muted);padding:40px;font-size:13px;">No active projects for this person.</td></tr>';
     document.getElementById('ae-tbody').innerHTML = tbody;
-    document.getElementById('ae-totals-bar').innerHTML = '';
+    document.getElementById('ae-tfoot').innerHTML = '';
+    document.getElementById('ae-totals-bar').style.display = 'none';
     return;
   }
 
@@ -6094,17 +6097,18 @@ function aeRenderGrid() {
 
   document.getElementById('ae-tbody').innerHTML = tbody;
 
-  // Totals bar (outside scroll area)
-  let totHtml = '<div class="ae-totals-label">Total allocated' + calcInfoIcon('allocTotal') + '</div><div class="ae-totals-cells">';
+  // Totals row (inside table tfoot for guaranteed column alignment)
+  let totHtml = '<tr class="ae-total-row"><td class="ae-proj-td ae-total-label">Total allocated' + calcInfoIcon('allocTotal') + '</td>';
   for (const wi of wIdxs) {
     const total = allocs.reduce(function(s, a) { return s + Math.round((a.fracs[wi] || 0) * 100); }, 0);
     const cls   = total === 0 ? 'zero' : total > 100 ? 'over' : 'ok';
     const isCur = wi === window.currentWeekIdx;
-    totHtml += '<div class="ae-totals-cell' + (isCur ? ' ae-cur' : '') + '" id="ae-tot-' + wi + '">' +
-      '<span class="ae-tot-chip ' + cls + '">' + total + '%</span></div>';
+    totHtml += '<td class="ae-wk-td' + (isCur ? ' ae-cur' : '') + '" id="ae-tot-' + wi + '">' +
+      '<span class="ae-tot-chip ' + cls + '">' + total + '%</span></td>';
   }
-  totHtml += '</div>';
-  document.getElementById('ae-totals-bar').innerHTML = totHtml;
+  totHtml += '</tr>';
+  document.getElementById('ae-tfoot').innerHTML = totHtml;
+  document.getElementById('ae-totals-bar').style.display = 'none';
 }
 
 function aeCellChange(ai, wi, input) {
@@ -14997,6 +15001,7 @@ async function absValueChanged(input) {
         <table class="ae-grid" id="ae-grid-table">
           <thead id="ae-thead"></thead>
           <tbody id="ae-tbody"></tbody>
+          <tfoot id="ae-tfoot"></tfoot>
         </table>
       </div>
     </div>
