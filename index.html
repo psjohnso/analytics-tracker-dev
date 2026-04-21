@@ -3391,7 +3391,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0072';
+const APP_VERSION = '0.11.0.0073';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9611,6 +9611,11 @@ async function handleFormSubmit(andDownload) {
     }
     console.log('[Save] Save completed successfully.');
     showToast((isEdit ? 'Updated' : 'Created') + ' ' + (isProject ? 'project' : 'task') + ' successfully.', 'success');
+
+    // Auto-add task assignee as project contributor
+    if (!isProject && fields.assignee && fields.project) {
+      await ensureProjectContributor(fields.project, fields.assignee);
+    }
   } catch (saveErr) {
     console.error('[Save] Failed:', saveErr);
     showToast('Save failed: ' + saveErr.message, 'error');
@@ -9674,6 +9679,27 @@ function confirmDeleteTask(taskId) {
   Editor.mode   = 'edit-task';
   Editor.editId = taskId;
   handleFormDelete();
+}
+
+async function ensureProjectContributor(projectTitle, memberName) {
+  if (!projectTitle || !memberName) return;
+  var proj = PROJECTS.find(function(p) { return p.title === projectTitle; });
+  if (!proj) return;
+  // Already the lead
+  if (proj.contact === memberName) return;
+  // Already a contributor
+  var currentMembers = proj.other_members ? proj.other_members.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
+  if (currentMembers.includes(memberName)) return;
+  // Add as contributor
+  currentMembers.push(memberName);
+  var newOtherMembers = currentMembers.join(', ');
+  try {
+    await DataStore.updateProject(proj.objectId, { other_members: newOtherMembers });
+    proj.other_members = newOtherMembers; // update local cache
+    console.log('[Auto-contrib] Added ' + memberName + ' as contributor to "' + projectTitle + '"');
+  } catch (err) {
+    console.error('[Auto-contrib] Failed to add contributor:', err);
+  }
 }
 
 async function markTaskComplete(taskId) {
@@ -9868,6 +9894,19 @@ async function applyBatchUpdate() {
   }
 
   showToast('Updated ' + updated + ' task(s).' + (newProject ? ' Moved to ' + newProject + '.' : ''), 'success');
+
+  // Auto-add assignee as contributor to affected projects
+  if (newAssignee) {
+    var projectsToCheck = new Set();
+    ids.forEach(function(id) {
+      var task = TASKS.find(function(t) { return t.objectId == id; });
+      if (task) projectsToCheck.add(newProject || task.project);
+    });
+    for (var projTitle of projectsToCheck) {
+      if (projTitle) await ensureProjectContributor(projTitle, newAssignee);
+    }
+  }
+
   markDataDirty();
   render();
 }
@@ -13097,6 +13136,11 @@ async function inlineTaskAssignee(selectEl) {
   var newAssignee = selectEl.value || null;
   try {
     await DataStore.updateTask(taskId, { assignee: newAssignee });
+    // Auto-add assignee as project contributor
+    if (newAssignee) {
+      var task = TASKS.find(function(t) { return t.objectId == taskId; });
+      if (task && task.project) await ensureProjectContributor(task.project, newAssignee);
+    }
     showToast('Assignee updated.', 'success');
     markDataDirty();
     render();
