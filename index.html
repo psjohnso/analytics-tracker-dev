@@ -3390,7 +3390,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.11.0.0068';
+const APP_VERSION = '0.11.0.0069';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -3878,10 +3878,17 @@ function reorderSidebarFilters(tab) {
   if (!sidebar || !taskGroup || !projectGroup) return;
 
   if (tab === 'tasks') {
-    // Task filters on top
+    taskGroup.style.display = '';
+    projectGroup.style.display = 'none';
     sidebar.insertBefore(taskGroup, projectGroup);
+  } else if (tab === 'projects') {
+    projectGroup.style.display = '';
+    taskGroup.style.display = 'none';
+    sidebar.insertBefore(projectGroup, taskGroup);
   } else {
-    // Project filters on top for Overview, Projects, Resources, Forecast
+    // Overview and other tabs: show both
+    projectGroup.style.display = '';
+    taskGroup.style.display = '';
     sidebar.insertBefore(projectGroup, taskGroup);
   }
 }
