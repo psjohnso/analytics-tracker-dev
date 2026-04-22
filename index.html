@@ -244,7 +244,7 @@ body {
 
 .detail-tasks-header {
   display: grid;
-  grid-template-columns: 32px 2.5fr 130px 0.8fr 1fr 110px 0.6fr;
+  grid-template-columns: 32px 90px 2.5fr 130px 0.8fr 1fr 110px 0.6fr;
   background: var(--navy);
   color: #fff;
   font-size: 10px;
@@ -265,7 +265,7 @@ body {
 
 .detail-task-row {
   display: grid;
-  grid-template-columns: 32px 2.5fr 130px 0.8fr 1fr 110px 0.6fr;
+  grid-template-columns: 32px 90px 2.5fr 130px 0.8fr 1fr 110px 0.6fr;
   padding: 6px 16px;
   gap: 10px;
   border-top: 1px solid var(--border);
@@ -3426,7 +3426,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0023';
+const APP_VERSION = '0.12.0.0024';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -10419,7 +10419,8 @@ function renderProjectDetail(id) {
       <div style="text-align:center;" onclick="event.stopPropagation()">
         <input type="checkbox" class="batch-task-cb" data-task-id="${t.objectId}" onchange="updateBatchBar()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--navy);">
       </div>
-      <div class="detail-task-title" onclick="openTaskFromProject(${t.objectId})" style="cursor:pointer;">${projectNumChip(t.task_number)}${esc(t.title)}${t.resolution ? '<div style="font-size:11px;font-weight:400;color:var(--text-muted);margin-top:2px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + esc(t.resolution.length > 150 ? t.resolution.slice(0, 150) + '…' : t.resolution) + '</div>' : ''}</div>
+      <div class="detail-task-cell" style="font-family:monospace;font-size:11px;font-weight:600;color:var(--text-muted);white-space:nowrap;">${esc(t.task_number || '—')}</div>
+      <div class="detail-task-title" onclick="openTaskFromProject(${t.objectId})" style="cursor:pointer;">${esc(t.title)}${t.resolution ? '<div style="font-size:11px;font-weight:400;color:var(--text-muted);margin-top:2px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + esc(t.resolution.length > 150 ? t.resolution.slice(0, 150) + '…' : t.resolution) + '</div>' : ''}</div>
       <div onclick="event.stopPropagation()">
         <select class="mw-status-select" data-type="task" data-id="${t.objectId}" onchange="mwQuickStatus(this)" style="font-size:10px;padding:2px 4px;min-width:100px;background:${sc}18;color:${sc};border-color:${sc}44;">
           ${['Active','Pending','On Hold','Waiting for Response','Complete','Canceled'].map(function(s) { return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('')}
@@ -10466,6 +10467,7 @@ function renderProjectDetail(id) {
   const projTotalHrs = getProjectHours(p.title);
   const projMyHrs = getMyProjectHours(p.title);
   const projHrsRow = relTasks.length && projTotalHrs > 0 ? `<div class="detail-task-row" style="background:#F0F4FF;cursor:default;font-weight:700;">
+    <div></div>
     <div></div>
     <div class="detail-task-title" style="font-weight:800;color:var(--navy);">Total</div>
     <div class="detail-task-cell"></div><div class="detail-task-cell"></div><div class="detail-task-cell"></div><div class="detail-task-cell"></div>
@@ -10641,6 +10643,7 @@ function renderProjectDetail(id) {
             }
             var header = relTasks.length ? '<div class="detail-tasks-header">' +
               '<div style="text-align:center;"><input type="checkbox" id="batch-select-all" onchange="toggleSelectAllTasks(this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:#fff;" title="Select all"></div>' +
+              '<div class="dt-sortable" onclick="toggleDetailTaskSort(\'id\')">ID ' + sortArrow('id') + '</div>' +
               '<div class="dt-sortable" onclick="toggleDetailTaskSort(\'title\')">Task ' + sortArrow('title') + '</div>' +
               '<div class="dt-sortable" onclick="toggleDetailTaskSort(\'status\')">Status ' + sortArrow('status') + '</div>' +
               '<div class="dt-sortable" onclick="toggleDetailTaskSort(\'priority\')">Priority ' + sortArrow('priority') + '</div>' +
@@ -13313,7 +13316,9 @@ function toggleDetailTaskSort(col) {
     _dtSortCol = col;
     _dtSortDir = 'asc';
   }
+  var scrollY = window.scrollY;
   render();
+  window.scrollTo(0, scrollY);
 }
 
 function sortDetailTasks(tasks) {
@@ -13322,6 +13327,7 @@ function sortDetailTasks(tasks) {
   var priOrder = { High: 0, Medium: 1, Low: 2 };
   return tasks.slice().sort(function(a, b) {
     var av, bv;
+    if (col === 'id') { av = (a.task_number || '').toLowerCase(); bv = (b.task_number || '').toLowerCase(); return av < bv ? -dir : av > bv ? dir : 0; }
     if (col === 'title') { av = (a.title || '').toLowerCase(); bv = (b.title || '').toLowerCase(); return av < bv ? -dir : av > bv ? dir : 0; }
     if (col === 'status') { av = a.status || ''; bv = b.status || ''; return av < bv ? -dir : av > bv ? dir : 0; }
     if (col === 'priority') { av = priOrder[a.priority] !== undefined ? priOrder[a.priority] : 9; bv = priOrder[b.priority] !== undefined ? priOrder[b.priority] : 9; return (av - bv) * dir; }
