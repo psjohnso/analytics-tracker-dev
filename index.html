@@ -3414,7 +3414,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0018';
+const APP_VERSION = '0.12.0.0019';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -7034,7 +7034,7 @@ function agolProjectToLocal(feature) {
   }
   // Normalize boolean fields from ArcGIS Short Integer (0/1) to JS truthy
   // Data Program status is derived: true if any Data Program Goal is set
-  local.is_data_program = (local.dp_goal && local.dp_goal.trim().length > 0) ? 1 : 0;
+  local.is_data_program = (local.dp_goal && local.dp_goal.trim().length > 0 && local.dp_goal.trim() !== 'None') ? 1 : 0;
   return local;
 }
 
@@ -8425,19 +8425,22 @@ const FM_DELIVERABLE_OPTIONS = [
 
 // ── Strategic Alignment Options ──────────────────────────────────────
 const FM_IT_INITIATIVES = [
+  'None',
   '3.3.1 — Assess current state of data management',
   '3.3.2 — Data governance framework',
   '3.3.3 — Evaluate data analytics tools & platforms',
   '3.3.4 — Data controls for retention & destruction',
   '3.3.5 — Pilot data analytics solutions'
 ];
-const FM_CITY_INITIATIVES = ['Asset Scorecard', 'CMO Dashboard', 'Prosperity Initiative', 'Safe City Initiative'];
-const FM_IT_PRIORITY_PROJECTS = ['AI Deployment and Responsible Use', 'BISC', 'Dashboard Standards', 'Developer and Coding Standards'];
+const FM_CITY_INITIATIVES = ['None', 'Asset Scorecard', 'CMO Dashboard', 'Prosperity Initiative', 'Safe City Initiative'];
+const FM_IT_PRIORITY_PROJECTS = ['None', 'AI Deployment and Responsible Use', 'BISC', 'Dashboard Standards', 'Developer and Coding Standards'];
 const FM_DP_GOALS = [
+  'None',
   'Gather Business Needs', 'Establish Data Governance', 'Enhance Data Quality and Accessibility',
   'Strengthen Data Security', 'Build Data Literacy and Culture', 'Implementing Scalable Architecture and Technology'
 ];
 const FM_WWC_PRACTICES = [
+  'None',
   'Community Impact', 'Data Management', 'Data-Driven Budget and Finance', 'Evaluations',
   'Leadership and Capacity', 'Open Data', 'Performance and Analytics', 'Results-Driven Contracting'
 ];
@@ -9592,7 +9595,7 @@ function collectProjectFields() {
     data_sources:      getVal('fm-data-sources') || null,
     technical_requirements: getVal('fm-tech-reqs') || null,
     actual_end:        getVal('fm-actual-end')   || null,
-    is_data_program:   (function() { var dpg = collectCheckboxGroup('fm-dp-goal'); return dpg && dpg.trim().length > 0 ? 1 : 0; })(),
+    is_data_program:   (function() { var dpg = collectCheckboxGroup('fm-dp-goal'); return dpg && dpg.trim().length > 0 && dpg.trim() !== 'None' ? 1 : 0; })(),
     it_initiative:     collectCheckboxGroup('fm-it-initiative'),
     city_initiative:   collectCheckboxGroup('fm-city-initiative'),
     it_priority_project: collectCheckboxGroup('fm-it-priority'),

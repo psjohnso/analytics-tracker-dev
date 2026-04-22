@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.12.0.0011 (see Version History at bottom)
+> **Current Version:** 0.12.0.0019 (see Version History at bottom)
 
 ---
 
@@ -1504,6 +1504,14 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.12.0.0009 | Remove Data Program checkbox — is_data_program now derived from dp_goal field; add missing strategic alignment alerts to Needs Attention (IT Initiative, City Initiative, WWC Practice) for strategic alignment editors only |
 | 0.12.0.0010 | Task form: require Title, Status, Assignee, Project, and Description with validation and red border highlights |
 | 0.12.0.0011 | Merge Attention Needed into My Projects/Tasks (Option A): inline attention badges on project cards and task rows with colored left borders; items sorted by alert severity within groups; compact summary bar replaces separate Attention section; added stale/ready-to-activate alerts to getProjectAlerts; removed toggleAttentionMore and old alerts building code |
+| 0.12.0.0012 | Align My Projects/Tasks headers; smaller New Task button |
+| 0.12.0.0013 | Fix My Projects/Tasks header border vertical alignment |
+| 0.12.0.0014 | Remove silent project status cascade to task filtering |
+| 0.12.0.0015 | Remove Clear Filters button; show active filters as descriptive chips with individual remove |
+| 0.12.0.0016 | Remove all lifecycle UI: phase view toggle, phase chips, lifecycle requirements from task form and detail |
+| 0.12.0.0017 | Restrict project editing to lead/admin; expand category dropdown height |
+| 0.12.0.0018 | Fix category dropdown clipped by fm-sec overflow:hidden |
+| 0.12.0.0019 | Add None option to IT Initiative, City Initiative, IT Priority Project, Data Program Goal, and WWC Practice; update Data Program derivation to ignore None |
 
 ---
 
