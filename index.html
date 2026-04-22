@@ -3410,7 +3410,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0009';
+const APP_VERSION = '0.12.0.0010';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9414,17 +9414,17 @@ function buildTaskForm(t) {
   return '<div class="fm-section-label">Basic Info</div>' +
     '<div class="fm-grid">' +
       fmField('Title', fmInput('fm-title-val', v('title'), 'Task title…'), true, true) +
-      fmField('Status', fmSelect('fm-status', FM_TASK_STATUSES, v('status'), 'Select status…')) +
+      fmField('Status', fmSelect('fm-status', FM_TASK_STATUSES, v('status'), 'Select status…'), true) +
       fmField('Priority', fmSelect('fm-priority', FM_TASK_PRIORITIES, v('priority'), 'Select priority…')) +
-      fmField('Assignee', fmSelect('fm-assignee', FM_ACTIVE_MEMBERS || FM_TASK_ASSIGNEES, v('assignee'), 'Select assignee…')) +
+      fmField('Assignee', fmSelect('fm-assignee', FM_ACTIVE_MEMBERS || FM_TASK_ASSIGNEES, v('assignee'), 'Select assignee…'), true) +
     '</div>' +
     '<div class="fm-section-label">Details</div>' +
     '<div class="fm-grid">' +
-      fmField('Description', fmMdTextarea('fm-description', v('description'), 'Task description…', 3, 4000), false, true) +
+      fmField('Description', fmMdTextarea('fm-description', v('description'), 'Task description…', 3, 4000), true, true) +
     '</div>' +
     '<div class="fm-section-label">Classification</div>' +
     '<div class="fm-grid">' +
-      fmField('Project', fmSelect('fm-project', projTitles, v('project'), 'Select project…'), false, true) +
+      fmField('Project', fmSelect('fm-project', projTitles, v('project'), 'Select project…'), true, true) +
       fmTaskToolField(v('tool'), false) +
       fmTaskCategoryField(v('category'), false) +
     '</div>' +
@@ -9575,24 +9575,47 @@ function collectProjectFields() {
 }
 
 function collectTaskFields() {
-  const title = getVal('fm-title-val');
-  if (!title) {
-    const el = document.getElementById('fm-title-val');
-    if (el) el.classList.add('err');
+  var valid = true;
+  function requireField(id) {
+    var val = getVal(id);
+    if (!val) {
+      var el = document.getElementById(id);
+      if (el) el.classList.add('err');
+      valid = false;
+    }
+    return val || null;
+  }
+  // Clear previous error highlights
+  document.querySelectorAll('#fm-body .err').forEach(function(el) { el.classList.remove('err'); });
+
+  var title = requireField('fm-title-val');
+  var status = requireField('fm-status');
+  var assignee = requireField('fm-assignee');
+  var project = requireField('fm-project');
+  var description = getVal('fm-description') || null;
+  if (!description) {
+    var descEl = document.getElementById('fm-description');
+    if (descEl) descEl.classList.add('err');
+    valid = false;
+  }
+
+  if (!valid) {
+    showToast('Please fill in all required fields: Title, Status, Assignee, Project, and Description.', 'warn');
     return null;
   }
+
   return {
     title:       title,
-    status:      getVal('fm-status')     || null,
+    status:      status,
     priority:    getVal('fm-priority')   || null,
-    assignee:    getVal('fm-assignee')   || null,
-    project:     getVal('fm-project')    || null,
+    assignee:    assignee,
+    project:     project,
     tool:        getVal('fm-tool')       || null,
     category:    getVal('fm-category')   || null,
     start:       getVal('fm-start')      || null,
     due:         getVal('fm-due')        || null,
     working_due: getVal('fm-working-due')|| null,
-    description: getVal('fm-description')|| null,
+    description: description,
     actual_end:  getVal('fm-actual-end') || null,
     resolution:  getVal('fm-resolution')|| null,
     phase_requirements: getVal('fm-phase-reqs-val') || null,
