@@ -254,6 +254,14 @@ body {
   padding: 8px 16px;
   gap: 10px;
 }
+.detail-tasks-header div.dt-sortable { cursor:pointer; user-select:none; display:flex; align-items:center; gap:3px; }
+.detail-tasks-header div.dt-sortable:hover { opacity:0.8; }
+.dt-sort-arrow { font-size:8px; opacity:0.4; }
+.dt-sort-arrow.active { opacity:1; }
+.dt-task-group { padding:6px 16px; font-size:11px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase;
+  border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.dt-task-group-active { color:#27500A; background:#EAF3DE88; }
+.dt-task-group-other { color:var(--text-muted); background:var(--bg-surface, #F9F8F4); }
 
 .detail-task-row {
   display: grid;
@@ -3418,7 +3426,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0022';
+const APP_VERSION = '0.12.0.0023';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -10401,20 +10409,19 @@ function renderProjectDetail(id) {
       <span style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.25);font-size:8px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">${av}</span>${esc(name)}</span>`;
   }).join('');
 
-  const taskRows = relTasks.length ? relTasks.map(t => {
+  // ── Build task row HTML helper ──
+  function buildDetailTaskRow(t) {
     const sc = STATUS_COLOR(t.status) || '#9CA3AF';
     const taskHrs = getTaskHours(t.idx);
     const myHrs = getMyTaskHours(t.idx);
     const hrsDisplay = taskHrs > 0 ? hoursLabel(taskHrs, myHrs) : '—';
-    const canComplete = t.status && t.status !== 'Complete' && t.status !== 'Canceled';
-    const sc2 = sc;
     return `<div class="detail-task-row">
       <div style="text-align:center;" onclick="event.stopPropagation()">
         <input type="checkbox" class="batch-task-cb" data-task-id="${t.objectId}" onchange="updateBatchBar()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--navy);">
       </div>
       <div class="detail-task-title" onclick="openTaskFromProject(${t.objectId})" style="cursor:pointer;">${projectNumChip(t.task_number)}${esc(t.title)}${t.resolution ? '<div style="font-size:11px;font-weight:400;color:var(--text-muted);margin-top:2px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + esc(t.resolution.length > 150 ? t.resolution.slice(0, 150) + '…' : t.resolution) + '</div>' : ''}</div>
       <div onclick="event.stopPropagation()">
-        <select class="mw-status-select" data-type="task" data-id="${t.objectId}" onchange="mwQuickStatus(this)" style="font-size:10px;padding:2px 4px;min-width:100px;background:${sc2}18;color:${sc2};border-color:${sc2}44;">
+        <select class="mw-status-select" data-type="task" data-id="${t.objectId}" onchange="mwQuickStatus(this)" style="font-size:10px;padding:2px 4px;min-width:100px;background:${sc}18;color:${sc};border-color:${sc}44;">
           ${['Active','Pending','On Hold','Waiting for Response','Complete','Canceled'].map(function(s) { return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('')}
         </select>
       </div>
@@ -10430,7 +10437,30 @@ function renderProjectDetail(id) {
       </div>
       <div class="detail-task-cell" style="font-weight:700;color:var(--navy);">${hrsDisplay}</div>
     </div>`;
-  }).join('') : `<div style="padding:32px;text-align:center;color:var(--text-muted);font-style:italic;">No tasks linked to this project.</div>`;
+  }
+
+  // ── Split tasks into In Progress and Other ──
+  const IN_PROGRESS_STATUSES = ['Active', 'On Hold', 'Waiting for Response'];
+  const inProgressTasks = sortDetailTasks(relTasks.filter(function(t) { return IN_PROGRESS_STATUSES.indexOf(t.status) >= 0; }));
+  const otherTasks = sortDetailTasks(relTasks.filter(function(t) { return IN_PROGRESS_STATUSES.indexOf(t.status) < 0; }));
+
+  const taskRows = relTasks.length ? (function() {
+    var html = '';
+    if (inProgressTasks.length > 0) {
+      html += '<div class="dt-task-group dt-task-group-active">In progress (' + inProgressTasks.length + ')</div>';
+      html += inProgressTasks.map(buildDetailTaskRow).join('');
+    }
+    if (otherTasks.length > 0) {
+      var otherStatuses = [];
+      otherTasks.forEach(function(t) { if (otherStatuses.indexOf(t.status) < 0) otherStatuses.push(t.status); });
+      html += '<div class="dt-task-group dt-task-group-other"><span>Other (' + otherTasks.length + ')</span><span style="font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;">' + otherStatuses.join(', ') + '</span></div>';
+      html += otherTasks.map(function(t) { return buildDetailTaskRow(t).replace('class="detail-task-row"', 'class="detail-task-row" style="opacity:0.7;"'); }).join('');
+    }
+    if (!inProgressTasks.length && !otherTasks.length) {
+      html += '<div style="padding:32px;text-align:center;color:var(--text-muted);font-style:italic;">No tasks linked to this project.</div>';
+    }
+    return html;
+  })() : '<div style="padding:32px;text-align:center;color:var(--text-muted);font-style:italic;">No tasks linked to this project.</div>';
 
   // Project hours total
   const projTotalHrs = getProjectHours(p.title);
@@ -10604,10 +10634,20 @@ function renderProjectDetail(id) {
         </div>
         <div class="detail-tasks-table">
           ${(() => {
-            var header = relTasks.length ? `<div class="detail-tasks-header">
-              <div style="text-align:center;"><input type="checkbox" id="batch-select-all" onchange="toggleSelectAllTasks(this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:#fff;" title="Select all"></div>
-              <div>Task</div><div>Status</div><div>Priority</div><div>Assignee</div><div>Due Date</div><div>Hours</div>
-            </div>` : '';
+            function sortArrow(col) {
+              var active = _dtSortCol === col;
+              var arrow = active ? (_dtSortDir === 'asc' ? '▲' : '▼') : '▼';
+              return '<span class="dt-sort-arrow' + (active ? ' active' : '') + '">' + arrow + '</span>';
+            }
+            var header = relTasks.length ? '<div class="detail-tasks-header">' +
+              '<div style="text-align:center;"><input type="checkbox" id="batch-select-all" onchange="toggleSelectAllTasks(this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:#fff;" title="Select all"></div>' +
+              '<div class="dt-sortable" onclick="toggleDetailTaskSort(\'title\')">Task ' + sortArrow('title') + '</div>' +
+              '<div class="dt-sortable" onclick="toggleDetailTaskSort(\'status\')">Status ' + sortArrow('status') + '</div>' +
+              '<div class="dt-sortable" onclick="toggleDetailTaskSort(\'priority\')">Priority ' + sortArrow('priority') + '</div>' +
+              '<div class="dt-sortable" onclick="toggleDetailTaskSort(\'assignee\')">Assignee ' + sortArrow('assignee') + '</div>' +
+              '<div class="dt-sortable" onclick="toggleDetailTaskSort(\'due\')">Due Date ' + sortArrow('due') + '</div>' +
+              '<div class="dt-sortable" onclick="toggleDetailTaskSort(\'hours\')">Hours ' + sortArrow('hours') + '</div>' +
+            '</div>' : '';
             return header + taskRows + projHrsRow;
           })()}
         </div>
@@ -13263,6 +13303,34 @@ function toggleEditTimeEntry(oid) {
 let _myWorkViewUser = null; // Admin view-as override; null = view own work
 let _ganttFilter = {};     // { projectTitle: true/false } — which projects show on gantt; empty = all visible
 let _taskViewMode = 'list'; // 'list' or 'phase' — controls task display on project detail page
+let _dtSortCol = 'due';    // default sort column for project detail tasks
+let _dtSortDir = 'asc';    // 'asc' or 'desc'
+
+function toggleDetailTaskSort(col) {
+  if (_dtSortCol === col) {
+    _dtSortDir = _dtSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    _dtSortCol = col;
+    _dtSortDir = 'asc';
+  }
+  render();
+}
+
+function sortDetailTasks(tasks) {
+  var col = _dtSortCol;
+  var dir = _dtSortDir === 'asc' ? 1 : -1;
+  var priOrder = { High: 0, Medium: 1, Low: 2 };
+  return tasks.slice().sort(function(a, b) {
+    var av, bv;
+    if (col === 'title') { av = (a.title || '').toLowerCase(); bv = (b.title || '').toLowerCase(); return av < bv ? -dir : av > bv ? dir : 0; }
+    if (col === 'status') { av = a.status || ''; bv = b.status || ''; return av < bv ? -dir : av > bv ? dir : 0; }
+    if (col === 'priority') { av = priOrder[a.priority] !== undefined ? priOrder[a.priority] : 9; bv = priOrder[b.priority] !== undefined ? priOrder[b.priority] : 9; return (av - bv) * dir; }
+    if (col === 'assignee') { av = (a.assignee || 'zzz').toLowerCase(); bv = (b.assignee || 'zzz').toLowerCase(); return av < bv ? -dir : av > bv ? dir : 0; }
+    if (col === 'due') { av = a.working_due || a.due || '9999'; bv = b.working_due || b.due || '9999'; return av < bv ? -dir : av > bv ? dir : 0; }
+    if (col === 'hours') { av = getTaskHours(a.idx) || 0; bv = getTaskHours(b.idx) || 0; return (av - bv) * dir; }
+    return 0;
+  });
+}
 let _ganttCollapsed = {};  // { projectTitle: true/false } — which projects have tasks hidden
 
 function getMyProjects(viewName) {
