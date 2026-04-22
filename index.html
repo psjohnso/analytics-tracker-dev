@@ -3432,7 +3432,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0026';
+const APP_VERSION = '0.12.0.0027';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -4769,15 +4769,8 @@ function filterTasks() {
   if (activeFilters.taskCategory.length) data = data.filter(t => activeFilters.taskCategory.includes(t.category));
   if (activeFilters.taskTool.length)   data = data.filter(t => activeFilters.taskTool.includes(t.tool));
   if (activeFilters.member.length) {
-    // Show tasks assigned to the member OR tasks on projects where the member is lead/contributor
     data = data.filter(function(t) {
-      if (activeFilters.member.includes(t.assignee)) return true;
-      var proj = PROJECTS.find(function(p) { return p.title === t.project; });
-      if (proj) {
-        if (activeFilters.member.includes(proj.contact)) return true;
-        if (proj.other_members && activeFilters.member.some(function(m) { return proj.other_members.includes(m); })) return true;
-      }
-      return false;
+      return activeFilters.member.includes(t.assignee);
     });
   }
   if (activeFilters.search) data = data.filter(t =>
