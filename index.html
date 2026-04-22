@@ -2693,10 +2693,16 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
     <div class="sidebar-section">
       <div class="sidebar-label">Team Member</div>
       <div class="filter-group" id="member-filters"></div>
-      <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10px;color:var(--text-muted);cursor:pointer;">
-        <input type="checkbox" id="show-former-members" onchange="buildSidebarFilters();render();" style="width:13px;height:13px;cursor:pointer;">
-        Show former members
-      </label>
+      <div id="member-filter-toggles" style="margin-top:6px;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-muted);cursor:pointer;">
+          <input type="checkbox" id="show-contributors" onchange="buildSidebarFilters();render();" style="width:13px;height:13px;cursor:pointer;">
+          <span id="show-contributors-label">Show affiliated members</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;margin-top:4px;font-size:10px;color:var(--text-muted);cursor:pointer;">
+          <input type="checkbox" id="show-former-members" onchange="buildSidebarFilters();render();" style="width:13px;height:13px;cursor:pointer;">
+          Show former members
+        </label>
+      </div>
     </div>
 
     <div id="sidebar-task-filters">
@@ -3426,7 +3432,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0024';
+const APP_VERSION = '0.12.0.0026';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -3950,14 +3956,33 @@ function buildSidebarFilters() {
 
   const members = {};
   const showFormer = document.getElementById('show-former-members');
+  const showContribs = document.getElementById('show-contributors');
   const includeInactive = showFormer && showFormer.checked;
+  const includeContributors = showContribs && showContribs.checked;
   const isActiveMember = function(name) {
     if (includeInactive) return true;
-    if (!RESOURCES_DATA || !RESOURCES_DATA.people[name]) return true; // unknown = show
+    if (!RESOURCES_DATA || !RESOURCES_DATA.people[name]) return true;
     return RESOURCES_DATA.people[name].active !== false;
   };
-  TASKS.forEach(t => { if(t.assignee && isActiveMember(t.assignee)) members[t.assignee] = (members[t.assignee] || 0) + 1; });
-  PROJECTS.forEach(p => { if(p.contact && !members[p.contact] && isActiveMember(p.contact)) members[p.contact] = 0; });
+  const isVisibleMember = function(name) {
+    if (!isActiveMember(name)) return false;
+    if (includeContributors) return true;
+    if (!RESOURCES_DATA || !RESOURCES_DATA.people[name]) return true;
+    return RESOURCES_DATA.people[name].member_group !== 'Affiliated';
+  };
+  TASKS.forEach(t => { if(t.assignee && isVisibleMember(t.assignee)) members[t.assignee] = (members[t.assignee] || 0) + 1; });
+  PROJECTS.forEach(p => { if(p.contact && !members[p.contact] && isVisibleMember(p.contact)) members[p.contact] = 0; });
+
+  // Update affiliated toggle label with count
+  var contribCount = 0;
+  if (RESOURCES_DATA && RESOURCES_DATA.people) {
+    contribCount = Object.keys(RESOURCES_DATA.people).filter(function(n) {
+      var p = RESOURCES_DATA.people[n];
+      return p.active !== false && p.member_group === 'Affiliated';
+    }).length;
+  }
+  var contribLabel = document.getElementById('show-contributors-label');
+  if (contribLabel) contribLabel.textContent = contribCount > 0 ? 'Show ' + contribCount + ' affiliated member' + (contribCount !== 1 ? 's' : '') : 'Show affiliated members';
 
   const taskStatuses = {};
   TASKS.forEach(t => { taskStatuses[t.status || 'Unknown'] = (taskStatuses[t.status || 'Unknown'] || 0) + 1; });
@@ -7233,6 +7258,7 @@ async function loadResourcesData() {
       time_tracking:    (ci('time_tracking') === 'true' || ci('time_tracking') === true) ? true : false,
       active:           (ci('active') === 'false' || ci('active') === false) ? false : true,
       tracking_level:   ci('tracking_level') || 'full',
+      member_group:     ci('member_group') || 'Data Intelligence',
       proj_cap:         new Array(N).fill(0),
       absences:         new Array(N).fill(0),
       allocations:      [],
@@ -14632,6 +14658,7 @@ function openMemberForm(mode, name) {
     document.getElementById('mf-name').dataset.origName = name;
     document.getElementById('mf-role').value = p.role;
     document.getElementById('mf-team').value = p.team;
+    document.getElementById('mf-member-group').value = p.member_group || 'Data Intelligence';
     document.getElementById('mf-skill').value = p.skill;
     document.getElementById('mf-proj-pct').value = Math.round(p.proj_pct * 100);
     document.getElementById('mf-tracking-level').value = p.tracking_level || 'full';
@@ -14657,6 +14684,7 @@ function openMemberForm(mode, name) {
     document.getElementById('mf-name').dataset.origName = '';
     document.getElementById('mf-role').value = '';
     document.getElementById('mf-team').value = '';
+    document.getElementById('mf-member-group').value = 'Data Intelligence';
     document.getElementById('mf-skill').value = '';
     document.getElementById('mf-proj-pct').value = '';
     document.getElementById('mf-tracking-level').value = 'full';
@@ -14916,6 +14944,7 @@ async function saveMemberForm() {
   const name = document.getElementById('mf-name').value.trim();
   const role = document.getElementById('mf-role').value.trim();
   const team = document.getElementById('mf-team').value.trim();
+  const memberGroup = document.getElementById('mf-member-group').value || 'Data Intelligence';
   const skill = document.getElementById('mf-skill').value.trim();
   const projPct = parseFloat(document.getElementById('mf-proj-pct').value) || 0;
   const trackingLevel = document.getElementById('mf-tracking-level').value || 'full';
@@ -14948,6 +14977,7 @@ async function saveMemberForm() {
     name: name,
     role: role,
     team: team,
+    member_group: memberGroup,
     skill: skill,
     proj_pct: projPct / 100,
     tracking_level: trackingLevel,
@@ -15277,6 +15307,11 @@ async function absValueChanged(input) {
     <input class="mf-input" id="mf-role" placeholder="e.g. GIS Analyst II">
     <label class="mf-label">Team</label>
     <input class="mf-input" id="mf-team" placeholder="e.g. GIS, Analytics, AI, Server, Management">
+    <label class="mf-label">Member Group</label>
+    <select class="mf-input" id="mf-member-group">
+      <option value="Data Intelligence">Data Intelligence — Core team member</option>
+      <option value="Affiliated">Affiliated — Collaborator from another team</option>
+    </select>
     <label class="mf-label">Tracking Level</label>
     <select class="mf-input" id="mf-tracking-level" onchange="onTrackingLevelChange()">
       <option value="full">Full — allocations, time tracking, capacity planning</option>
