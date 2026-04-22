@@ -1364,7 +1364,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .fm-search-dropdown {
   display:none; position:absolute; top:100%; left:0; right:0; z-index:20;
   background:#fff; border:1.5px solid var(--navy); border-top:none; border-radius:0 0 7px 7px;
-  max-height:220px; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,0.12);
+  max-height:360px; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,0.12);
 }
 .fm-search-dropdown.open { display:block; }
 .fm-search-option {
@@ -3413,7 +3413,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0016';
+const APP_VERSION = '0.12.0.0017';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9478,6 +9478,12 @@ function openFormModal(mode, id) {
   const isEdit    = mode.indexOf('edit')    >= 0;
   const record    = isEdit ? (isProject ? DataStore.getProject(id) : DataStore.getTask(id)) : null;
 
+  // Permission check: only project lead or admin can edit projects
+  if (isEdit && isProject && record && !isAdmin() && record.contact !== Auth.fullName) {
+    showToast('Only the project lead or an admin can edit this project.', 'warn');
+    return;
+  }
+
   document.getElementById('fm-type-badge').textContent = isProject ? 'PROJECT' : 'TASK';
   document.getElementById('fm-title').textContent      = isEdit ? (isProject ? 'Edit Project' : 'Edit Task')
                                                                  : (isProject ? 'New Project'  : 'New Task');
@@ -10427,13 +10433,15 @@ function renderProjectDetail(id) {
     <div class="detail-task-cell" style="font-weight:800;color:var(--navy);">${hoursLabel(projTotalHrs, projMyHrs)}</div>
   </div>` : '';
 
+  var canEditProject = isAdmin() || (Auth.fullName && p.contact === Auth.fullName);
+
   return `<div class="detail-page">
     <div class="detail-hero" style="background:linear-gradient(135deg, var(--navy) 0%, #003580 55%, ${statusColor}cc 100%);">
       <div class="detail-hero-actions">
-        ${p.status && p.status !== 'Complete' && p.status !== 'Canceled' ? `<button class="modal-edit-btn" style="background:rgba(34,197,94,0.25);border-color:rgba(34,197,94,0.5);" onclick="markProjectComplete(${p.objectId})">✓ Complete</button>` : ''}
-        <button class="modal-edit-btn" onclick="openFormModal('edit-project',${p.objectId})">✏ Edit</button>
+        ${canEditProject && p.status && p.status !== 'Complete' && p.status !== 'Canceled' ? `<button class="modal-edit-btn" style="background:rgba(34,197,94,0.25);border-color:rgba(34,197,94,0.5);" onclick="markProjectComplete(${p.objectId})">✓ Complete</button>` : ''}
+        ${canEditProject ? `<button class="modal-edit-btn" onclick="openFormModal('edit-project',${p.objectId})">✏ Edit</button>` : ''}
         <button class="modal-edit-btn" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.3);" onclick="copyProjectSummary(${p.objectId})">📋 Copy Summary</button>
-        <button class="modal-del-btn" onclick="confirmDeleteProject(${p.objectId})">🗑 Delete</button>
+        ${canEditProject ? `<button class="modal-del-btn" onclick="confirmDeleteProject(${p.objectId})">🗑 Delete</button>` : ''}
       </div>
       <button class="detail-back-btn" onclick="goBackFromDetail()">${backLabel}</button>
       <div class="detail-hero-title">${p.project_number ? '<span style="font-family:monospace;font-size:14px;font-weight:700;background:rgba(255,255,255,0.15);padding:3px 10px;border-radius:6px;margin-right:10px;">' + esc(p.project_number) + '</span>' : ''}${esc(p.title)}</div>
