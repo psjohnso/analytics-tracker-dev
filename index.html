@@ -1381,12 +1381,18 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .fm-search-option.highlighted .fm-search-option-desc { color:#4B5563; }
 
 /* Category wizard */
-.cat-wizard-link {
-  font-size:10px; font-weight:600; color:var(--navy); cursor:pointer;
-  text-decoration:none; margin-left:8px; opacity:0.7;
+.cat-wizard-link, .size-wizard-link, .ai-help-btn {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:10px; font-weight:700; color:#92400E; cursor:pointer;
+  text-decoration:none; margin-left:6px;
   font-family:'Lato',sans-serif; letter-spacing:0.02em;
+  padding:2px 8px; border-radius:4px;
+  background:#FFFBEB; border:1px solid #FDE68A;
+  transition:background 0.15s, border-color 0.15s;
 }
-.cat-wizard-link:hover { opacity:1; text-decoration:underline; }
+.cat-wizard-link:hover, .size-wizard-link:hover, .ai-help-btn:hover {
+  background:#FEF3C7; border-color:#F59E0B; text-decoration:none;
+}
 .cat-wizard-panel {
   padding:14px; background:#F0F4FF; border:1.5px solid #C7D2FE;
   border-radius:10px; animation:catWizFade 0.2s ease;
@@ -1422,8 +1428,6 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .cat-wizard-back:hover { color:var(--navy); }
 
 /* ── Size Wizard ─────────────────────────────────── */
-.size-wizard-link { display:inline-block; font-size:11px; color:var(--text-muted); cursor:pointer; opacity:.8; margin-top:4px; }
-.size-wizard-link:hover { opacity:1; text-decoration:underline; }
 .size-wizard-panel { display:none; margin-top:8px; background:#F7F5EF; border:1px solid #E8E6DF; border-radius:6px; padding:14px; }
 .size-wizard-panel.open { display:block; }
 .size-wz-progress { display:flex; gap:4px; margin-bottom:12px; }
@@ -3414,7 +3418,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0021';
+const APP_VERSION = '0.12.0.0022';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -8230,7 +8234,7 @@ function fmTaskToolField(currentValue, span2) {
     '<label class="fm-label">' +
       'Tool / Technology ' +
       '<a href="javascript:void(0)" class="cat-wizard-link" onclick="toolWizardOpen()">' +
-        'Not sure? Help me choose' +
+        '✨ Help me choose' +
       '</a>' +
     '</label>' +
     '<div id="fm-tool-content">' +
@@ -8511,7 +8515,7 @@ function fmCategoryField(currentValue, span2) {
     '<label class="fm-label">' +
       'Category ' +
       '<a href="javascript:void(0)" class="cat-wizard-link" onclick="catWizardOpen()">' +
-        'Not sure? Help me choose' +
+        '✨ Help me choose' +
       '</a>' +
     '</label>' +
     '<div id="fm-category-content">' +
@@ -8526,7 +8530,7 @@ function fmTaskCategoryField(currentValue, span2) {
     '<label class="fm-label">' +
       'Category ' +
       '<a href="javascript:void(0)" class="cat-wizard-link" onclick="taskCatWizardOpen()">' +
-        'Not sure? Help me choose' +
+        '✨ Help me choose' +
       '</a>' +
     '</label>' +
     '<div id="fm-task-category-content">' +
@@ -8929,7 +8933,7 @@ function fmProjectSizeField(currentValue) {
     selectHtml += '<option value="' + opt + '"' + (opt === currentValue ? ' selected' : '') + '>' + esc(labels[opt]) + '</option>';
   });
   selectHtml += '</select>';
-  selectHtml += '<button type="button" class="size-wizard-link" onclick="sizeWizardOpen()">🧭 Not sure? Help me choose a size</button>';
+  selectHtml += '<button type="button" class="size-wizard-link" style="margin-left:0;margin-top:6px;" onclick="sizeWizardOpen()">✨ Help me choose a size</button>';
   selectHtml += '<div id="size-wizard-panel" class="size-wizard-panel"></div>';
   return fmField('Project Size', selectHtml);
 }
@@ -9151,7 +9155,7 @@ function buildProjectForm(p) {
   (isIdea && !isAdmin() ? '' : fmSec('Strategic Alignment',
     '<div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">' +
       '<div style="font-size:11px;color:var(--text-muted);">Tag this project with the strategic initiatives, goals, and criteria it supports.</div>' +
-      (isStrategicAlignmentEditor() ? '<button type="button" onclick="suggestAlignment()" style="font-size:11px;font-weight:700;font-family:Lato,sans-serif;padding:5px 12px;border-radius:6px;border:1px solid #FDE68A;background:#FFFBEB;color:#92400E;cursor:pointer;white-space:nowrap;">✨ Suggest</button>' : '') +
+      (isStrategicAlignmentEditor() ? '<button type="button" class="ai-help-btn" onclick="suggestAlignment()" style="font-size:11px;padding:4px 12px;">✨ Suggest Alignment</button>' : '') +
     '</div>' +
     '<div id="alignment-suggest-panel" style="display:none;"></div>' +
     '<div class="fm-grid">' +
