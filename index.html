@@ -3414,7 +3414,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0019';
+const APP_VERSION = '0.12.0.0021';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9270,24 +9270,25 @@ async function suggestAlignment() {
     FM_WWC_CRITERIA.map(function(o) { return '  - ' + o; }).join('\n') + '\n\n' +
     'IMPORTANT RULES:\n' +
     '- Be HIGHLY SELECTIVE. Only recommend options where there is a clear, direct, and obvious connection to this specific project\'s work. If you have to stretch to make a connection, do not recommend it.\n' +
-    '- Do NOT force-fit. Most projects will only match 1-3 items total across all fields. Many fields should be empty arrays. An empty array is the correct answer when nothing clearly applies.\n' +
-    '- For IT Initiative, only recommend if the project\'s primary deliverable directly advances that specific sub-objective.\n' +
-    '- For City Initiative, only recommend if the project is explicitly part of or directly supports that named initiative.\n' +
-    '- For IT Priority Project, only recommend if the project is part of or directly contributes to that named priority effort.\n' +
-    '- For Data Program Goal, only recommend goals where the project\'s outcomes materially advance that goal — not merely tangentially related.\n' +
-    '- WWC PAIRING RULE (MANDATORY): If you recommend any WWC Foundational Practice, you MUST also recommend at least one corresponding WWC Criteria from that same practice area. If you recommend any WWC Criteria, the parent practice area MUST appear in wwc_practice. They must always be paired. If you cannot identify a specific criterion, do not recommend the practice area either.\n' +
+    '- USING "None": Each field includes a "None" option. If you evaluate a field and determine that none of the specific options apply, recommend [{"value": "None", "reason": "brief explanation of why nothing applies"}]. Use "None" confidently — most projects will only match a few fields, and "None" is the correct answer for the rest.\n' +
+    '- For IT Initiative, only recommend if the project\'s primary deliverable directly advances that specific sub-objective. Otherwise recommend None.\n' +
+    '- For City Initiative, only recommend if the project is explicitly part of or directly supports that named initiative. Otherwise recommend None.\n' +
+    '- For IT Priority Project, only recommend if the project is part of or directly contributes to that named priority effort. Otherwise recommend None.\n' +
+    '- For Data Program Goal, ONLY recommend a goal if the project builds the capabilities, processes, or infrastructure of the data team itself (e.g., establishing governance policies, building shared data platforms, creating training programs, improving data quality practices, deploying new analytics tools) AND the project\'s outcomes materially advance that specific goal. Do NOT recommend Data Program Goals for routine operational work, one-off departmental data requests, individual app builds for a partner department, or projects that merely use data without building the team\'s underlying capabilities. The Data Program is about building organizational data maturity — only projects that advance that mission should be tagged. Otherwise recommend None.\n' +
+    '- For WWC Foundational Practice, recommend None if the project does not clearly advance any practice area.\n' +
+    '- WWC PAIRING RULE (MANDATORY): If you recommend any WWC Foundational Practice (other than None), you MUST also recommend at least one corresponding WWC Criteria from that same practice area. If you recommend any WWC Criteria, the parent practice area MUST appear in wwc_practice. They must always be paired. If you cannot identify a specific criterion, do not recommend the practice area either.\n' +
     '- For WWC Criteria, only recommend criteria where the project\'s deliverables or outcomes directly and specifically contribute to meeting that criterion — not just broadly related.\n' +
-    '- Provide a brief, specific reason for each recommendation explaining HOW this project advances that item.\n\n' +
+    '- Provide a brief, specific reason for each recommendation explaining HOW this project advances that item (or why None applies).\n\n' +
     'Respond ONLY with a JSON object (no markdown, no backticks). Format:\n' +
     '{\n' +
     '  "it_initiative": [{"value": "3.3.1 — Assess current state of data management", "reason": "brief reason"}],\n' +
-    '  "city_initiative": [],\n' +
-    '  "it_priority_project": [],\n' +
+    '  "city_initiative": [{"value": "None", "reason": "not part of any named city initiative"}],\n' +
+    '  "it_priority_project": [{"value": "None", "reason": "not part of a named IT priority project"}],\n' +
     '  "dp_goal": [{"value": "Establish Data Governance", "reason": "brief reason"}],\n' +
-    '  "wwc_practice": [],\n' +
+    '  "wwc_practice": [{"value": "None", "reason": "no clear connection to WWC practice areas"}],\n' +
     '  "wwc_criteria": []\n' +
     '}\n\n' +
-    'Empty arrays mean nothing applies for that field — this is expected and correct for most fields. Every "value" must EXACTLY match one of the available options listed above.';
+    'Every "value" must EXACTLY match one of the available options listed above (including "None"). Do not mix "None" with other values in the same field — if any specific option applies, do not also include "None".';
 
   try {
     if (AI_PROXY_URL.includes('YOUR_SUBDOMAIN')) {
