@@ -2333,6 +2333,15 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .mywork-compact-row { background:#fff; border:1px solid #E8E6DF; border-radius:6px; padding:10px 16px;
   margin-bottom:6px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.15s; }
 .mywork-compact-row:hover { border-color:var(--navy); background:#F0F4FF; }
+.mw-att-row { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+.mw-att-badge { font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px; }
+.mw-att-red { background:#FCEBEB; color:#791F1F; }
+.mw-att-yellow { background:#FAEEDA; color:#633806; }
+.mw-att-gray { background:#F1EFE8; color:#444441; }
+.mw-att-border-red { border-left:3px solid #E24B4A !important; border-radius:0 6px 6px 0 !important; }
+.mw-att-border-yellow { border-left:3px solid #EF9F27 !important; border-radius:0 6px 6px 0 !important; }
+.mw-att-border-gray { border-left:3px solid #B4B2A9 !important; border-radius:0 6px 6px 0 !important; }
+.mw-summary-bar { display:flex; gap:16px; padding:10px 14px; background:#FDFCF8; border:1px solid #E8E6DF; border-radius:8px; margin-bottom:14px; font-size:12px; align-items:center; flex-wrap:wrap; }
 .mywork-compact-title { flex:1; font-size:13px; font-weight:600; color:var(--text); min-width:0; overflow:hidden; }
 .mywork-compact-badge { font-size:11px; font-weight:600; padding:3px 10px; border-radius:12px; white-space:nowrap; }
 .mw-status-select { font-size:10px; font-weight:700; padding:2px 4px; border-radius:6px; border:1px solid;
@@ -3410,7 +3419,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0010';
+const APP_VERSION = '0.12.0.0011';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13484,20 +13493,6 @@ function toggleGanttCollapse(title) {
   rebuildGanttChart();
 }
 
-function toggleAttentionMore() {
-  const cards = document.querySelectorAll('.attention-overflow');
-  const btn = document.getElementById('attention-more-toggle');
-  if (!cards.length || !btn) return;
-  const isHidden = cards[0].style.display === 'none';
-  cards.forEach(function(c) { c.style.display = isHidden ? '' : 'none'; });
-  if (isHidden) {
-    btn.dataset.origLabel = btn.textContent;
-    btn.textContent = 'Show fewer items';
-  } else {
-    btn.textContent = btn.dataset.origLabel || 'Show more';
-  }
-}
-
 function rebuildGanttChart() {
   const container = document.getElementById('gantt-chart-body');
   if (!container) return;
@@ -13615,13 +13610,89 @@ function buildGanttBars() {
 function effectiveDue(t) { return t.working_due || t.due || null; }
 function effectiveEnd(p) { return p.working_due || p.end || null; }
 
+// ── Inline attention badge helpers ─────────────────────────────────
+function getProjectAlerts(p, todayStr, userName) {
+  var alerts = [];
+  var today = new Date();
+  var d = effectiveEnd(p);
+  if (d && d < todayStr && ['Active', 'Scheduled'].indexOf(p.status) >= 0) {
+    var daysOver = Math.ceil((today - new Date(d + 'T00:00:00')) / 86400000);
+    alerts.push({ text: daysOver + 'd overdue', cls: 'mw-att-red', severity: 0 });
+  } else if (d && ['Active', 'Scheduled'].indexOf(p.status) >= 0) {
+    var daysLeft = Math.ceil((new Date(d + 'T00:00:00') - today) / 86400000);
+    if (daysLeft >= 0 && daysLeft <= 7) {
+      alerts.push({ text: daysLeft === 0 ? 'Due today' : 'Due in ' + daysLeft + 'd', cls: 'mw-att-yellow', severity: 1 });
+    }
+  }
+  // Ready to activate — Future/Scheduled projects past their start date
+  if ((p.status === 'Future' || p.status === 'Scheduled') && p.start) {
+    var startDate = new Date(p.start + 'T00:00:00');
+    if (startDate <= today) {
+      var daysPast = Math.floor((today - startDate) / 86400000);
+      alerts.push({ text: daysPast === 0 ? 'Ready to activate' : 'Start was ' + daysPast + 'd ago', cls: 'mw-att-yellow', severity: 1 });
+    }
+  }
+  if (['Active', 'Scheduled', 'On Hold'].indexOf(p.status) >= 0) {
+    var missing = [];
+    if (!p.description) missing.push('description');
+    if (!p.end) missing.push('end date');
+    if (!p.category) missing.push('category');
+    if (!p.problem_statement) missing.push('problem statement');
+    if (missing.length > 0) alerts.push({ text: 'Missing: ' + missing.join(', '), cls: 'mw-att-gray', severity: 2 });
+    // Strategic alignment alerts (only for editors viewing their own lead projects)
+    if (isStrategicAlignmentEditor() && p.contact === userName) {
+      var sMissing = [];
+      if (!p.it_initiative) sMissing.push('IT Initiative');
+      if (!p.city_initiative) sMissing.push('City Initiative');
+      if (!p.wwc_practice) sMissing.push('WWC Practice');
+      if (sMissing.length > 0) alerts.push({ text: 'Alignment: ' + sMissing.join(', '), cls: 'mw-att-gray', severity: 3 });
+    }
+  }
+  return alerts;
+}
+
+function getTaskAlerts(t, todayStr) {
+  var alerts = [];
+  var d = effectiveDue(t);
+  if (d && d < todayStr && ['Active', 'Waiting for Response'].indexOf(t.status) >= 0) {
+    var daysOver = Math.ceil((new Date() - new Date(d + 'T00:00:00')) / 86400000);
+    alerts.push({ text: daysOver + 'd overdue', cls: 'mw-att-red', severity: 0 });
+  } else if (d && ['Active', 'Waiting for Response'].indexOf(t.status) >= 0) {
+    var daysLeft = Math.ceil((new Date(d + 'T00:00:00') - new Date()) / 86400000);
+    if (daysLeft >= 0 && daysLeft <= 7) {
+      alerts.push({ text: daysLeft === 0 ? 'Due today' : 'Due in ' + daysLeft + 'd', cls: 'mw-att-yellow', severity: 1 });
+    }
+  }
+  if (['Active', 'Pending', 'Waiting for Response'].indexOf(t.status) >= 0) {
+    var missing = [];
+    if (!t.description) missing.push('description');
+    if (!t.due) missing.push('due date');
+    if (!t.category) missing.push('category');
+    if (missing.length > 0) alerts.push({ text: 'Missing: ' + missing.join(', '), cls: 'mw-att-gray', severity: 2 });
+  }
+  return alerts;
+}
+
+function renderAttBadges(alerts) {
+  if (!alerts.length) return '';
+  return '<div class="mw-att-row">' + alerts.map(function(a) { return '<span class="mw-att-badge ' + a.cls + '">' + esc(a.text) + '</span>'; }).join('') + '</div>';
+}
+
+function attBorderClass(alerts) {
+  if (!alerts.length) return '';
+  var minSev = alerts.reduce(function(m, a) { return Math.min(m, a.severity); }, 99);
+  if (minSev === 0) return ' mw-att-border-red';
+  if (minSev === 1) return ' mw-att-border-yellow';
+  return ' mw-att-border-gray';
+}
+
 function buildMyWorkTaskRow(t, statusColor, status, todayStr, hrsLabelFn) {
   const eDue = effectiveDue(t);
   const isOverdue = eDue && eDue < todayStr;
   const tHrs = getTaskHours(t.idx);
   const mHrs = hrsLabelFn ? hrsLabelFn(t.idx) : getMyTaskHours(t.idx);
-  let out = '<div class="mywork-compact-row">';
-  // Inline status dropdown
+  const taskAlerts = getTaskAlerts(t, todayStr);
+  let out = '<div class="mywork-compact-row' + attBorderClass(taskAlerts) + '">';
   out += '<select class="mw-status-select" data-type="task" data-id="' + t.objectId + '" onchange="mwQuickStatus(this)" onclick="event.stopPropagation()" style="background:' + statusColor + '18;color:' + statusColor + ';border-color:' + statusColor + '44;">';
   ['Active', 'Pending', 'On Hold', 'Waiting for Response', 'Complete', 'Canceled'].forEach(function(s) {
     out += '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + s + '</option>';
@@ -13629,6 +13700,7 @@ function buildMyWorkTaskRow(t, statusColor, status, todayStr, hrsLabelFn) {
   out += '</select>';
   out += '<span class="mywork-compact-title" onclick="openTask(' + t.objectId + ')" style="cursor:pointer;">' + projectNumChip(t.task_number) + esc(t.title);
   if (t.project) out += '<span style="display:block;font-size:11px;font-weight:400;color:var(--text-muted);margin-top:1px;">' + esc(t.project) + '</span>';
+  out += renderAttBadges(taskAlerts);
   out += '</span>';
   if (tHrs > 0) {
     out += '<span class="mywork-hrs-badge">\u23f1 ' + hoursLabel(tHrs, mHrs) + '</span>';
@@ -13667,7 +13739,14 @@ function buildMyWorkTasksSection(myTasks, todayStr, viewUserTaskHrsFn) {
     const list = tasksByStatus[status];
     if (!list || !list.length) return;
     hasTasks = true;
-    list.sort(function(a, b) { return (a.due || '9999').localeCompare(b.due || '9999'); });
+    list.sort(function(a, b) {
+      var aAlerts = getTaskAlerts(a, todayStr);
+      var bAlerts = getTaskAlerts(b, todayStr);
+      var aMin = aAlerts.length ? aAlerts.reduce(function(m, x) { return Math.min(m, x.severity); }, 99) : 99;
+      var bMin = bAlerts.length ? bAlerts.reduce(function(m, x) { return Math.min(m, x.severity); }, 99) : 99;
+      if (aMin !== bMin) return aMin - bMin;
+      return (a.due || '9999').localeCompare(b.due || '9999');
+    });
     const statusColor = STATUS_COLOR(status);
     html += '<div class="mywork-status-header" style="color:' + statusColor + ';">' + esc(status) + ' (' + list.length + ')</div>';
     list.forEach(function(t) { html += buildMyWorkTaskRow(t, statusColor, status, todayStr, viewUserTaskHrsFn); });
@@ -13685,7 +13764,14 @@ function buildMyWorkTasksSection(myTasks, todayStr, viewUserTaskHrsFn) {
     expandItems.forEach(function(status) {
       const list = tasksByStatus[status];
       if (!list || !list.length) return;
-      list.sort(function(a, b) { return (a.due || '9999').localeCompare(b.due || '9999'); });
+      list.sort(function(a, b) {
+        var aAlerts = getTaskAlerts(a, todayStr);
+        var bAlerts = getTaskAlerts(b, todayStr);
+        var aMin = aAlerts.length ? aAlerts.reduce(function(m, x) { return Math.min(m, x.severity); }, 99) : 99;
+        var bMin = bAlerts.length ? bAlerts.reduce(function(m, x) { return Math.min(m, x.severity); }, 99) : 99;
+        if (aMin !== bMin) return aMin - bMin;
+        return (a.due || '9999').localeCompare(b.due || '9999');
+      });
       const statusColor = STATUS_COLOR(status);
       html += '<div class="mywork-status-header" style="color:' + statusColor + ';">' + esc(status) + ' (' + list.length + ')</div>';
       list.forEach(function(t) { html += buildMyWorkTaskRow(t, statusColor, status, todayStr, null); });
@@ -13790,185 +13876,6 @@ function renderMyWork(area) {
     }).sort(function(a, b) { return b.hours - a.hours; });
   }
 
-  // ── Attention Needed alerts ──────────────────────────────────
-  const alerts = [];
-
-  // Helper: determine if the user is Lead on a project
-  function isLeadOnProject(projTitle) {
-    var proj = PROJECTS.find(function(p) { return p.title === projTitle; });
-    return proj && proj.contact === name;
-  }
-
-  // Overdue open tasks (Active, On Hold, Waiting for Response)
-  overdueTasks.forEach(function(t) {
-    const d = effectiveDue(t);
-    const daysOver = Math.ceil((today - new Date(d + 'T00:00:00')) / (1000 * 60 * 60 * 24));
-    alerts.push({
-      icon: '🔴', type: 'task', id: t.objectId,
-      title: t.title,
-      meta: 'Due ' + d + (t.working_due && t.working_due !== t.due ? ' (orig: ' + t.due + ')' : ''),
-      reason: daysOver + ' day' + (daysOver !== 1 ? 's' : '') + ' overdue',
-      priority: 0,
-      isLead: isLeadOnProject(t.project),
-    });
-  });
-
-  // Open tasks due this week
-  dueThisWeek.forEach(function(t) {
-    const d = effectiveDue(t);
-    const dueDate = new Date(d + 'T00:00:00');
-    const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-    alerts.push({
-      icon: '🟡', type: 'task', id: t.objectId,
-      title: t.title,
-      meta: 'Due ' + d,
-      reason: daysLeft === 0 ? 'Due today' : 'Due in ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : ''),
-      priority: 1,
-      isLead: isLeadOnProject(t.project),
-    });
-  });
-
-  // Incomplete project data — Active/Scheduled/On Hold/Waiting for Response projects
-  const attentionStatuses = ['Active', 'Scheduled', 'On Hold', 'Waiting for Response'];
-  myProjects.filter(function(p) { return attentionStatuses.indexOf(p.status) >= 0; }).forEach(function(p) {
-    const missing = [];
-    if (!p.description) missing.push('description');
-    if (!p.end) missing.push('end date');
-    if (!p.category) missing.push('category');
-    if (!p.partner_dept) missing.push('partner department');
-    if (!p.problem_statement) missing.push('problem statement');
-    if (missing.length > 0) {
-      alerts.push({
-        icon: '📋', type: 'project', id: p.objectId,
-        title: p.title,
-        meta: 'Project · ' + (p.status || 'No status'),
-        reason: 'Missing: ' + missing.join(', '),
-        priority: 2,
-        isLead: p.contact === name,
-      });
-    }
-  });
-
-  // Incomplete task data — Active/Scheduled/On Hold/Waiting for Response tasks only
-  myTasks.filter(function(t) { return attentionStatuses.indexOf(t.status) >= 0; }).forEach(function(t) {
-    const missing = [];
-    if (!t.description) missing.push('description');
-    if (!t.due) missing.push('due date');
-    if (!t.category) missing.push('category');
-    if (missing.length > 0) {
-      alerts.push({
-        icon: '📝', type: 'task', id: t.objectId,
-        title: t.title,
-        meta: 'Task · ' + (t.status || 'No status'),
-        reason: 'Missing: ' + missing.join(', '),
-        priority: 3,
-        isLead: isLeadOnProject(t.project),
-      });
-    }
-  });
-
-  // Missing strategic alignment — only shown to strategic alignment editors
-  if (isStrategicAlignmentEditor()) {
-    myProjects.filter(function(p) { return attentionStatuses.indexOf(p.status) >= 0 && p.contact === name; }).forEach(function(p) {
-      var missing = [];
-      if (!p.it_initiative) missing.push('IT Initiative');
-      if (!p.city_initiative) missing.push('City Initiative');
-      if (!p.wwc_practice) missing.push('WWC Practice');
-      if (missing.length > 0) {
-        alerts.push({
-          icon: '🏷️', type: 'project', id: p.objectId,
-          title: p.title,
-          meta: 'Strategic Alignment · ' + (p.status || 'No status'),
-          reason: 'Missing: ' + missing.join(', '),
-          priority: 4,
-          isLead: true,
-        });
-      }
-    });
-  }
-
-  // Overdue projects — Active/Scheduled projects past their working due / end date
-  const overdueProjectStatuses = ['Active', 'Scheduled'];
-  myProjects.filter(function(p) { return overdueProjectStatuses.indexOf(p.status) >= 0; }).forEach(function(p) {
-    const d = effectiveEnd(p);
-    if (!d || d >= todayStr) return;
-    const daysOver = Math.ceil((today - new Date(d + 'T00:00:00')) / (1000 * 60 * 60 * 24));
-    alerts.push({
-      icon: '🔴', type: 'project', id: p.objectId,
-      title: p.title,
-      meta: 'Due ' + d + (p.working_due && p.working_due !== p.end ? ' (orig: ' + p.end + ')' : ''),
-      reason: daysOver + ' day' + (daysOver !== 1 ? 's' : '') + ' overdue',
-      priority: 0,
-      isLead: p.contact === name,
-    });
-  });
-
-  // Projects due this week — Active or On Hold projects with working due within 7 days
-  myProjects.filter(function(p) { return overdueProjectStatuses.indexOf(p.status) >= 0; }).forEach(function(p) {
-    const d = effectiveEnd(p);
-    if (!d || d < todayStr) return; // already overdue or no date
-    const dueDate = new Date(d + 'T00:00:00');
-    const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-    if (daysLeft <= 7) {
-      alerts.push({
-        icon: '🟡', type: 'project', id: p.objectId,
-        title: p.title,
-        meta: 'Due ' + d,
-        reason: daysLeft === 0 ? 'Due today' : 'Due in ' + daysLeft + ' day' + (daysLeft !== 1 ? 's' : ''),
-        priority: 1,
-        isLead: p.contact === name,
-      });
-    }
-  });
-
-  // Stale projects — Active/Scheduled projects not updated in over 14 days
-  // A task update counts as project activity
-  const staleStatuses = ['Active', 'Scheduled'];
-  myProjects.filter(function(p) { return staleStatuses.indexOf(p.status) >= 0; }).forEach(function(p) {
-    // Find the most recent edit date across the project AND its tasks
-    var lastActivity = p.EditDate || p.editDate || p.edit_date || null;
-    var projTasks = TASKS.filter(function(t) { return t.project === p.title || (!t.project && t.project_id == p.id); });
-    projTasks.forEach(function(t) {
-      var taskEdit = t.EditDate || t.editDate || t.edit_date || null;
-      if (taskEdit && (!lastActivity || taskEdit > lastActivity)) {
-        lastActivity = taskEdit;
-      }
-    });
-    if (!lastActivity) return; // no edit tracking — skip
-    const daysSinceUpdate = Math.floor((Date.now() - lastActivity) / (1000 * 60 * 60 * 24));
-    if (daysSinceUpdate > 14) {
-      const lastUpdated = new Date(lastActivity);
-      const dateStr = lastUpdated.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      alerts.push({
-        icon: '⏳', type: 'project', id: p.objectId,
-        title: p.title,
-        meta: 'Project · ' + p.status,
-        reason: 'No project or task updates in ' + daysSinceUpdate + ' days (last: ' + dateStr + ')',
-        priority: 2,
-        isLead: p.contact === name,
-      });
-    }
-  });
-
-  // Future/Scheduled projects past their start date — should be moved to Active
-  myProjects.filter(function(p) { return p.status === 'Future' || p.status === 'Scheduled'; }).forEach(function(p) {
-    if (!p.start) return;
-    const startDate = new Date(p.start + 'T00:00:00');
-    if (startDate <= today) {
-      const daysPast = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-      alerts.push({
-        icon: '🚀', type: 'project', id: p.objectId,
-        title: p.title,
-        meta: 'Project · ' + p.status,
-        reason: daysPast === 0 ? 'Start date is today — ready to activate' : 'Start date was ' + daysPast + ' day' + (daysPast !== 1 ? 's' : '') + ' ago — should be Active',
-        priority: 1,
-        isLead: p.contact === name,
-      });
-    }
-  });
-
-  alerts.sort(function(a, b) { return a.priority - b.priority; });
-
   // ── Build HTML ──────────────────────────────────────────────
   // Sticky header sits outside mywork-page so it spans full content-area width
   let html = '';
@@ -14014,7 +13921,6 @@ function renderMyWork(area) {
   const jumpLinks = [];
   if (isViewingSelf && isTimeTrackingEnabled()) jumpLinks.push({ id: 'mw-time-tracking', label: '⏱️ Time' });
   jumpLinks.push({ id: 'mw-my-week', label: '📅 Week' });
-  jumpLinks.push({ id: 'mw-attention', label: '⚡ Attention' });
   if (ganttItems_preview.length > 0) jumpLinks.push({ id: 'mw-timeline', label: '📊 Timeline' });
   jumpLinks.push({ id: 'mw-projects', label: '📁 Projects & Tasks' });
   html += '<div class="mywork-jump-nav">';
@@ -14062,55 +13968,22 @@ function renderMyWork(area) {
     startTimerTick();
   }
 
-  // ── Attention Needed — spans both columns ───────────────────
-  html += '<div class="mywork-section mywork-full-width" id="mw-attention">';
-  html += '<div class="mywork-section-header">⚡ Attention Needed <span class="badge-count">' + alerts.length + '</span></div>';
-  if (alerts.length === 0) {
-    html += '<div class="mywork-empty">All caught up! No items need your attention right now.</div>';
-  } else {
-    var leadAlerts = alerts.filter(function(a) { return a.isLead; });
-    var contribAlerts = alerts.filter(function(a) { return !a.isLead; });
+  // ── Attention summary bar — spans both columns ─────────────
+  var allProjAlerts = myProjects.filter(function(p) { return ['Active', 'Scheduled', 'On Hold'].indexOf(p.status) >= 0; }).reduce(function(sum, p) { return sum + (getProjectAlerts(p, todayStr, name).length > 0 ? 1 : 0); }, 0);
+  var allTaskAlerts = myTasks.filter(function(t) { return ['Active', 'Pending', 'Waiting for Response'].indexOf(t.status) >= 0; }).reduce(function(sum, t) { return sum + (getTaskAlerts(t, todayStr).length > 0 ? 1 : 0); }, 0);
+  var totalAlertItems = allProjAlerts + allTaskAlerts;
+  var overdueCount = overdueProjects.length + overdueTasks.length;
+  var dueSoonCount = dueThisWeek.length;
 
-    function renderAlertCards(list) {
-      var out = '<div class="mywork-alert-grid">';
-      list.forEach(function(a) {
-        var onclick = a.type === 'project' ? 'openProject(' + a.id + ')' : 'openTask(' + a.id + ')';
-        var cardClass = a.type === 'project' ? ' mw-card-proj' : ' mw-card-task';
-        out += '<div class="mywork-alert-card' + cardClass + '" onclick="' + onclick + '">';
-        out += '<div class="mywork-alert-icon">' + a.icon + '</div>';
-        out += '<div class="mywork-alert-body">';
-        out += '<div class="mywork-alert-title">' + esc(a.title) + '</div>';
-        out += '<div class="mywork-alert-meta">' + esc(a.meta) + '</div>';
-        out += '<div class="mywork-alert-reason">' + esc(a.reason) + '</div>';
-        out += '</div></div>';
-      });
-      out += '</div>';
-      return out;
-    }
-
-    function renderRoleAlerts(roleAlerts, roleClass, roleLabel) {
-      if (!roleAlerts.length) return '';
-      var projAlerts = roleAlerts.filter(function(a) { return a.type === 'project'; });
-      var taskAlerts = roleAlerts.filter(function(a) { return a.type === 'task'; });
-      var out = '<div class="mw-role-group ' + roleClass + '">';
-      out += '<div class="mw-role-hdr">' + roleLabel + ' <span class="mw-role-count">(' + roleAlerts.length + ')</span></div>';
-      out += '<div class="mw-role-body">';
-      if (projAlerts.length > 0) {
-        out += '<div class="mw-type-hdr mw-type-proj">Projects (' + projAlerts.length + ')</div>';
-        out += renderAlertCards(projAlerts);
-      }
-      if (taskAlerts.length > 0) {
-        out += '<div class="mw-type-hdr mw-type-task">Tasks (' + taskAlerts.length + ')</div>';
-        out += renderAlertCards(taskAlerts);
-      }
-      out += '</div></div>';
-      return out;
-    }
-
-    html += renderRoleAlerts(leadAlerts, 'mw-role-lead', 'As lead');
-    html += renderRoleAlerts(contribAlerts, 'mw-role-contrib', 'As contributor');
+  if (totalAlertItems > 0) {
+    html += '<div class="mywork-section mywork-full-width" style="margin-bottom:8px;">';
+    html += '<div class="mw-summary-bar">';
+    if (overdueCount > 0) html += '<div style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#E24B4A;display:inline-block;"></span><span style="font-weight:700;color:#1a1a1a;">' + overdueCount + ' overdue</span></div>';
+    if (dueSoonCount > 0) html += '<div style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#EF9F27;display:inline-block;"></span><span style="font-weight:700;color:#1a1a1a;">' + dueSoonCount + ' due soon</span></div>';
+    var missingDataCount = totalAlertItems - (overdueCount > 0 ? Math.min(overdueCount, totalAlertItems) : 0);
+    if (missingDataCount > 0 && totalAlertItems > overdueCount + dueSoonCount) html += '<div style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span><span style="font-weight:700;color:#1a1a1a;">' + (totalAlertItems - overdueCount - dueSoonCount) + ' missing data</span></div>';
+    html += '</div></div>';
   }
-  html += '</div>';
 
   // ── My Week — spans both columns ───────────────────────────
   html += '<div class="mywork-section mywork-full-width" id="mw-my-week">';
@@ -14213,6 +14086,15 @@ function renderMyWork(area) {
   function renderProjGroup(status, list) {
     var filtered = list.filter(function(p) { return p.status === status; });
     if (!filtered.length) return '';
+    // Sort: items with alerts first (by severity), then alphabetically
+    filtered.sort(function(a, b) {
+      var aAlerts = getProjectAlerts(a, todayStr, name);
+      var bAlerts = getProjectAlerts(b, todayStr, name);
+      var aMin = aAlerts.length ? aAlerts.reduce(function(m, x) { return Math.min(m, x.severity); }, 99) : 99;
+      var bMin = bAlerts.length ? bAlerts.reduce(function(m, x) { return Math.min(m, x.severity); }, 99) : 99;
+      if (aMin !== bMin) return aMin - bMin;
+      return (a.title || '').localeCompare(b.title || '');
+    });
     const statusColor = STATUS_COLOR(status);
     let out = '<div class="mywork-status-header" style="color:' + statusColor + ';">' + esc(status) + ' (' + filtered.length + ')</div>';
     filtered.forEach(function(p) {
@@ -14220,13 +14102,16 @@ function renderMyWork(area) {
       const doneCount = taskCount.filter(function(t) { return t.status === 'Complete'; }).length;
       const totalCount = taskCount.length;
       const taskLabel = totalCount > 0 ? doneCount + '/' + totalCount + ' tasks done' : 'No tasks';
-      out += '<div class="mywork-compact-row">';
+      const projAlerts = getProjectAlerts(p, todayStr, name);
+      out += '<div class="mywork-compact-row' + attBorderClass(projAlerts) + '">';
       out += '<select class="mw-status-select" data-type="project" data-id="' + p.objectId + '" onchange="mwQuickStatus(this)" onclick="event.stopPropagation()" style="background:' + statusColor + '18;color:' + statusColor + ';border-color:' + statusColor + '44;">';
       ['Active', 'Scheduled', 'On Hold', 'Future', 'Complete', 'Canceled'].forEach(function(s) {
         out += '<option value="' + s + '"' + (p.status === s ? ' selected' : '') + '>' + s + '</option>';
       });
       out += '</select>';
-      out += '<span class="mywork-compact-title" onclick="openProject(' + p.objectId + ')" style="cursor:pointer;">' + projectNumChip(p.project_number) + esc(p.title) + '</span>';
+      out += '<span class="mywork-compact-title" onclick="openProject(' + p.objectId + ')" style="cursor:pointer;">' + projectNumChip(p.project_number) + esc(p.title);
+      out += renderAttBadges(projAlerts);
+      out += '</span>';
       out += '<span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">' + taskLabel + '</span>';
       out += '</div>';
     });

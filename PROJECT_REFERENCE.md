@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.12.0.0009 (see Version History at bottom)
+> **Current Version:** 0.12.0.0011 (see Version History at bottom)
 
 ---
 
@@ -1502,6 +1502,8 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.12.0.0007 | Hide restricted fields entirely for non-editors (instead of grayed out); disable operational fields (Priority, Size, Lead, Team, Timeline, Strategic Alignment) for non-admin Idea editors; Idea status yellow banner |
 | 0.12.0.0008 | Admin preview mode: "Preview as member" toggle in header; Auth.previewMode flag; isAdmin() helper replaces direct Auth.isTeamLead checks in UI rendering |
 | 0.12.0.0009 | Remove Data Program checkbox — is_data_program now derived from dp_goal field; add missing strategic alignment alerts to Needs Attention (IT Initiative, City Initiative, WWC Practice) for strategic alignment editors only |
+| 0.12.0.0010 | Task form: require Title, Status, Assignee, Project, and Description with validation and red border highlights |
+| 0.12.0.0011 | Merge Attention Needed into My Projects/Tasks (Option A): inline attention badges on project cards and task rows with colored left borders; items sorted by alert severity within groups; compact summary bar replaces separate Attention section; added stale/ready-to-activate alerts to getProjectAlerts; removed toggleAttentionMore and old alerts building code |
 
 ---
 
