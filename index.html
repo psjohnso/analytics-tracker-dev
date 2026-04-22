@@ -1298,7 +1298,8 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   padding-bottom:6px; border-bottom:1.5px solid #E8E6DF; }
 .fm-section-label:first-child { margin-top:0; }
 /* Collapsible form sections */
-.fm-sec { border:1px solid #E8E6DF; border-radius:10px; margin-bottom:10px; overflow:hidden; }
+.fm-sec { border:1px solid #E8E6DF; border-radius:10px; margin-bottom:10px; overflow:visible; }
+.fm-sec.collapsed { overflow:hidden; }
 .fm-sec:first-child { margin-top:0; }
 .fm-sec-hd { display:flex; align-items:center; justify-content:space-between; padding:10px 16px;
   cursor:pointer; user-select:none; transition:background 0.1s; }
@@ -3413,7 +3414,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0017';
+const APP_VERSION = '0.12.0.0018';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
