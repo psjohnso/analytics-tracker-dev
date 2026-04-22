@@ -3419,7 +3419,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0012';
+const APP_VERSION = '0.12.0.0013';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13728,9 +13728,9 @@ function buildMyWorkTasksSection(myTasks, todayStr, viewUserTaskHrsFn) {
   const canceledCount = (tasksByStatus['Canceled'] || []).length;
   const hiddenCount = pendingCount + onHoldCount + completeCount + canceledCount;
 
-  html += '<div class="mywork-section-header" style="display:flex;align-items:center;justify-content:space-between;">'+
+  html += '<div class="mywork-section-header" style="justify-content:space-between;">'+
     '<div>✅ My Tasks <span class="badge-count">' + myTasks.length + '</span></div>' +
-    '<button onclick="mwNewTask()" style="display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;border:1px solid #C24200;background:transparent;cursor:pointer;font-family:Lato,sans-serif;font-size:10px;font-weight:700;color:#C24200;">＋ New</button>' +
+    '<button onclick="mwNewTask()" style="padding:3px 8px;border-radius:4px;border:1px solid #C24200;background:transparent;cursor:pointer;font-family:Lato,sans-serif;font-size:10px;font-weight:700;color:#C24200;line-height:1;">＋ New</button>' +
     '</div>';
 
   const defaultStatuses = ['Active', 'Waiting for Response'];
