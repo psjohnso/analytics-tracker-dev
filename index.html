@@ -2316,7 +2316,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .mywork-kpi-value.good { color:#22C55E; }
 .mywork-section { margin-bottom:28px; }
 .mywork-section-header { font-family:'Lato',sans-serif; font-size:14px; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:0.06em;
-  margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid #E8E6DF; display:flex; align-items:center; gap:8px; }
+  margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid #E8E6DF; display:flex; align-items:center; gap:8px; min-height:28px; }
 .mywork-section-header .badge-count { background:var(--navy); color:#fff; font-size:10px; font-weight:700;
   padding:2px 8px; border-radius:10px; }
 .mywork-alert-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
@@ -3419,7 +3419,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0011';
+const APP_VERSION = '0.12.0.0012';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13730,7 +13730,7 @@ function buildMyWorkTasksSection(myTasks, todayStr, viewUserTaskHrsFn) {
 
   html += '<div class="mywork-section-header" style="display:flex;align-items:center;justify-content:space-between;">'+
     '<div>✅ My Tasks <span class="badge-count">' + myTasks.length + '</span></div>' +
-    '<button onclick="mwNewTask()" style="display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;border:1.5px solid #C24200;background:transparent;cursor:pointer;font-family:Lato,sans-serif;font-size:12px;font-weight:700;color:#C24200;">＋ New task</button>' +
+    '<button onclick="mwNewTask()" style="display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;border:1px solid #C24200;background:transparent;cursor:pointer;font-family:Lato,sans-serif;font-size:10px;font-weight:700;color:#C24200;">＋ New</button>' +
     '</div>';
 
   const defaultStatuses = ['Active', 'Waiting for Response'];
