@@ -3419,7 +3419,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0013';
+const APP_VERSION = '0.12.0.0014';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -4716,13 +4716,6 @@ function filterTasks() {
         if (proj.other_members && activeFilters.member.some(function(m) { return proj.other_members.includes(m); })) return true;
       }
       return false;
-    });
-  }
-  // When project status filters are active, also filter tasks to only those on matching projects
-  if (activeFilters.status.length) {
-    data = data.filter(function(t) {
-      var proj = PROJECTS.find(function(p) { return p.title === t.project; });
-      return proj && activeFilters.status.includes(proj.status);
     });
   }
   if (activeFilters.search) data = data.filter(t =>
