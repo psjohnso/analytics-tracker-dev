@@ -3413,7 +3413,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0015';
+const APP_VERSION = '0.12.0.0016';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9454,11 +9454,6 @@ function buildTaskForm(t) {
       fmTaskToolField(v('tool'), false) +
       fmTaskCategoryField(v('category'), false) +
     '</div>' +
-    '<div class="fm-section-label">Lifecycle Requirements</div>' +
-    '<div class="fm-grid">' +
-      fmField('Satisfies Requirement(s)', buildPhaseReqSelector(v('phase_requirements')), false, true,
-        'Link this task to lifecycle phase requirements. Completing this task will count toward satisfying the selected requirements.') +
-    '</div>' +
     '<div class="fm-section-label">Timeline</div>' +
     '<div class="fm-grid">' +
       fmField('Start Date', fmInput('fm-start', v('start'), '', 'date')) +
@@ -10402,15 +10397,7 @@ function renderProjectDetail(id) {
       <div style="text-align:center;" onclick="event.stopPropagation()">
         <input type="checkbox" class="batch-task-cb" data-task-id="${t.objectId}" onchange="updateBatchBar()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--navy);">
       </div>
-      <div class="detail-task-title" onclick="openTaskFromProject(${t.objectId})" style="cursor:pointer;">${(() => {
-        var reqs = parsePhaseReqs(t);
-        var phaseChip = '';
-        if (reqs.length > 0) {
-          var info = REQUIREMENT_LOOKUP[reqs[0]];
-          if (info) phaseChip = '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#EEEDFE;color:#3C3489;margin-right:6px;white-space:nowrap;">P' + info.phaseId + '</span>';
-        }
-        return phaseChip;
-      })()}${projectNumChip(t.task_number)}${esc(t.title)}${t.resolution ? '<div style="font-size:11px;font-weight:400;color:var(--text-muted);margin-top:2px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + esc(t.resolution.length > 150 ? t.resolution.slice(0, 150) + '…' : t.resolution) + '</div>' : ''}</div>
+      <div class="detail-task-title" onclick="openTaskFromProject(${t.objectId})" style="cursor:pointer;">${projectNumChip(t.task_number)}${esc(t.title)}${t.resolution ? '<div style="font-size:11px;font-weight:400;color:var(--text-muted);margin-top:2px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + esc(t.resolution.length > 150 ? t.resolution.slice(0, 150) + '…' : t.resolution) + '</div>' : ''}</div>
       <div onclick="event.stopPropagation()">
         <select class="mw-status-select" data-type="task" data-id="${t.objectId}" onchange="mwQuickStatus(this)" style="font-size:10px;padding:2px 4px;min-width:100px;background:${sc2}18;color:${sc2};border-color:${sc2}44;">
           ${['Active','Pending','On Hold','Waiting for Response','Complete','Canceled'].map(function(s) { return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('')}
@@ -10481,8 +10468,6 @@ function renderProjectDetail(id) {
       ${buildStrategicAlignmentSection(p)}
 
       ${buildProjectTimeline(p)}
-
-      ${(p.status === 'Active' || p.status === 'Scheduled') ? renderPhaseStepper(p.title) : ''}
 
       ${p.problem_statement ? `<div class="detail-section">
         <div class="detail-section-label">Problem Statement</div>
@@ -10602,30 +10587,11 @@ function renderProjectDetail(id) {
         </div>
         <div class="detail-tasks-table">
           ${(() => {
-            var isActiveOrScheduled = p.status === 'Active' || p.status === 'Scheduled';
-            var phaseHtml = isActiveOrScheduled ? renderPhaseGroupedTasks(p.title, relTasks) : '';
-            var hasPhaseView = !!phaseHtml;
-            var showPhaseView = hasPhaseView && _taskViewMode === 'phase';
-
-            var toggleBtns = '';
-            if (hasPhaseView && relTasks.length > 0) {
-              var listActive = _taskViewMode === 'list' ? 'background:var(--navy);color:#fff;border-color:var(--navy);' : '';
-              var phaseActive = _taskViewMode === 'phase' ? 'background:var(--navy);color:#fff;border-color:var(--navy);' : '';
-              toggleBtns = '<div style="display:flex;gap:4px;margin-bottom:8px;">' +
-                '<button onclick="toggleTaskView(\'list\')" style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-family:Lato,sans-serif;' + listActive + '">List view</button>' +
-                '<button onclick="toggleTaskView(\'phase\')" style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-family:Lato,sans-serif;' + phaseActive + '">Phase view</button>' +
-              '</div>';
-            }
-
             var header = relTasks.length ? `<div class="detail-tasks-header">
               <div style="text-align:center;"><input type="checkbox" id="batch-select-all" onchange="toggleSelectAllTasks(this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:#fff;" title="Select all"></div>
               <div>Task</div><div>Status</div><div>Priority</div><div>Assignee</div><div>Due Date</div><div>Hours</div>
             </div>` : '';
-
-            if (showPhaseView) {
-              return toggleBtns + header + phaseHtml + projHrsRow;
-            }
-            return toggleBtns + header + taskRows + projHrsRow;
+            return header + taskRows + projHrsRow;
           })()}
         </div>
       </div>
@@ -10670,13 +10636,6 @@ function renderTaskDetail(idx) {
         <span class="priority-badge priority-${t.priority||'null'}">${t.priority||'—'}</span>
         ${t.assignee ? `<span class="detail-hero-chip">${esc(t.assignee)}</span>` : ''}
         ${getTaskHours(t.idx) > 0 ? `<span class="detail-hero-chip">⏱ ${hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx))}</span>` : ''}
-        ${(() => {
-          var reqs = parsePhaseReqs(t);
-          var hasRealReq = reqs.some(function(rId) { return REQUIREMENT_LOOKUP[rId]; });
-          if (hasRealReq) return '<span class="detail-hero-chip" style="background:rgba(34,197,94,0.25);border:1px solid rgba(34,197,94,0.4);">✓ Required Task</span>';
-          if (reqs.length > 0) return '<span class="detail-hero-chip" style="background:rgba(255,219,34,0.2);border:1px solid rgba(255,219,34,0.4);">Phase Task</span>';
-          return '<span class="detail-hero-chip" style="background:rgba(255,255,255,0.08);opacity:0.6;">Unlinked Task</span>';
-        })()}
       </div>
     </div>
 
@@ -10708,23 +10667,6 @@ function renderTaskDetail(idx) {
         <div class="detail-section-label">Resolution</div>
         <div class="detail-prose task-prose">${renderMd(t.resolution)}</div>
       </div>` : ''}
-
-      ${(() => {
-        var reqs = parsePhaseReqs(t);
-        if (!reqs.length) return '';
-        var chips = reqs.map(function(rId) {
-          var info = resolveReqInfo(rId);
-          if (!info) return '';
-          var bgColor = info.isOptional ? '#FEF3C7' : '#EEF2FF';
-          var textColor = info.isOptional ? '#92400E' : 'var(--navy)';
-          return '<div style="display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:13px;">' +
-            '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:' + bgColor + ';color:' + textColor + ';white-space:nowrap;flex-shrink:0;">Phase ' + info.phaseId + '</span>' +
-            '<span>' + esc(info.label) + '</span></div>';
-        }).join('');
-        return '<div class="detail-section"><div class="detail-section-label">Lifecycle requirements</div>' + chips + '</div>';
-      })()}
-
-      <div id="ai-phase-suggest" style="display:none;margin:0 0 16px;"></div>
 
       ${proj ? `<div class="detail-section">
         <div class="detail-section-label">Parent Project</div>
