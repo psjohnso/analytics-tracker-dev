@@ -3432,7 +3432,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0028';
+const APP_VERSION = '0.12.0.0029';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -4834,6 +4834,7 @@ function render() {
 
   // ── Detail page mode ──────────────────────────────────────────────
   if (currentDetail) {
+    var detailScrollY = window.scrollY;
     document.querySelector('.app-body').classList.add('detail-mode');
     document.getElementById('view-toggle').style.display = 'none';
     document.getElementById('btn-add-new').style.display = 'none';
@@ -4851,8 +4852,13 @@ function render() {
     } else if (currentDetail.type === 'idea-review') {
       area.innerHTML = renderIdeaReview();
     }
-    window.scrollTo(0, 0);
-    area.scrollTop = 0;
+    if (!currentDetail._rendered) {
+      currentDetail._rendered = true;
+      window.scrollTo(0, 0);
+      area.scrollTop = 0;
+    } else {
+      window.scrollTo(0, detailScrollY);
+    }
     return;
   }
   document.querySelector('.app-body').classList.remove('detail-mode');
@@ -13336,9 +13342,7 @@ function toggleDetailTaskSort(col) {
     _dtSortCol = col;
     _dtSortDir = 'asc';
   }
-  var scrollY = window.scrollY;
   render();
-  window.scrollTo(0, scrollY);
 }
 
 function sortDetailTasks(tasks) {
