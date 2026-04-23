@@ -3432,7 +3432,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0029';
+const APP_VERSION = '0.12.0.0030';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13650,7 +13650,17 @@ function buildGanttBars() {
     html += '</div></div>';
 
     if (!isCollapsed) {
-      g.tasks.forEach(function(t) {
+      var viewUser = g._viewUser || '';
+      // Sort: user's tasks first, then others; within each group sort by due date
+      var sortedTasks = g.tasks.slice().sort(function(a, b) {
+        var aIsMine = a.assignee === viewUser ? 0 : 1;
+        var bIsMine = b.assignee === viewUser ? 0 : 1;
+        if (aIsMine !== bIsMine) return aIsMine - bIsMine;
+        var aEnd = a.working_due || a.due || '9999';
+        var bEnd = b.working_due || b.due || '9999';
+        return aEnd.localeCompare(bEnd);
+      });
+      sortedTasks.forEach(function(t) {
       const tStart = t.start || g.start || todayStr;
       const tEnd = t.working_due || t.due || g.end || todayStr;
       const tLeftPct = ganttPct(tStart);
@@ -13658,11 +13668,14 @@ function buildGanttBars() {
       const tWidth = Math.max(0.5, tRightPct - tLeftPct);
       const tOverdue = tEnd < todayStr;
       const tsc = STATUS_COLOR(t.status) || '#93C5FD';
+      const isMine = t.assignee === viewUser;
+      const barOpacity = isMine ? '0.85' : '0.3';
+      const labelStyle = isMine ? 'color:var(--text-body);font-weight:600;' : 'color:var(--text-muted);font-weight:400;opacity:0.7;';
 
       html += '<div style="display:flex;align-items:center;margin-bottom:1px;height:20px;">';
-      html += '<div style="width:200px;flex-shrink:0;font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:16px;padding-right:8px;cursor:pointer;" onclick="openTask(' + t.objectId + ')" title="' + esc(t.title) + '">› ' + esc(t.title) + '</div>';
+      html += '<div style="width:200px;flex-shrink:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:16px;padding-right:8px;cursor:pointer;' + labelStyle + '" onclick="openTask(' + t.objectId + ')" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + '">' + (isMine ? '› ' : '› ') + esc(t.title) + '</div>';
       html += '<div style="flex:1;position:relative;height:14px;">';
-      html += '<div style="position:absolute;left:' + tLeftPct + '%;width:' + tWidth + '%;height:100%;background:' + tsc + ';border-radius:3px;opacity:0.7;' + (tOverdue ? 'outline:2px solid #EF4444;outline-offset:1px;' : '') + '" title="' + tStart + ' → ' + tEnd + '"></div>';
+      html += '<div style="position:absolute;left:' + tLeftPct + '%;width:' + tWidth + '%;height:100%;background:' + tsc + ';border-radius:3px;opacity:' + barOpacity + ';' + (tOverdue && isMine ? 'outline:2px solid #EF4444;outline-offset:1px;' : '') + '" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + ' ' + tStart + ' → ' + tEnd + '"></div>';
       html += '</div></div>';
     });
     } // end if (!isCollapsed)
@@ -13678,6 +13691,11 @@ function buildGanttBars() {
   }
 
   html += '</div></div>'; // min-width + overflow wrappers
+  // Legend
+  html += '<div style="display:flex;gap:16px;margin-top:8px;padding-top:8px;border-top:1px solid #E8E6DF;font-size:11px;color:var(--text-muted);">';
+  html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.85;display:inline-block;"></span> Your tasks</span>';
+  html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.3;display:inline-block;"></span> Other members\' tasks</span>';
+  html += '</div>';
   return html;
 }
 
@@ -14249,8 +14267,9 @@ function renderMyWork(area) {
     const pStart = p.start || null;
     const pEnd = p.actual_end || p.working_due || p.end || null;
     if (!pStart && !pEnd) return;
-    const projTasks = myTasks.filter(function(t) {
-      return (t.project === p.title) && t.status !== 'Complete' && t.status !== 'Canceled';
+    // Include ALL open tasks for this project, not just the signed-in user's
+    const projTasks = TASKS.filter(function(t) {
+      return (t.project === p.title || (!t.project && t.project_id == p.id)) && t.status !== 'Complete' && t.status !== 'Canceled';
     });
     // Determine role
     var role = 'Contributing';
@@ -14262,7 +14281,7 @@ function renderMyWork(area) {
     }
     ganttItems.push({
       type: 'project', id: p.objectId, title: p.title, status: p.status,
-      start: pStart, end: pEnd, tasks: projTasks, role: role
+      start: pStart, end: pEnd, tasks: projTasks, role: role, _viewUser: name
     });
   });
 

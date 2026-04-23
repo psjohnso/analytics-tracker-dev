@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.12.0.0019 (see Version History at bottom)
+> **Current Version:** 0.12.0.0030 (see Version History at bottom)
 
 ---
 
@@ -1512,6 +1512,17 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.12.0.0017 | Restrict project editing to lead/admin; expand category dropdown height |
 | 0.12.0.0018 | Fix category dropdown clipped by fm-sec overflow:hidden |
 | 0.12.0.0019 | Add None option to IT Initiative, City Initiative, IT Priority Project, Data Program Goal, and WWC Practice; update Data Program derivation to ignore None |
+| 0.12.0.0020 | Update strategic alignment AI prompt: Data Program Goals only suggested for projects that build data team capabilities; filter None from all option lists sent to AI |
+| 0.12.0.0021 | AI suggests None explicitly for alignment fields where no option applies; restore None in AI option lists |
+| 0.12.0.0022 | Make AI help buttons prominent with unified amber pill style across all wizard triggers |
+| 0.12.0.0023 | Split project detail tasks into In Progress (Active, On Hold, Waiting for Response) / Other groups; add sortable column headers |
+| 0.12.0.0024 | Fix sort scroll jump on project detail; add sortable ID column to task table |
+| 0.12.0.0025 | Add member_group field (Core/Contributor) to team members; sidebar member filter defaults to Core with "Show N more contributors" toggle |
+| 0.12.0.0026 | Rename member_group values: Core to Data Intelligence, Contributor to Affiliated |
+| 0.12.0.0027 | Fix task member filter to match assignee only, not project lead/contributor |
+| 0.12.0.0028 | Add On Hold option to batch task status dropdown |
+| 0.12.0.0029 | Preserve scroll position on detail page re-renders; only scroll to top on first navigation |
+| 0.12.0.0030 | Timeline shows all project tasks with visual distinction: user's tasks at full opacity, others faded; tasks sorted mine-first; legend added |
 
 ---
 
