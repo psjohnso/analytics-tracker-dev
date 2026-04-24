@@ -3434,7 +3434,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0031';
+const APP_VERSION = '0.12.0.0034';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9742,6 +9742,22 @@ async function handleFormSubmit(andDownload) {
     return;
   }
 
+  // ── Business rule: Active tasks require a due date and start date ──
+  if (!isProject && fields.status === 'Active') {
+    if (!fields.start) {
+      showToast('A start date is required for Active tasks. Please add a start date.', 'warn');
+      var startEl = document.getElementById('fm-start');
+      if (startEl) { startEl.style.borderColor = '#EF4444'; startEl.focus(); }
+      return;
+    }
+    if (!fields.due && !fields.working_due) {
+      showToast('A due date is required for Active tasks. Please add a due date.', 'warn');
+      var dueEl = document.getElementById('fm-due');
+      if (dueEl) { dueEl.style.borderColor = '#EF4444'; dueEl.focus(); }
+      return;
+    }
+  }
+
   // Show saving state
   var saveBtn = document.getElementById('fm-save-btn');
   var saveBtnOrigText = saveBtn ? saveBtn.textContent : '';
@@ -10150,6 +10166,26 @@ async function applyBatchUpdate() {
   if (!newStatus && !newPriority && !newAssignee && !newProject) {
     showToast('Select a status, priority, assignee, or project to apply.', 'warn');
     return;
+  }
+
+  // Block batch-setting to Active if any selected tasks lack a due date
+  if (newStatus === 'Active') {
+    var tasksWithoutDates = ids.filter(function(id) {
+      var task = TASKS.find(function(t) { return t.objectId == id; });
+      return task && !task.due && !task.working_due;
+    });
+    if (tasksWithoutDates.length > 0) {
+      showToast(tasksWithoutDates.length + ' selected task(s) are missing a due date. Add due dates before setting to Active.', 'warn');
+      return;
+    }
+    var tasksWithoutStart = ids.filter(function(id) {
+      var task = TASKS.find(function(t) { return t.objectId == id; });
+      return task && !task.start;
+    });
+    if (tasksWithoutStart.length > 0) {
+      showToast(tasksWithoutStart.length + ' selected task(s) are missing a start date. Add start dates before setting to Active.', 'warn');
+      return;
+    }
   }
 
   var today = new Date();
@@ -13452,6 +13488,20 @@ async function mwQuickStatus(selectEl) {
   var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
 
   if (type === 'task') {
+    // Block setting Active without a due date
+    if (newStatus === 'Active') {
+      var task = TASKS.find(function(t) { return t.objectId == id; });
+      if (task && !task.due && !task.working_due) {
+        showToast('A due date is required before setting a task to Active. Please edit the task to add a due date first.', 'warn');
+        selectEl.value = task.status;
+        return;
+      }
+      if (task && !task.start) {
+        showToast('A start date is required before setting a task to Active. Please edit the task to add a start date first.', 'warn');
+        selectEl.value = task.status;
+        return;
+      }
+    }
     var fields = { status: newStatus };
     if (newStatus === 'Complete') fields.actual_end = todayStr;
     try {
@@ -13776,7 +13826,8 @@ function getTaskAlerts(t, todayStr) {
   if (['Active', 'Pending', 'Waiting for Response'].indexOf(t.status) >= 0) {
     var missing = [];
     if (!t.description) missing.push('description');
-    if (!t.due) missing.push('due date');
+    if (!t.due && t.status === 'Active') missing.push('due date');
+    if (!t.start && t.status === 'Active') missing.push('start date');
     if (!t.category) missing.push('category');
     if (missing.length > 0) alerts.push({ text: 'Missing: ' + missing.join(', '), cls: 'mw-att-gray', severity: 2 });
   }
