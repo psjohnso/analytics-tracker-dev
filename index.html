@@ -3464,7 +3464,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.13.1.0002';
+const APP_VERSION = '0.13.1.0003';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13844,12 +13844,12 @@ function buildGanttBars() {
   }
   const todayPct = ganttPct(todayStr);
 
-  let html = '<div style="overflow-x:auto;"><div style="min-width:700px;position:relative;">';
+  let html = '<div style="overflow-x:auto;"><div style="min-width:800px;position:relative;">';
 
-  // Month header
-  html += '<div style="position:relative;height:22px;margin-bottom:4px;border-bottom:1px solid var(--border);">';
+  // Month header — offset to align with timeline track (past label column)
+  html += '<div style="position:relative;height:22px;margin-bottom:4px;border-bottom:1px solid var(--border);margin-left:280px;">';
   monthLabels.forEach(function(m) {
-    html += '<span style="position:absolute;left:' + m.pct + '%;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;transform:translateX(-50%);">' + m.label + '</span>';
+    html += '<span style="position:absolute;left:' + m.pct + '%;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;transform:translateX(-50%);white-space:nowrap;">' + m.label + '</span>';
   });
   html += '</div>';
 
@@ -13886,7 +13886,7 @@ function buildGanttBars() {
     const arrowClick = hasTasks ? ' onclick="event.stopPropagation();toggleGanttCollapse(\'' + esc(g.title).replace(/'/g, "\\'") + '\')" style="cursor:pointer;margin-right:4px;font-size:9px;opacity:0.6;user-select:none;"' : ' style="margin-right:4px;font-size:7px;opacity:0.4;"';
 
     html += '<div style="display:flex;align-items:center;margin-bottom:2px;height:28px;">';
-    html += '<div style="width:200px;flex-shrink:0;display:flex;align-items:center;overflow:hidden;">';
+    html += '<div style="width:280px;flex-shrink:0;display:flex;align-items:center;overflow:hidden;">';
     html += '<span' + arrowClick + '>' + arrow + '</span>';
     html += '<span style="font-size:13px;font-weight:700;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;" onclick="openProject(' + g.id + ')" title="' + esc(g.title) + '">' + esc(g.title) + '</span>';
     if (hasTasks) html += '<span style="font-size:10px;color:var(--text-muted);margin-left:4px;flex-shrink:0;">(' + g.tasks.length + ')</span>';
@@ -13922,7 +13922,7 @@ function buildGanttBars() {
       const blockedBarStyle = isBlocked ? 'background:repeating-linear-gradient(45deg,' + tsc + ',' + tsc + ' 3px,transparent 3px,transparent 6px);' : 'background:' + tsc + ';';
 
       html += '<div style="display:flex;align-items:center;margin-bottom:1px;height:20px;">';
-      html += '<div style="width:200px;flex-shrink:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:16px;padding-right:8px;cursor:pointer;' + labelStyle + '" onclick="openTask(' + t.objectId + ')" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + (isBlocked ? ' [DEPS PENDING]' : '') + '">' + blockedIcon + esc(t.title) + '</div>';
+      html += '<div style="width:280px;flex-shrink:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:16px;padding-right:8px;cursor:pointer;' + labelStyle + '" onclick="openTask(' + t.objectId + ')" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + (isBlocked ? ' [DEPS PENDING]' : '') + '">' + blockedIcon + esc(t.title) + '</div>';
       html += '<div style="flex:1;position:relative;height:14px;">';
       html += '<div style="position:absolute;left:' + tLeftPct + '%;width:' + tWidth + '%;height:100%;' + blockedBarStyle + 'border-radius:3px;opacity:' + barOpacity + ';' + (tOverdue && isMine ? 'outline:2px solid #EF4444;outline-offset:1px;' : '') + '" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + ' ' + tStart + ' → ' + tEnd + (isBlocked ? ' [DEPS PENDING]' : '') + '"></div>';
       html += '</div></div>';
@@ -13935,8 +13935,8 @@ function buildGanttBars() {
 
   // Today marker
   if (todayPct > 0 && todayPct < 100) {
-    html += '<div style="position:absolute;top:0;bottom:0;left:calc(200px + (100% - 200px) * ' + (todayPct / 100) + ');width:2px;background:#EF4444;opacity:0.6;pointer-events:none;z-index:5;"></div>';
-    html += '<div style="position:absolute;top:2px;left:calc(200px + (100% - 200px) * ' + (todayPct / 100) + ');transform:translateX(-50%);font-size:9px;font-weight:800;color:#EF4444;pointer-events:none;z-index:6;">TODAY</div>';
+    html += '<div style="position:absolute;top:26px;bottom:0;left:calc(280px + (100% - 280px) * ' + (todayPct / 100) + ');width:2px;background:#EF4444;opacity:0.6;pointer-events:none;z-index:5;"></div>';
+    html += '<div style="position:absolute;top:27px;left:calc(280px + (100% - 280px) * ' + (todayPct / 100) + ');transform:translateX(-50%);font-size:9px;font-weight:800;color:#EF4444;pointer-events:none;z-index:6;background:#fff;padding:0 3px;">TODAY</div>';
   }
 
   html += '</div></div>'; // min-width + overflow wrappers
