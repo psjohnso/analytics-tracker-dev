@@ -3434,7 +3434,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0034';
+const APP_VERSION = '0.12.0.0035';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -6661,6 +6661,9 @@ function markSynced(msg) {
 
 
 
+// ── Feature flags ──────────────────────────────────────────────────
+const FEATURE_DEPENDENCIES = true; // Set to false to hide all dependency UI
+
 // ══════════════════════════════════════════════════════════════════════
 //  ARCGIS ONLINE REST API INTEGRATION
 // ══════════════════════════════════════════════════════════════════════
@@ -9498,6 +9501,12 @@ function buildTaskForm(t) {
       fmTaskToolField(v('tool'), false) +
       fmTaskCategoryField(v('category'), false) +
     '</div>' +
+    (FEATURE_DEPENDENCIES ?
+      '<div class="fm-section-label">Dependencies</div>' +
+      '<div class="fm-grid">' +
+        fmField('Blocked by', '<div id="fm-blocked-by-list" style="max-height:180px;overflow-y:auto;border:1px solid #E8E6DF;border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text-muted);">Select a project first</div>', false, true,
+          'Tasks that must be completed before this task can start. Only sibling tasks from the same project are shown.') +
+      '</div>' : '') +
     '<div class="fm-section-label">Timeline</div>' +
     '<div class="fm-grid">' +
       fmField('Start Date', fmInput('fm-start', v('start'), '', 'date')) +
@@ -9552,6 +9561,22 @@ function openFormModal(mode, id) {
   initSearchableSelect('fm-category');
   // Tool field uses searchable select in task forms
   if (!isProject) initSearchableSelect('fm-tool');
+  // Populate dependency blockers list for task forms
+  if (!isProject && FEATURE_DEPENDENCIES) {
+    var projTitle = record ? record.project : '';
+    var taskNum = record ? record.task_number : '';
+    var blockedBy = record ? (record.blocked_by || '') : '';
+    refreshBlockerList(projTitle, taskNum, blockedBy);
+    // Watch for project field changes to refresh blockers
+    var projValEl = document.getElementById('fm-project-val') || document.getElementById('fm-project');
+    if (projValEl) {
+      var _blockerObserver = new MutationObserver(function() {
+        refreshBlockerList(projValEl.value, taskNum, '');
+      });
+      _blockerObserver.observe(projValEl, { attributes: true, attributeFilter: ['value'] });
+      projValEl.addEventListener('change', function() { refreshBlockerList(projValEl.value, taskNum, ''); });
+    }
+  }
   // Render unified team member selector with availability for project forms
   if (isProject) {
     var otherMembers = record ? (record.other_members || '') : '';
@@ -9690,6 +9715,11 @@ function collectTaskFields() {
     actual_end:  getVal('fm-actual-end') || null,
     resolution:  getVal('fm-resolution')|| null,
     phase_requirements: getVal('fm-phase-reqs-val') || null,
+    blocked_by: FEATURE_DEPENDENCIES ? (function() {
+      var checked = document.querySelectorAll('#fm-blocked-by-list input[type="checkbox"]:checked');
+      if (!checked.length) return null;
+      return Array.from(checked).map(function(cb) { return cb.value; }).join(',');
+    })() : undefined,
   };
 }
 
@@ -10483,7 +10513,7 @@ function renderProjectDetail(id) {
         <input type="checkbox" class="batch-task-cb" data-task-id="${t.objectId}" onchange="updateBatchBar()" style="width:14px;height:14px;cursor:pointer;accent-color:var(--navy);">
       </div>
       <div class="detail-task-cell" style="font-family:monospace;font-size:11px;font-weight:600;color:var(--text-muted);white-space:nowrap;">${esc(t.task_number || '—')}</div>
-      <div class="detail-task-title" onclick="openTaskFromProject(${t.objectId})" style="cursor:pointer;">${esc(t.title)}${t.resolution ? '<div style="font-size:11px;font-weight:400;color:var(--text-muted);margin-top:2px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + esc(t.resolution.length > 150 ? t.resolution.slice(0, 150) + '…' : t.resolution) + '</div>' : ''}</div>
+      <div class="detail-task-title" onclick="openTaskFromProject(${t.objectId})" style="cursor:pointer;">${getDependencyIcon(t)}${esc(t.title)}${t.resolution ? '<div style="font-size:11px;font-weight:400;color:var(--text-muted);margin-top:2px;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + esc(t.resolution.length > 150 ? t.resolution.slice(0, 150) + '…' : t.resolution) + '</div>' : ''}</div>
       <div onclick="event.stopPropagation()">
         <select class="mw-status-select" data-type="task" data-id="${t.objectId}" onchange="mwQuickStatus(this)" style="font-size:10px;padding:2px 4px;min-width:100px;background:${sc}18;color:${sc};border-color:${sc}44;">
           ${['Active','Pending','On Hold','Waiting for Response','Complete','Canceled'].map(function(s) { return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('')}
@@ -10821,6 +10851,45 @@ function renderTaskDetail(idx) {
           <div style="margin-left:auto;color:var(--navy);font-size:18px;">→</div>
         </div>
       </div>` : ''}
+
+      ${FEATURE_DEPENDENCIES ? (() => {
+        var blockedBy = parseBlockedBy(t);
+        var blocking = getBlockingTasks(t.task_number);
+        if (!blockedBy.length && !blocking.length) return '';
+        var html = '<div class="detail-section">';
+        html += '<div class="detail-section-label">Dependencies</div>';
+        if (blockedBy.length) {
+          html += '<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Blocked by</div>';
+          blockedBy.forEach(function(num) {
+            var bt = findTaskByNumber(num);
+            if (!bt) { html += '<div style="font-size:12px;color:var(--text-muted);padding:4px 0;">' + esc(num) + ' (not found)</div>'; return; }
+            var sc = STATUS_COLOR(bt.status);
+            var isDone = bt.status === 'Complete' || bt.status === 'Canceled';
+            html += '<div onclick="openTask(' + bt.objectId + ')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:4px;background:var(--white);transition:background 0.15s;" onmouseenter="this.style.background=\'#F0F4FF\'" onmouseleave="this.style.background=\'var(--white)\'">';
+            html += '<span style="font-size:12px;">' + (isDone ? '✅' : '🔒') + '</span>';
+            html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);">' + esc(num) + '</span>';
+            html += '<span style="flex:1;font-size:13px;font-weight:500;' + (isDone ? 'text-decoration:line-through;color:var(--text-muted);' : 'color:var(--text-body);') + '">' + esc(bt.title) + '</span>';
+            html += '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:' + sc + '18;color:' + sc + ';">' + esc(bt.status) + '</span>';
+            html += '</div>';
+          });
+          html += '</div>';
+        }
+        if (blocking.length) {
+          html += '<div><div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Blocking</div>';
+          blocking.forEach(function(bt) {
+            var sc = STATUS_COLOR(bt.status);
+            html += '<div onclick="openTask(' + bt.objectId + ')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:4px;background:var(--white);transition:background 0.15s;" onmouseenter="this.style.background=\'#F0F4FF\'" onmouseleave="this.style.background=\'var(--white)\'">';
+            html += '<span style="font-size:12px;">⛓</span>';
+            html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);">' + esc(bt.task_number || '') + '</span>';
+            html += '<span style="flex:1;font-size:13px;font-weight:500;color:var(--text-body);">' + esc(bt.title) + '</span>';
+            html += '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:' + sc + '18;color:' + sc + ';">' + esc(bt.status) + '</span>';
+            html += '</div>';
+          });
+          html += '</div>';
+        }
+        html += '</div>';
+        return html;
+      })() : ''}
     </div>
   </div>`;
 }
@@ -13737,13 +13806,16 @@ function buildGanttBars() {
       const tOverdue = tEnd < todayStr;
       const tsc = STATUS_COLOR(t.status) || '#93C5FD';
       const isMine = t.assignee === viewUser;
+      const isBlocked = FEATURE_DEPENDENCIES && hasIncompleteBlockers(t);
       const barOpacity = isMine ? '0.85' : '0.3';
       const labelStyle = isMine ? 'color:var(--text-body);font-weight:600;' : 'color:var(--text-muted);font-weight:400;opacity:0.7;';
+      const blockedIcon = isBlocked ? '🔒 ' : '› ';
+      const blockedBarStyle = isBlocked ? 'background:repeating-linear-gradient(45deg,' + tsc + ',' + tsc + ' 3px,transparent 3px,transparent 6px);' : 'background:' + tsc + ';';
 
       html += '<div style="display:flex;align-items:center;margin-bottom:1px;height:20px;">';
-      html += '<div style="width:200px;flex-shrink:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:16px;padding-right:8px;cursor:pointer;' + labelStyle + '" onclick="openTask(' + t.objectId + ')" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + '">' + (isMine ? '› ' : '› ') + esc(t.title) + '</div>';
+      html += '<div style="width:200px;flex-shrink:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:16px;padding-right:8px;cursor:pointer;' + labelStyle + '" onclick="openTask(' + t.objectId + ')" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + (isBlocked ? ' [BLOCKED]' : '') + '">' + blockedIcon + esc(t.title) + '</div>';
       html += '<div style="flex:1;position:relative;height:14px;">';
-      html += '<div style="position:absolute;left:' + tLeftPct + '%;width:' + tWidth + '%;height:100%;background:' + tsc + ';border-radius:3px;opacity:' + barOpacity + ';' + (tOverdue && isMine ? 'outline:2px solid #EF4444;outline-offset:1px;' : '') + '" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + ' ' + tStart + ' → ' + tEnd + '"></div>';
+      html += '<div style="position:absolute;left:' + tLeftPct + '%;width:' + tWidth + '%;height:100%;' + blockedBarStyle + 'border-radius:3px;opacity:' + barOpacity + ';' + (tOverdue && isMine ? 'outline:2px solid #EF4444;outline-offset:1px;' : '') + '" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + ' ' + tStart + ' → ' + tEnd + (isBlocked ? ' [BLOCKED]' : '') + '"></div>';
       html += '</div></div>';
     });
     } // end if (!isCollapsed)
@@ -13760,15 +13832,79 @@ function buildGanttBars() {
 
   html += '</div></div>'; // min-width + overflow wrappers
   // Legend
-  html += '<div style="display:flex;gap:16px;margin-top:8px;padding-top:8px;border-top:1px solid #E8E6DF;font-size:11px;color:var(--text-muted);">';
+  html += '<div style="display:flex;gap:16px;margin-top:8px;padding-top:8px;border-top:1px solid #E8E6DF;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">';
   html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.85;display:inline-block;"></span> Your tasks</span>';
   html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.3;display:inline-block;"></span> Other members\' tasks</span>';
+  if (FEATURE_DEPENDENCIES) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:repeating-linear-gradient(45deg,#83AC16,#83AC16 2px,transparent 2px,transparent 4px);display:inline-block;"></span> 🔒 Blocked</span>';
   html += '</div>';
   return html;
 }
 
 function effectiveDue(t) { return t.working_due || t.due || null; }
 function effectiveEnd(p) { return p.working_due || p.end || null; }
+
+// ── Dependency helpers (behind FEATURE_DEPENDENCIES flag) ──────────
+function parseBlockedBy(t) {
+  if (!FEATURE_DEPENDENCIES || !t.blocked_by) return [];
+  return t.blocked_by.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+}
+
+function findTaskByNumber(taskNum) {
+  return TASKS.find(function(t) { return t.task_number === taskNum; });
+}
+
+function getBlockingTasks(taskNumber) {
+  if (!FEATURE_DEPENDENCIES || !taskNumber) return [];
+  return TASKS.filter(function(t) {
+    var blockers = parseBlockedBy(t);
+    return blockers.indexOf(taskNumber) >= 0;
+  });
+}
+
+function hasIncompleteBlockers(t) {
+  var blockers = parseBlockedBy(t);
+  if (!blockers.length) return false;
+  return blockers.some(function(num) {
+    var blocker = findTaskByNumber(num);
+    return blocker && blocker.status !== 'Complete' && blocker.status !== 'Canceled';
+  });
+}
+
+function getDependencyIcon(t) {
+  if (!FEATURE_DEPENDENCIES) return '';
+  var blockedBy = parseBlockedBy(t);
+  var blocking = getBlockingTasks(t.task_number);
+  if (!blockedBy.length && !blocking.length) return '';
+  var hasIncomplete = hasIncompleteBlockers(t);
+  if (hasIncomplete) return '<span title="Has incomplete blockers" style="cursor:help;font-size:12px;">🔒</span>';
+  if (blockedBy.length && !hasIncomplete) return '<span title="All blockers complete" style="cursor:help;font-size:12px;">🔓</span>';
+  if (blocking.length) return '<span title="Blocking ' + blocking.length + ' task(s)" style="cursor:help;font-size:12px;">⛓</span>';
+  return '';
+}
+
+function refreshBlockerList(projectTitle, currentTaskNumber, currentBlockedBy) {
+  if (!FEATURE_DEPENDENCIES) return;
+  var container = document.getElementById('fm-blocked-by-list');
+  if (!container) return;
+  if (!projectTitle) { container.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Select a project first</span>'; return; }
+  var selectedBlockers = currentBlockedBy ? currentBlockedBy.split(',').map(function(s) { return s.trim(); }) : [];
+  var siblingTasks = TASKS.filter(function(t) {
+    return (t.project === projectTitle) && t.task_number !== currentTaskNumber && t.status !== 'Canceled';
+  }).sort(function(a, b) { return (a.task_number || '').localeCompare(b.task_number || ''); });
+  if (!siblingTasks.length) { container.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">No other tasks in this project</span>'; return; }
+  var html = '';
+  siblingTasks.forEach(function(t) {
+    var checked = selectedBlockers.indexOf(t.task_number) >= 0 ? ' checked' : '';
+    var statusColor = STATUS_COLOR(t.status);
+    html += '<label style="display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;font-size:12px;">';
+    html += '<input type="checkbox" value="' + esc(t.task_number) + '"' + checked + ' style="width:13px;height:13px;flex-shrink:0;">';
+    html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);min-width:70px;">' + esc(t.task_number || '') + '</span>';
+    html += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-body);">' + esc(t.title) + '</span>';
+    html += '<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:' + statusColor + '18;color:' + statusColor + ';flex-shrink:0;">' + esc(t.status) + '</span>';
+    html += '</label>';
+  });
+  container.innerHTML = html;
+}
 
 // ── Inline attention badge helpers ─────────────────────────────────
 function getProjectAlerts(p, todayStr, userName) {
@@ -13822,6 +13958,10 @@ function getTaskAlerts(t, todayStr) {
     if (daysLeft >= 0 && daysLeft <= 7) {
       alerts.push({ text: daysLeft === 0 ? 'Due today' : 'Due in ' + daysLeft + 'd', cls: 'mw-att-yellow', severity: 1 });
     }
+  }
+  // Blocked task that's Active — has incomplete blockers
+  if (FEATURE_DEPENDENCIES && t.status === 'Active' && hasIncompleteBlockers(t)) {
+    alerts.push({ text: 'Blocked', cls: 'mw-att-red', severity: 0 });
   }
   if (['Active', 'Pending', 'Waiting for Response'].indexOf(t.status) >= 0) {
     var missing = [];

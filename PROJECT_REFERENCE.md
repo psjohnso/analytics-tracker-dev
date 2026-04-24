@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.12.0.0030 (see Version History at bottom)
+> **Current Version:** 0.12.0.0035 (see Version History at bottom)
 
 ---
 
@@ -1523,6 +1523,11 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.12.0.0028 | Add On Hold option to batch task status dropdown |
 | 0.12.0.0029 | Preserve scroll position on detail page re-renders; only scroll to top on first navigation |
 | 0.12.0.0030 | Timeline shows all project tasks with visual distinction: user's tasks at full opacity, others faded; tasks sorted mine-first; legend added |
+| 0.12.0.0031 | Split project detail tasks into In Progress / Pending / Complete / Canceled sections with distinct visual treatments |
+| 0.12.0.0032 | Remove due date requirement for non-Active tasks in attention alerts |
+| 0.12.0.0033 | Due date only flagged as missing for Active tasks; enforce due date when setting task to Active via inline dropdown, batch update, or form save |
+| 0.12.0.0034 | Require start date for Active tasks across inline, batch, and form save |
+| 0.12.0.0035 | Task dependencies system (behind FEATURE_DEPENDENCIES flag): blocked_by field, dependency helpers, task form blocker selector, task detail blocked-by/blocking sections, dependency icons on project detail task table, blocked task attention alerts, timeline hatched bars and lock icons for blocked tasks |
 
 ---
 
