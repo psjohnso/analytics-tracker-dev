@@ -3464,7 +3464,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.13.1.0001';
+const APP_VERSION = '0.13.1.0002';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -10405,111 +10405,117 @@ function buildStrategicAlignmentSection(p) {
   return html;
 }
 
-function buildProjectTimeline(p) {
-        // Project timeline — full-width bar with status history phases
-        const projStart = p.start || null;
-        const projActualEnd = p.actual_end || null;
-        const history = getProjectStatusHistory(p.id);
-        if (!projStart && !p.status && !history.length) return '';
+function buildProjectTimeline(p, relTasks) {
+  var projStart = p.start || null;
+  var projEnd = p.working_due || p.end || null;
+  var projActualEnd = p.actual_end || null;
+  if (!projStart && !projEnd) return '';
+  var todayStr = new Date().toISOString().slice(0, 10);
 
-        // Build phases from history, or fall back to single current-status bar
-        const allPhases = [];
-        const todayStr = new Date().toISOString().slice(0, 10);
-        const endDate = projActualEnd || todayStr;
-        const timelineStatuses = ['Active', 'On Hold', 'Waiting for Response'];
+  var rangeStart = projStart || todayStr;
+  var rangeEnd = projEnd || todayStr;
+  if (projActualEnd && projActualEnd > rangeEnd) rangeEnd = projActualEnd;
 
-        if (history.length > 0) {
-          for (let hi = 0; hi < history.length; hi++) {
-            const phaseStart = history[hi].changed_date;
-            const phaseEnd = (hi + 1 < history.length) ? history[hi + 1].changed_date : endDate;
-            allPhases.push({ status: history[hi].status, start: phaseStart, end: phaseEnd });
-          }
-        } else {
-          // No history — show single bar with current status
-          allPhases.push({ status: p.status || 'Unknown', start: projStart || todayStr, end: endDate });
-        }
+  var tasksWithDates = (relTasks || []).filter(function(t) {
+    return (t.start || t.due || t.working_due) && t.status !== 'Canceled';
+  }).map(function(t) {
+    var ts = t.start || t.due || t.working_due;
+    var te = t.working_due || t.due || t.start;
+    if (ts < rangeStart) rangeStart = ts;
+    if (te > rangeEnd) rangeEnd = te;
+    return { title: t.title, start: ts, end: te, status: t.status, objectId: t.objectId, assignee: t.assignee || '' };
+  });
 
-        // Filter to only show Active, On Hold, Waiting for Response
-        const phases = allPhases.filter(function(ph) { return timelineStatuses.includes(ph.status); });
-        if (phases.length === 0) {
-          // Nothing to show — fall back to single bar with current status if it qualifies
-          if (timelineStatuses.includes(p.status)) {
-            phases.push({ status: p.status, start: projStart || todayStr, end: endDate });
-          } else {
-            // Show a simple bar using project dates only
-            const sc = STATUS_COLOR(p.status) || '#9CA3AF';
-            return '<div class="detail-section">' +
-              '<div class="detail-section-label detail-section-label-flex">' +
-                '<span>Project Timeline</span>' +
-                (Auth.devMode ? '<button onclick="toggleStatusHistoryEditor(' + p.id + ',' + p.objectId + ')" class="btn-navy-sm">📅 Edit History</button>' : '') +
-              '</div>' +
-              '<div style="position:relative;height:28px;background:' + sc + ';border-radius:6px;" title="' + esc(p.status || '') + '"></div>' +
-              '<div style="display:flex;justify-content:space-between;margin-top:4px;">' +
-                (projStart ? '<span style="font-size:10px;color:var(--text-muted);">' + projStart + '</span>' : '<span></span>') +
-                (projActualEnd ? '<span style="font-size:11px;"><span style="font-weight:700;color:#0088FF;">✓ Completed</span> <span style="color:var(--text-muted);">' + projActualEnd + '</span></span>' : '<span></span>') +
-              '</div>' +
-              '<div id="status-history-editor"></div>' +
-            '</div>';
-          }
-        }
+  var totalMs = new Date(rangeEnd + 'T00:00:00') - new Date(rangeStart + 'T00:00:00');
+  var totalDays = Math.max(1, Math.ceil(totalMs / 86400000));
 
-        // Use project start as the range start if earlier than first phase
-        const rangeStartStr = projStart && projStart < phases[0].start ? projStart : phases[0].start;
+  function pct(dateStr) {
+    var ms = new Date(dateStr + 'T00:00:00') - new Date(rangeStart + 'T00:00:00');
+    return Math.max(0, Math.min(100, (ms / 86400000 / totalDays) * 100));
+  }
 
-        // Calculate total days for proportional widths
-        const firstDate = rangeStartStr;
-        const lastDate = phases[phases.length - 1].end;
-        const totalMs = new Date(lastDate + 'T00:00:00') - new Date(firstDate + 'T00:00:00');
-        const totalDays = Math.max(1, Math.ceil(totalMs / 86400000));
+  var projLeftPct = pct(projStart || rangeStart);
+  var projRightPct = pct(projEnd || rangeEnd);
+  var projWidthPct = Math.max(1, projRightPct - projLeftPct);
+  var todayPct = pct(todayStr);
 
-        // Build segments
-        let segments = '';
-        let labels = '';
-        let cumulativePct = 0;
-        phases.forEach(function(ph, idx) {
-          const startMs = new Date(ph.start + 'T00:00:00') - new Date(firstDate + 'T00:00:00');
-          const endMs = new Date(ph.end + 'T00:00:00') - new Date(firstDate + 'T00:00:00');
-          const leftPct = (startMs / 86400000 / totalDays) * 100;
-          const widthPct = Math.max(0.5, ((endMs - startMs) / 86400000 / totalDays) * 100);
-          const sc = STATUS_COLOR(ph.status) || '#9CA3AF';
-          const isFirst = idx === 0;
-          const isLast = idx === phases.length - 1;
-          const radius = (isFirst ? '8px' : '0') + ' ' + (isLast ? '8px' : '0') + ' ' + (isLast ? '8px' : '0') + ' ' + (isFirst ? '8px' : '0');
+  // Month labels
+  var months = '';
+  var startD = new Date(rangeStart + 'T00:00:00');
+  var endD = new Date(rangeEnd + 'T00:00:00');
+  var m = new Date(startD.getFullYear(), startD.getMonth(), 1);
+  var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  while (m <= endD) {
+    var mp = pct(m.toISOString().slice(0, 10));
+    if (mp >= 0 && mp <= 95) {
+      months += '<span style="position:absolute;left:' + mp + '%;font-size:10px;color:var(--text-muted);white-space:nowrap;">' + monthNames[m.getMonth()] + ' ' + String(m.getFullYear()).slice(2) + '</span>';
+    }
+    m.setMonth(m.getMonth() + 1);
+  }
 
-          segments += '<div style="position:absolute;left:' + leftPct + '%;width:' + widthPct + '%;height:100%;background:' + sc + ';border-radius:' + radius + ';" title="' + esc(ph.status) + ': ' + ph.start + ' → ' + ph.end + '"></div>';
+  // Task ticks
+  var ticks = '';
+  tasksWithDates.forEach(function(t) {
+    var sc = STATUS_COLOR(t.status) || '#9CA3AF';
+    var opacity = t.status === 'Complete' ? '0.5' : '0.9';
+    var startPct = pct(t.start);
+    var endPct = pct(t.end);
+    ticks += '<div style="position:absolute;left:' + startPct + '%;width:1.5px;height:8px;background:' + sc + ';opacity:' + opacity + ';top:0;" title="' + esc(t.title) + ' start: ' + t.start + '"></div>';
+    ticks += '<div style="position:absolute;left:' + endPct + '%;width:1.5px;height:8px;background:' + sc + ';opacity:' + opacity + ';top:0;" title="' + esc(t.title) + ' end: ' + t.end + '"></div>';
+    var tickW = Math.max(0.5, endPct - startPct);
+    ticks += '<div style="position:absolute;left:' + startPct + '%;width:' + tickW + '%;height:2px;background:' + sc + ';opacity:' + (parseFloat(opacity) * 0.4) + ';top:3px;"></div>';
+  });
 
-          // First segment: show start date
-          if (idx === 0) {
-            labels += '<div style="position:absolute;left:' + leftPct + '%;font-size:9px;color:var(--text-muted);white-space:nowrap;line-height:1.3;">' +
-              '<span style="font-weight:700;color:' + sc + ';">' + esc(ph.status) + '</span><br>' + (projStart || ph.start) +
-            '</div>';
-          }
-          // Subsequent segments: show transition date
-          if (idx > 0 && widthPct > 3) {
-            labels += '<div style="position:absolute;left:' + leftPct + '%;transform:translateX(-50%);font-size:9px;color:var(--text-muted);white-space:nowrap;text-align:center;line-height:1.3;">' +
-              '<span style="font-weight:700;color:' + sc + ';">' + esc(ph.status) + '</span><br>' + ph.start +
-            '</div>';
-          }
-        });
+  var taskDataJson = JSON.stringify(tasksWithDates.map(function(t) {
+    return { title: t.title, start: t.start, end: t.end, status: t.status, assignee: t.assignee, objectId: t.objectId };
+  }));
 
-        // Add completion date at right edge of labels row
-        if (projActualEnd) {
-          labels += '<div style="position:absolute;right:0;font-size:9px;white-space:nowrap;text-align:right;line-height:1.3;">' +
-            '<span style="font-weight:700;color:#0088FF;">✓ Completed</span><br>' + projActualEnd +
-          '</div>';
-        }
+  var tlId = 'proj-tl-' + (p.objectId || p.id);
 
-        return '<div class="detail-section">' +
-          '<div class="detail-section-label detail-section-label-flex">' +
-            '<span>Project Timeline</span>' +
-            (Auth.devMode ? '<button onclick="toggleStatusHistoryEditor(' + p.id + ',' + p.objectId + ')" class="btn-navy-sm">📅 Edit History</button>' : '') +
-          '</div>' +
-          '<div style="position:relative;height:28px;background:#F3F1EB;border-radius:6px;overflow:hidden;">' +
-            segments +
-          '</div>' +
-          '<div style="position:relative;height:28px;margin-top:2px;">' + labels + '</div>' +
-          '<div id="status-history-editor"></div>' +
-        '</div>';
+  var html = '<div class="detail-section">';
+  html += '<div class="detail-section-label detail-section-label-flex">';
+  html += '<span>Project Timeline</span>';
+  if (Auth.devMode) html += '<button onclick="toggleStatusHistoryEditor(' + p.id + ',' + p.objectId + ')" class="btn-navy-sm">\ud83d\udcc5 Edit History</button>';
+  html += '</div>';
+
+  html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;padding:0 2px;">';
+  html += '<span style="font-size:11px;font-weight:700;color:var(--text-muted);">' + (projStart || '\u2014') + '</span>';
+  if (projActualEnd) {
+    html += '<span style="font-size:11px;"><span style="font-weight:700;color:#0088FF;">\u2713 Completed</span> <span style="color:var(--text-muted);">' + projActualEnd + '</span></span>';
+  } else {
+    html += '<span style="font-size:11px;font-weight:700;color:var(--text-muted);">' + (projEnd || '\u2014') + '</span>';
+  }
+  html += '</div>';
+
+  html += '<div style="position:relative;height:16px;margin-bottom:2px;">' + months + '</div>';
+
+  html += '<div id="' + tlId + '" style="position:relative;cursor:crosshair;" onmousemove="tlHover(event,this)" onmouseleave="tlLeave(this)" data-tasks="' + taskDataJson.replace(/"/g, '&quot;') + '" data-range-start="' + rangeStart + '" data-total-days="' + totalDays + '">';
+  html += '<div style="position:relative;height:28px;background:#F3F1EB;border-radius:6px;overflow:hidden;">';
+  html += '<div style="position:absolute;left:' + projLeftPct + '%;width:' + projWidthPct + '%;height:100%;background:var(--navy);border-radius:6px;"></div>';
+  if (todayPct > 0 && todayPct < 100) {
+    html += '<div style="position:absolute;left:' + todayPct + '%;top:0;bottom:0;width:2px;background:#EF4444;opacity:0.8;z-index:3;"></div>';
+  }
+  html += '</div>';
+
+  html += '<div style="position:relative;height:12px;margin-top:2px;">' + ticks + '</div>';
+
+  if (todayPct > 0 && todayPct < 100) {
+    html += '<div style="position:absolute;top:-2px;left:' + todayPct + '%;transform:translateX(-50%);font-size:8px;font-weight:800;color:#EF4444;z-index:4;">TODAY</div>';
+  }
+
+  html += '<div id="' + tlId + '-pop" style="display:none;position:absolute;left:0;top:48px;background:var(--white);border:1px solid #E8E6DF;border-radius:8px;padding:8px 12px;font-size:11px;color:var(--text-body);z-index:10;min-width:200px;max-width:320px;pointer-events:none;"></div>';
+
+  html += '</div>';
+
+  html += '<div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:var(--text-muted);flex-wrap:wrap;">';
+  html += '<span style="display:flex;align-items:center;gap:3px;"><span style="width:10px;height:8px;border-radius:2px;background:var(--navy);display:inline-block;"></span>Project span</span>';
+  if (tasksWithDates.length > 0) html += '<span style="display:flex;align-items:center;gap:3px;"><span style="width:1.5px;height:10px;background:#83AC16;display:inline-block;"></span><span style="width:1.5px;height:10px;background:#83AC16;display:inline-block;margin-left:3px;"></span> Task start/end</span>';
+  if (todayPct > 0 && todayPct < 100) html += '<span style="display:flex;align-items:center;gap:3px;"><span style="width:2px;height:10px;background:#EF4444;display:inline-block;"></span>Today</span>';
+  html += '</div>';
+
+  html += '<div id="status-history-editor"></div>';
+  html += '</div>';
+  return html;
 }
 
 function renderProjectDetail(id) {
@@ -10666,7 +10672,7 @@ function renderProjectDetail(id) {
 
       ${buildStrategicAlignmentSection(p)}
 
-      ${buildProjectTimeline(p)}
+      ${buildProjectTimeline(p, relTasks)}
 
       ${p.problem_statement ? `<div class="detail-section">
         <div class="detail-section-label">Problem Statement</div>
@@ -12832,6 +12838,63 @@ function getProjectStatusHistory(projectId) {
 }
 
 // ── Status History Editor ──────────────────────────────────────
+
+// ── Project Timeline hover popover ─────────────────────────────
+function tlHover(evt, container) {
+  var pop = container.querySelector('[id$="-pop"]');
+  if (!pop) return;
+  var tasks;
+  try { tasks = JSON.parse(container.getAttribute('data-tasks')); } catch(e) { return; }
+  if (!tasks || !tasks.length) return;
+
+  var rect = container.getBoundingClientRect();
+  var x = evt.clientX - rect.left;
+  var pct = (x / rect.width) * 100;
+
+  var rangeStart = container.getAttribute('data-range-start');
+  var totalDays = parseInt(container.getAttribute('data-total-days')) || 1;
+  var rangeStartMs = new Date(rangeStart + 'T00:00:00').getTime();
+  var cursorMs = rangeStartMs + (pct / 100) * totalDays * 86400000;
+
+  var activeTasks = tasks.filter(function(t) {
+    var tStartMs = new Date(t.start + 'T00:00:00').getTime();
+    var tEndMs = new Date(t.end + 'T00:00:00').getTime();
+    return cursorMs >= tStartMs && cursorMs <= tEndMs;
+  });
+
+  if (activeTasks.length === 0) {
+    pop.style.display = 'none';
+    return;
+  }
+
+  // Calculate cursor date for display
+  var cursorDate = new Date(cursorMs);
+  var dateStr = cursorDate.toISOString().slice(0, 10);
+
+  var html = '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:4px;">' + dateStr + '</div>';
+  activeTasks.forEach(function(t) {
+    var sc = STATUS_COLOR(t.status) || '#9CA3AF';
+    html += '<div style="display:flex;align-items:center;gap:6px;padding:2px 0;">';
+    html += '<span style="width:8px;height:8px;border-radius:2px;background:' + sc + ';flex-shrink:0;display:inline-block;"></span>';
+    html += '<span style="font-weight:600;color:var(--text-body);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(t.title) + '</span>';
+    html += '<span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">' + t.start + ' \u2013 ' + t.end + '</span>';
+    html += '</div>';
+    if (t.assignee) {
+      html += '<div style="font-size:10px;color:var(--text-muted);padding-left:14px;margin-top:-1px;">' + esc(t.assignee) + '</div>';
+    }
+  });
+
+  pop.innerHTML = html;
+  pop.style.display = '';
+  // Position horizontally near cursor
+  var popLeft = Math.min(x, rect.width - 240);
+  pop.style.left = Math.max(0, popLeft) + 'px';
+}
+
+function tlLeave(container) {
+  var pop = container.querySelector('[id$="-pop"]');
+  if (pop) pop.style.display = 'none';
+}
 
 function toggleStatusHistoryEditor(projectId, objectId) {
   const container = document.getElementById('status-history-editor');
