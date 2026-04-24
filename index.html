@@ -3464,7 +3464,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.13.1.0006';
+const APP_VERSION = '0.13.1.0007';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13867,6 +13867,10 @@ function buildGanttBars() {
   var hasMultipleRoles = roleOrder.filter(function(r) { return ganttItems.some(function(g) { return g.role === r; }); }).length > 1;
 
   // Rows
+  // Project accent colors for visual distinction
+  var GANTT_ACCENT_COLORS = ['#002669', '#9E0059', '#C24200', '#0088FF', '#83AC16', '#140233', '#E5D086', '#0F6E56'];
+  var ganttProjIdx = 0;
+
   roleOrder.forEach(function(role) {
     var roleItems = ganttItems.filter(function(g) { return g.role === role; });
     if (roleItems.length === 0) return;
@@ -13875,6 +13879,9 @@ function buildGanttBars() {
       html += '<div style="border-left:4px solid ' + rs.border + ';padding:4px 10px;margin:8px 0 4px;background:' + rs.bg + ';font-size:12px;font-weight:700;color:' + rs.color + ';">' + role + ' (' + roleItems.length + ')</div>';
     }
     roleItems.forEach(function(g) {
+    const accentColor = GANTT_ACCENT_COLORS[ganttProjIdx % GANTT_ACCENT_COLORS.length];
+    const bandBg = ganttProjIdx % 2 === 0 ? 'var(--white)' : '#FDFCF8';
+    ganttProjIdx++;
     const sc = STATUS_COLOR(g.status) || '#3B82F6';
     const leftPct = ganttPct(g.start || todayStr);
     const rightPct = ganttPct(g.end || todayStr);
@@ -13885,10 +13892,13 @@ function buildGanttBars() {
     const arrow = hasTasks ? (isCollapsed ? '▶' : '▼') : '•';
     const arrowClick = hasTasks ? ' onclick="event.stopPropagation();toggleGanttCollapse(\'' + esc(g.title).replace(/'/g, "\\'") + '\')" style="cursor:pointer;margin-right:4px;font-size:9px;opacity:0.6;user-select:none;"' : ' style="margin-right:4px;font-size:7px;opacity:0.4;"';
 
+    // Open project band container
+    html += '<div style="background:' + bandBg + ';border-left:3px solid ' + accentColor + ';border-radius:0;">';
+
     html += '<div style="display:flex;align-items:flex-start;margin-bottom:0;min-height:28px;border-bottom:0.5px solid #E8E6DF;">';
-    html += '<div style="width:280px;flex-shrink:0;display:flex;align-items:flex-start;gap:2px;padding:4px 0;">';
+    html += '<div style="width:280px;flex-shrink:0;display:flex;align-items:flex-start;gap:2px;padding:4px 0;padding-left:8px;">';
     html += '<span' + arrowClick + ' style="flex-shrink:0;margin-top:1px;">' + arrow + '</span>';
-    html += '<span style="font-size:13px;font-weight:700;color:var(--navy);cursor:pointer;line-height:1.3;" onclick="openProject(' + g.id + ')" title="' + esc(g.title) + '">' + esc(g.title) + '</span>';
+    html += '<span style="font-size:13px;font-weight:700;color:' + accentColor + ';cursor:pointer;line-height:1.3;" onclick="openProject(' + g.id + ')" title="' + esc(g.title) + '">' + esc(g.title) + '</span>';
     if (hasTasks) html += '<span style="font-size:10px;color:var(--text-muted);margin-left:4px;flex-shrink:0;margin-top:2px;">(' + g.tasks.length + ')</span>';
     html += '</div>';
     html += '<div style="flex:1;position:relative;height:20px;">';
@@ -13924,14 +13934,15 @@ function buildGanttBars() {
       const taskBorder = isLastTask ? 'border-bottom:0.5px solid #E8E6DF;' : 'border-bottom:0.5px solid #F3F1EB;';
 
       html += '<div style="display:flex;align-items:flex-start;min-height:22px;' + taskBorder + '">';
-      html += '<div style="width:280px;flex-shrink:0;font-size:12px;padding-left:16px;padding-right:8px;padding-top:3px;padding-bottom:3px;cursor:pointer;line-height:1.3;' + labelStyle + '" onclick="openTask(' + t.objectId + ')" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + (isBlocked ? ' [DEPS PENDING]' : '') + '">' + blockedIcon + esc(t.title) + '</div>';
+      html += '<div style="width:280px;flex-shrink:0;font-size:12px;padding-left:24px;padding-right:8px;padding-top:3px;padding-bottom:3px;cursor:pointer;line-height:1.3;' + labelStyle + '" onclick="openTask(' + t.objectId + ')" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + (isBlocked ? ' [DEPS PENDING]' : '') + '">' + blockedIcon + esc(t.title) + '</div>';
       html += '<div style="flex:1;position:relative;height:14px;">';
       html += '<div style="position:absolute;left:' + tLeftPct + '%;width:' + tWidth + '%;height:100%;' + blockedBarStyle + 'border-radius:3px;opacity:' + barOpacity + ';' + (tOverdue && isMine ? 'outline:2px solid #EF4444;outline-offset:1px;' : '') + '" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + ' ' + tStart + ' → ' + tEnd + (isBlocked ? ' [DEPS PENDING]' : '') + '"></div>';
       html += '</div></div>';
     });
     } // end if (!isCollapsed)
 
-    html += '<div style="height:8px;"></div>';
+    html += '</div>'; // close project band container
+    html += '<div style="height:6px;"></div>';
   });
   }); // end roleOrder.forEach
 
