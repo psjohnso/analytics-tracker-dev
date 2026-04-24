@@ -106,7 +106,7 @@ li strong { color: var(--navy); }
 <header class="guide-header">
   <div>
     <h1>Analytics Project Tracker <span class="subtitle">User Guide</span></h1>
-    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">Updated for v0.9.3.0048</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">Updated for v0.12.0.0035</div>
   </div>
   <a href="javascript:void(0)" onclick="window.close();" class="back-btn">← Back to Tracker</a>
 </header>
@@ -123,7 +123,13 @@ li strong { color: var(--navy); }
   <a href="#tasks-tab">Tasks Tab</a>
   <a href="#resources-tab">Resources Tab</a>
   <a href="#forecast-tab">Forecast Tab</a>
+  <a href="#insights-tab">Insights Tab</a>
+  <a href="#issues-tab">Issues Tab</a>
   <a href="#settings-tab">Settings Tab</a>
+  <div class="nav-section">Features</div>
+  <a href="#strategic-alignment">Strategic Alignment</a>
+  <a href="#dependencies">Task Dependencies</a>
+  <a href="#filters">Filters & Search</a>
   <div class="nav-section">Reference</div>
   <a href="#capacity-math">Capacity & Utilization Math</a>
   <a href="#data-architecture">Data Architecture</a>
@@ -155,15 +161,20 @@ li strong { color: var(--navy); }
 <p>The top navigation bar provides access to the main sections:</p>
 <ul>
   <li><strong>Overview:</strong> Dashboard with KPI summary cards showing project counts by status, active tasks, and team allocation overview.</li>
+  <li><strong>My Work:</strong> Personalized dashboard showing your projects, tasks, allocations, and a project timeline. Appears after sign-in.</li>
   <li><strong>Projects:</strong> Full list of analytics projects with filtering, sorting, and detail views. Supports grid and list layouts.</li>
   <li><strong>Tasks:</strong> Individual task management with status tracking, due dates, and assignee information.</li>
-  <li><strong>Resources:</strong> Team capacity planning with per-person allocation charts, utilization metrics, and an interactive allocation editor.</li>
-  <li><strong>📊 Forecast:</strong> Forward-looking capacity projection showing team availability and utilization trends.</li>
-  <li><strong>⚙️ Settings:</strong> (Admin only) Team member management and absence/time-off editing.</li>
+  <li><strong>Resources:</strong> (Admin only) Team capacity planning with per-person allocation charts, utilization metrics, and an interactive allocation editor.</li>
+  <li><strong>📊 Forecast:</strong> (Admin only) Forward-looking capacity projection showing team availability and utilization trends.</li>
+  <li><strong>💡 Insights:</strong> (Admin only) Strategic reporting and data analysis views.</li>
+  <li><strong>🐛 Issues:</strong> Issue tracking and bug reporting for the team.</li>
+  <li><strong>⚙️ Settings:</strong> (Admin only) Team member management, dropdown list configuration, AI features, and developer tools.</li>
 </ul>
 
 <h3>Sidebar Filters</h3>
-<p>The left sidebar provides filtering options that are always visible regardless of the active tab. Filter by project status, priority, category, partner department, ITD team, or team member. Task status filters are also available for narrowing task results. Active filters appear as highlighted chips — click to toggle. The content area updates immediately.</p>
+<p>The left sidebar provides filtering options on the Projects and Tasks tabs. Filter by project status, priority, category, partner department, ITD team, or team member. Task-specific filters (task status, task category, tool) appear when viewing the Tasks tab. Filters are independent between tabs — project status filters do not cascade to the Tasks tab.</p>
+<p>Active filters appear as descriptive chips above the filter panel (e.g., "Status: Active, Scheduled" or "Member: Peter Johnson"), each with an × button to remove that individual filter. A "Clear all" link appears when multiple filters are active.</p>
+<p>The team member filter defaults to showing only Data Intelligence team members. Check "Show N affiliated members" to include collaborators from other teams. A separate "Show former members" toggle reveals inactive team members.</p>
 
 <h3>View Toggle</h3>
 <p>On the Projects and Tasks tabs, switch between <strong>Grid</strong> (card-based) and <strong>List</strong> (table-based) views using the toggle buttons in the toolbar. Grid is the default.</p>
@@ -190,22 +201,19 @@ li strong { color: var(--navy); }
 <p>Directly below the KPIs, this section shows your allocation breakdown for the current week from the Resources data. It displays your work schedule type (5/8, 4/10, or 9/80), which pay period week you're in (A or B), your scheduled hours, and your RDO day if applicable. A daily bar shows your scheduled hours and work window (e.g., "8h / 7a–5p") for each day of the current week (Mon–Fri), with days off marked as "OFF." Below that, it shows hours and percentage allocated to each project, with a visual bar chart, plus your total allocated hours, capacity, and remaining availability.</p>
 
 <h3>Two-Column Layout</h3>
-<p>Below Attention Needed, the remaining sections are arranged in two columns. The left column shows your Projects, while the right column shows your Tasks.</p>
+<p>Below the KPIs and My Week sections, the remaining content is arranged in two columns. The left column shows your Projects, while the right column shows your Tasks. If any items need attention, a compact summary bar appears above both columns showing counts (e.g., "3 overdue · 1 due soon · 2 missing data").</p>
 
-<h3>Attention Needed</h3>
-<p>This section proactively surfaces items that need your action, sorted by urgency:</p>
+<h3>Inline Attention Badges</h3>
+<p>Rather than a separate attention section, each project card and task row carries its own alert badges directly. Items with alerts sort to the top of their group by severity:</p>
 <ul>
-  <li><strong>Overdue tasks and projects</strong> (🔴 red) — Open tasks (In Progress, On Hold, or Waiting for Response) and active projects (Active, On Hold, or Waiting for Response) past their working due date. If a working due date has been set, that is used; otherwise the original due/end date is used. When the working due date differs from the original, the original date is shown in parentheses.</li>
-  <li><strong>Due this week</strong> (🟡 yellow) — Open tasks and active projects with working due dates in the next 7 days.</li>
-  <li><strong>Incomplete project data</strong> — Any project (except Complete/Canceled) where key fields are missing (description, end date, category, partner department, or problem statement).</li>
-  <li><strong>Incomplete task data</strong> — Any task (except Complete/Canceled) that is missing a description, due date, or category.</li>
-  <li><strong>Stale projects</strong> (⏳) — Active, On Hold, or Waiting for Response projects that haven't been edited in over 14 days. Shows the number of days since the last update and the date of the last change.</li>
-  <li><strong>Ready to start</strong> (🚀) — Future or Scheduled projects whose start date has passed. These should be reviewed and moved to Active status.</li>
+  <li><strong>Red badge</strong> (e.g., "5d overdue") — Overdue items. Shows with a red left border. Active tasks with incomplete blockers also get a red "Blocked" badge.</li>
+  <li><strong>Yellow badge</strong> (e.g., "Due in 3d" or "Ready to activate") — Items due within 7 days, or Future/Scheduled projects whose start date has passed.</li>
+  <li><strong>Gray badge</strong> (e.g., "Missing: description, end date") — Incomplete project or task data. For Active tasks, missing start date and due date are flagged. Strategic alignment gaps (IT Initiative, City Initiative, WWC Practice) appear for authorized editors only.</li>
 </ul>
-<p>Click any item to open its detail page.</p>
 
 <h3>Timeline (Gantt Chart)</h3>
-<p>A visual timeline showing your active, on-hold, and scheduled projects as horizontal bars spanning from start date to working due date. Tasks are nested under their parent project with thinner bars. The chart includes month headers for orientation, a red "TODAY" marker showing the current date, and red outlines on any bars that are past their due date. Click a project or task label to open its detail page. The chart scrolls horizontally if the timeline spans a wide range.</p>
+<p>A visual timeline showing your active, on-hold, and scheduled projects as horizontal bars spanning from start date to working due date. All open tasks for each project are shown nested under their parent project — your tasks appear at full opacity with bold labels, while other team members' tasks render at reduced opacity. Tasks are sorted with yours first, then others by due date. A legend at the bottom explains the visual distinction.</p>
+<p>Tasks with incomplete blockers (see <a href="#dependencies">Dependencies</a>) are shown with a hatched/striped bar pattern and a 🔒 icon in the label. The chart includes month headers, a red "TODAY" marker, and red outlines on overdue bars. Click any label to open the detail page.</p>
 
 <h3>My Projects</h3>
 <p>All projects where you're the primary contact or a listed team member. By default, only Active, Scheduled, and Idea projects are shown. Click "Show more" to reveal On Hold, Future, Complete, and Canceled projects. Each row shows task completion progress, and projects where you are the lead are marked with a "Lead" badge.</p>
@@ -257,10 +265,21 @@ li strong { color: var(--navy); }
 <p>Projects can be viewed in grid (card) or list (table) format. Each project shows its title, status, priority, category, assigned contact, start/end dates, and completion percentage. Click a project card or row to open its detail page with all fields, associated tasks, team members, and a timeline view. From the detail page, you can add a new task directly linked to the project using the <strong>"＋ Add Task"</strong> button in the Tasks section — the task form will open with the project pre-selected.</p>
 
 <h3>Creating and Editing Projects</h3>
-<p>To create a new project, an Admin must promote a submitted idea. Standard users can submit ideas through the "💡 Submit Idea" button. Once promoted, projects can be edited by clicking into the detail view and modifying fields. Changes save directly to the ArcGIS Online projects feature service. <strong>Project names must be unique</strong> — the application prevents creating or renaming a project to a name that already exists (case-insensitive).</p>
+<p>To create a new project, an Admin must promote a submitted idea. Standard users can submit ideas through the "💡 Submit Idea" button. Once promoted, projects can be edited by clicking into the detail view — but <strong>only the project lead or an admin can edit, complete, or delete a project</strong>. The "Copy Summary" button is available to all users. Changes save directly to the ArcGIS Online projects feature service. <strong>Project names must be unique</strong> — the application prevents creating or renaming a project to a name that already exists (case-insensitive).</p>
 <div class="tip-box">
-  <strong>Choosing a category:</strong> The category field features a searchable dropdown — start typing to filter. If you're unsure which category fits, click <strong>"🧭 Help me choose a category"</strong> below the field. A short 2-question wizard will guide you to the right one.
+  <strong>Choosing a category:</strong> The category field features a searchable dropdown — start typing to filter. If you're unsure which category fits, click the <strong>✨ Help me choose</strong> button below the field. A short 2-question wizard will guide you to the right one.
 </div>
+
+<h3>Project Detail — Task List</h3>
+<p>The task list on a project detail page is divided into sections with distinct visual treatments:</p>
+<ul>
+  <li><strong>In progress</strong> (green header) — Active, On Hold, and Waiting for Response tasks at full opacity.</li>
+  <li><strong>Pending</strong> (gray header, 70% opacity) — Tasks waiting to start.</li>
+  <li><strong>Complete</strong> (blue header, 60% opacity) — Finished tasks with muted styling.</li>
+  <li><strong>Canceled</strong> (gray header, 60% opacity) — Canceled tasks with strikethrough titles.</li>
+</ul>
+<p>Each section only appears if it contains tasks. Column headers (ID, Task, Status, Priority, Assignee, Due Date, Hours) are <strong>sortable</strong> — click a header to sort ascending, click again for descending. Sorting applies independently within each section. Tasks with dependency icons (🔒 blocked, 🔓 unblocked, ⛓ blocking) appear inline with the task title.</p>
+<p>The <strong>batch editor</strong> lets you select multiple tasks via checkboxes and change their status, priority, or assignee in bulk. The status dropdown includes On Hold as an option.</p>
 
 <h3>Project Statuses</h3>
 <p>Projects follow this lifecycle:</p>
@@ -281,16 +300,25 @@ li strong { color: var(--navy); }
 <p>Tasks are individual work items associated with projects. Each task has a title, status, assignee, due date, and parent project reference.</p>
 
 <h3>Creating Tasks</h3>
-<p>Click the <strong>"＋ New Task"</strong> button in the toolbar. Select the parent project, assign a team member, set a due date, and provide a description.</p>
+<p>Click the <strong>"＋ New Task"</strong> button in the toolbar or on the My Work tab. Required fields are Title, Status, Assignee, Project, and Description. Select the parent project, assign a team member, set dates, and provide a description.</p>
 <div class="tip-box">
-  <strong>Choosing a category:</strong> Tasks have their own category list tailored to the type of work (e.g., Data Engineering, Geospatial Analysis, Application Development). The searchable dropdown lets you type to filter. If you're unsure which category fits, click <strong>"Not sure? Help me choose"</strong> next to the field — a 2-step wizard will ask what kind of work you're doing and recommend the best fit.
-</div>
-<div class="tip-box">
-  <strong>Choosing a tool:</strong> The Tool / Technology field has a searchable dropdown with 37 tools covering ArcGIS, data platforms, development tools, and Microsoft Office. Type to filter, or click <strong>"Not sure? Help me choose"</strong> for a guided wizard that narrows down the right tool in 2–3 steps. Select "Other" if your tool isn't listed.
+  <strong>AI-powered helpers:</strong> Category, Tool, and Project Size fields each have a <strong>✨ Help me choose</strong> button — an amber pill that opens a guided wizard to recommend the best fit based on your answers.
 </div>
 
 <h3>Task Statuses</h3>
-<p>Tasks use their own status set: <strong>Not Started, In Progress, Complete, Deferred,</strong> and <strong>Canceled</strong>.</p>
+<p>Tasks use the following statuses: <strong>Active, Pending, On Hold, Waiting for Response, Complete,</strong> and <strong>Canceled</strong>.</p>
+
+<h3>Date Requirements for Active Tasks</h3>
+<p>Setting a task to <strong>Active</strong> requires both a <strong>start date</strong> and a <strong>due date</strong>. This is enforced in three places:</p>
+<ul>
+  <li><strong>Inline status dropdown</strong> — the dropdown reverts if dates are missing.</li>
+  <li><strong>Batch update</strong> — the entire batch is blocked if any selected tasks lack dates.</li>
+  <li><strong>Task form</strong> — the save is blocked and the missing date field highlights red.</li>
+</ul>
+<p>Pending, On Hold, and Waiting for Response tasks do not require dates.</p>
+
+<h3>Filtering Tasks by Member</h3>
+<p>The member filter on the Tasks tab matches <strong>only the task assignee</strong>. Filtering by "James McGinnis" shows only tasks where James is the assignee — not all tasks on projects he leads.</p>
 
 <h3>Completing Tasks</h3>
 <p>There are several quick ways to mark a task as Complete without opening the edit form:</p>
@@ -401,36 +429,82 @@ li strong { color: var(--navy); }
 </ul>
 
 <!-- ═══════════════════════════════════════════════════ -->
-<h2 id="settings-tab">Settings Tab (Admin Only)</h2>
-<p>The Settings tab is only visible to members of the Team Leads group in ArcGIS Online. It provides team management capabilities.</p>
+<h2 id="insights-tab">Insights Tab (Admin Only)</h2>
+<p>The Insights tab provides strategic reporting and data analysis views for team leadership. It is only visible to admins. Content includes project portfolio summaries, strategic alignment coverage, and trend analysis.</p>
 
-<h3>Team Members Table</h3>
-<p>Lists all team members with their name, role, team, project allocation percentage, and work schedule. From each row you can:</p>
-<ul>
-  <li><strong>✏️ Edit:</strong> Update the person's role, team, skill, project time percentage, and work schedule (5/8, 4/10, or 9/80). Changes save directly to the team_members REST service.</li>
-  <li><strong>📅 Absences:</strong> Opens an inline absence editor showing 8 weeks at a time, centered on the current week. Enter hours off per week. Changes auto-save to the absences REST service. A read-only "Proj Capacity" row shows the impact on available project hours.</li>
-  <li><strong>🗑 Delete:</strong> Removes the team member from the roster (with confirmation). Allocation and absence history is preserved in the database.</li>
-</ul>
+<!-- ═══════════════════════════════════════════════════ -->
+<h2 id="issues-tab">Issues Tab</h2>
+<p>The Issues tab provides a space for tracking bugs, feature requests, and operational issues. It is visible to all team members.</p>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2 id="settings-tab">Settings Tab (Admin Only)</h2>
+<p>The Settings tab is only visible to admins. It uses a two-column layout: a sidebar on the left with navigation groups (People, Project Config, System) and a content panel on the right. Admins can toggle a <strong>"Preview as member"</strong> button in the header to see the app as a standard user would.</p>
+
+<h3>Team Members</h3>
+<p>Lists all team members with their name, role, team, member group, project allocation percentage, and work schedule. The <strong>Member Group</strong> field classifies each person as either "Data Intelligence" (core team) or "Affiliated" (collaborator from another team) — this controls whether they appear by default in the sidebar member filter.</p>
 
 <h3>Adding Team Members</h3>
-<p>Click <strong>"＋ Add Member"</strong> to open a form for adding a new team member. Enter their full name, role, team, skill area, percentage of their work week allocated to project work, and work schedule. The schedule options are:</p>
-<ul>
-  <li><strong>5/8:</strong> Standard schedule — five 8-hour days, 40 hours every week.</li>
-  <li><strong>4/10:</strong> Four 10-hour days, 40 hours every week, with one regular day off (RDO).</li>
-  <li><strong>9/80:</strong> Alternating weeks — Week A is 44 hours (four 9-hour days + one 8-hour day), Week B is 36 hours (four 9-hour days + one RDO). The pay period starts on Sunday, with December 28, 2025 as the Week A reference date.</li>
-</ul>
-<p>When you select a schedule type, the daily schedule grid auto-fills with the standard start and end times for that schedule. For example, selecting "9/80" with a Friday RDO fills Week A as 7:00–17:00 Mon–Thu and 7:00–16:00 Fri, while Week B shows 7:00–17:00 Mon–Thu and blank (day off) on Friday. You can override individual day start/end times for non-standard arrangements. A lunch break duration dropdown (30 or 60 minutes) is applied to all work days. Weekly hour totals are computed automatically: <code>(end − start) − lunch</code> for each day, summed per week. The RDO Day field specifies which day of the week the employee has off.</p>
+<p>Click <strong>"＋ Add Member"</strong> to open a form for adding a new team member. Fields include full name, role, team, member group, skill area, tracking level, percentage of work week for project work, and work schedule (5/8, 4/10, or 9/80).</p>
 
 <h3>Managing Dropdown Lists</h3>
-<p>The <strong>Manage Dropdown Lists</strong> section at the bottom of the Settings tab lets you add or remove options from two key project form fields:</p>
+<p>The <strong>Dropdown Lists</strong> section lets you add or remove options from project form fields including Partner Departments and ITD Teams. The <strong>Categories and Tools</strong> section manages task category and tool dropdown options.</p>
+
+<h3>AI Features</h3>
+<p>Configuration for AI-powered features including task suggestions and strategic alignment recommendations.</p>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2 id="strategic-alignment">Strategic Alignment</h2>
+<p>Each project can be tagged with strategic alignment fields that connect it to broader organizational goals. These fields are managed by authorized Strategic Alignment Editors (currently limited to specific users).</p>
+
+<h3>Alignment Fields</h3>
+<p>Six multi-select fields are available on the project form under the "Strategic Alignment" collapsible section:</p>
 <ul>
-  <li><strong>Partner Departments:</strong> The list of city departments that may request work from the team.</li>
-  <li><strong>ITD Teams:</strong> The list of teams within Information Technology that can be assigned to projects.</li>
+  <li><strong>IT Initiative</strong> — Links to FY26 IT Strategic Plan objectives (3.3.1 through 3.3.5).</li>
+  <li><strong>City Initiative</strong> — Major cross-departmental City priorities (Asset Scorecard, CMO Dashboard, etc.).</li>
+  <li><strong>IT Priority Project</strong> — Top IT department priority efforts.</li>
+  <li><strong>Data Program Goal</strong> — Goals of the City's Data Program for building data maturity.</li>
+  <li><strong>WWC Foundational Practice</strong> — What Works Cities certification practice areas.</li>
+  <li><strong>WWC Criteria</strong> — Specific criteria within WWC practice areas.</li>
 </ul>
-<p>To <strong>add</strong> a new item, type it in the input field at the bottom of the list and click "＋ Add" (or press Enter). To <strong>remove</strong> an item, click the ✕ button next to it.</p>
-<div class="note-box">
-  <strong>Note:</strong> Changes are saved to ArcGIS Online and shared across all users and browsers. Values that have already been used in existing projects will always appear in the dropdown even if removed from this list, because the system automatically includes values found in project data. Items marked "from project data" are read-only and cannot be removed here.
-</div>
+<p>Each field includes a <strong>"None"</strong> option for projects where no specific alignment applies.</p>
+
+<h3>AI-Powered Suggestions</h3>
+<p>Click the <strong>✨ Suggest Alignment</strong> button in the Strategic Alignment section header to have the AI analyze the project's title, description, category, and problem statement and recommend alignments. The AI is particularly selective with Data Program Goals — it only suggests them for projects that build the data team's capabilities, processes, or infrastructure (not routine operational work or one-off requests). Suggestions can be accepted individually or in bulk.</p>
+
+<h3>Data Program Derivation</h3>
+<p>The "Data Program" flag on projects is derived automatically from the Data Program Goal field. If any goal other than "None" is selected, the project is flagged as a Data Program project. There is no separate checkbox.</p>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2 id="dependencies">Task Dependencies</h2>
+<p>The dependency system lets you mark tasks as blocked by other tasks. This feature is behind a feature flag (<code>FEATURE_DEPENDENCIES</code>) and can be disabled if it doesn't work for the team.</p>
+
+<h3>Setting Blockers</h3>
+<p>When editing a task, a <strong>Dependencies</strong> section appears above the Timeline fields. It shows a checkbox list of all sibling tasks (same project), each with their task number, title, and current status. Check the tasks that must be completed before this task can start.</p>
+
+<h3>Viewing Dependencies</h3>
+<p>Dependencies are visible in several places:</p>
+<ul>
+  <li><strong>Task detail page</strong> — A "Blocked by" section shows each blocker with a 🔒 (incomplete) or ✅ (done) icon and its current status. A "Blocking" section shows tasks waiting on this one with a ⛓ icon. Both are clickable.</li>
+  <li><strong>Project detail task table</strong> — Dependency icons appear inline with task titles: 🔒 (has incomplete blockers), 🔓 (all blockers complete), ⛓ (blocking other tasks).</li>
+  <li><strong>My Work attention badges</strong> — Active tasks with incomplete blockers get a red "Blocked" badge.</li>
+  <li><strong>Timeline</strong> — Blocked tasks show a hatched/striped bar pattern and a 🔒 icon in the label.</li>
+</ul>
+
+<h3>Data Model</h3>
+<p>Dependencies use a single <code>blocked_by</code> text field on the tasks feature service, storing comma-separated task numbers (e.g., "P-319-003,P-319-005"). Reverse links (which tasks you're blocking) are derived at runtime. To disable the entire feature, set <code>FEATURE_DEPENDENCIES = false</code> in the application code.</p>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2 id="filters">Filters & Search</h2>
+<p>The sidebar filter system provides consistent filtering across the Projects and Tasks tabs.</p>
+
+<h3>How Filters Work</h3>
+<p>Shared filters (Member, Priority, Search) apply to both tabs. Project-specific filters (Status, Category, Partner Dept, ITD Team, Data Program) only affect the Projects tab. Task-specific filters (Task Status, Task Category, Tool) only affect the Tasks tab. <strong>Project status filters do not cascade to the Tasks tab</strong> — each tab's filters are independent.</p>
+
+<h3>Member Filter</h3>
+<p>On the Projects tab, the member filter shows projects where the selected person is the lead or a contributor. On the Tasks tab, the member filter matches <strong>only the task assignee</strong>. By default, only Data Intelligence team members are shown — check "Show affiliated members" to include collaborators from other teams.</p>
+
+<h3>Active Filter Chips</h3>
+<p>When filters are active, descriptive chips appear above the filter panel showing exactly what's filtered (e.g., "Status: Active, Scheduled" or "Member: Peter Johnson"). Each chip has an × button to remove that specific filter. A "Clear all" link appears when multiple filters are active.</p>
 
 <!-- ═══════════════════════════════════════════════════ -->
 <h2 id="capacity-math">Capacity & Utilization: Assumptions and Math</h2>
@@ -507,8 +581,8 @@ li strong { color: var(--navy); }
 <table class="guide-table">
   <tr><th>Service</th><th>Purpose</th><th>Key Fields</th></tr>
   <tr><td><strong>projects</strong></td><td>Analytics project records with metadata, dates, status, and assignments</td><td>title, status, priority, category, contact, start, end</td></tr>
-  <tr><td><strong>tasks</strong></td><td>Individual work items linked to projects</td><td>title, status, assignee, due_date, project_id</td></tr>
-  <tr><td><strong>team_members</strong></td><td>Team roster with roles, capacity, schedule, and time tracking opt-in</td><td>name, role, team, proj_pct, schedule_type, week1_hours, week2_hours, rdo_day, wk1_mon–wk2_fri, time_tracking</td></tr>
+  <tr><td><strong>tasks</strong></td><td>Individual work items linked to projects</td><td>title, status, assignee, due_date, project_id, blocked_by</td></tr>
+  <tr><td><strong>team_members</strong></td><td>Team roster with roles, capacity, schedule, and time tracking opt-in</td><td>name, role, team, member_group, proj_pct, schedule_type, week1_hours, week2_hours, rdo_day, time_tracking</td></tr>
   <tr><td><strong>absences</strong></td><td>Per-person, per-week time off records</td><td>name, week_date, absence_hours</td></tr>
   <tr><td><strong>allocations</strong></td><td>Per-person, per-project, per-week allocation records</td><td>name, project, week_date, fraction, hours</td></tr>
   <tr><td><strong>app_config</strong></td><td>Shared key-value config store for dropdown lists</td><td>config_key, config_value</td></tr>
@@ -540,16 +614,17 @@ li strong { color: var(--navy); }
 <h3>Permission Summary</h3>
 <table class="guide-table">
   <tr><th>Action</th><th>Standard User</th><th>Admin</th></tr>
-  <tr><td>View all tabs (except Settings)</td><td>✅ Yes</td><td>✅ Yes</td></tr>
-  <tr><td>View Settings tab</td><td>❌ No</td><td>✅ Yes</td></tr>
-  <tr><td>Create / edit projects and tasks</td><td>✅ Yes</td><td>✅ Yes</td></tr>
+  <tr><td>View Overview, My Work, Projects, Tasks, Issues</td><td>✅ Yes</td><td>✅ Yes</td></tr>
+  <tr><td>View Resources, Forecast, Insights, Settings</td><td>❌ No</td><td>✅ Yes</td></tr>
+  <tr><td>Create tasks</td><td>✅ Yes</td><td>✅ Yes</td></tr>
+  <tr><td>Edit / delete projects (as project lead)</td><td>✅ Own projects</td><td>✅ All projects</td></tr>
   <tr><td>Submit project ideas</td><td>✅ Yes</td><td>✅ Yes</td></tr>
   <tr><td>Promote ideas to active projects</td><td>❌ No</td><td>✅ Yes</td></tr>
+  <tr><td>Edit strategic alignment fields</td><td>❌ No</td><td>Authorized editors only</td></tr>
   <tr><td>Edit allocations</td><td>✅ Yes</td><td>✅ Yes</td></tr>
   <tr><td>Manage team members</td><td>❌ No</td><td>✅ Yes</td></tr>
-  <tr><td>Edit absences / time off</td><td>❌ No</td><td>✅ Yes</td></tr>
-  <tr><td>Enable/disable time tracking per employee</td><td>❌ No</td><td>✅ Yes</td></tr>
-  <tr><td>Log time entries (if enabled for them)</td><td>✅ Yes</td><td>✅ Yes</td></tr>
+  <tr><td>Preview as member</td><td>❌ No</td><td>✅ Yes</td></tr>
+  <tr><td>Log time entries (if enabled)</td><td>✅ Yes</td><td>✅ Yes</td></tr>
 </table>
 
 </main>
