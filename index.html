@@ -3434,7 +3434,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0035';
+const APP_VERSION = '0.12.0.0036';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9504,7 +9504,7 @@ function buildTaskForm(t) {
     (FEATURE_DEPENDENCIES ?
       '<div class="fm-section-label">Dependencies</div>' +
       '<div class="fm-grid">' +
-        fmField('Blocked by', '<div id="fm-blocked-by-list" style="max-height:180px;overflow-y:auto;border:1px solid #E8E6DF;border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text-muted);">Select a project first</div>', false, true,
+        fmField('Depends on', '<div id="fm-blocked-by-list" style="max-height:180px;overflow-y:auto;border:1px solid #E8E6DF;border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text-muted);">Select a project first</div>', false, true,
           'Tasks that must be completed before this task can start. Only sibling tasks from the same project are shown.') +
       '</div>' : '') +
     '<div class="fm-section-label">Timeline</div>' +
@@ -10859,7 +10859,7 @@ function renderTaskDetail(idx) {
         var html = '<div class="detail-section">';
         html += '<div class="detail-section-label">Dependencies</div>';
         if (blockedBy.length) {
-          html += '<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Blocked by</div>';
+          html += '<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Depends on</div>';
           blockedBy.forEach(function(num) {
             var bt = findTaskByNumber(num);
             if (!bt) { html += '<div style="font-size:12px;color:var(--text-muted);padding:4px 0;">' + esc(num) + ' (not found)</div>'; return; }
@@ -10875,7 +10875,7 @@ function renderTaskDetail(idx) {
           html += '</div>';
         }
         if (blocking.length) {
-          html += '<div><div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Blocking</div>';
+          html += '<div><div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Required by</div>';
           blocking.forEach(function(bt) {
             var sc = STATUS_COLOR(bt.status);
             html += '<div onclick="openTask(' + bt.objectId + ')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:4px;background:var(--white);transition:background 0.15s;" onmouseenter="this.style.background=\'#F0F4FF\'" onmouseleave="this.style.background=\'var(--white)\'">';
@@ -11084,9 +11084,9 @@ function cpRenderPlanner() {
     }
     html += '</div>';
 
-    // Blockers
+    // Capacity constraints
     if (item.earliest > curIdx && item.blockers.length > 0) {
-      html += '<div class="cp-blockers">Blocked by: ';
+      html += '<div class="cp-blockers">Capacity held by: ';
       item.blockers.forEach(function(proj) { html += '<span class="cp-blocker-tag">' + esc(proj) + '</span>'; });
       html += '</div>';
     } else if (item.earliest === -1 && item.blockers.length > 0) {
@@ -13813,9 +13813,9 @@ function buildGanttBars() {
       const blockedBarStyle = isBlocked ? 'background:repeating-linear-gradient(45deg,' + tsc + ',' + tsc + ' 3px,transparent 3px,transparent 6px);' : 'background:' + tsc + ';';
 
       html += '<div style="display:flex;align-items:center;margin-bottom:1px;height:20px;">';
-      html += '<div style="width:200px;flex-shrink:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:16px;padding-right:8px;cursor:pointer;' + labelStyle + '" onclick="openTask(' + t.objectId + ')" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + (isBlocked ? ' [BLOCKED]' : '') + '">' + blockedIcon + esc(t.title) + '</div>';
+      html += '<div style="width:200px;flex-shrink:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:16px;padding-right:8px;cursor:pointer;' + labelStyle + '" onclick="openTask(' + t.objectId + ')" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + (isBlocked ? ' [DEPS PENDING]' : '') + '">' + blockedIcon + esc(t.title) + '</div>';
       html += '<div style="flex:1;position:relative;height:14px;">';
-      html += '<div style="position:absolute;left:' + tLeftPct + '%;width:' + tWidth + '%;height:100%;' + blockedBarStyle + 'border-radius:3px;opacity:' + barOpacity + ';' + (tOverdue && isMine ? 'outline:2px solid #EF4444;outline-offset:1px;' : '') + '" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + ' ' + tStart + ' → ' + tEnd + (isBlocked ? ' [BLOCKED]' : '') + '"></div>';
+      html += '<div style="position:absolute;left:' + tLeftPct + '%;width:' + tWidth + '%;height:100%;' + blockedBarStyle + 'border-radius:3px;opacity:' + barOpacity + ';' + (tOverdue && isMine ? 'outline:2px solid #EF4444;outline-offset:1px;' : '') + '" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + ' ' + tStart + ' → ' + tEnd + (isBlocked ? ' [DEPS PENDING]' : '') + '"></div>';
       html += '</div></div>';
     });
     } // end if (!isCollapsed)
@@ -13835,7 +13835,7 @@ function buildGanttBars() {
   html += '<div style="display:flex;gap:16px;margin-top:8px;padding-top:8px;border-top:1px solid #E8E6DF;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">';
   html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.85;display:inline-block;"></span> Your tasks</span>';
   html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.3;display:inline-block;"></span> Other members\' tasks</span>';
-  if (FEATURE_DEPENDENCIES) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:repeating-linear-gradient(45deg,#83AC16,#83AC16 2px,transparent 2px,transparent 4px);display:inline-block;"></span> 🔒 Blocked</span>';
+  if (FEATURE_DEPENDENCIES) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:repeating-linear-gradient(45deg,#83AC16,#83AC16 2px,transparent 2px,transparent 4px);display:inline-block;"></span> 🔒 Deps pending</span>';
   html += '</div>';
   return html;
 }
@@ -13876,9 +13876,9 @@ function getDependencyIcon(t) {
   var blocking = getBlockingTasks(t.task_number);
   if (!blockedBy.length && !blocking.length) return '';
   var hasIncomplete = hasIncompleteBlockers(t);
-  if (hasIncomplete) return '<span title="Has incomplete blockers" style="cursor:help;font-size:12px;">🔒</span>';
-  if (blockedBy.length && !hasIncomplete) return '<span title="All blockers complete" style="cursor:help;font-size:12px;">🔓</span>';
-  if (blocking.length) return '<span title="Blocking ' + blocking.length + ' task(s)" style="cursor:help;font-size:12px;">⛓</span>';
+  if (hasIncomplete) return '<span title="Has unresolved dependencies" style="cursor:help;font-size:12px;">🔒</span>';
+  if (blockedBy.length && !hasIncomplete) return '<span title="All dependencies resolved" style="cursor:help;font-size:12px;">🔓</span>';
+  if (blocking.length) return '<span title="Required by ' + blocking.length + ' task(s)" style="cursor:help;font-size:12px;">⛓</span>';
   return '';
 }
 
@@ -13959,9 +13959,9 @@ function getTaskAlerts(t, todayStr) {
       alerts.push({ text: daysLeft === 0 ? 'Due today' : 'Due in ' + daysLeft + 'd', cls: 'mw-att-yellow', severity: 1 });
     }
   }
-  // Blocked task that's Active — has incomplete blockers
+  // Active task with unresolved dependencies
   if (FEATURE_DEPENDENCIES && t.status === 'Active' && hasIncompleteBlockers(t)) {
-    alerts.push({ text: 'Blocked', cls: 'mw-att-red', severity: 0 });
+    alerts.push({ text: 'Deps pending', cls: 'mw-att-red', severity: 0 });
   }
   if (['Active', 'Pending', 'Waiting for Response'].indexOf(t.status) >= 0) {
     var missing = [];

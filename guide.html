@@ -106,7 +106,7 @@ li strong { color: var(--navy); }
 <header class="guide-header">
   <div>
     <h1>Analytics Project Tracker <span class="subtitle">User Guide</span></h1>
-    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">Updated for v0.12.0.0035</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">Updated for v0.12.0.0036</div>
   </div>
   <a href="javascript:void(0)" onclick="window.close();" class="back-btn">← Back to Tracker</a>
 </header>
@@ -206,14 +206,14 @@ li strong { color: var(--navy); }
 <h3>Inline Attention Badges</h3>
 <p>Rather than a separate attention section, each project card and task row carries its own alert badges directly. Items with alerts sort to the top of their group by severity:</p>
 <ul>
-  <li><strong>Red badge</strong> (e.g., "5d overdue") — Overdue items. Shows with a red left border. Active tasks with incomplete blockers also get a red "Blocked" badge.</li>
+  <li><strong>Red badge</strong> (e.g., "5d overdue") — Overdue items. Shows with a red left border. Active tasks with unresolved dependencies also get a red "Deps pending" badge.</li>
   <li><strong>Yellow badge</strong> (e.g., "Due in 3d" or "Ready to activate") — Items due within 7 days, or Future/Scheduled projects whose start date has passed.</li>
   <li><strong>Gray badge</strong> (e.g., "Missing: description, end date") — Incomplete project or task data. For Active tasks, missing start date and due date are flagged. Strategic alignment gaps (IT Initiative, City Initiative, WWC Practice) appear for authorized editors only.</li>
 </ul>
 
 <h3>Timeline (Gantt Chart)</h3>
 <p>A visual timeline showing your active, on-hold, and scheduled projects as horizontal bars spanning from start date to working due date. All open tasks for each project are shown nested under their parent project — your tasks appear at full opacity with bold labels, while other team members' tasks render at reduced opacity. Tasks are sorted with yours first, then others by due date. A legend at the bottom explains the visual distinction.</p>
-<p>Tasks with incomplete blockers (see <a href="#dependencies">Dependencies</a>) are shown with a hatched/striped bar pattern and a 🔒 icon in the label. The chart includes month headers, a red "TODAY" marker, and red outlines on overdue bars. Click any label to open the detail page.</p>
+<p>Tasks with unresolved dependencies (see <a href="#dependencies">Dependencies</a>) are shown with a hatched/striped bar pattern and a 🔒 icon in the label. The chart includes month headers, a red "TODAY" marker, and red outlines on overdue bars. Click any label to open the detail page.</p>
 
 <h3>My Projects</h3>
 <p>All projects where you're the primary contact or a listed team member. By default, only Active, Scheduled, and Idea projects are shown. Click "Show more" to reveal On Hold, Future, Complete, and Canceled projects. Each row shows task completion progress, and projects where you are the lead are marked with a "Lead" badge.</p>
@@ -278,7 +278,7 @@ li strong { color: var(--navy); }
   <li><strong>Complete</strong> (blue header, 60% opacity) — Finished tasks with muted styling.</li>
   <li><strong>Canceled</strong> (gray header, 60% opacity) — Canceled tasks with strikethrough titles.</li>
 </ul>
-<p>Each section only appears if it contains tasks. Column headers (ID, Task, Status, Priority, Assignee, Due Date, Hours) are <strong>sortable</strong> — click a header to sort ascending, click again for descending. Sorting applies independently within each section. Tasks with dependency icons (🔒 blocked, 🔓 unblocked, ⛓ blocking) appear inline with the task title.</p>
+<p>Each section only appears if it contains tasks. Column headers (ID, Task, Status, Priority, Assignee, Due Date, Hours) are <strong>sortable</strong> — click a header to sort ascending, click again for descending. Sorting applies independently within each section. Tasks with dependency icons (🔒 deps pending, 🔓 deps resolved, ⛓ required by others) appear inline with the task title.</p>
 <p>The <strong>batch editor</strong> lets you select multiple tasks via checkboxes and change their status, priority, or assignee in bulk. The status dropdown includes On Hold as an option.</p>
 
 <h3>Project Statuses</h3>
@@ -476,22 +476,22 @@ li strong { color: var(--navy); }
 
 <!-- ═══════════════════════════════════════════════════ -->
 <h2 id="dependencies">Task Dependencies</h2>
-<p>The dependency system lets you mark tasks as blocked by other tasks. This feature is behind a feature flag (<code>FEATURE_DEPENDENCIES</code>) and can be disabled if it doesn't work for the team.</p>
+<p>The dependency system lets you define relationships between tasks — marking which tasks must be completed before others can start. This feature is behind a feature flag (<code>FEATURE_DEPENDENCIES</code>) and can be disabled if it doesn't work for the team.</p>
 
-<h3>Setting Blockers</h3>
+<h3>Setting Dependencies</h3>
 <p>When editing a task, a <strong>Dependencies</strong> section appears above the Timeline fields. It shows a checkbox list of all sibling tasks (same project), each with their task number, title, and current status. Check the tasks that must be completed before this task can start.</p>
 
 <h3>Viewing Dependencies</h3>
 <p>Dependencies are visible in several places:</p>
 <ul>
-  <li><strong>Task detail page</strong> — A "Blocked by" section shows each blocker with a 🔒 (incomplete) or ✅ (done) icon and its current status. A "Blocking" section shows tasks waiting on this one with a ⛓ icon. Both are clickable.</li>
-  <li><strong>Project detail task table</strong> — Dependency icons appear inline with task titles: 🔒 (has incomplete blockers), 🔓 (all blockers complete), ⛓ (blocking other tasks).</li>
-  <li><strong>My Work attention badges</strong> — Active tasks with incomplete blockers get a red "Blocked" badge.</li>
-  <li><strong>Timeline</strong> — Blocked tasks show a hatched/striped bar pattern and a 🔒 icon in the label.</li>
+  <li><strong>Task detail page</strong> — A "Depends on" section shows each dependency with a 🔒 (unresolved) or ✅ (done) icon and its current status. A "Required by" section shows tasks that depend on this one with a ⛓ icon. Both are clickable.</li>
+  <li><strong>Project detail task table</strong> — Dependency icons appear inline with task titles: 🔒 (has unresolved dependencies), 🔓 (all dependencies resolved), ⛓ (required by other tasks).</li>
+  <li><strong>My Work attention badges</strong> — Active tasks with unresolved dependencies get a red "Deps pending" badge.</li>
+  <li><strong>Timeline</strong> — Tasks with pending dependencies show a hatched/striped bar pattern and a 🔒 icon in the label.</li>
 </ul>
 
 <h3>Data Model</h3>
-<p>Dependencies use a single <code>blocked_by</code> text field on the tasks feature service, storing comma-separated task numbers (e.g., "P-319-003,P-319-005"). Reverse links (which tasks you're blocking) are derived at runtime. To disable the entire feature, set <code>FEATURE_DEPENDENCIES = false</code> in the application code.</p>
+<p>Dependencies use a single <code>blocked_by</code> text field on the tasks feature service, storing comma-separated task numbers (e.g., "P-319-003,P-319-005"). Reverse links (which tasks depend on this one) are derived at runtime. To disable the entire feature, set <code>FEATURE_DEPENDENCIES = false</code> in the application code.</p>
 
 <!-- ═══════════════════════════════════════════════════ -->
 <h2 id="filters">Filters & Search</h2>
