@@ -262,6 +262,8 @@ body {
   border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
 .dt-task-group-active { color:#27500A; background:#EAF3DE88; }
 .dt-task-group-other { color:var(--text-muted); background:var(--bg-surface, #F9F8F4); }
+.dt-task-group-complete { color:#0C447C; background:#E6F1FB88; }
+.dt-task-group-canceled { color:#5F5E5A; background:#F1EFE888; }
 
 .detail-task-row {
   display: grid;
@@ -3432,7 +3434,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0030';
+const APP_VERSION = '0.12.0.0031';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -10465,24 +10467,40 @@ function renderProjectDetail(id) {
     </div>`;
   }
 
-  // ── Split tasks into In Progress and Other ──
+  // ── Split tasks into In Progress, Complete, and Canceled ──
   const IN_PROGRESS_STATUSES = ['Active', 'On Hold', 'Waiting for Response'];
   const inProgressTasks = sortDetailTasks(relTasks.filter(function(t) { return IN_PROGRESS_STATUSES.indexOf(t.status) >= 0; }));
-  const otherTasks = sortDetailTasks(relTasks.filter(function(t) { return IN_PROGRESS_STATUSES.indexOf(t.status) < 0; }));
+  const completeTasks = sortDetailTasks(relTasks.filter(function(t) { return t.status === 'Complete'; }));
+  const canceledTasks = sortDetailTasks(relTasks.filter(function(t) { return t.status === 'Canceled'; }));
+  const pendingTasks = sortDetailTasks(relTasks.filter(function(t) { return IN_PROGRESS_STATUSES.indexOf(t.status) < 0 && t.status !== 'Complete' && t.status !== 'Canceled'; }));
 
   const taskRows = relTasks.length ? (function() {
     var html = '';
+    // In Progress section
     if (inProgressTasks.length > 0) {
-      html += '<div class="dt-task-group dt-task-group-active">In progress (' + inProgressTasks.length + ')</div>';
+      html += '<div class="dt-task-group dt-task-group-active"><span>In progress (' + inProgressTasks.length + ')</span><span style="font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;">Active, On hold, Waiting for response</span></div>';
       html += inProgressTasks.map(buildDetailTaskRow).join('');
     }
-    if (otherTasks.length > 0) {
-      var otherStatuses = [];
-      otherTasks.forEach(function(t) { if (otherStatuses.indexOf(t.status) < 0) otherStatuses.push(t.status); });
-      html += '<div class="dt-task-group dt-task-group-other"><span>Other (' + otherTasks.length + ')</span><span style="font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;">' + otherStatuses.join(', ') + '</span></div>';
-      html += otherTasks.map(function(t) { return buildDetailTaskRow(t).replace('class="detail-task-row"', 'class="detail-task-row" style="opacity:0.7;"'); }).join('');
+    // Pending section (if any Pending tasks exist, show them between In Progress and Complete)
+    if (pendingTasks.length > 0) {
+      html += '<div class="dt-task-group dt-task-group-other"><span>Pending (' + pendingTasks.length + ')</span></div>';
+      html += pendingTasks.map(function(t) { return buildDetailTaskRow(t).replace('class="detail-task-row"', 'class="detail-task-row" style="opacity:0.7;"'); }).join('');
     }
-    if (!inProgressTasks.length && !otherTasks.length) {
+    // Complete section
+    if (completeTasks.length > 0) {
+      html += '<div class="dt-task-group dt-task-group-complete"><span>Complete (' + completeTasks.length + ')</span></div>';
+      html += completeTasks.map(function(t) { return buildDetailTaskRow(t).replace('class="detail-task-row"', 'class="detail-task-row" style="opacity:0.6;"'); }).join('');
+    }
+    // Canceled section
+    if (canceledTasks.length > 0) {
+      html += '<div class="dt-task-group dt-task-group-canceled"><span>Canceled (' + canceledTasks.length + ')</span></div>';
+      html += canceledTasks.map(function(t) {
+        return buildDetailTaskRow(t)
+          .replace('class="detail-task-row"', 'class="detail-task-row" style="opacity:0.6;"')
+          .replace('class="detail-task-title"', 'class="detail-task-title" style="text-decoration:line-through;color:var(--text-muted);"');
+      }).join('');
+    }
+    if (!inProgressTasks.length && !completeTasks.length && !canceledTasks.length && !pendingTasks.length) {
       html += '<div style="padding:32px;text-align:center;color:var(--text-muted);font-style:italic;">No tasks linked to this project.</div>';
     }
     return html;
