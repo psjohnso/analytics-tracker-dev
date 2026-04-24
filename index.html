@@ -132,38 +132,69 @@ body {
 }
 
 .detail-hero {
-  padding: 32px 40px 28px;
-  color: #fff;
+  display: flex;
+  color: var(--text-body);
   position: relative;
+  border-bottom: 1px solid var(--border);
+}
+.detail-hero-sidebar {
+  width: 56px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 6px;
+  gap: 6px;
+}
+.detail-hero-sidebar-label {
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  font-family: 'Lato', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.detail-hero-sidebar-id {
+  font-family: monospace;
+  font-size: 9px;
+  opacity: 0.7;
+}
+.detail-hero-main {
+  flex: 1;
+  padding: 16px 32px 16px 24px;
+  background: var(--white);
+  min-width: 0;
 }
 
 .detail-back-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(255,255,255,0.15);
-  border: 1px solid rgba(255,255,255,0.3);
-  color: #fff;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--navy);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 6px 14px;
-  border-radius: var(--radius-btn);
+  letter-spacing: 0.02em;
+  padding: 0;
   cursor: pointer;
-  margin-bottom: 20px;
-  transition: background 0.15s ease;
+  margin-bottom: 12px;
+  transition: color 0.15s ease;
+  font-family: 'Lato', sans-serif;
 }
-.detail-back-btn:hover { background: rgba(255,255,255,0.25); }
+.detail-back-btn:hover { color: #C24200; }
 
 .detail-hero-title {
   font-family: 'Lato', sans-serif;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 900;
   letter-spacing: -0.02em;
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   line-height: 1.2;
   max-width: 860px;
+  color: var(--navy);
 }
 
 .detail-hero-badges {
@@ -174,12 +205,20 @@ body {
 }
 
 .detail-hero-actions {
-  position: absolute;
-  top: 32px;
-  right: 40px;
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
+
+.modal-edit-btn, .modal-del-btn {
+  font-family: 'Lato', sans-serif;
+  font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 6px; cursor: pointer; border: 1px solid;
+  transition: background 0.15s, border-color 0.15s;
+}
+.modal-edit-btn { background: #E6F1FB; color: #0C447C; border-color: #85B7EB; }
+.modal-edit-btn:hover { background: #D0E5F7; }
+.modal-del-btn { background: #FCEBEB; color: #791F1F; border-color: #F09595; }
+.modal-del-btn:hover { background: #F7D4D4; }
 
 .detail-content {
   padding: 32px 40px;
@@ -1491,15 +1530,6 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   padding:9px 18px; border-radius:6px; font-family:'Lato',sans-serif; font-size:13px;
   font-weight:700; cursor:pointer; }
 .btn-fm-delete:hover { background:#FEF2F2; border-color:#EF4444; }
-/* Edit/Delete buttons in view modal header */
-.modal-edit-btn, .modal-del-btn {
-  border:1.5px solid rgba(255,255,255,0.45); background:rgba(255,255,255,0.14);
-  color:#fff; padding:5px 13px; border-radius:6px; cursor:pointer;
-  font-family:'Lato',sans-serif; font-size:11px; font-weight:700;
-  letter-spacing:0.03em; white-space:nowrap; }
-.modal-edit-btn:hover { background:rgba(255,255,255,0.28); }
-.modal-del-btn { border-color:rgba(252,165,165,0.6); color:#FCA5A5; }
-.modal-del-btn:hover { background:rgba(239,68,68,0.2); }
 /* Add-new button in toolbar */
 #btn-add-new { background:var(--navy); color:#fff; border:none; padding:8px 16px;
   border-radius:6px; font-family:'Lato',sans-serif; font-size:12px; font-weight:700;
@@ -2506,7 +2536,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .mf-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:8px; }
 
 /* ── Phase 3: Extracted CSS utility classes ─────────────────────────── */
-.detail-hero-chip { background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px; }
+.detail-hero-chip { background:var(--bg-surface, #F3F1EB);border:1px solid #E8E6DF;color:var(--text-body);font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px; }
 .detail-section-label-flex { display:flex;align-items:center;justify-content:space-between; }
 .btn-navy-sm { background:var(--navy);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:Lato,sans-serif; }
 .btn-navy-md { background:var(--navy);color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:Lato,sans-serif; }
@@ -3434,7 +3464,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.12.0.0036';
+const APP_VERSION = '0.13.1.0001';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -3912,6 +3942,12 @@ function STATUS_COLOR(s) {
   let hash = 0;
   for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) | 0;
   return extras[Math.abs(hash) % extras.length];
+}
+
+// Returns white or dark text color for readability on a status background
+function STATUS_TEXT_COLOR(s) {
+  var light = { 'On Hold': true, 'Idea': true };
+  return light[s] ? '#002669' : '#ffffff';
 }
 
 const PRIORITY_ORDER = { High: 0, Medium: 1, Low: 2 };
@@ -10498,8 +10534,8 @@ function renderProjectDetail(id) {
 
   const memberChips = allMembers.map(name => {
     const av = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-    return `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px 4px 6px;font-size:12px;white-space:nowrap;">
-      <span style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.25);font-size:8px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">${av}</span>${esc(name)}</span>`;
+    return `<span style="display:inline-flex;align-items:center;gap:5px;background:#F3F1EB;border:1px solid #E8E6DF;border-radius:20px;padding:4px 12px 4px 6px;font-size:12px;white-space:nowrap;color:var(--text-body);">
+      <span style="width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:8px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">${av}</span>${esc(name)}</span>`;
   }).join('');
 
   // ── Build task row HTML helper ──
@@ -10586,25 +10622,30 @@ function renderProjectDetail(id) {
   var canEditProject = isAdmin() || (Auth.fullName && p.contact === Auth.fullName);
 
   return `<div class="detail-page">
-    <div class="detail-hero" style="background:linear-gradient(135deg, var(--navy) 0%, #003580 55%, ${statusColor}cc 100%);">
-      <div class="detail-hero-actions">
-        ${canEditProject && p.status && p.status !== 'Complete' && p.status !== 'Canceled' ? `<button class="modal-edit-btn" style="background:rgba(34,197,94,0.25);border-color:rgba(34,197,94,0.5);" onclick="markProjectComplete(${p.objectId})">✓ Complete</button>` : ''}
-        ${canEditProject ? `<button class="modal-edit-btn" onclick="openFormModal('edit-project',${p.objectId})">✏ Edit</button>` : ''}
-        <button class="modal-edit-btn" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.3);" onclick="copyProjectSummary(${p.objectId})">📋 Copy Summary</button>
-        ${canEditProject ? `<button class="modal-del-btn" onclick="confirmDeleteProject(${p.objectId})">🗑 Delete</button>` : ''}
+    <div class="detail-hero">
+      <div class="detail-hero-sidebar" style="background:${statusColor};color:${STATUS_TEXT_COLOR(p.status)};">
+        <span class="detail-hero-sidebar-label">${esc(p.status || '—')}</span>
+        <span class="detail-hero-sidebar-id">${esc(p.project_number || '')}</span>
       </div>
-      <button class="detail-back-btn" onclick="goBackFromDetail()">${backLabel}</button>
-      <div class="detail-hero-title">${p.project_number ? '<span style="font-family:monospace;font-size:14px;font-weight:700;background:rgba(255,255,255,0.15);padding:3px 10px;border-radius:6px;margin-right:10px;">' + esc(p.project_number) + '</span>' : ''}${esc(p.title)}</div>
-      <div class="detail-hero-badges">
-        <span class="status-pill" style="background:rgba(255,255,255,0.15);color:white;font-size:12px;">
-          <span style="width:7px;height:7px;border-radius:50%;background:${statusColor};display:inline-block;"></span>${p.status||'—'}
-        </span>
-        <span class="priority-badge priority-${p.priority||'null'}">${p.priority||'—'}</span>
-        ${p.is_data_program ? '<span class="detail-hero-chip" style="background:rgba(255,165,0,0.25);border:1px solid rgba(255,165,0,0.4);">Data Program</span>' : ''}
-        ${projTotalHrs > 0 ? `<span class="detail-hero-chip">⏱ ${hoursLabel(projTotalHrs, projMyHrs)}</span>` : ''}
-        ${p.actual_end ? `<span class="detail-hero-chip">✓ Completed ${p.actual_end}</span>` : ''}
+      <div class="detail-hero-main">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <button class="detail-back-btn" onclick="goBackFromDetail()">← ${backLabel}</button>
+          <div class="detail-hero-actions">
+            ${canEditProject && p.status && p.status !== 'Complete' && p.status !== 'Canceled' ? `<button class="modal-edit-btn" style="background:#EAF3DE;color:#27500A;border-color:#83AC1644;" onclick="markProjectComplete(${p.objectId})">✓ Complete</button>` : ''}
+            ${canEditProject ? `<button class="modal-edit-btn" onclick="openFormModal('edit-project',${p.objectId})">✏ Edit</button>` : ''}
+            <button class="modal-edit-btn" style="background:var(--bg-surface,#F3F1EB);color:var(--text-muted);border-color:#E8E6DF;" onclick="copyProjectSummary(${p.objectId})">📋 Copy</button>
+            ${canEditProject ? `<button class="modal-del-btn" onclick="confirmDeleteProject(${p.objectId})">🗑 Delete</button>` : ''}
+          </div>
+        </div>
+        <div class="detail-hero-title">${esc(p.title)}</div>
+        <div class="detail-hero-badges">
+          <span class="priority-badge priority-${p.priority||'null'}">${p.priority||'—'}</span>
+          ${p.is_data_program ? '<span class="detail-hero-chip" style="background:#FFF7ED;color:#9A3412;border-color:#FED7AA;">Data Program</span>' : ''}
+          ${projTotalHrs > 0 ? `<span class="detail-hero-chip">⏱ ${hoursLabel(projTotalHrs, projMyHrs)}</span>` : ''}
+          ${p.actual_end ? `<span class="detail-hero-chip">✓ Completed ${p.actual_end}</span>` : ''}
+        </div>
+        ${allMembers.length ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;">${memberChips}</div>` : ''}
       </div>
-      ${allMembers.length ? `<div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:6px;">${memberChips}</div>` : ''}
     </div>
 
     <div class="detail-content">
@@ -10790,22 +10831,27 @@ function renderTaskDetail(idx) {
   const isCompletable = t.status && t.status !== 'Complete' && t.status !== 'Canceled';
 
   return `<div class="detail-page">
-    <div class="detail-hero task-hero" style="background:#B45309;">
-      <div class="detail-hero-actions">
-        ${isCompletable ? `<button class="modal-edit-btn" style="background:rgba(34,197,94,0.25);border-color:rgba(34,197,94,0.5);" onclick="event.stopPropagation();markTaskComplete(${t.objectId})">✓ Complete</button>` : ''}
-        <button class="modal-edit-btn" onclick="openFormModal('edit-task',${t.objectId})">✏ Edit</button>
-        <button class="modal-del-btn" onclick="confirmDeleteTask(${t.objectId})">🗑 Delete</button>
+    <div class="detail-hero">
+      <div class="detail-hero-sidebar" style="background:${statusColor};color:${STATUS_TEXT_COLOR(t.status)};">
+        <span class="detail-hero-sidebar-label">${esc(t.status || '—')}</span>
+        <span class="detail-hero-sidebar-id">${esc(t.task_number || '')}</span>
       </div>
-      <button class="detail-back-btn" onclick="goBackFromDetail()">${taskBackLabel}</button>
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;opacity:0.7;margin-bottom:6px;">Task</div>
-      <div class="detail-hero-title">${t.task_number ? '<span style="font-family:monospace;font-size:14px;font-weight:700;background:rgba(255,255,255,0.15);padding:3px 10px;border-radius:6px;margin-right:10px;">' + esc(t.task_number) + '</span>' : ''}${esc(t.title)}</div>
-      <div class="detail-hero-badges">
-        <span class="status-pill" style="background:rgba(255,255,255,0.15);color:white;font-size:12px;">
-          <span style="width:7px;height:7px;border-radius:50%;background:${statusColor};display:inline-block;"></span>${t.status||'—'}
-        </span>
-        <span class="priority-badge priority-${t.priority||'null'}">${t.priority||'—'}</span>
-        ${t.assignee ? `<span class="detail-hero-chip">${esc(t.assignee)}</span>` : ''}
-        ${getTaskHours(t.idx) > 0 ? `<span class="detail-hero-chip">⏱ ${hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx))}</span>` : ''}
+      <div class="detail-hero-main">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <button class="detail-back-btn" onclick="goBackFromDetail()">← ${taskBackLabel}</button>
+          <div class="detail-hero-actions">
+            ${isCompletable ? `<button class="modal-edit-btn" style="background:#EAF3DE;color:#27500A;border-color:#83AC1644;" onclick="event.stopPropagation();markTaskComplete(${t.objectId})">✓ Complete</button>` : ''}
+            <button class="modal-edit-btn" onclick="openFormModal('edit-task',${t.objectId})">✏ Edit</button>
+            <button class="modal-del-btn" onclick="confirmDeleteTask(${t.objectId})">🗑 Delete</button>
+          </div>
+        </div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Task</div>
+        <div class="detail-hero-title">${esc(t.title)}</div>
+        <div class="detail-hero-badges">
+          <span class="priority-badge priority-${t.priority||'null'}">${t.priority||'—'}</span>
+          ${t.assignee ? `<span class="detail-hero-chip">${esc(t.assignee)}</span>` : ''}
+          ${getTaskHours(t.idx) > 0 ? `<span class="detail-hero-chip">⏱ ${hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx))}</span>` : ''}
+        </div>
       </div>
     </div>
 

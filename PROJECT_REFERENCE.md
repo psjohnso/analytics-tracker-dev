@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.12.0.0035 (see Version History at bottom)
+> **Current Version:** 0.13.1.0001 (see Version History at bottom)
 
 ---
 
@@ -1528,6 +1528,11 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.12.0.0033 | Due date only flagged as missing for Active tasks; enforce due date when setting task to Active via inline dropdown, batch update, or form save |
 | 0.12.0.0034 | Require start date for Active tasks across inline, batch, and form save |
 | 0.12.0.0035 | Task dependencies system (behind FEATURE_DEPENDENCIES flag): blocked_by field, dependency helpers, task form blocker selector, task detail blocked-by/blocking sections, dependency icons on project detail task table, blocked task attention alerts, timeline hatched bars and lock icons for blocked tasks |
+| 0.12.0.0036 | Replace blocked/blocker terminology with dependency language throughout app and guide |
+| 0.12.0.0037 | Redesign project and task detail page headers: split panel with status-colored sidebar column and white content area; consistent status colors between projects and tasks; high-contrast buttons and badges; updated member chips for light background |
+| | **Version correction**: builds 0.12.0.0011–0037 should have used MINOR/PATCH bumps per convention. Corrected going forward: dependencies system = 0.13.0 (new capability), title bar redesign = 0.13.1 (improvement round). |
+| 0.13.0.0001 | Task dependencies system (retroactive MINOR bump — new capability area) |
+| 0.13.1.0001 | Detail page header redesign (retroactive PATCH bump — improvement round to existing feature) |
 
 ---
 
