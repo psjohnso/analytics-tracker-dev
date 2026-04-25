@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.15.1.0001';
+const APP_VERSION = '0.15.1.0002';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -6752,7 +6752,7 @@ function markSynced(msg) {
 
 // ── Feature flags ──────────────────────────────────────────────────
 // Values: true = enabled for everyone, 'beta' = opt-in via user prefs, false = disabled for everyone
-const FEATURE_DEPENDENCIES = true;
+const FEATURE_DEPENDENCIES = 'beta';
 const FEATURE_TASK_HISTORY = true;
 
 // Registry of beta-eligible features (shown in Preferences when flag === 'beta')
