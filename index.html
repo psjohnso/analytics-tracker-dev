@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.15.1.0003';
+const APP_VERSION = '0.15.1.0004';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -14842,6 +14842,34 @@ function renderMyWork(area) {
       html += '<span style="font-size:11px;color:var(--text-muted);white-space:nowrap;min-width:35px;text-align:right;">' + Math.round(a.frac * 100) + '%</span>';
       html += '<div class="mywork-alloc-bar"><div class="mywork-alloc-fill" style="width:' + Math.min(100, pct) + '%;background:' + barColor + ';"></div></div>';
       html += '</div>';
+
+      // Show user's active/on hold/waiting tasks for this project
+      var weekTaskStatuses = ['Active', 'On Hold', 'Waiting for Response'];
+      var weekTasks = TASKS.filter(function(t) {
+        return t.project === a.project && t.assignee === name && weekTaskStatuses.indexOf(t.status) >= 0;
+      }).sort(function(ta, tb) {
+        var pa = { High: 0, Medium: 1, Low: 2 }; return (pa[ta.priority] || 3) - (pa[tb.priority] || 3);
+      });
+      if (weekTasks.length > 0) {
+        weekTasks.forEach(function(t) {
+          var sc = STATUS_COLOR(t.status);
+          var dueStr = t.working_due || t.due || '';
+          var todayStr = new Date().toISOString().slice(0, 10);
+          var isOverdue = dueStr && dueStr < todayStr;
+          html += '<div style="display:flex;align-items:center;gap:8px;padding:4px 8px 4px 24px;cursor:pointer;font-size:11px;border-bottom:0.5px solid #F3F1EB;" onclick="event.stopPropagation();openTask(' + t.objectId + ')">';
+          html += '<span style="width:6px;height:6px;border-radius:50%;background:' + sc + ';flex-shrink:0;"></span>';
+          html += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-body);">' + esc(t.title) + '</span>';
+          if (t.priority) {
+            var priBg = t.priority === 'High' ? '#FCEBEB' : t.priority === 'Medium' ? '#FAEEDA' : '#EAF3DE';
+            var priColor = t.priority === 'High' ? '#791F1F' : t.priority === 'Medium' ? '#633806' : '#27500A';
+            html += '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:' + priBg + ';color:' + priColor + ';flex-shrink:0;">' + t.priority + '</span>';
+          }
+          if (dueStr) {
+            html += '<span style="font-size:10px;color:' + (isOverdue ? '#EF4444' : 'var(--text-muted)') + ';white-space:nowrap;flex-shrink:0;">' + (isOverdue ? '⚠ ' : '') + dueStr + '</span>';
+          }
+          html += '</div>';
+        });
+      }
     });
     } // close else (has allocations)
   } // close else (has RESOURCES_DATA)
