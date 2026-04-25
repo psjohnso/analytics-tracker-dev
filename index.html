@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.15.0.0004';
+const APP_VERSION = '0.15.0.0007';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -7385,6 +7385,8 @@ async function loadResourcesData() {
     });
 
     people[nm] = {
+      objectId:         ci('objectid') || a.objectid || a.OBJECTID || a.ObjectId,
+      user_preferences: ci('user_preferences') || null,
       role:             a.role || '',
       team:             a.team || '',
       skill:            a.skill || ci('skill') || '',
@@ -15805,6 +15807,11 @@ async function saveMemberForm() {
 
   const isEdit = origName !== '';
   const isRename = isEdit && origName !== name;
+
+  // Only set active on new member creation (edits preserve existing value)
+  if (!isEdit) {
+    memberAttrs.active = 'true';
+  }
 
   if (isRename) {
     if (!confirm('Renaming "' + origName + '" to "' + name + '" will update all projects, tasks, time entries, allocations, and absences.\n\nThis may take a moment. Continue?')) return;
