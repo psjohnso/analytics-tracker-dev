@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.15.1.0005';
+const APP_VERSION = '0.15.1.0006';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -14517,12 +14517,12 @@ function buildMyWorkTasksSection(myTasks, todayStr, viewUserTaskHrsFn) {
   const canceledCount = (tasksByStatus['Canceled'] || []).length;
   const hiddenCount = pendingCount + onHoldCount + completeCount + canceledCount;
 
-  html += '<div class="mywork-section-header" style="justify-content:space-between;">'+
-    '<div>✅ My Tasks <span class="badge-count">' + myTasks.length + '</span></div>' +
+  html += '<div class="mywork-section-header" style="justify-content:space-between;flex-wrap:wrap;">'+
+    '<div style="display:flex;align-items:center;gap:6px;">✅ My Tasks <span class="badge-count">' + myTasks.length + '</span>' +
     '<button onclick="mwNewTask()" style="padding:3px 8px;border-radius:4px;border:1px solid #C24200;background:transparent;cursor:pointer;font-family:Lato,sans-serif;font-size:10px;font-weight:700;color:#C24200;line-height:1;">＋ New</button>' +
     '</div>';
 
-  // Task-specific alert summary
+  // Task-specific alert counts
   var taskOverdue = myTasks.filter(function(t) {
     var d = t.working_due || t.due;
     return d && d < todayStr && ['Active', 'Waiting for Response', 'On Hold'].indexOf(t.status) >= 0;
@@ -14537,12 +14537,13 @@ function buildMyWorkTasksSection(myTasks, todayStr, viewUserTaskHrsFn) {
     return ['Active', 'Pending', 'Waiting for Response'].indexOf(t.status) >= 0 && getTaskAlerts(t, todayStr).some(function(a) { return a.cls === 'mw-att-gray'; });
   }).length;
   if (taskOverdue + taskDueSoon + taskMissing > 0) {
-    html += '<div style="display:flex;gap:12px;padding:6px 14px;font-size:11px;font-weight:700;background:#FEF2F2;border-bottom:0.5px solid #FECACA;flex-wrap:wrap;">';
-    if (taskOverdue > 0) html += '<span style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#E24B4A;display:inline-block;"></span>' + taskOverdue + ' overdue</span>';
-    if (taskDueSoon > 0) html += '<span style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#EF9F27;display:inline-block;"></span>' + taskDueSoon + ' due soon</span>';
-    if (taskMissing > 0) html += '<span style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span>' + taskMissing + ' missing data</span>';
+    html += '<div style="display:flex;gap:10px;font-size:10px;font-weight:700;">';
+    if (taskOverdue > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#E24B4A;display:inline-block;"></span><span style="color:#791F1F;">' + taskOverdue + ' overdue</span></span>';
+    if (taskDueSoon > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#EF9F27;display:inline-block;"></span><span style="color:#92400E;">' + taskDueSoon + ' due soon</span></span>';
+    if (taskMissing > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span><span style="color:#5F5E5A;">' + taskMissing + ' missing</span></span>';
     html += '</div>';
   }
+  html += '</div>';
 
   const defaultStatuses = ['Active', 'Waiting for Response'];
   let hasTasks = false;
@@ -14883,9 +14884,8 @@ function renderMyWork(area) {
   // ── LEFT COLUMN: My Projects ────────────────────────────────
   html += '<div>';
   html += '<div class="mywork-section" id="mw-projects">';
-  html += '<div class="mywork-section-header">📁 My Projects <span class="badge-count">' + myProjects.length + '</span></div>';
 
-  // Project-specific alert summary
+  // Project-specific alert counts
   var projOverdue = overdueProjects.length;
   var projDueSoon = myProjects.filter(function(p) {
     var d = p.working_due || p.end;
@@ -14896,13 +14896,17 @@ function renderMyWork(area) {
   var projMissing = myProjects.filter(function(p) {
     return ['Active', 'Scheduled', 'On Hold'].indexOf(p.status) >= 0 && getProjectAlerts(p, todayStr, name).some(function(a) { return a.cls === 'mw-att-gray'; });
   }).length;
+
+  html += '<div class="mywork-section-header" style="justify-content:space-between;flex-wrap:wrap;">';
+  html += '<div>📁 My Projects <span class="badge-count">' + myProjects.length + '</span></div>';
   if (projOverdue + projDueSoon + projMissing > 0) {
-    html += '<div style="display:flex;gap:12px;padding:6px 14px;font-size:11px;font-weight:700;background:#FEF2F2;border-bottom:0.5px solid #FECACA;flex-wrap:wrap;">';
-    if (projOverdue > 0) html += '<span style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#E24B4A;display:inline-block;"></span>' + projOverdue + ' overdue</span>';
-    if (projDueSoon > 0) html += '<span style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#EF9F27;display:inline-block;"></span>' + projDueSoon + ' due soon</span>';
-    if (projMissing > 0) html += '<span style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span>' + projMissing + ' missing data</span>';
+    html += '<div style="display:flex;gap:10px;font-size:10px;font-weight:700;">';
+    if (projOverdue > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#E24B4A;display:inline-block;"></span><span style="color:#791F1F;">' + projOverdue + ' overdue</span></span>';
+    if (projDueSoon > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#EF9F27;display:inline-block;"></span><span style="color:#92400E;">' + projDueSoon + ' due soon</span></span>';
+    if (projMissing > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span><span style="color:#5F5E5A;">' + projMissing + ' missing</span></span>';
     html += '</div>';
   }
+  html += '</div>';
 
   // Split projects by role
   var leadProjects = [];
