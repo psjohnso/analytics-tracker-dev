@@ -2714,8 +2714,8 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
       <option value="end">Sort: Due Date</option>
     </select>
     <div class="view-toggle" id="view-toggle" style="display: flex;">
-      <button class="view-btn active" onclick="setView('grid')" id="view-grid">⊞ Grid</button>
-      <button class="view-btn" onclick="setView('list')" id="view-list">☰ List</button>
+      <button class="view-btn" onclick="setView('grid')" id="view-grid">⊞ Grid</button>
+      <button class="view-btn active" onclick="setView('list')" id="view-list">☰ List</button>
     </div>
   </div>
 
@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.15.0.0003';
+const APP_VERSION = '0.15.0.0004';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -4726,6 +4726,9 @@ function switchTab(tab, preserveFilters) {
     b.classList.toggle('active', tabIds[i] === tab);
   });
   document.getElementById('view-toggle').style.display = (tab === 'overview' || tab === 'mywork' || tab === 'resources' || tab === 'settings' || tab === 'forecast' || tab === 'insights' || tab === 'issues') ? 'none' : 'flex';
+  // Sync toggle button highlight with current view preference
+  document.getElementById('view-grid').classList.toggle('active', currentView === 'grid');
+  document.getElementById('view-list').classList.toggle('active', currentView === 'list');
   document.getElementById('sort-select').style.display = (tab === 'projects' || tab === 'tasks') ? '' : 'none';
   // Hide entire toolbar on tabs that don't need it
   document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues') ? 'none' : '';
