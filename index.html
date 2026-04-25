@@ -3468,7 +3468,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.14.0.0001';
+const APP_VERSION = '0.14.0.0002';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9874,7 +9874,12 @@ async function handleFormSubmit(andDownload) {
     if (!isEdit || (oldStatus && newFormStatus && oldStatus !== newFormStatus)) {
       var formReason = null;
       if (needsStatusReason(newFormStatus)) {
-        formReason = prompt('Reason for setting to "' + newFormStatus + '" (optional):');
+        var formResult = await promptStatusReason(oldStatus, newFormStatus);
+        if (!formResult.confirmed) {
+          if (saveBtn) { saveBtn.textContent = saveBtnOrigText; saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
+          return;
+        }
+        formReason = formResult.reason;
       }
       fields.task_status_history = appendTaskHistory(existingTask || {}, oldStatus, newFormStatus, formReason);
     }
@@ -10305,7 +10310,9 @@ async function applyBatchUpdate() {
   // Prompt for reason once for the whole batch if applicable
   var batchReason = null;
   if (newStatus && needsStatusReason(newStatus)) {
-    batchReason = prompt('Reason for setting ' + ids.length + ' task(s) to "' + newStatus + '" (optional):');
+    var batchResult = await promptStatusReason('(multiple)', newStatus);
+    if (!batchResult.confirmed) return;
+    batchReason = batchResult.reason;
   }
 
   for (var i = 0; i < ids.length; i++) {
@@ -13012,9 +13019,50 @@ function needsStatusReason(newStatus) {
   return FEATURE_TASK_HISTORY && ['On Hold', 'Waiting for Response', 'Canceled'].indexOf(newStatus) >= 0;
 }
 
-function promptStatusReason(newStatus, callback) {
-  var reason = prompt('Reason for setting to "' + newStatus + '" (optional):');
-  callback(reason || null);
+// Shows a styled modal to collect a reason for a status change. Returns a Promise.
+function promptStatusReason(fromStatus, toStatus) {
+  return new Promise(function(resolve) {
+    var backdrop = document.getElementById('status-reason-backdrop');
+    var fromEl = document.getElementById('sr-from-status');
+    var toEl = document.getElementById('sr-to-status');
+    var input = document.getElementById('sr-reason-input');
+    var confirmBtn = document.getElementById('sr-confirm-btn');
+    var cancelBtn = document.getElementById('sr-cancel-btn');
+    var closeBtn = document.getElementById('sr-close-btn');
+
+    if (!backdrop) { resolve({ confirmed: true, reason: null }); return; }
+
+    // Populate the transition display
+    var fromColor = STATUS_COLOR(fromStatus) || '#9CA3AF';
+    var toColor = STATUS_COLOR(toStatus) || '#9CA3AF';
+    fromEl.textContent = fromStatus || '(new)';
+    fromEl.style.color = fromColor;
+    toEl.textContent = toStatus;
+    toEl.style.color = toColor;
+    toEl.style.fontWeight = '700';
+    input.value = '';
+    backdrop.style.display = 'flex';
+    setTimeout(function() { input.focus(); }, 50);
+
+    function cleanup() {
+      backdrop.style.display = 'none';
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+      input.removeEventListener('keydown', onKey);
+      backdrop.removeEventListener('click', onBackdrop);
+    }
+    function onConfirm() { cleanup(); resolve({ confirmed: true, reason: input.value.trim() || null }); }
+    function onCancel() { cleanup(); resolve({ confirmed: false, reason: null }); }
+    function onKey(e) { if (e.key === 'Enter') { e.preventDefault(); onConfirm(); } if (e.key === 'Escape') onCancel(); }
+    function onBackdrop(e) { if (e.target === backdrop) onCancel(); }
+
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+    closeBtn.addEventListener('click', onCancel);
+    input.addEventListener('keydown', onKey);
+    backdrop.addEventListener('click', onBackdrop);
+  });
 }
 
 function renderTaskHistorySection(t) {
@@ -13876,7 +13924,9 @@ async function mwQuickStatus(selectEl) {
     var oldStatus = task ? task.status : null;
     var reason = null;
     if (needsStatusReason(newStatus)) {
-      reason = prompt('Reason for setting to "' + newStatus + '" (optional):');
+      var result = await promptStatusReason(oldStatus, newStatus);
+      if (!result.confirmed) { selectEl.value = oldStatus; return; }
+      reason = result.reason;
     }
     var fields = { status: newStatus };
     if (newStatus === 'Complete') fields.actual_end = todayStr;
@@ -15955,6 +16005,26 @@ async function absValueChanged(input) {
     <div class="mf-actions">
       <button class="settings-btn settings-btn-secondary" onclick="closeMemberForm()">Cancel</button>
       <button class="settings-btn settings-btn-primary" onclick="saveMemberForm()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="status-reason-backdrop" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--white);border-radius:12px;border:1px solid var(--border);padding:24px 28px;width:400px;max-width:90vw;font-family:'Lato',sans-serif;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:700;color:var(--navy);">Status change</div>
+      <span id="sr-close-btn" style="font-size:20px;color:var(--text-muted);cursor:pointer;line-height:1;">&times;</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:10px 12px;background:var(--bg-surface, #F3F1EB);border-radius:8px;font-size:13px;">
+      <span id="sr-from-status" style="font-weight:500;">Active</span>
+      <span style="color:var(--text-muted);">→</span>
+      <span id="sr-to-status" style="font-weight:700;">On Hold</span>
+    </div>
+    <div style="margin-bottom:6px;font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:0.03em;">REASON <span style="font-weight:400;color:var(--text-muted);letter-spacing:0;">(optional)</span></div>
+    <textarea id="sr-reason-input" rows="3" placeholder="e.g. Waiting on vendor compatibility response..." style="width:100%;box-sizing:border-box;font-size:13px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-family:'Lato',sans-serif;resize:none;color:var(--text-body);background:var(--white);"></textarea>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
+      <button id="sr-cancel-btn" style="padding:6px 16px;font-size:12px;font-weight:700;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:var(--white);color:var(--text-muted);font-family:'Lato',sans-serif;">Cancel</button>
+      <button id="sr-confirm-btn" style="padding:6px 16px;font-size:12px;font-weight:700;background:var(--navy);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Lato',sans-serif;">Confirm</button>
     </div>
   </div>
 </div>

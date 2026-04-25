@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.14.0.0001 (see Version History at bottom)
+> **Current Version:** 0.14.0.0002 (see Version History at bottom)
 
 ---
 
@@ -1542,6 +1542,7 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.13.2.0001 | Projects tab redesign: default to list view; Leading/Contributing role tables with three status groups (Active+OnHold+Waiting, Future+Scheduled, Complete+Canceled); remove Phase column; add ID, Category, and Tasks columns; Contributing table shows Lead column |
 | 0.13.2.0002 | Preserve filters after editing a project or task (remove filter-clearing on save) |
 | 0.14.0.0001 | Task notes and status change history (new capability, behind FEATURE_TASK_HISTORY flag): task_notes and task_status_history JSON fields; chronological notes thread with inline add-note UI; auto-captured status history with reason prompts for On Hold/Waiting/Canceled; merged Notes & History timeline on task detail page; hooked into mwQuickStatus, applyBatchUpdate, handleFormSubmit, and markTaskComplete |
+| 0.14.0.0002 | Replace browser prompt() with styled modal dialog for status change reasons; modal shows from→to status transition with colors, textarea for reason, Confirm/Cancel buttons; Cancel reverts the status change; supports Enter to confirm, Escape to cancel, backdrop click to dismiss |
 
 ---
 
