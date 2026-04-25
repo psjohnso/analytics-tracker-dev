@@ -799,6 +799,13 @@ body {
 .task-row:hover { background: #F0F4FF; }
 .task-row:last-child { border-bottom: none; }
 
+/* Compact rows preference */
+.compact-mode .task-row { padding: 4px 0; }
+.compact-mode .detail-task-row { padding: 4px 0; }
+.compact-mode .task-table-header { padding: 6px 16px; }
+.compact-mode .mywork-section .mw-project-card { padding: 8px 12px; }
+.compact-mode .mywork-section .mw-task-row { padding: 4px 14px; }
+
 .task-title-cell {
   font-size: 13px;
   font-weight: 700;
@@ -3468,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.14.0.0002';
+const APP_VERSION = '0.15.0.0002';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -4746,8 +4753,9 @@ function switchTab(tab, preserveFilters) {
   if (filterTabs.includes(tab)) {
     if (sidebar) {
       sidebar.classList.remove('tab-hidden');
-      // Restore user's collapsed preference
-      const wasCollapsed = sessionStorage.getItem('sidebar_collapsed') === '1';
+      // Restore user's collapsed preference (session override, then UserPrefs default)
+      var sessionSidebar = sessionStorage.getItem('sidebar_collapsed');
+      const wasCollapsed = sessionSidebar !== null ? sessionSidebar === '1' : !!UserPrefs.sidebarCollapsed;
       sidebar.classList.toggle('collapsed', wasCollapsed);
       updateFilterToggleIcon(!wasCollapsed);
     }
@@ -4869,6 +4877,9 @@ function updateTabCounts() {
 function render() {
   const sort = document.getElementById('sort-select').value;
   const area = document.getElementById('content-area');
+
+  // Apply user preferences
+  document.body.classList.toggle('compact-mode', !!UserPrefs.compactRows);
 
   // ── Expensive work: only when data has changed ────────────────────
   if (Internal.dataDirty) {
@@ -6690,6 +6701,7 @@ async function saveAllData() {
 
     await loadResourcesData();
     initResourcesWeekIndices();
+    loadUserPrefs();
     await loadIssues();
 
     hideLoadingOverlay();
@@ -6736,6 +6748,54 @@ function markSynced(msg) {
 // ── Feature flags ──────────────────────────────────────────────────
 const FEATURE_DEPENDENCIES = true; // Set to false to hide all dependency UI
 const FEATURE_TASK_HISTORY = true; // Set to false to hide task notes and status change history
+
+// ── User Preferences ──────────────────────────────────────────────
+var UserPrefs = {
+  defaultTab: 'mywork',
+  timelineRange: 6,
+  projectView: 'list',
+  sidebarCollapsed: false,
+  completedCollapsed: false,
+  timelineShowAll: true,
+  compactRows: false
+};
+
+function loadUserPrefs() {
+  // Try team_members record first, fall back to localStorage
+  if (Auth.fullName && RESOURCES_DATA && RESOURCES_DATA.people[Auth.fullName]) {
+    var p = RESOURCES_DATA.people[Auth.fullName];
+    if (p.user_preferences) {
+      try {
+        var saved = JSON.parse(p.user_preferences);
+        Object.keys(saved).forEach(function(k) { if (UserPrefs.hasOwnProperty(k)) UserPrefs[k] = saved[k]; });
+        return;
+      } catch(e) {}
+    }
+  }
+  // Fall back to localStorage
+  try {
+    var local = JSON.parse(localStorage.getItem('tracker_prefs') || '{}');
+    Object.keys(local).forEach(function(k) { if (UserPrefs.hasOwnProperty(k)) UserPrefs[k] = local[k]; });
+  } catch(e) {}
+}
+
+async function saveUserPrefs() {
+  var prefsJson = JSON.stringify(UserPrefs);
+  // Save to localStorage as fallback
+  try { localStorage.setItem('tracker_prefs', prefsJson); } catch(e) {}
+  // Save to team_members if possible
+  if (Auth.fullName && RESOURCES_DATA && RESOURCES_DATA.people[Auth.fullName]) {
+    var person = RESOURCES_DATA.people[Auth.fullName];
+    if (person.objectId) {
+      try {
+        await agolApplyEdits(ARCGIS_CONFIG.teamMembersUrl, {
+          updates: [{ attributes: { objectid: person.objectId, user_preferences: prefsJson } }]
+        });
+        person.user_preferences = prefsJson;
+      } catch(e) { console.warn('Failed to save prefs to AGOL:', e); }
+    }
+  }
+}
 
 // ══════════════════════════════════════════════════════════════════════
 //  ARCGIS ONLINE REST API INTEGRATION
@@ -6982,7 +7042,9 @@ async function fetchAgolUserInfo(token) {
             var adminTabs = ['tab-resources', 'tab-forecast', 'tab-insights'];
             adminTabs.forEach(function(id) { var el = document.getElementById(id); if (el) el.style.display = ''; });
           } else {
-            // Non-admin: clear dev mode if it was left in session
+            // Non-admin: show Settings (for Preferences), hide admin-only tabs
+            const settingsTab = document.getElementById('tab-settings');
+            if (settingsTab) settingsTab.style.display = '';
             Auth.devMode = false;
             sessionStorage.removeItem('dev_mode');
           }
@@ -7502,6 +7564,13 @@ async function loadArcGISData() {
     updateLoadingOverlay('Loaded ' + PROJECTS.length + ' projects and ' + TASKS.length + ' tasks. Loading resources...');
     await loadResourcesData();
     initResourcesWeekIndices();
+    loadUserPrefs();
+    // Apply default view preference
+    currentView = UserPrefs.projectView || 'list';
+    // Apply default tab preference if user is logged in
+    if (Auth.loggedIn && UserPrefs.defaultTab) {
+      currentTab = UserPrefs.defaultTab;
+    }
 
     updateLoadingOverlay('All data loaded.');
     await loadStatusHistory();
@@ -10658,19 +10727,25 @@ function renderProjectDetail(id) {
       html += '<div class="dt-task-group dt-task-group-other"><span>Pending (' + pendingTasks.length + ')</span></div>';
       html += pendingTasks.map(function(t) { return buildDetailTaskRow(t).replace('class="detail-task-row"', 'class="detail-task-row" style="opacity:0.7;"'); }).join('');
     }
-    // Complete section
+    // Complete section (collapsible based on preference)
     if (completeTasks.length > 0) {
-      html += '<div class="dt-task-group dt-task-group-complete"><span>Complete (' + completeTasks.length + ')</span></div>';
-      html += completeTasks.map(function(t) { return buildDetailTaskRow(t).replace('class="detail-task-row"', 'class="detail-task-row" style="opacity:0.6;"'); }).join('');
+      var compCollapsed = UserPrefs.completedCollapsed && !window._dtCompleteOpen;
+      html += '<div class="dt-task-group dt-task-group-complete" style="cursor:pointer;" onclick="window._dtCompleteOpen=!window._dtCompleteOpen;render();"><span>' + (compCollapsed ? '▶' : '▼') + ' Complete (' + completeTasks.length + ')</span></div>';
+      if (!compCollapsed) {
+        html += completeTasks.map(function(t) { return buildDetailTaskRow(t).replace('class="detail-task-row"', 'class="detail-task-row" style="opacity:0.6;"'); }).join('');
+      }
     }
-    // Canceled section
+    // Canceled section (collapsible based on preference)
     if (canceledTasks.length > 0) {
-      html += '<div class="dt-task-group dt-task-group-canceled"><span>Canceled (' + canceledTasks.length + ')</span></div>';
-      html += canceledTasks.map(function(t) {
-        return buildDetailTaskRow(t)
-          .replace('class="detail-task-row"', 'class="detail-task-row" style="opacity:0.6;"')
-          .replace('class="detail-task-title"', 'class="detail-task-title" style="text-decoration:line-through;color:var(--text-muted);"');
-      }).join('');
+      var cancCollapsed = UserPrefs.completedCollapsed && !window._dtCanceledOpen;
+      html += '<div class="dt-task-group dt-task-group-canceled" style="cursor:pointer;" onclick="window._dtCanceledOpen=!window._dtCanceledOpen;render();"><span>' + (cancCollapsed ? '▶' : '▼') + ' Canceled (' + canceledTasks.length + ')</span></div>';
+      if (!cancCollapsed) {
+        html += canceledTasks.map(function(t) {
+          return buildDetailTaskRow(t)
+            .replace('class="detail-task-row"', 'class="detail-task-row" style="opacity:0.6;"')
+            .replace('class="detail-task-title"', 'class="detail-task-title" style="text-decoration:line-through;color:var(--text-muted);"');
+        }).join('');
+      }
     }
     if (!inProgressTasks.length && !completeTasks.length && !canceledTasks.length && !pendingTasks.length) {
       html += '<div style="padding:32px;text-align:center;color:var(--text-muted);font-style:italic;">No tasks linked to this project.</div>';
@@ -14851,9 +14926,11 @@ function renderMyWork(area) {
     const pStart = p.start || null;
     const pEnd = p.actual_end || p.working_due || p.end || null;
     if (!pStart && !pEnd) return;
-    // Include ALL open tasks for this project, not just the signed-in user's
+    // Include tasks based on preference: all project tasks or just the signed-in user's
     const projTasks = TASKS.filter(function(t) {
-      return (t.project === p.title || (!t.project && t.project_id == p.id)) && t.status !== 'Complete' && t.status !== 'Canceled';
+      if (!((t.project === p.title || (!t.project && t.project_id == p.id)) && t.status !== 'Complete' && t.status !== 'Canceled')) return false;
+      if (!UserPrefs.timelineShowAll) return t.assignee === name;
+      return true;
     });
     // Determine role
     var role = 'Contributing';
@@ -14894,6 +14971,10 @@ function renderMyWork(area) {
     const ganttEnd = new Date(allDates[allDates.length - 1] + 'T00:00:00');
     ganttStart.setDate(ganttStart.getDate() - 7);
     ganttEnd.setDate(ganttEnd.getDate() + 14);
+    // Apply timeline range preference: ensure end extends at least N months from today
+    var prefRangeEnd = new Date();
+    prefRangeEnd.setMonth(prefRangeEnd.getMonth() + (UserPrefs.timelineRange || 6));
+    if (prefRangeEnd > ganttEnd) ganttEnd.setTime(prefRangeEnd.getTime());
     window._ganttStartMs = ganttStart.getTime();
     window._ganttTotalDays = Math.max(1, Math.ceil((ganttEnd - ganttStart) / (1000 * 60 * 60 * 24)));
 
@@ -14983,16 +15064,20 @@ function togglePreviewMode() {
     }
   }
   // Show/hide admin tabs
-  var adminTabIds = ['tab-settings', 'tab-resources', 'tab-forecast', 'tab-insights'];
+  var adminTabIds = ['tab-resources', 'tab-forecast', 'tab-insights'];
   adminTabIds.forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = Auth.previewMode ? 'none' : '';
   });
-  // If currently on an admin-only tab, switch to overview
-  var adminOnlyTabs = ['settings', 'resources', 'forecast', 'insights'];
+  // If currently on an admin-only tab (but not settings), switch to overview
+  var adminOnlyTabs = ['resources', 'forecast', 'insights'];
   if (Auth.previewMode && adminOnlyTabs.indexOf(currentTab) !== -1) {
     switchTab('overview');
     return;
+  }
+  // If on settings in preview mode, switch to preferences section
+  if (Auth.previewMode && currentTab === 'settings') {
+    _settingsSection = 'preferences';
   }
   markDataDirty();
   render();
@@ -15013,7 +15098,7 @@ async function toggleAiPhaseAssignment(enabled) {
   if (ok) showToast('AI Phase Assignment ' + (enabled ? 'enabled' : 'disabled') + '.', 'success');
 }
 
-var _settingsSection = 'team';
+var _settingsSection = 'preferences';
 function switchSettingsSection(section) {
   _settingsSection = section;
   renderSettingsPage(document.getElementById('content-area'));
@@ -15022,19 +15107,103 @@ function switchSettingsSection(section) {
 // Restore dev mode from session on load
 if (sessionStorage.getItem('dev_mode') === '1') Auth.devMode = true;
 
-function renderSettingsPage(area) {
-  if (!isAdmin()) {
-    area.innerHTML = '<div class="empty-state">You do not have access to Settings.</div>';
-    return;
-  }
-  if (!RESOURCES_DATA) {
-    area.innerHTML = '<div class="empty-state">Resources data is loading…</div>';
-    return;
+function buildPreferencesPanel() {
+  function prefSelect(id, label, desc, options, currentVal) {
+    var opts = options.map(function(o) {
+      var selected = o.value === currentVal ? ' selected' : '';
+      return '<option value="' + o.value + '"' + selected + '>' + esc(o.label) + '</option>';
+    }).join('');
+    return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F3F1EB;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:13px;font-weight:700;color:var(--text-body);">' + label + '</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + desc + '</div>' +
+      '</div>' +
+      '<select id="pref-' + id + '" onchange="updatePref(\'' + id + '\',this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--white);color:var(--text-body);min-width:140px;font-family:Lato,sans-serif;">' + opts + '</select>' +
+    '</div>';
   }
 
-  var people = RESOURCES_DATA.people;
-  var allNames = Object.keys(people).sort();
-  var activeCount = allNames.filter(function(n) { return people[n].active !== false; }).length;
+  function prefToggle(id, label, desc, currentVal) {
+    var checked = currentVal ? ' checked' : '';
+    return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F3F1EB;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:13px;font-weight:700;color:var(--text-body);">' + label + '</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + desc + '</div>' +
+      '</div>' +
+      '<label style="position:relative;width:40px;height:22px;flex-shrink:0;">' +
+        '<input type="checkbox" id="pref-' + id + '"' + checked + ' onchange="updatePref(\'' + id + '\',this.checked)" style="opacity:0;width:0;height:0;position:absolute;">' +
+        '<span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:' + (currentVal ? 'var(--navy)' : '#D3D1C7') + ';border-radius:11px;transition:background 0.2s;">' +
+          '<span style="position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:3px;left:' + (currentVal ? '21px' : '3px') + ';transition:left 0.2s;"></span>' +
+        '</span>' +
+      '</label>' +
+    '</div>';
+  }
+
+  var html = '<div class="settings-panel-title">Preferences</div>';
+  html += '<div class="settings-panel-desc">Customize how the application looks and works for you. These preferences are saved to your profile and persist across sessions.</div>';
+
+  html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px 20px;margin-bottom:20px;">';
+
+  html += prefSelect('defaultTab', 'Default tab', 'Which tab to show when you first open the application.', [
+    { value: 'overview', label: 'Overview' },
+    { value: 'mywork', label: 'My Work' },
+    { value: 'projects', label: 'Projects' },
+    { value: 'tasks', label: 'Tasks' }
+  ], UserPrefs.defaultTab);
+
+  html += prefSelect('projectView', 'Projects tab layout', 'Default layout for the Projects tab.', [
+    { value: 'list', label: 'List view' },
+    { value: 'grid', label: 'Grid view' }
+  ], UserPrefs.projectView);
+
+  html += prefSelect('timelineRange', 'Timeline range', 'How many months the My Work timeline shows ahead from today.', [
+    { value: '3', label: '3 months' },
+    { value: '6', label: '6 months' },
+    { value: '9', label: '9 months' },
+    { value: '12', label: '12 months' }
+  ], String(UserPrefs.timelineRange));
+
+  html += prefToggle('sidebarCollapsed', 'Start with sidebar collapsed', 'Hide the filter sidebar by default. You can always toggle it with the Filters button.', UserPrefs.sidebarCollapsed);
+
+  html += prefToggle('completedCollapsed', 'Collapse completed sections', 'Start with the Complete and Canceled sections collapsed on project detail pages.', UserPrefs.completedCollapsed);
+
+  html += prefToggle('timelineShowAll', 'Show all tasks on timeline', 'Show all project tasks on the My Work timeline. When off, only your assigned tasks are shown.', UserPrefs.timelineShowAll);
+
+  html += prefToggle('compactRows', 'Compact rows', 'Use tighter row spacing in project and task tables for a denser view.', UserPrefs.compactRows);
+
+  html += '</div>';
+
+  return html;
+}
+
+function updatePref(key, value) {
+  // Type conversion
+  if (key === 'timelineRange') value = parseInt(value) || 6;
+  if (key === 'sidebarCollapsed' || key === 'completedCollapsed' || key === 'timelineShowAll' || key === 'compactRows') {
+    value = value === true || value === 'true';
+  }
+  UserPrefs[key] = value;
+  saveUserPrefs();
+  // Apply immediately where possible
+  if (key === 'projectView') currentView = value;
+  if (key === 'sidebarCollapsed') {
+    var sidebar = document.querySelector('.sidebar');
+    if (sidebar) sidebar.classList.toggle('collapsed', value);
+  }
+  // Re-render the preferences panel to update toggle visuals
+  render();
+  showToast('Preference saved.', 'success');
+}
+
+function renderSettingsPage(area) {
+  var isAdminUser = isAdmin();
+  if (!Auth.loggedIn) {
+    area.innerHTML = '<div class="empty-state">Sign in to access Settings.</div>';
+    return;
+  }
+  // Non-admins only see preferences — force section
+  if (!isAdminUser && _settingsSection !== 'preferences') {
+    _settingsSection = 'preferences';
+  }
 
   // ── Sidebar navigation ──────────────────────────────────
   function navItem(id, label, count) {
@@ -15043,8 +15212,24 @@ function renderSettingsPage(area) {
     return '<div class="' + cls + '" onclick="switchSettingsSection(\'' + id + '\')">' + label + badge + '</div>';
   }
 
-  var navHtml = '<div class="settings-nav">' +
-    '<div class="settings-nav-group">' +
+  var navHtml = '<div class="settings-nav">';
+  // Preferences — visible to everyone
+  navHtml += '<div class="settings-nav-group">';
+  navHtml += '<div class="settings-nav-label">Personal</div>';
+  navHtml += navItem('preferences', 'Preferences');
+  navHtml += '</div>';
+
+  // Admin-only sections
+  if (isAdminUser) {
+    if (!RESOURCES_DATA) {
+      area.innerHTML = '<div class="empty-state">Resources data is loading…</div>';
+      return;
+    }
+    var people = RESOURCES_DATA.people;
+    var allNames = Object.keys(people).sort();
+    var activeCount = allNames.filter(function(n) { return people[n].active !== false; }).length;
+
+    navHtml += '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">People</div>' +
       navItem('team', 'Team members', activeCount) +
       navItem('allocations', 'Allocations') +
@@ -15059,12 +15244,18 @@ function renderSettingsPage(area) {
       '<div class="settings-nav-label">System</div>' +
       navItem('ai', 'AI features') +
       navItem('developer', 'Developer') +
-    '</div>' +
-  '</div>';
+    '</div>';
+  }
+  navHtml += '</div>';
 
   // ── Panel content (only active section) ──────────────────
   var panelHtml = '';
 
+  if (_settingsSection === 'preferences') {
+    panelHtml = buildPreferencesPanel();
+  } else if (!isAdminUser) {
+    panelHtml = '<div class="empty-state">You do not have access to this section.</div>';
+  } else {
   if (_settingsSection === 'team') {
     var showFormerSettings = document.getElementById('settings-show-former');
     var includeInactiveSettings = showFormerSettings && showFormerSettings.checked;
@@ -15228,6 +15419,8 @@ function renderSettingsPage(area) {
         '<span class="text-muted-sm">Activates advanced tools across the application. Currently enables: Edit History on project timelines.</span>' +
       '</div>';
   }
+
+  } // end admin sections else block
 
   area.innerHTML = '<div class="settings-page">' + navHtml + '<div class="settings-panel">' + panelHtml + '</div></div>';
 
