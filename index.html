@@ -4755,7 +4755,7 @@ function switchTab(tab, preserveFilters) {
       sidebar.classList.remove('tab-hidden');
       // Restore user's collapsed preference (session override, then UserPrefs default)
       var sessionSidebar = sessionStorage.getItem('sidebar_collapsed');
-      const wasCollapsed = sessionSidebar !== null ? sessionSidebar === '1' : !!UserPrefs.sidebarCollapsed;
+      const wasCollapsed = sessionSidebar !== null ? sessionSidebar === '1' : !!(typeof UserPrefs !== 'undefined' && UserPrefs && UserPrefs.sidebarCollapsed);
       sidebar.classList.toggle('collapsed', wasCollapsed);
       updateFilterToggleIcon(!wasCollapsed);
     }
@@ -4878,8 +4878,10 @@ function render() {
   const sort = document.getElementById('sort-select').value;
   const area = document.getElementById('content-area');
 
-  // Apply user preferences
-  document.body.classList.toggle('compact-mode', !!UserPrefs.compactRows);
+  // Apply user preferences (guard: UserPrefs may not be initialized on first render)
+  if (typeof UserPrefs !== 'undefined' && UserPrefs) {
+    document.body.classList.toggle('compact-mode', !!UserPrefs.compactRows);
+  }
 
   // ── Expensive work: only when data has changed ────────────────────
   if (Internal.dataDirty) {
