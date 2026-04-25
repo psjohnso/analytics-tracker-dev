@@ -3468,7 +3468,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.13.2.0002';
+const APP_VERSION = '0.14.0.0001';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -6735,6 +6735,7 @@ function markSynced(msg) {
 
 // ── Feature flags ──────────────────────────────────────────────────
 const FEATURE_DEPENDENCIES = true; // Set to false to hide all dependency UI
+const FEATURE_TASK_HISTORY = true; // Set to false to hide task notes and status change history
 
 // ══════════════════════════════════════════════════════════════════════
 //  ARCGIS ONLINE REST API INTEGRATION
@@ -9865,6 +9866,20 @@ async function handleFormSubmit(andDownload) {
   var saveBtnOrigText = saveBtn ? saveBtn.textContent : '';
   if (saveBtn) { saveBtn.textContent = 'Saving…'; saveBtn.disabled = true; saveBtn.style.opacity = '0.6'; }
 
+  // Track status changes for task history
+  if (!isProject && FEATURE_TASK_HISTORY) {
+    var existingTask = isEdit ? TASKS.find(function(t) { return t.objectId == Editor.editId; }) : null;
+    var oldStatus = existingTask ? existingTask.status : null;
+    var newFormStatus = fields.status;
+    if (!isEdit || (oldStatus && newFormStatus && oldStatus !== newFormStatus)) {
+      var formReason = null;
+      if (needsStatusReason(newFormStatus)) {
+        formReason = prompt('Reason for setting to "' + newFormStatus + '" (optional):');
+      }
+      fields.task_status_history = appendTaskHistory(existingTask || {}, oldStatus, newFormStatus, formReason);
+    }
+  }
+
   try {
     console.log('[Save] Starting save…', isEdit ? 'edit' : 'create', isProject ? 'project' : 'task', fields);
     if (isEdit) {
@@ -10093,7 +10108,11 @@ async function markTaskComplete(taskId) {
   if (!task) return;
   const today = new Date();
   const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
-  await DataStore.updateTask(taskId, { status: 'Complete', actual_end: todayStr });
+  var completeFields = { status: 'Complete', actual_end: todayStr };
+  if (FEATURE_TASK_HISTORY) {
+    completeFields.task_status_history = appendTaskHistory(task, task.status, 'Complete', null);
+  }
+  await DataStore.updateTask(taskId, completeFields);
   showToast('Marked "' + task.title + '" as Complete.', 'success');
   markDataDirty();
   render();
@@ -10283,6 +10302,12 @@ async function applyBatchUpdate() {
   var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
   var updated = 0;
 
+  // Prompt for reason once for the whole batch if applicable
+  var batchReason = null;
+  if (newStatus && needsStatusReason(newStatus)) {
+    batchReason = prompt('Reason for setting ' + ids.length + ' task(s) to "' + newStatus + '" (optional):');
+  }
+
   for (var i = 0; i < ids.length; i++) {
     var fields = {};
     if (newStatus) fields.status = newStatus;
@@ -10290,6 +10315,13 @@ async function applyBatchUpdate() {
     if (newAssignee) fields.assignee = newAssignee;
     if (newProject) fields.project = newProject;
     if (newStatus === 'Complete') fields.actual_end = todayStr;
+    // Append status history for each task individually
+    if (newStatus && FEATURE_TASK_HISTORY) {
+      var batchTask = TASKS.find(function(t) { return t.objectId == ids[i]; });
+      if (batchTask) {
+        fields.task_status_history = appendTaskHistory(batchTask, batchTask.status, newStatus, batchReason);
+      }
+    }
     try {
       await DataStore.updateTask(ids[i], fields);
       updated++;
@@ -10914,6 +10946,8 @@ function renderTaskDetail(idx) {
         <div class="detail-section-label">Resolution</div>
         <div class="detail-prose task-prose">${renderMd(t.resolution)}</div>
       </div>` : ''}
+
+      ${renderTaskHistorySection(t)}
 
       ${proj ? `<div class="detail-section">
         <div class="detail-section-label">Parent Project</div>
@@ -12921,6 +12955,139 @@ function tlLeave(container) {
   if (pop) pop.style.display = 'none';
 }
 
+// ── Task Status History helpers (behind FEATURE_TASK_HISTORY flag) ──
+function parseTaskHistory(t) {
+  if (!FEATURE_TASK_HISTORY || !t.task_status_history) return [];
+  try { return JSON.parse(t.task_status_history); } catch(e) { return []; }
+}
+
+function appendTaskHistory(t, fromStatus, toStatus, reason) {
+  if (!FEATURE_TASK_HISTORY) return t.task_status_history || null;
+  var history = parseTaskHistory(t);
+  history.push({
+    date: new Date().toISOString().slice(0, 10),
+    time: new Date().toISOString().slice(11, 16),
+    from: fromStatus || null,
+    to: toStatus,
+    by: Auth.fullName || 'Unknown',
+    reason: reason || null
+  });
+  // Keep last ~12 entries to stay within field size limits
+  if (history.length > 12) history = history.slice(-12);
+  return JSON.stringify(history);
+}
+
+function parseTaskNotes(t) {
+  if (!FEATURE_TASK_HISTORY || !t.task_notes) return [];
+  try { return JSON.parse(t.task_notes); } catch(e) { return []; }
+}
+
+function addTaskNote(taskObjectId, noteText) {
+  if (!FEATURE_TASK_HISTORY || !noteText.trim()) return;
+  var task = TASKS.find(function(t) { return t.objectId == taskObjectId; });
+  if (!task) return;
+  var notes = parseTaskNotes(task);
+  notes.push({
+    date: new Date().toISOString().slice(0, 10),
+    time: new Date().toISOString().slice(11, 16),
+    by: Auth.fullName || 'Unknown',
+    text: noteText.trim()
+  });
+  // Keep last ~15 notes
+  if (notes.length > 15) notes = notes.slice(-15);
+  var notesJson = JSON.stringify(notes);
+  task.task_notes = notesJson;
+  agolApplyEdits(ARCGIS_CONFIG.tasksUrl, {
+    updates: [{ attributes: { objectid: taskObjectId, task_notes: notesJson } }]
+  }).then(function() {
+    showToast('Note added.', 'success');
+    render();
+  }).catch(function(err) {
+    showToast('Failed to save note: ' + err.message, 'error');
+  });
+}
+
+// Prompts for reason when changing to On Hold, Waiting for Response, or Canceled
+function needsStatusReason(newStatus) {
+  return FEATURE_TASK_HISTORY && ['On Hold', 'Waiting for Response', 'Canceled'].indexOf(newStatus) >= 0;
+}
+
+function promptStatusReason(newStatus, callback) {
+  var reason = prompt('Reason for setting to "' + newStatus + '" (optional):');
+  callback(reason || null);
+}
+
+function renderTaskHistorySection(t) {
+  if (!FEATURE_TASK_HISTORY) return '';
+  var history = parseTaskHistory(t);
+  var notes = parseTaskNotes(t);
+  if (!history.length && !notes.length) {
+    // Still show the notes input even if empty
+    return '<div class="detail-section">' +
+      '<div class="detail-section-label">Notes & History</div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
+        '<input type="text" id="task-note-input-' + t.objectId + '" placeholder="Add a note..." style="flex:1;font-size:12px;padding:6px 10px;border:1px solid #E8E6DF;border-radius:6px;font-family:Lato,sans-serif;">' +
+        '<button onclick="var inp=document.getElementById(\'task-note-input-' + t.objectId + '\');addTaskNote(' + t.objectId + ',inp.value);inp.value=\'\';" style="font-size:11px;font-weight:700;padding:6px 14px;border-radius:6px;border:1px solid var(--navy);background:var(--navy);color:#fff;cursor:pointer;font-family:Lato,sans-serif;white-space:nowrap;">Add Note</button>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--text-muted);font-style:italic;">No history yet.</div>' +
+    '</div>';
+  }
+
+  var html = '<div class="detail-section">';
+  html += '<div class="detail-section-label">Notes & History</div>';
+
+  // Note input
+  html += '<div style="display:flex;gap:8px;margin-bottom:16px;">';
+  html += '<input type="text" id="task-note-input-' + t.objectId + '" placeholder="Add a note..." style="flex:1;font-size:12px;padding:6px 10px;border:1px solid #E8E6DF;border-radius:6px;font-family:Lato,sans-serif;" onkeydown="if(event.key===\'Enter\'){var inp=this;addTaskNote(' + t.objectId + ',inp.value);inp.value=\'\';}">';
+  html += '<button onclick="var inp=document.getElementById(\'task-note-input-' + t.objectId + '\');addTaskNote(' + t.objectId + ',inp.value);inp.value=\'\';" style="font-size:11px;font-weight:700;padding:6px 14px;border-radius:6px;border:1px solid var(--navy);background:var(--navy);color:#fff;cursor:pointer;font-family:Lato,sans-serif;white-space:nowrap;">Add Note</button>';
+  html += '</div>';
+
+  // Merge notes and history into one timeline, sorted newest first
+  var timeline = [];
+  history.forEach(function(h) {
+    timeline.push({ type: 'status', date: h.date, time: h.time || '00:00', by: h.by, from: h.from, to: h.to, reason: h.reason });
+  });
+  notes.forEach(function(n) {
+    timeline.push({ type: 'note', date: n.date, time: n.time || '00:00', by: n.by, text: n.text });
+  });
+  timeline.sort(function(a, b) {
+    var da = a.date + 'T' + a.time;
+    var db = b.date + 'T' + b.time;
+    return db.localeCompare(da); // newest first
+  });
+
+  html += '<div style="border-left:2px solid #E8E6DF;padding-left:16px;margin-left:8px;">';
+  timeline.forEach(function(item) {
+    if (item.type === 'status') {
+      var toColor = STATUS_COLOR(item.to) || '#9CA3AF';
+      html += '<div style="margin-bottom:12px;position:relative;">';
+      html += '<div style="position:absolute;left:-23px;top:2px;width:10px;height:10px;border-radius:50%;background:' + toColor + ';border:2px solid #fff;"></div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);">' + item.date + ' · ' + esc(item.by) + '</div>';
+      html += '<div style="font-size:13px;margin-top:2px;">';
+      if (item.from) {
+        html += '<span style="color:var(--text-muted);">' + esc(item.from) + '</span>';
+        html += ' <span style="color:var(--text-muted);">→</span> ';
+      }
+      html += '<span style="font-weight:700;color:' + toColor + ';">' + esc(item.to) + '</span>';
+      html += '</div>';
+      if (item.reason) {
+        html += '<div style="font-size:12px;color:var(--text-body);margin-top:4px;padding:6px 10px;background:#F9F8F4;border-radius:6px;border:1px solid #E8E6DF;font-style:italic;">"' + esc(item.reason) + '"</div>';
+      }
+      html += '</div>';
+    } else {
+      html += '<div style="margin-bottom:12px;position:relative;">';
+      html += '<div style="position:absolute;left:-23px;top:2px;width:10px;height:10px;border-radius:50%;background:#0088FF;border:2px solid #fff;"></div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);">' + item.date + ' · ' + esc(item.by) + '</div>';
+      html += '<div style="font-size:13px;margin-top:2px;color:var(--text-body);">' + esc(item.text) + '</div>';
+      html += '</div>';
+    }
+  });
+  html += '</div>';
+
+  html += '</div>';
+  return html;
+}
+
 function toggleStatusHistoryEditor(projectId, objectId) {
   const container = document.getElementById('status-history-editor');
   if (!container) return;
@@ -13705,8 +13872,17 @@ async function mwQuickStatus(selectEl) {
         return;
       }
     }
+    var task = task || TASKS.find(function(t) { return t.objectId == id; });
+    var oldStatus = task ? task.status : null;
+    var reason = null;
+    if (needsStatusReason(newStatus)) {
+      reason = prompt('Reason for setting to "' + newStatus + '" (optional):');
+    }
     var fields = { status: newStatus };
     if (newStatus === 'Complete') fields.actual_end = todayStr;
+    if (FEATURE_TASK_HISTORY && task) {
+      fields.task_status_history = appendTaskHistory(task, oldStatus, newStatus, reason);
+    }
     try {
       await DataStore.updateTask(id, fields);
       showToast('Task status updated to ' + newStatus + '.', 'success');
