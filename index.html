@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.15.0.0001';
+const APP_VERSION = '0.15.0.0002';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -7569,15 +7569,17 @@ async function loadArcGISData() {
     loadUserPrefs();
     // Apply default view preference
     currentView = UserPrefs.projectView || 'list';
-    // Apply default tab preference if user is logged in
-    if (Auth.loggedIn && UserPrefs.defaultTab) {
-      currentTab = UserPrefs.defaultTab;
-    }
 
     updateLoadingOverlay('All data loaded.');
     await loadStatusHistory();
     Auth.dataLoaded = true;
     hideLoadingOverlay();
+
+    // Apply default tab preference after everything is loaded
+    if (Auth.loggedIn && UserPrefs.defaultTab && UserPrefs.defaultTab !== 'overview') {
+      switchTab(UserPrefs.defaultTab);
+    }
+
     return true;
   } catch (err) {
     console.error('ArcGIS Online load failed:', err);
