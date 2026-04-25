@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.15.1.0004';
+const APP_VERSION = '0.15.1.0005';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -14522,6 +14522,28 @@ function buildMyWorkTasksSection(myTasks, todayStr, viewUserTaskHrsFn) {
     '<button onclick="mwNewTask()" style="padding:3px 8px;border-radius:4px;border:1px solid #C24200;background:transparent;cursor:pointer;font-family:Lato,sans-serif;font-size:10px;font-weight:700;color:#C24200;line-height:1;">＋ New</button>' +
     '</div>';
 
+  // Task-specific alert summary
+  var taskOverdue = myTasks.filter(function(t) {
+    var d = t.working_due || t.due;
+    return d && d < todayStr && ['Active', 'Waiting for Response', 'On Hold'].indexOf(t.status) >= 0;
+  }).length;
+  var taskDueSoon = myTasks.filter(function(t) {
+    var d = t.working_due || t.due;
+    if (!d || d < todayStr) return false;
+    var daysLeft = Math.ceil((new Date(d + 'T00:00:00') - new Date()) / 86400000);
+    return daysLeft >= 0 && daysLeft <= 7 && ['Active', 'Waiting for Response'].indexOf(t.status) >= 0;
+  }).length;
+  var taskMissing = myTasks.filter(function(t) {
+    return ['Active', 'Pending', 'Waiting for Response'].indexOf(t.status) >= 0 && getTaskAlerts(t, todayStr).some(function(a) { return a.cls === 'mw-att-gray'; });
+  }).length;
+  if (taskOverdue + taskDueSoon + taskMissing > 0) {
+    html += '<div style="display:flex;gap:12px;padding:6px 14px;font-size:11px;font-weight:700;background:#FEF2F2;border-bottom:0.5px solid #FECACA;flex-wrap:wrap;">';
+    if (taskOverdue > 0) html += '<span style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#E24B4A;display:inline-block;"></span>' + taskOverdue + ' overdue</span>';
+    if (taskDueSoon > 0) html += '<span style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#EF9F27;display:inline-block;"></span>' + taskDueSoon + ' due soon</span>';
+    if (taskMissing > 0) html += '<span style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span>' + taskMissing + ' missing data</span>';
+    html += '</div>';
+  }
+
   const defaultStatuses = ['Active', 'Waiting for Response'];
   let hasTasks = false;
   defaultStatuses.forEach(function(status) {
@@ -14757,23 +14779,6 @@ function renderMyWork(area) {
     startTimerTick();
   }
 
-  // ── Attention summary bar — spans both columns ─────────────
-  var allProjAlerts = myProjects.filter(function(p) { return ['Active', 'Scheduled', 'On Hold'].indexOf(p.status) >= 0; }).reduce(function(sum, p) { return sum + (getProjectAlerts(p, todayStr, name).length > 0 ? 1 : 0); }, 0);
-  var allTaskAlerts = myTasks.filter(function(t) { return ['Active', 'Pending', 'Waiting for Response'].indexOf(t.status) >= 0; }).reduce(function(sum, t) { return sum + (getTaskAlerts(t, todayStr).length > 0 ? 1 : 0); }, 0);
-  var totalAlertItems = allProjAlerts + allTaskAlerts;
-  var overdueCount = overdueProjects.length + overdueTasks.length;
-  var dueSoonCount = dueThisWeek.length;
-
-  if (totalAlertItems > 0) {
-    html += '<div class="mywork-section mywork-full-width" style="margin-bottom:8px;">';
-    html += '<div class="mw-summary-bar">';
-    if (overdueCount > 0) html += '<div style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#E24B4A;display:inline-block;"></span><span style="font-weight:700;color:#1a1a1a;">' + overdueCount + ' overdue</span></div>';
-    if (dueSoonCount > 0) html += '<div style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#EF9F27;display:inline-block;"></span><span style="font-weight:700;color:#1a1a1a;">' + dueSoonCount + ' due soon</span></div>';
-    var missingDataCount = totalAlertItems - (overdueCount > 0 ? Math.min(overdueCount, totalAlertItems) : 0);
-    if (missingDataCount > 0 && totalAlertItems > overdueCount + dueSoonCount) html += '<div style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span><span style="font-weight:700;color:#1a1a1a;">' + (totalAlertItems - overdueCount - dueSoonCount) + ' missing data</span></div>';
-    html += '</div></div>';
-  }
-
   // ── My Week — spans both columns ───────────────────────────
   html += '<div class="mywork-section mywork-full-width" id="mw-my-week">';
   html += '<div class="mywork-section-header">📅 My Week</div>';
@@ -14879,6 +14884,25 @@ function renderMyWork(area) {
   html += '<div>';
   html += '<div class="mywork-section" id="mw-projects">';
   html += '<div class="mywork-section-header">📁 My Projects <span class="badge-count">' + myProjects.length + '</span></div>';
+
+  // Project-specific alert summary
+  var projOverdue = overdueProjects.length;
+  var projDueSoon = myProjects.filter(function(p) {
+    var d = p.working_due || p.end;
+    if (!d || d < todayStr) return false;
+    var daysLeft = Math.ceil((new Date(d + 'T00:00:00') - new Date()) / 86400000);
+    return daysLeft >= 0 && daysLeft <= 7 && ['Active', 'On Hold', 'Waiting for Response'].indexOf(p.status) >= 0;
+  }).length;
+  var projMissing = myProjects.filter(function(p) {
+    return ['Active', 'Scheduled', 'On Hold'].indexOf(p.status) >= 0 && getProjectAlerts(p, todayStr, name).some(function(a) { return a.cls === 'mw-att-gray'; });
+  }).length;
+  if (projOverdue + projDueSoon + projMissing > 0) {
+    html += '<div style="display:flex;gap:12px;padding:6px 14px;font-size:11px;font-weight:700;background:#FEF2F2;border-bottom:0.5px solid #FECACA;flex-wrap:wrap;">';
+    if (projOverdue > 0) html += '<span style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#E24B4A;display:inline-block;"></span>' + projOverdue + ' overdue</span>';
+    if (projDueSoon > 0) html += '<span style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#EF9F27;display:inline-block;"></span>' + projDueSoon + ' due soon</span>';
+    if (projMissing > 0) html += '<span style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span>' + projMissing + ' missing data</span>';
+    html += '</div>';
+  }
 
   // Split projects by role
   var leadProjects = [];
