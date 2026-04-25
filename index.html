@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.15.1.0002';
+const APP_VERSION = '0.15.1.0003';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9317,7 +9317,11 @@ function togglePhaseReq(reqId) {
 function removePhaseReq(reqId) { togglePhaseReq(reqId); }
 
 function buildProjectForm(p) {
-  const v = function(k) { return p ? (p[k] || '') : ''; };
+  const v = function(k) {
+    if (p) return p[k] || '';
+    if (k === 'contact') return Auth.fullName || '';
+    return '';
+  };
   const isEdit = !!p;
   const isIdea = p && p.status === 'Idea';
   // Original End Date is locked once project reaches Active status
@@ -9652,7 +9656,11 @@ function applyAlignmentSuggestions() {
 }
 
 function buildTaskForm(t) {
-  const v = function(k) { return t ? (t[k] || '') : ''; };
+  const v = function(k) {
+    if (t) return t[k] || '';
+    if (k === 'assignee') return Auth.fullName || '';
+    return '';
+  };
   const projTitles = PROJECTS.filter(function(p) {
     return p.status !== 'Canceled' && p.status !== 'Complete' && p.status !== 'Idea';
   }).map(function(p) { return p.title; }).sort();
@@ -11833,7 +11841,7 @@ function openIdeaForm() {
       <label>Submitted By <span class="req">*</span></label>
       <select id="idea-contact" class="idea-select">
         <option value="">Select your name…</option>
-        ${(FM_ACTIVE_MEMBERS || FM_TASK_ASSIGNEES).map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('')}
+        ${(FM_ACTIVE_MEMBERS || FM_TASK_ASSIGNEES).map(n => `<option value="${esc(n)}"${n === Auth.fullName ? ' selected' : ''}>${esc(n)}</option>`).join('')}
       </select>
     </div>
     <div class="idea-field">
