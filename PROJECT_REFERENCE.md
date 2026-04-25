@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.15.0.0002 (see Version History at bottom)
+> **Current Version:** 0.15.1.0001 (see Version History at bottom)
 
 ---
 
@@ -1545,6 +1545,12 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.14.0.0002 | Replace browser prompt() with styled modal dialog for status change reasons; modal shows from→to status transition with colors, textarea for reason, Confirm/Cancel buttons; Cancel reverts the status change; supports Enter to confirm, Escape to cancel, backdrop click to dismiss |
 | 0.15.0.0001 | User Preferences system (new capability): Settings tab visible to all logged-in users; Preferences section with 7 options (default tab, project view, timeline range, sidebar collapsed, completed sections collapsed, timeline show all tasks, compact rows); stored in user_preferences field on team_members with localStorage fallback; preferences applied on load; toggle switches with immediate save |
 | 0.15.0.0002 | Fix HTML parsing error (stray > in form-modal-backdrop); guard UserPrefs against undefined during early render; fix default tab preference not highlighting the correct tab button (use switchTab instead of direct assignment) |
+| 0.15.0.0003 | Restrict weekly task review button to Tasks tab only |
+| 0.15.0.0004 | Sync view toggle button with currentView preference on tab switch |
+| 0.15.0.0005 | Fix preferences not saving to ArcGIS: add objectId and user_preferences to team member data model |
+| 0.15.0.0006 | Write active field explicitly when creating new team members |
+| 0.15.0.0007 | Fix active field overwrite on member edit; complete save-path audit |
+| 0.15.1.0001 | Beta features framework: feature flags support three states (true/beta/false); isFeatureOn() checks global flag + user beta opt-in; BETA_FEATURES registry; Beta Features section in Preferences with orange toggle switches; updateBetaPref() function |
 
 ---
 

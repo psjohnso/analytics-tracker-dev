@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.15.0.0007';
+const APP_VERSION = '0.15.1.0001';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -6751,8 +6751,28 @@ function markSynced(msg) {
 
 
 // ── Feature flags ──────────────────────────────────────────────────
-const FEATURE_DEPENDENCIES = true; // Set to false to hide all dependency UI
-const FEATURE_TASK_HISTORY = true; // Set to false to hide task notes and status change history
+// Values: true = enabled for everyone, 'beta' = opt-in via user prefs, false = disabled for everyone
+const FEATURE_DEPENDENCIES = true;
+const FEATURE_TASK_HISTORY = true;
+
+// Registry of beta-eligible features (shown in Preferences when flag === 'beta')
+var BETA_FEATURES = {
+  dependencies:  { flag: 'FEATURE_DEPENDENCIES',  label: 'Task Dependencies', desc: 'Track which tasks must be completed before others can start. Shows dependency icons, blocked indicators on timeline, and a Dependencies section in the task form.' },
+  taskHistory:   { flag: 'FEATURE_TASK_HISTORY',   label: 'Notes & Status History', desc: 'Add notes to tasks and automatically track status changes with optional reasons for On Hold, Waiting, and Canceled transitions.' },
+};
+
+// Check if a feature is enabled (global flag OR user beta opt-in)
+function isFeatureOn(featureName) {
+  var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY };
+  var flag = flags[featureName];
+  if (flag === true) return true;
+  if (flag === false) return false;
+  // flag === 'beta': check user preference
+  if (typeof UserPrefs !== 'undefined' && UserPrefs && UserPrefs.betaFeatures) {
+    return !!UserPrefs.betaFeatures[featureName];
+  }
+  return false;
+}
 
 // ── User Preferences ──────────────────────────────────────────────
 var UserPrefs = {
@@ -6762,7 +6782,8 @@ var UserPrefs = {
   sidebarCollapsed: false,
   completedCollapsed: false,
   timelineShowAll: true,
-  compactRows: false
+  compactRows: false,
+  betaFeatures: {}
 };
 
 function loadUserPrefs() {
@@ -9652,7 +9673,7 @@ function buildTaskForm(t) {
       fmTaskToolField(v('tool'), false) +
       fmTaskCategoryField(v('category'), false) +
     '</div>' +
-    (FEATURE_DEPENDENCIES ?
+    (isFeatureOn('dependencies') ?
       '<div class="fm-section-label">Dependencies</div>' +
       '<div class="fm-grid">' +
         fmField('Depends on', '<div id="fm-blocked-by-list" style="max-height:180px;overflow-y:auto;border:1px solid #E8E6DF;border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text-muted);">Select a project first</div>', false, true,
@@ -9713,7 +9734,7 @@ function openFormModal(mode, id) {
   // Tool field uses searchable select in task forms
   if (!isProject) initSearchableSelect('fm-tool');
   // Populate dependency blockers list for task forms
-  if (!isProject && FEATURE_DEPENDENCIES) {
+  if (!isProject && isFeatureOn('dependencies')) {
     var projTitle = record ? record.project : '';
     var taskNum = record ? record.task_number : '';
     var blockedBy = record ? (record.blocked_by || '') : '';
@@ -9866,7 +9887,7 @@ function collectTaskFields() {
     actual_end:  getVal('fm-actual-end') || null,
     resolution:  getVal('fm-resolution')|| null,
     phase_requirements: getVal('fm-phase-reqs-val') || null,
-    blocked_by: FEATURE_DEPENDENCIES ? (function() {
+    blocked_by: isFeatureOn('dependencies') ? (function() {
       var checked = document.querySelectorAll('#fm-blocked-by-list input[type="checkbox"]:checked');
       if (!checked.length) return null;
       return Array.from(checked).map(function(cb) { return cb.value; }).join(',');
@@ -9945,7 +9966,7 @@ async function handleFormSubmit(andDownload) {
   if (saveBtn) { saveBtn.textContent = 'Saving…'; saveBtn.disabled = true; saveBtn.style.opacity = '0.6'; }
 
   // Track status changes for task history
-  if (!isProject && FEATURE_TASK_HISTORY) {
+  if (!isProject && isFeatureOn('taskHistory')) {
     var existingTask = isEdit ? TASKS.find(function(t) { return t.objectId == Editor.editId; }) : null;
     var oldStatus = existingTask ? existingTask.status : null;
     var newFormStatus = fields.status;
@@ -10192,7 +10213,7 @@ async function markTaskComplete(taskId) {
   const today = new Date();
   const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
   var completeFields = { status: 'Complete', actual_end: todayStr };
-  if (FEATURE_TASK_HISTORY) {
+  if (isFeatureOn('taskHistory')) {
     completeFields.task_status_history = appendTaskHistory(task, task.status, 'Complete', null);
   }
   await DataStore.updateTask(taskId, completeFields);
@@ -10401,7 +10422,7 @@ async function applyBatchUpdate() {
     if (newProject) fields.project = newProject;
     if (newStatus === 'Complete') fields.actual_end = todayStr;
     // Append status history for each task individually
-    if (newStatus && FEATURE_TASK_HISTORY) {
+    if (newStatus && isFeatureOn('taskHistory')) {
       var batchTask = TASKS.find(function(t) { return t.objectId == ids[i]; });
       if (batchTask) {
         fields.task_status_history = appendTaskHistory(batchTask, batchTask.status, newStatus, batchReason);
@@ -11054,7 +11075,7 @@ function renderTaskDetail(idx) {
         </div>
       </div>` : ''}
 
-      ${FEATURE_DEPENDENCIES ? (() => {
+      ${isFeatureOn('dependencies') ? (() => {
         var blockedBy = parseBlockedBy(t);
         var blocking = getBlockingTasks(t.task_number);
         if (!blockedBy.length && !blocking.length) return '';
@@ -13046,14 +13067,14 @@ function tlLeave(container) {
   if (pop) pop.style.display = 'none';
 }
 
-// ── Task Status History helpers (behind FEATURE_TASK_HISTORY flag) ──
+// ── Task Status History helpers (behind isFeatureOn('taskHistory') flag) ──
 function parseTaskHistory(t) {
-  if (!FEATURE_TASK_HISTORY || !t.task_status_history) return [];
+  if (!isFeatureOn('taskHistory') || !t.task_status_history) return [];
   try { return JSON.parse(t.task_status_history); } catch(e) { return []; }
 }
 
 function appendTaskHistory(t, fromStatus, toStatus, reason) {
-  if (!FEATURE_TASK_HISTORY) return t.task_status_history || null;
+  if (!isFeatureOn('taskHistory')) return t.task_status_history || null;
   var history = parseTaskHistory(t);
   history.push({
     date: new Date().toISOString().slice(0, 10),
@@ -13069,12 +13090,12 @@ function appendTaskHistory(t, fromStatus, toStatus, reason) {
 }
 
 function parseTaskNotes(t) {
-  if (!FEATURE_TASK_HISTORY || !t.task_notes) return [];
+  if (!isFeatureOn('taskHistory') || !t.task_notes) return [];
   try { return JSON.parse(t.task_notes); } catch(e) { return []; }
 }
 
 function addTaskNote(taskObjectId, noteText) {
-  if (!FEATURE_TASK_HISTORY || !noteText.trim()) return;
+  if (!isFeatureOn('taskHistory') || !noteText.trim()) return;
   var task = TASKS.find(function(t) { return t.objectId == taskObjectId; });
   if (!task) return;
   var notes = parseTaskNotes(task);
@@ -13100,7 +13121,7 @@ function addTaskNote(taskObjectId, noteText) {
 
 // Prompts for reason when changing to On Hold, Waiting for Response, or Canceled
 function needsStatusReason(newStatus) {
-  return FEATURE_TASK_HISTORY && ['On Hold', 'Waiting for Response', 'Canceled'].indexOf(newStatus) >= 0;
+  return isFeatureOn('taskHistory') && ['On Hold', 'Waiting for Response', 'Canceled'].indexOf(newStatus) >= 0;
 }
 
 // Shows a styled modal to collect a reason for a status change. Returns a Promise.
@@ -13150,7 +13171,7 @@ function promptStatusReason(fromStatus, toStatus) {
 }
 
 function renderTaskHistorySection(t) {
-  if (!FEATURE_TASK_HISTORY) return '';
+  if (!isFeatureOn('taskHistory')) return '';
   var history = parseTaskHistory(t);
   var notes = parseTaskNotes(t);
   if (!history.length && !notes.length) {
@@ -14014,7 +14035,7 @@ async function mwQuickStatus(selectEl) {
     }
     var fields = { status: newStatus };
     if (newStatus === 'Complete') fields.actual_end = todayStr;
-    if (FEATURE_TASK_HISTORY && task) {
+    if (isFeatureOn('taskHistory') && task) {
       fields.task_status_history = appendTaskHistory(task, oldStatus, newStatus, reason);
     }
     try {
@@ -14260,7 +14281,7 @@ function buildGanttBars() {
       const tOverdue = tEnd < todayStr;
       const tsc = STATUS_COLOR(t.status) || '#93C5FD';
       const isMine = t.assignee === viewUser;
-      const isBlocked = FEATURE_DEPENDENCIES && hasIncompleteBlockers(t);
+      const isBlocked = isFeatureOn('dependencies') && hasIncompleteBlockers(t);
       const barOpacity = isMine ? '0.85' : '0.3';
       const labelStyle = isMine ? 'color:var(--text-body);font-weight:600;' : 'color:var(--text-muted);font-weight:400;opacity:0.7;';
       const blockedIcon = isBlocked ? '🔒 ' : '› ';
@@ -14294,7 +14315,7 @@ function buildGanttBars() {
   html += '<div style="display:flex;gap:16px;margin-top:8px;padding-top:8px;border-top:1px solid #E8E6DF;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">';
   html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.85;display:inline-block;"></span> Your tasks</span>';
   html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.3;display:inline-block;"></span> Other members\' tasks</span>';
-  if (FEATURE_DEPENDENCIES) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:repeating-linear-gradient(45deg,#83AC16,#83AC16 2px,transparent 2px,transparent 4px);display:inline-block;"></span> 🔒 Deps pending</span>';
+  if (isFeatureOn('dependencies')) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:repeating-linear-gradient(45deg,#83AC16,#83AC16 2px,transparent 2px,transparent 4px);display:inline-block;"></span> 🔒 Deps pending</span>';
   html += '</div>';
   return html;
 }
@@ -14302,9 +14323,9 @@ function buildGanttBars() {
 function effectiveDue(t) { return t.working_due || t.due || null; }
 function effectiveEnd(p) { return p.working_due || p.end || null; }
 
-// ── Dependency helpers (behind FEATURE_DEPENDENCIES flag) ──────────
+// ── Dependency helpers (behind isFeatureOn('dependencies') flag) ──────────
 function parseBlockedBy(t) {
-  if (!FEATURE_DEPENDENCIES || !t.blocked_by) return [];
+  if (!isFeatureOn('dependencies') || !t.blocked_by) return [];
   return t.blocked_by.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
 }
 
@@ -14313,7 +14334,7 @@ function findTaskByNumber(taskNum) {
 }
 
 function getBlockingTasks(taskNumber) {
-  if (!FEATURE_DEPENDENCIES || !taskNumber) return [];
+  if (!isFeatureOn('dependencies') || !taskNumber) return [];
   return TASKS.filter(function(t) {
     var blockers = parseBlockedBy(t);
     return blockers.indexOf(taskNumber) >= 0;
@@ -14330,7 +14351,7 @@ function hasIncompleteBlockers(t) {
 }
 
 function getDependencyIcon(t) {
-  if (!FEATURE_DEPENDENCIES) return '';
+  if (!isFeatureOn('dependencies')) return '';
   var blockedBy = parseBlockedBy(t);
   var blocking = getBlockingTasks(t.task_number);
   if (!blockedBy.length && !blocking.length) return '';
@@ -14342,7 +14363,7 @@ function getDependencyIcon(t) {
 }
 
 function refreshBlockerList(projectTitle, currentTaskNumber, currentBlockedBy) {
-  if (!FEATURE_DEPENDENCIES) return;
+  if (!isFeatureOn('dependencies')) return;
   var container = document.getElementById('fm-blocked-by-list');
   if (!container) return;
   if (!projectTitle) { container.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Select a project first</span>'; return; }
@@ -14419,7 +14440,7 @@ function getTaskAlerts(t, todayStr) {
     }
   }
   // Active task with unresolved dependencies
-  if (FEATURE_DEPENDENCIES && t.status === 'Active' && hasIncompleteBlockers(t)) {
+  if (isFeatureOn('dependencies') && t.status === 'Active' && hasIncompleteBlockers(t)) {
     alerts.push({ text: 'Deps pending', cls: 'mw-att-red', severity: 0 });
   }
   if (['Active', 'Pending', 'Waiting for Response'].indexOf(t.status) >= 0) {
@@ -15181,6 +15202,42 @@ function buildPreferencesPanel() {
 
   html += '</div>';
 
+  // Beta Features section — only show features with flag === 'beta'
+  var betaKeys = Object.keys(BETA_FEATURES).filter(function(key) {
+    var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY };
+    return flags[key] === 'beta';
+  });
+
+  if (betaKeys.length > 0) {
+    html += '<div style="margin-top:8px;margin-bottom:20px;">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
+    html += '<span style="font-size:15px;font-weight:700;color:var(--navy);">Beta features</span>';
+    html += '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:#FFF7ED;color:#9A3412;border:1px solid #FED7AA;">BETA</span>';
+    html += '</div>';
+    html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">These features are in testing. You can try them out and share feedback with the team. They may change or be removed.</div>';
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px 20px;">';
+
+    betaKeys.forEach(function(key) {
+      var bf = BETA_FEATURES[key];
+      var isEnabled = UserPrefs.betaFeatures && UserPrefs.betaFeatures[key];
+      html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F3F1EB;">';
+      html += '<div style="flex:1;min-width:0;">';
+      html += '<div style="font-size:13px;font-weight:700;color:var(--text-body);">' + bf.label + '</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + bf.desc + '</div>';
+      html += '</div>';
+      html += '<label style="position:relative;width:40px;height:22px;flex-shrink:0;">';
+      html += '<input type="checkbox" id="pref-beta-' + key + '"' + (isEnabled ? ' checked' : '') + ' onchange="updateBetaPref(\'' + key + '\',this.checked)" style="opacity:0;width:0;height:0;position:absolute;">';
+      html += '<span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:' + (isEnabled ? '#C24200' : '#D3D1C7') + ';border-radius:11px;transition:background 0.2s;">';
+      html += '<span style="position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:3px;left:' + (isEnabled ? '21px' : '3px') + ';transition:left 0.2s;"></span>';
+      html += '</span>';
+      html += '</label>';
+      html += '</div>';
+    });
+
+    html += '</div>';
+    html += '</div>';
+  }
+
   return html;
 }
 
@@ -15201,6 +15258,14 @@ function updatePref(key, value) {
   // Re-render the preferences panel to update toggle visuals
   render();
   showToast('Preference saved.', 'success');
+}
+
+function updateBetaPref(featureKey, enabled) {
+  if (!UserPrefs.betaFeatures) UserPrefs.betaFeatures = {};
+  UserPrefs.betaFeatures[featureKey] = !!enabled;
+  saveUserPrefs();
+  render();
+  showToast(BETA_FEATURES[featureKey].label + (enabled ? ' enabled.' : ' disabled.'), 'success');
 }
 
 function renderSettingsPage(area) {
