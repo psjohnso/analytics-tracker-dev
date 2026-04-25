@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.13.1.0001 (see Version History at bottom)
+> **Current Version:** 0.13.2.0001 (see Version History at bottom)
 
 ---
 
@@ -1533,6 +1533,13 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | | **Version correction**: builds 0.12.0.0011–0037 should have used MINOR/PATCH bumps per convention. Corrected going forward: dependencies system = 0.13.0 (new capability), title bar redesign = 0.13.1 (improvement round). |
 | 0.13.0.0001 | Task dependencies system (retroactive MINOR bump — new capability area) |
 | 0.13.1.0001 | Detail page header redesign (retroactive PATCH bump — improvement round to existing feature) |
+| 0.13.1.0002 | Redesign project timeline: single bar with task tick marks and hover popover |
+| 0.13.1.0003 | Fix My Work timeline: wider labels (280px), month header alignment, TODAY position and placement |
+| 0.13.1.0004 | My Work timeline: wrapping labels, TODAY label between months and separator |
+| 0.13.1.0005 | My Work timeline: more space around TODAY label, increased task row spacing |
+| 0.13.1.0006 | Add horizontal separator lines between projects and tasks on My Work timeline |
+| 0.13.1.0007 | My Work timeline: alternating background bands with colored left accent per project |
+| 0.13.2.0001 | Projects tab redesign: default to list view; Leading/Contributing role tables with three status groups (Active+OnHold+Waiting, Future+Scheduled, Complete+Canceled); remove Phase column; add ID, Category, and Tasks columns; Contributing table shows Lead column |
 
 ---
 

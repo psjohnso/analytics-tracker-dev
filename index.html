@@ -789,7 +789,11 @@ body {
 /* Project list table: Title | Status | Priority | Contact | Start | Due */
 .task-table--projects .task-table-header,
 .task-table--projects .task-row {
-  grid-template-columns: 2.5fr 1fr 0.8fr 1fr 1.5fr 1fr 1fr;
+  grid-template-columns: 70px 2.5fr 110px 0.8fr 1.5fr 100px 60px;
+}
+.task-table--projects-contrib .task-table-header,
+.task-table--projects-contrib .task-row {
+  grid-template-columns: 70px 2.5fr 110px 0.8fr 1.2fr 1fr 100px 60px;
 }
 
 .task-row:hover { background: #F0F4FF; }
@@ -3464,7 +3468,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.13.1.0007';
+const APP_VERSION = '0.13.2.0001';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -3895,7 +3899,7 @@ function cpWeekLabel(wi) {
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return months[d.getMonth()] + ' ' + d.getDate();
 }
-let currentView = 'grid';
+let currentView = 'list';
 let currentPage = 1;
 let PAGE_SIZE = 24;
 let taskSortKey = 'project';
@@ -4830,6 +4834,13 @@ function sortData(data, key, dir) {
     if (key === 'end')      return d * (a.end||a.due||'9').localeCompare(b.end||b.due||'9');
     if (key === 'assignee') return d * (a.assignee||'').localeCompare(b.assignee||'');
     if (key === 'contact')  return d * (a.contact||'').localeCompare(b.contact||'');
+    if (key === 'project_number') return d * (a.project_number||'').localeCompare(b.project_number||'');
+    if (key === 'category') return d * (a.category||'').localeCompare(b.category||'');
+    if (key === 'tasks') {
+      var ac = TASKS.filter(function(t) { return t.project === a.title; }).length;
+      var bc = TASKS.filter(function(t) { return t.project === b.title; }).length;
+      return d * (ac - bc);
+    }
     return 0;
   });
 }
@@ -4991,29 +5002,29 @@ function render() {
       var groupHtml = '';
       if (leadProjects.length > 0) {
         groupHtml += '<div style="margin-bottom:24px;">';
-        groupHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--navy);">';
-        groupHtml += '<span style="font-size:16px;font-weight:800;color:var(--navy);">Leading</span>';
-        groupHtml += '<span style="font-size:12px;font-weight:700;background:var(--navy);color:#fff;padding:2px 10px;border-radius:10px;">' + leadProjects.length + '</span>';
+        groupHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 14px;background:#E6F1FB88;border-bottom:2px solid #B5D4F4;border-radius:6px 6px 0 0;">';
+        groupHtml += '<span style="font-size:13px;font-weight:700;letter-spacing:0.06em;color:#0C447C;">Leading</span>';
+        groupHtml += '<span style="font-size:11px;font-weight:700;background:#0C447C;color:#fff;padding:1px 8px;border-radius:10px;">' + leadProjects.length + '</span>';
         groupHtml += '</div>';
-        groupHtml += currentView === 'grid' ? renderProjectGrid(leadProjects) : renderProjectList(leadProjects);
+        groupHtml += currentView === 'grid' ? renderProjectGrid(leadProjects) : renderProjectList(leadProjects, false);
         groupHtml += '</div>';
       }
       if (contribProjects.length > 0) {
         groupHtml += '<div style="margin-bottom:24px;">';
-        groupHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #3B82F6;">';
-        groupHtml += '<span style="font-size:16px;font-weight:800;color:#1E40AF;">Contributing</span>';
-        groupHtml += '<span style="font-size:12px;font-weight:700;background:#3B82F6;color:#fff;padding:2px 10px;border-radius:10px;">' + contribProjects.length + '</span>';
+        groupHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 14px;background:#F1EFE888;border-bottom:2px solid #D3D1C7;border-radius:6px 6px 0 0;">';
+        groupHtml += '<span style="font-size:13px;font-weight:700;letter-spacing:0.06em;color:#5F5E5A;">Contributing</span>';
+        groupHtml += '<span style="font-size:11px;font-weight:700;background:#5F5E5A;color:#fff;padding:1px 8px;border-radius:10px;">' + contribProjects.length + '</span>';
         groupHtml += '</div>';
-        groupHtml += currentView === 'grid' ? renderProjectGrid(contribProjects) : renderProjectList(contribProjects);
+        groupHtml += currentView === 'grid' ? renderProjectGrid(contribProjects) : renderProjectList(contribProjects, true);
         groupHtml += '</div>';
       }
       if (reviewerProjects.length > 0) {
         groupHtml += '<div style="margin-bottom:24px;">';
-        groupHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #9CA3AF;">';
-        groupHtml += '<span style="font-size:16px;font-weight:800;color:#6B7280;">Reviewing</span>';
-        groupHtml += '<span style="font-size:12px;font-weight:700;background:#9CA3AF;color:#fff;padding:2px 10px;border-radius:10px;">' + reviewerProjects.length + '</span>';
+        groupHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 14px;background:#F1EFE888;border-bottom:2px solid #D3D1C7;border-radius:6px 6px 0 0;">';
+        groupHtml += '<span style="font-size:13px;font-weight:700;letter-spacing:0.06em;color:#6B7280;">Reviewing</span>';
+        groupHtml += '<span style="font-size:11px;font-weight:700;background:#9CA3AF;color:#fff;padding:1px 8px;border-radius:10px;">' + reviewerProjects.length + '</span>';
         groupHtml += '</div>';
-        groupHtml += currentView === 'grid' ? renderProjectGrid(reviewerProjects) : renderProjectList(reviewerProjects);
+        groupHtml += currentView === 'grid' ? renderProjectGrid(reviewerProjects) : renderProjectList(reviewerProjects, true);
         groupHtml += '</div>';
       }
       area.innerHTML = groupHtml || '<div class="empty-state">No projects match your filters.</div>';
@@ -5021,7 +5032,7 @@ function render() {
     } else {
       data = data.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
       document.getElementById('result-count').textContent = `${total} project${total!==1?'s':''}`;
-      area.innerHTML = currentView === 'grid' ? renderProjectGrid(data) : renderProjectList(data);
+      area.innerHTML = currentView === 'grid' ? renderProjectGrid(data) : renderProjectList(data, true);
       renderPagination(total, 'proj');
     }
   } else {
@@ -5095,38 +5106,63 @@ function setProjListSort(key) {
   render();
 }
 
-function renderProjectList(data) {
+function renderProjectList(data, showLead) {
   if (!data.length) return '<div class="empty-state">No projects match your filters.</div>';
   const arrow = (key) => projListSortKey === key ? (projListSortDir === 'asc' ? ' ↑' : ' ↓') : ' ↕';
   const th = (label, key) => `<div class="th-sortable" onclick="setProjListSort('${key}')" style="cursor:pointer;user-select:none;">${label}<span style="opacity:${projListSortKey===key?'1':'0.35'};font-size:10px;">${arrow(key)}</span></div>`;
-  const rows = data.map(p => {
+  const tableClass = showLead ? 'task-table task-table--projects-contrib' : 'task-table task-table--projects';
+
+  function buildRow(p) {
     const statusColor = STATUS_COLOR(p.status) || '#9CA3AF';
-    var phaseCell = '—';
-    if (p.status === 'Active' || p.status === 'Scheduled') {
-      var lcs = getProjectLifecycleStatus(p.title);
-      var cp = lcs.phases[lcs.currentPhase];
-      var phaseBg = cp.complete ? '#DCFCE7' : '#EEF2FF';
-      var phaseColor = cp.complete ? '#166534' : 'var(--navy)';
-      phaseCell = '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:' + phaseBg + ';color:' + phaseColor + ';white-space:nowrap;">' +
-        cp.id + ' · ' + esc(cp.shortName) + '</span>' +
-        '<span style="font-size:9px;color:#6B7280;margin-left:4px;">' + cp.met + '/' + cp.total + '</span>';
-    }
-    return `<div class="task-row" onclick="openProject(${p.objectId})">
+    var taskCount = TASKS.filter(function(t) { return t.project === p.title || (!t.project && t.project_id == p.id); }).length;
+    var row = `<div class="task-row" onclick="openProject(${p.objectId})">
+      <div class="task-cell" style="font-family:monospace;font-size:11px;color:var(--text-muted);">${esc(p.project_number || '—')}</div>
       <div class="task-title-cell">${esc(p.title)}</div>
       <div class="task-cell"><span class="status-pill" style="background:${statusColor}22;color:${statusColor};"><span style="width:5px;height:5px;border-radius:50%;background:${statusColor};display:inline-block;"></span>${p.status||'—'}</span></div>
       <div class="task-cell"><span class="priority-badge priority-${p.priority||'null'}">${p.priority||'—'}</span></div>
-      <div class="task-cell">${phaseCell}</div>
-      <div class="task-cell">${esc(p.contact||'—')}</div>
-      <div class="task-cell">${p.start||'—'}</div>
-      <div class="task-cell">${p.working_due||p.end||'—'}</div>
+      <div class="task-cell" style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(p.category || '—')}</div>`;
+    if (showLead) row += `<div class="task-cell" style="font-size:11px;color:var(--text-muted);">${esc(p.contact || '—')}</div>`;
+    row += `<div class="task-cell" style="font-size:11px;color:var(--text-muted);">${p.working_due||p.end||'—'}</div>
+      <div class="task-cell" style="font-size:11px;color:var(--text-muted);text-align:center;">${taskCount}</div>
     </div>`;
-  }).join('');
-  return `<div class="task-table task-table--projects">
-    <div class="task-table-header">
-      ${th('Title','title')}${th('Status','status')}${th('Priority','priority')}${th('Phase','phase')}${th('Lead','contact')}${th('Start','start')}${th('Due','end')}
-    </div>
-    ${rows}
-  </div>`;
+    return row;
+  }
+
+  // Split by status groups
+  var activeStatuses = ['Active', 'On Hold', 'Waiting for Response'];
+  var pipelineStatuses = ['Future', 'Scheduled'];
+  var doneStatuses = ['Complete', 'Canceled'];
+
+  var activeProjs = data.filter(function(p) { return activeStatuses.indexOf(p.status) >= 0; });
+  var pipelineProjs = data.filter(function(p) { return pipelineStatuses.indexOf(p.status) >= 0; });
+  var doneProjs = data.filter(function(p) { return doneStatuses.indexOf(p.status) >= 0; });
+
+  var headerCols = th('ID','project_number') + th('Project','title') + th('Status','status') + th('Priority','priority') + th('Category','category');
+  if (showLead) headerCols += th('Lead','contact');
+  headerCols += th('Due','end') + th('Tasks','tasks');
+
+  var html = '<div class="' + tableClass + '">';
+  html += '<div class="task-table-header">' + headerCols + '</div>';
+
+  function groupHeader(label, count, colspan) {
+    return '<div class="task-row" style="cursor:default;background:var(--bg-surface,#F3F1EB);border-bottom:0.5px solid var(--border);"><div style="grid-column:1/-1;font-size:11px;font-weight:700;letter-spacing:0.03em;color:var(--text-muted);padding:4px 0;">' + label + ' (' + count + ')</div></div>';
+  }
+
+  if (activeProjs.length > 0) {
+    html += groupHeader('Active / On hold / Waiting for response', activeProjs.length);
+    html += activeProjs.map(buildRow).join('');
+  }
+  if (pipelineProjs.length > 0) {
+    html += groupHeader('Future / Scheduled', pipelineProjs.length);
+    html += pipelineProjs.map(buildRow).join('');
+  }
+  if (doneProjs.length > 0) {
+    html += groupHeader('Complete / Canceled', doneProjs.length);
+    html += doneProjs.map(function(p) { return buildRow(p).replace('class="task-row"', 'class="task-row" style="opacity:0.6;"'); }).join('');
+  }
+
+  html += '</div>';
+  return html;
 }
 
 // ─── TASK GRID ────────────────────────────────────────────────────────
