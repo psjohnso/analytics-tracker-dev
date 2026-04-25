@@ -3468,7 +3468,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.13.2.0001';
+const APP_VERSION = '0.13.2.0002';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -9897,22 +9897,11 @@ async function handleFormSubmit(andDownload) {
   closeFormModal();
   if (andDownload) { saveAllData(); }
 
-  // After an edit, clear all active filters so the saved record is
-  // guaranteed to be visible in the grid. (Active filters from before
-  // opening the form — e.g. a status or search filter — can cause the
-  // just-edited record to vanish if the edit changed the filtered field.)
-  if (isEdit) {
-    activeFilters = { status: [], priority: [], category: [], member: [], taskStatus: [], taskCategory: [], taskTool: [], partnerDept: [], itdTeam: [], dataProgram: false, search: '' };
-    const si = document.getElementById('search-input');
-    if (si) si.value = '';
-    buildSidebarFilters();
-  }
-
   markDataDirty();
   render();
 
   // After a CREATE: open the detail view for the new record
-  // After an EDIT: just show the updated grid (filters already cleared above)
+  // After an EDIT: re-render with existing filters preserved
   if (!isEdit) {
     if (isProject && Editor.editId) openProject(Editor.editId);
     else if (!isProject && Editor.editId) {
