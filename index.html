@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.15.0.0002';
+const APP_VERSION = '0.15.0.0003';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -4732,7 +4732,7 @@ function switchTab(tab, preserveFilters) {
   const addBtn = document.getElementById('btn-add-new');
   if (tab === 'tasks') { addBtn.style.display='flex'; addBtn.textContent='＋ New Task'; }
   else { addBtn.style.display='none'; }
-  document.getElementById('weekly-filter-btn').style.display = (tab === 'projects' || tab === 'tasks') ? 'flex' : 'none';
+  document.getElementById('weekly-filter-btn').style.display = (tab === 'tasks') ? 'flex' : 'none';
   document.getElementById('open-projects-btn').style.display = (tab === 'projects') ? 'flex' : 'none';
   document.getElementById('open-tasks-btn').style.display = (tab === 'tasks') ? 'flex' : 'none';
   const ideaCount = PROJECTS.filter(p => p.status === 'Idea').length;
