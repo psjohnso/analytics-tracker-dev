@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.16.0.0001';
+const APP_VERSION = '0.16.0.0002';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -5281,41 +5281,30 @@ function renderOverview(area) {
   var completedProjects = PROJECTS.filter(function(p) { return p.status === 'Complete' && p.actual_end && p.actual_end >= qStart; }).length;
   var completedTasks = TASKS.filter(function(t) { return t.status === 'Complete' && t.actual_end && t.actual_end >= qStart; }).length;
 
-  // ── Team workload data ────────────────────────────────────
-  var workloadHtml = '';
-  var teamTotalAlloc = 0, teamTotalCap = 0;
-  if (RESOURCES_DATA && RESOURCES_DATA.people) {
-    var weekIdx = typeof getCurrentWeekIndex === 'function' ? getCurrentWeekIndex() : 0;
-    var people = RESOURCES_DATA.people;
-    var names = Object.keys(people).filter(function(n) { return people[n].active !== false; }).sort();
-    names.forEach(function(name) {
-      var p = people[name];
-      var cap = 0;
-      if (p.schedule_type === '4/10') cap = 40;
-      else if (p.schedule_type === '9/80') cap = weekIdx % 2 === 0 ? (p.week1_hours || 44) : (p.week2_hours || 36);
-      else cap = p.week1_hours || 40;
-      cap = cap * (p.proj_pct || 1);
-      var alloc = 0;
-      if (p.allocations) {
-        p.allocations.forEach(function(a) { alloc += (a.hours || 0); });
-      }
-      teamTotalAlloc += alloc;
-      teamTotalCap += cap;
-      var pct = cap > 0 ? Math.round(alloc / cap * 100) : 0;
-      var isOver = pct > 100;
-      workloadHtml += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;font-size:11px;">';
-      workloadHtml += '<div style="width:90px;text-align:right;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;">' + esc(name.split(' ')[0]) + ' ' + esc((name.split(' ')[1] || '').charAt(0)) + '.</div>';
-      workloadHtml += '<div style="flex:1;height:16px;background:var(--bg-surface, #F3F1EB);border-radius:3px;position:relative;overflow:hidden;">';
-      workloadHtml += '<div style="height:100%;width:' + Math.min(100, pct) + '%;background:' + (isOver ? '#E24B4A' : '#185FA5') + ';border-radius:3px;"></div>';
-      workloadHtml += '</div>';
-      workloadHtml += '<div style="width:55px;font-size:10px;color:' + (isOver ? '#A32D2D' : 'var(--text-muted)') + ';flex-shrink:0;text-align:right;">' + Math.round(alloc) + ' / ' + Math.round(cap) + 'h</div>';
-      workloadHtml += '</div>';
-    });
-    var utilPct = teamTotalCap > 0 ? Math.round(teamTotalAlloc / teamTotalCap * 100) : 0;
-    workloadHtml += '<div style="font-size:10px;color:var(--text-muted);margin-top:5px;">Team: ' + Math.round(teamTotalAlloc) + 'h allocated · ' + Math.round(teamTotalCap) + 'h capacity · ' + utilPct + '% utilized</div>';
-  } else {
-    workloadHtml = '<div style="font-size:12px;color:var(--text-muted);">Resource data not loaded.</div>';
-  }
+  // ── Project pipeline data ───────────────────────────────────
+  var pipelineStatuses = ['Active', 'On Hold', 'Waiting for Response', 'Scheduled', 'Future', 'Idea'];
+  var pipelineCounts = {};
+  var pipelineTotal = 0;
+  pipelineStatuses.forEach(function(s) { pipelineCounts[s] = 0; });
+  PROJECTS.forEach(function(p) {
+    if (pipelineCounts.hasOwnProperty(p.status)) { pipelineCounts[p.status]++; pipelineTotal++; }
+  });
+  var maxPipeline = Math.max.apply(null, pipelineStatuses.map(function(s) { return pipelineCounts[s]; })) || 1;
+  var pipelineHtml = '';
+  pipelineStatuses.forEach(function(s) {
+    var cnt = pipelineCounts[s];
+    if (cnt === 0) return;
+    var sc = STATUS_COLOR(s) || '#9CA3AF';
+    var pct = Math.round(cnt / maxPipeline * 100);
+    pipelineHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:11px;">';
+    pipelineHtml += '<div style="width:75px;text-align:right;color:var(--text-muted);flex-shrink:0;">' + esc(s) + '</div>';
+    pipelineHtml += '<div style="flex:1;height:18px;background:var(--bg-surface, #F3F1EB);border-radius:3px;overflow:hidden;">';
+    pipelineHtml += '<div style="height:100%;width:' + pct + '%;background:' + sc + ';border-radius:3px;opacity:0.85;"></div>';
+    pipelineHtml += '</div>';
+    pipelineHtml += '<div style="width:28px;font-size:12px;font-weight:700;color:var(--text-body);flex-shrink:0;text-align:right;">' + cnt + '</div>';
+    pipelineHtml += '</div>';
+  });
+  pipelineHtml += '<div style="font-size:10px;color:var(--text-muted);margin-top:6px;">' + pipelineTotal + ' open projects · ' + PROJECTS.filter(function(p) { return p.status === 'Complete'; }).length + ' completed · ' + PROJECTS.length + ' total</div>';
 
   // ── Upcoming deadlines ────────────────────────────────────
   var deadlineItems = [];
@@ -5366,17 +5355,17 @@ function renderOverview(area) {
   var maxVel = Math.max.apply(null, velWeeks.map(function(v) { return v.count; })) || 1;
   var totalVel = velWeeks.reduce(function(s, v) { return s + v.count; }, 0);
   var avgVel = Math.round(totalVel / velWeeks.length);
-  var velHtml = '<div style="display:flex;align-items:flex-end;gap:3px;height:60px;margin-bottom:3px;">';
+  var velHtml = '<div style="display:flex;align-items:flex-end;gap:4px;height:100px;margin-bottom:4px;">';
   velWeeks.forEach(function(v, i) {
-    var h = maxVel > 0 ? Math.max(2, Math.round(v.count / maxVel * 58)) : 2;
+    var h = maxVel > 0 ? Math.max(4, Math.round(v.count / maxVel * 95)) : 4;
     var color = i >= 6 ? '#378ADD' : '#85B7EB';
-    velHtml += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;">';
-    velHtml += '<div style="width:100%;height:' + h + 'px;background:' + color + ';border-radius:2px 2px 0 0;"></div>';
-    velHtml += '<div style="font-size:8px;color:var(--text-muted);">' + v.count + '</div>';
+    velHtml += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">';
+    velHtml += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);">' + v.count + '</div>';
+    velHtml += '<div style="width:100%;height:' + h + 'px;background:' + color + ';border-radius:3px 3px 0 0;"></div>';
     velHtml += '</div>';
   });
   velHtml += '</div>';
-  velHtml += '<div style="display:flex;justify-content:space-between;font-size:8px;color:var(--text-muted);">';
+  velHtml += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text-muted);padding:0 2px;">';
   velWeeks.forEach(function(v) { velHtml += '<span>' + v.label + '</span>'; });
   velHtml += '</div>';
   velHtml += '<div style="font-size:10px;color:var(--text-muted);margin-top:5px;">Avg: ' + avgVel + ' tasks/week · ' + totalVel + ' total · Trend: ' + (avgVel > 4 ? 'healthy' : 'watch') + '</div>';
@@ -5385,31 +5374,36 @@ function renderOverview(area) {
   var categories = {};
   PROJECTS.forEach(function(p) {
     if (!p.category) return;
-    if (!categories[p.category]) categories[p.category] = { active: 0, pipeline: 0, complete: 0, total: 0 };
+    if (p.status === 'Complete' || p.status === 'Canceled') return; // exclude completed
+    if (!categories[p.category]) categories[p.category] = { active: 0, onHold: 0, waiting: 0, futureScheduled: 0, total: 0 };
     var c = categories[p.category];
     c.total++;
-    if (['Active', 'On Hold', 'Waiting for Response'].indexOf(p.status) >= 0) c.active++;
-    else if (['Future', 'Scheduled'].indexOf(p.status) >= 0) c.pipeline++;
-    else if (p.status === 'Complete' || p.status === 'Canceled') c.complete++;
+    if (p.status === 'Active') c.active++;
+    else if (p.status === 'On Hold') c.onHold++;
+    else if (p.status === 'Waiting for Response') c.waiting++;
+    else if (['Future', 'Scheduled'].indexOf(p.status) >= 0) c.futureScheduled++;
   });
   var catEntries = Object.entries(categories).sort(function(a, b) { return b[1].total - a[1].total; });
   var maxCat = catEntries.length > 0 ? catEntries[0][1].total : 1;
-  var catHtml = '<div style="display:flex;gap:12px;font-size:10px;color:var(--text-muted);margin-bottom:6px;">';
-  catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#185FA5;display:inline-block;margin-right:3px;vertical-align:middle;"></span>Active</span>';
-  catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#9E0059;display:inline-block;margin-right:3px;vertical-align:middle;"></span>Pipeline</span>';
-  catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#D3D1C7;display:inline-block;margin-right:3px;vertical-align:middle;"></span>Complete</span>';
+  var catHtml = '<div style="display:flex;gap:10px;font-size:10px;color:var(--text-muted);margin-bottom:8px;flex-wrap:wrap;">';
+  catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#83AC16;display:inline-block;margin-right:3px;vertical-align:middle;"></span>Active</span>';
+  catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#FFDB22;display:inline-block;margin-right:3px;vertical-align:middle;"></span>On hold</span>';
+  catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#002669;display:inline-block;margin-right:3px;vertical-align:middle;"></span>Waiting</span>';
+  catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#9E0059;display:inline-block;margin-right:3px;vertical-align:middle;"></span>Future / Scheduled</span>';
   catHtml += '</div>';
   catEntries.forEach(function(e) {
     var cat = e[0], d = e[1];
     var aPct = Math.round(d.active / maxCat * 100);
-    var pPct = Math.round(d.pipeline / maxCat * 100);
-    var cPct = Math.round(d.complete / maxCat * 100);
+    var hPct = Math.round(d.onHold / maxCat * 100);
+    var wPct = Math.round(d.waiting / maxCat * 100);
+    var fPct = Math.round(d.futureScheduled / maxCat * 100);
     catHtml += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:11px;">';
     catHtml += '<div style="width:110px;text-align:right;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;">' + esc(cat) + '</div>';
     catHtml += '<div style="flex:1;height:13px;background:var(--bg-surface, #F3F1EB);border-radius:2px;overflow:hidden;display:flex;">';
-    if (d.active) catHtml += '<span style="width:' + aPct + '%;height:100%;background:#185FA5;"></span>';
-    if (d.pipeline) catHtml += '<span style="width:' + pPct + '%;height:100%;background:#9E0059;"></span>';
-    if (d.complete) catHtml += '<span style="width:' + cPct + '%;height:100%;background:#D3D1C7;"></span>';
+    if (d.active) catHtml += '<span style="width:' + aPct + '%;height:100%;background:#83AC16;"></span>';
+    if (d.onHold) catHtml += '<span style="width:' + hPct + '%;height:100%;background:#FFDB22;"></span>';
+    if (d.waiting) catHtml += '<span style="width:' + wPct + '%;height:100%;background:#002669;"></span>';
+    if (d.futureScheduled) catHtml += '<span style="width:' + fPct + '%;height:100%;background:#9E0059;"></span>';
     catHtml += '</div>';
     catHtml += '<div style="width:16px;font-size:10px;color:var(--text-muted);flex-shrink:0;text-align:right;">' + d.total + '</div>';
     catHtml += '</div>';
@@ -5522,9 +5516,9 @@ function renderOverview(area) {
   html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:10px 12px;"><div style="font-size:11px;color:var(--text-muted);margin-bottom:1px;">Completed this quarter</div><div style="font-size:22px;font-weight:900;color:var(--text-body);">' + (completedProjects + completedTasks) + '</div><div style="font-size:10px;color:var(--text-muted);margin-top:2px;">' + completedProjects + ' projects · ' + completedTasks + ' tasks</div></div>';
   html += '</div></div>';
 
-  // Row 2: Team workload + Upcoming deadlines
+  // Row 2: Project pipeline + Upcoming deadlines
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
-  html += card('Team workload — allocated hours this week', workloadHtml);
+  html += card('Project pipeline', pipelineHtml);
   html += card('Upcoming deadlines', deadlineHtml);
   html += '</div>';
 
