@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.16.0.0005';
+const APP_VERSION = '0.16.0.0006';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -5341,34 +5341,40 @@ function renderOverview(area) {
   });
   if (!deadlineHtml) deadlineHtml = '<div style="font-size:12px;color:var(--text-muted);padding:10px 0;">No upcoming deadlines.</div>';
 
-  // ── Task completion velocity (8 weeks) ────────────────────
-  var velWeeks = [];
-  for (var w = 7; w >= 0; w--) {
-    var wEnd = new Date(today.getTime() - w * 7 * msPerDay);
-    var wStart = new Date(wEnd.getTime() - 7 * msPerDay);
-    var wStartStr = wStart.toISOString().slice(0, 10);
-    var wEndStr = wEnd.toISOString().slice(0, 10);
-    var count = TASKS.filter(function(t) { return t.status === 'Complete' && t.actual_end && t.actual_end >= wStartStr && t.actual_end < wEndStr; }).length;
-    var label = (wStart.getMonth() + 1) + '/' + wStart.getDate();
-    velWeeks.push({ count: count, label: label });
-  }
-  var maxVel = Math.max.apply(null, velWeeks.map(function(v) { return v.count; })) || 1;
-  var totalVel = velWeeks.reduce(function(s, v) { return s + v.count; }, 0);
-  var avgVel = Math.round(totalVel / velWeeks.length);
-  var velHtml = '<div style="display:flex;align-items:flex-end;gap:4px;height:100px;margin-bottom:4px;">';
-  velWeeks.forEach(function(v, i) {
-    var h = maxVel > 0 ? Math.max(4, Math.round(v.count / maxVel * 95)) : 4;
-    var color = i >= 6 ? '#378ADD' : '#85B7EB';
-    velHtml += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">';
-    velHtml += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);">' + v.count + '</div>';
-    velHtml += '<div style="width:100%;height:' + h + 'px;background:' + color + ';border-radius:3px 3px 0 0;"></div>';
-    velHtml += '</div>';
+  // ── Open task priority breakdown ─────────────────────────────
+  var priCounts = { High: 0, Medium: 0, Low: 0, None: 0 };
+  var priTotal = 0;
+  TASKS.forEach(function(t) {
+    if (['Active', 'Pending', 'On Hold', 'Waiting for Response'].indexOf(t.status) < 0) return;
+    priTotal++;
+    if (t.priority === 'High') priCounts.High++;
+    else if (t.priority === 'Medium') priCounts.Medium++;
+    else if (t.priority === 'Low') priCounts.Low++;
+    else priCounts.None++;
   });
-  velHtml += '</div>';
-  velHtml += '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);padding:0 2px;">';
-  velWeeks.forEach(function(v) { velHtml += '<span>' + v.label + '</span>'; });
-  velHtml += '</div>';
-  velHtml += '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Avg: ' + avgVel + ' tasks/week · ' + totalVel + ' total · Trend: ' + (avgVel > 4 ? 'healthy' : 'watch') + '</div>';
+
+  var priHtml = '';
+  // Stacked bar
+  if (priTotal > 0) {
+    var hPct = Math.round(priCounts.High / priTotal * 100);
+    var mPct = Math.round(priCounts.Medium / priTotal * 100);
+    var lPct = Math.round(priCounts.Low / priTotal * 100);
+    var nPct = 100 - hPct - mPct - lPct;
+    priHtml += '<div style="height:34px;display:flex;border-radius:4px;overflow:hidden;margin-bottom:14px;">';
+    if (priCounts.High) priHtml += '<div style="width:' + hPct + '%;background:#E24B4A;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:500;">High</div>';
+    if (priCounts.Medium) priHtml += '<div style="width:' + mPct + '%;background:#EF9F27;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:500;">Medium</div>';
+    if (priCounts.Low) priHtml += '<div style="width:' + lPct + '%;background:#83AC16;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:500;">Low</div>';
+    if (priCounts.None) priHtml += '<div style="width:' + nPct + '%;background:#B4B2A9;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:500;">—</div>';
+    priHtml += '</div>';
+  }
+  // Count cards
+  priHtml += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">';
+  priHtml += '<div style="text-align:center;padding:10px;background:var(--bg-surface, #F3F1EB);border-radius:8px;"><div style="font-size:22px;font-weight:900;color:#A32D2D;">' + priCounts.High + '</div><div style="font-size:12px;color:var(--text-muted);">High (' + (priTotal > 0 ? Math.round(priCounts.High / priTotal * 100) : 0) + '%)</div></div>';
+  priHtml += '<div style="text-align:center;padding:10px;background:var(--bg-surface, #F3F1EB);border-radius:8px;"><div style="font-size:22px;font-weight:900;color:#854F0B;">' + priCounts.Medium + '</div><div style="font-size:12px;color:var(--text-muted);">Medium (' + (priTotal > 0 ? Math.round(priCounts.Medium / priTotal * 100) : 0) + '%)</div></div>';
+  priHtml += '<div style="text-align:center;padding:10px;background:var(--bg-surface, #F3F1EB);border-radius:8px;"><div style="font-size:22px;font-weight:900;color:#3B6D11;">' + priCounts.Low + '</div><div style="font-size:12px;color:var(--text-muted);">Low (' + (priTotal > 0 ? Math.round(priCounts.Low / priTotal * 100) : 0) + '%)</div></div>';
+  priHtml += '<div style="text-align:center;padding:10px;background:var(--bg-surface, #F3F1EB);border-radius:8px;"><div style="font-size:22px;font-weight:900;color:#5F5E5A;">' + priCounts.None + '</div><div style="font-size:12px;color:var(--text-muted);">None (' + (priTotal > 0 ? Math.round(priCounts.None / priTotal * 100) : 0) + '%)</div></div>';
+  priHtml += '</div>';
+  priHtml += '<div style="font-size:12px;color:var(--text-muted);margin-top:8px;">' + priTotal + ' open tasks total</div>';
 
   // ── Work by category ──────────────────────────────────────
   var categories = {};
@@ -5510,7 +5516,7 @@ function renderOverview(area) {
 
   // Row 3: Velocity + Category
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
-  html += card('Task completion velocity — last 8 weeks', velHtml);
+  html += card('Open task priority breakdown', priHtml);
   html += card('Work by category', catHtml);
   html += '</div>';
 
