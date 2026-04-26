@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.15.2.0002';
+const APP_VERSION = '0.15.2.0003';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -14429,7 +14429,7 @@ function refreshBlockerList(projectTitle, currentTaskNumber, currentBlockedBy) {
       var sc = STATUS_COLOR(p.status);
       html += '<label data-ref="' + esc(p.project_number) + '" data-search="' + esc((p.project_number + ' ' + p.title).toLowerCase()) + '" style="display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;font-size:12px;border-bottom:0.5px solid #F3F1EB;" onmouseenter="this.style.background=\'#F0F4FF\'" onmouseleave="this.style.background=\'transparent\'">';
       html += '<input type="checkbox" value="' + esc(p.project_number) + '"' + checked + ' onchange="depToggleChoice(this)" style="width:14px;height:14px;flex-shrink:0;">';
-      html += '<span style="font-size:12px;flex-shrink:0;">📁</span>';
+      html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#E6F1FB;color:#0C447C;flex-shrink:0;font-weight:700;">P</span>';
       html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);min-width:45px;">' + esc(p.project_number) + '</span>';
       html += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(p.title) + '</span>';
       html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:' + sc + '18;color:' + sc + ';flex-shrink:0;">' + esc(p.status) + '</span>';
@@ -14458,7 +14458,7 @@ function refreshBlockerList(projectTitle, currentTaskNumber, currentBlockedBy) {
       var sc = STATUS_COLOR(t.status);
       html += '<label data-ref="' + esc(t.task_number) + '" data-search="' + esc((t.task_number + ' ' + t.title + ' ' + projName).toLowerCase()) + '" style="display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;font-size:12px;border-bottom:0.5px solid #F3F1EB;" onmouseenter="this.style.background=\'#F0F4FF\'" onmouseleave="this.style.background=\'transparent\'">';
       html += '<input type="checkbox" value="' + esc(t.task_number) + '"' + checked + ' onchange="depToggleChoice(this)" style="width:14px;height:14px;flex-shrink:0;">';
-      html += '<span style="font-size:12px;flex-shrink:0;">☑</span>';
+      html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#FAEEDA;color:#633806;flex-shrink:0;font-weight:700;">T</span>';
       html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);min-width:70px;">' + esc(t.task_number) + '</span>';
       html += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(t.title) + '</span>';
       html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:' + sc + '18;color:' + sc + ';flex-shrink:0;">' + esc(t.status) + '</span>';
