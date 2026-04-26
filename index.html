@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.15.1.0006';
+const APP_VERSION = '0.15.2.0001';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -6757,7 +6757,7 @@ const FEATURE_TASK_HISTORY = true;
 
 // Registry of beta-eligible features (shown in Preferences when flag === 'beta')
 var BETA_FEATURES = {
-  dependencies:  { flag: 'FEATURE_DEPENDENCIES',  label: 'Task Dependencies', desc: 'Track which tasks must be completed before others can start. Shows dependency icons, blocked indicators on timeline, and a Dependencies section in the task form.' },
+  dependencies:  { flag: 'FEATURE_DEPENDENCIES',  label: 'Task Dependencies', desc: 'Track dependencies across tasks and projects. Search and add tasks from any project or entire projects as dependencies. Shows dependency icons, blocked indicators on timeline, and resolved/unresolved status on detail pages.' },
   taskHistory:   { flag: 'FEATURE_TASK_HISTORY',   label: 'Notes & Status History', desc: 'Add notes to tasks and automatically track status changes with optional reasons for On Hold, Waiting, and Canceled transitions.' },
 };
 
@@ -9684,8 +9684,9 @@ function buildTaskForm(t) {
     (isFeatureOn('dependencies') ?
       '<div class="fm-section-label">Dependencies</div>' +
       '<div class="fm-grid">' +
-        fmField('Depends on', '<div id="fm-blocked-by-list" style="max-height:180px;overflow-y:auto;border:1px solid #E8E6DF;border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text-muted);">Select a project first</div>', false, true,
-          'Tasks that must be completed before this task can start. Only sibling tasks from the same project are shown.') +
+        '<input type="hidden" id="dep-current-task-num" value="' + esc(v('task_number')) + '">' +
+        fmField('Depends on', '<div id="fm-blocked-by-list" style="border:1px solid #E8E6DF;border-radius:6px;padding:8px;font-size:12px;color:var(--text-muted);">Loading...</div>', false, true,
+          'Search for tasks or projects that must be completed before this task can start.') +
       '</div>' : '') +
     '<div class="fm-section-label">Timeline</div>' +
     '<div class="fm-grid">' +
@@ -9741,21 +9742,12 @@ function openFormModal(mode, id) {
   initSearchableSelect('fm-category');
   // Tool field uses searchable select in task forms
   if (!isProject) initSearchableSelect('fm-tool');
-  // Populate dependency blockers list for task forms
+  // Populate dependency picker for task forms
   if (!isProject && isFeatureOn('dependencies')) {
     var projTitle = record ? record.project : '';
     var taskNum = record ? record.task_number : '';
     var blockedBy = record ? (record.blocked_by || '') : '';
     refreshBlockerList(projTitle, taskNum, blockedBy);
-    // Watch for project field changes to refresh blockers
-    var projValEl = document.getElementById('fm-project-val') || document.getElementById('fm-project');
-    if (projValEl) {
-      var _blockerObserver = new MutationObserver(function() {
-        refreshBlockerList(projValEl.value, taskNum, '');
-      });
-      _blockerObserver.observe(projValEl, { attributes: true, attributeFilter: ['value'] });
-      projValEl.addEventListener('change', function() { refreshBlockerList(projValEl.value, taskNum, ''); });
-    }
   }
   // Render unified team member selector with availability for project forms
   if (isProject) {
@@ -9896,9 +9888,8 @@ function collectTaskFields() {
     resolution:  getVal('fm-resolution')|| null,
     phase_requirements: getVal('fm-phase-reqs-val') || null,
     blocked_by: isFeatureOn('dependencies') ? (function() {
-      var checked = document.querySelectorAll('#fm-blocked-by-list input[type="checkbox"]:checked');
-      if (!checked.length) return null;
-      return Array.from(checked).map(function(cb) { return cb.value; }).join(',');
+      var refs = depGetCurrentRefs();
+      return refs.length > 0 ? refs.join(',') : null;
     })() : undefined,
   };
 }
@@ -11091,16 +11082,20 @@ function renderTaskDetail(idx) {
         html += '<div class="detail-section-label">Dependencies</div>';
         if (blockedBy.length) {
           html += '<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Depends on</div>';
-          blockedBy.forEach(function(num) {
-            var bt = findTaskByNumber(num);
-            if (!bt) { html += '<div style="font-size:12px;color:var(--text-muted);padding:4px 0;">' + esc(num) + ' (not found)</div>'; return; }
-            var sc = STATUS_COLOR(bt.status);
-            var isDone = bt.status === 'Complete' || bt.status === 'Canceled';
-            html += '<div onclick="openTask(' + bt.objectId + ')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:4px;background:var(--white);transition:background 0.15s;" onmouseenter="this.style.background=\'#F0F4FF\'" onmouseleave="this.style.background=\'var(--white)\'">';
-            html += '<span style="font-size:12px;">' + (isDone ? '✅' : '🔒') + '</span>';
-            html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);">' + esc(num) + '</span>';
-            html += '<span style="flex:1;font-size:13px;font-weight:500;' + (isDone ? 'text-decoration:line-through;color:var(--text-muted);' : 'color:var(--text-body);') + '">' + esc(bt.title) + '</span>';
-            html += '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:' + sc + '18;color:' + sc + ';">' + esc(bt.status) + '</span>';
+          blockedBy.forEach(function(ref) {
+            var dep = resolveDependency(ref);
+            if (!dep) { html += '<div style="font-size:12px;color:var(--text-muted);padding:4px 0;">' + esc(ref) + ' (not found)</div>'; return; }
+            var sc = STATUS_COLOR(dep.obj.status);
+            var isDone = dep.obj.status === 'Complete' || dep.obj.status === 'Canceled';
+            var typeIcon = dep.type === 'project' ? '📁' : (isDone ? '✅' : '🔒');
+            var typeLabel = dep.type === 'project' ? 'Project' : 'Task';
+            var clickAction = dep.type === 'project' ? 'openProject(' + dep.obj.objectId + ')' : 'openTask(' + dep.obj.objectId + ')';
+            html += '<div onclick="' + clickAction + '" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:4px;background:var(--white);transition:background 0.15s;" onmouseenter="this.style.background=\'#F0F4FF\'" onmouseleave="this.style.background=\'var(--white)\'">';
+            html += '<span style="font-size:12px;">' + typeIcon + '</span>';
+            html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);">' + esc(ref) + '</span>';
+            html += '<span style="flex:1;font-size:13px;font-weight:500;' + (isDone ? 'text-decoration:line-through;color:var(--text-muted);' : 'color:var(--text-body);') + '">' + esc(dep.obj.title) + '</span>';
+            html += '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:' + sc + '18;color:' + sc + ';">' + esc(dep.obj.status) + '</span>';
+            html += '<span style="font-size:9px;padding:2px 5px;border-radius:3px;background:' + (isDone ? '#EAF3DE' : '#FCEBEB') + ';color:' + (isDone ? '#27500A' : '#791F1F') + ';flex-shrink:0;">' + (isDone ? 'Resolved' : 'Unresolved') + '</span>';
             html += '</div>';
           });
           html += '</div>';
@@ -14341,6 +14336,26 @@ function findTaskByNumber(taskNum) {
   return TASKS.find(function(t) { return t.task_number === taskNum; });
 }
 
+function findProjectByNumber(projNum) {
+  return PROJECTS.find(function(p) { return p.project_number === projNum; });
+}
+
+// Determine if a dependency reference is a project (P-001) or task (P-001-001)
+function isProjectRef(ref) {
+  return /^P-\d+$/.test(ref);
+}
+
+// Resolve a dependency reference to either a task or project object
+function resolveDependency(ref) {
+  if (isProjectRef(ref)) {
+    var proj = findProjectByNumber(ref);
+    return proj ? { type: 'project', obj: proj, num: ref } : null;
+  } else {
+    var task = findTaskByNumber(ref);
+    return task ? { type: 'task', obj: task, num: ref } : null;
+  }
+}
+
 function getBlockingTasks(taskNumber) {
   if (!isFeatureOn('dependencies') || !taskNumber) return [];
   return TASKS.filter(function(t) {
@@ -14349,12 +14364,23 @@ function getBlockingTasks(taskNumber) {
   });
 }
 
+// Also find tasks that depend on a project number
+function getBlockingByProject(projectNumber) {
+  if (!isFeatureOn('dependencies') || !projectNumber) return [];
+  return TASKS.filter(function(t) {
+    var blockers = parseBlockedBy(t);
+    return blockers.indexOf(projectNumber) >= 0;
+  });
+}
+
 function hasIncompleteBlockers(t) {
   var blockers = parseBlockedBy(t);
   if (!blockers.length) return false;
-  return blockers.some(function(num) {
-    var blocker = findTaskByNumber(num);
-    return blocker && blocker.status !== 'Complete' && blocker.status !== 'Canceled';
+  return blockers.some(function(ref) {
+    var dep = resolveDependency(ref);
+    if (!dep) return false;
+    if (dep.type === 'project') return dep.obj.status !== 'Complete' && dep.obj.status !== 'Canceled';
+    return dep.obj.status !== 'Complete' && dep.obj.status !== 'Canceled';
   });
 }
 
@@ -14370,28 +14396,156 @@ function getDependencyIcon(t) {
   return '';
 }
 
+// ── Dependency search picker for the task form ──────────────────
 function refreshBlockerList(projectTitle, currentTaskNumber, currentBlockedBy) {
   if (!isFeatureOn('dependencies')) return;
   var container = document.getElementById('fm-blocked-by-list');
   if (!container) return;
-  if (!projectTitle) { container.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Select a project first</span>'; return; }
-  var selectedBlockers = currentBlockedBy ? currentBlockedBy.split(',').map(function(s) { return s.trim(); }) : [];
-  var siblingTasks = TASKS.filter(function(t) {
-    return (t.project === projectTitle) && t.task_number !== currentTaskNumber && t.status !== 'Canceled';
-  }).sort(function(a, b) { return (a.task_number || '').localeCompare(b.task_number || ''); });
-  if (!siblingTasks.length) { container.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">No other tasks in this project</span>'; return; }
+  var selectedRefs = currentBlockedBy ? currentBlockedBy.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
+
+  // Build the selected items display + search input
   var html = '';
-  siblingTasks.forEach(function(t) {
-    var checked = selectedBlockers.indexOf(t.task_number) >= 0 ? ' checked' : '';
-    var statusColor = STATUS_COLOR(t.status);
-    html += '<label style="display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;font-size:12px;">';
-    html += '<input type="checkbox" value="' + esc(t.task_number) + '"' + checked + ' style="width:13px;height:13px;flex-shrink:0;">';
-    html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);min-width:70px;">' + esc(t.task_number || '') + '</span>';
-    html += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-body);">' + esc(t.title) + '</span>';
-    html += '<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:' + statusColor + '18;color:' + statusColor + ';flex-shrink:0;">' + esc(t.status) + '</span>';
-    html += '</label>';
-  });
+
+  // Search input
+  html += '<div style="position:relative;margin-bottom:8px;">';
+  html += '<span style="position:absolute;left:8px;top:7px;font-size:13px;color:var(--text-muted);pointer-events:none;">🔍</span>';
+  html += '<input type="text" id="dep-search-input" placeholder="Search tasks or projects by number or name..." oninput="depSearchFilter(this.value)" style="width:100%;box-sizing:border-box;font-size:12px;padding:6px 8px 6px 28px;border:1px solid #E8E6DF;border-radius:6px;font-family:Lato,sans-serif;">';
+  html += '</div>';
+
+  // Search results container (hidden until typing)
+  html += '<div id="dep-search-results" style="max-height:200px;overflow-y:auto;display:none;border:1px solid #E8E6DF;border-radius:6px;margin-bottom:8px;"></div>';
+
+  // Selected dependencies
+  html += '<div id="dep-selected-list">';
+  if (selectedRefs.length > 0) {
+    html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:0.03em;margin-bottom:4px;">SELECTED (' + selectedRefs.length + ')</div>';
+    selectedRefs.forEach(function(ref) {
+      var dep = resolveDependency(ref);
+      var label = dep ? esc(dep.obj.title) : ref;
+      var statusColor = dep ? STATUS_COLOR(dep.obj.status) : '#9CA3AF';
+      var statusText = dep ? dep.obj.status : 'Unknown';
+      var typeIcon = isProjectRef(ref) ? '📁' : '☑';
+      var typeLabel = isProjectRef(ref) ? 'Project' : 'Task';
+      html += '<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #E8E6DF;border-radius:6px;margin-bottom:4px;background:var(--white);font-size:12px;">';
+      html += '<span style="font-size:12px;flex-shrink:0;">' + typeIcon + '</span>';
+      html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);min-width:60px;">' + esc(ref) + '</span>';
+      html += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + label + '</span>';
+      html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:' + statusColor + '18;color:' + statusColor + ';flex-shrink:0;">' + esc(statusText) + '</span>';
+      html += '<span onclick="depRemoveSelected(\'' + esc(ref) + '\')" style="cursor:pointer;color:var(--text-muted);font-size:14px;flex-shrink:0;line-height:1;">&times;</span>';
+      html += '</div>';
+    });
+  } else {
+    html += '<div style="font-size:11px;color:var(--text-muted);font-style:italic;">No dependencies selected. Use the search above to add tasks or projects.</div>';
+  }
+  html += '</div>';
+
   container.innerHTML = html;
+}
+
+function depSearchFilter(query) {
+  var resultsEl = document.getElementById('dep-search-results');
+  if (!resultsEl) return;
+  if (!query || query.length < 2) { resultsEl.style.display = 'none'; return; }
+  resultsEl.style.display = 'block';
+  var q = query.toLowerCase();
+  var currentTaskNum = (document.getElementById('dep-current-task-num') || {}).value || '';
+
+  // Get currently selected refs to exclude from results
+  var selectedInputs = document.querySelectorAll('#fm-blocked-by-list [data-dep-ref]');
+  var selectedRefs = [];
+  document.querySelectorAll('#dep-selected-list [onclick]').forEach(function(el) {
+    var match = el.getAttribute('onclick').match(/depRemoveSelected\('(.+?)'\)/);
+    if (match) selectedRefs.push(match[1]);
+  });
+
+  var html = '';
+
+  // Search projects
+  var matchedProjects = PROJECTS.filter(function(p) {
+    if (selectedRefs.indexOf(p.project_number) >= 0) return false;
+    if (p.status === 'Canceled') return false;
+    return (p.project_number && p.project_number.toLowerCase().indexOf(q) >= 0) ||
+           (p.title && p.title.toLowerCase().indexOf(q) >= 0);
+  }).slice(0, 5);
+
+  if (matchedProjects.length > 0) {
+    html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);padding:5px 8px;background:var(--bg-surface,#F3F1EB);border-bottom:0.5px solid #E8E6DF;letter-spacing:0.04em;">PROJECTS</div>';
+    matchedProjects.forEach(function(p) {
+      var sc = STATUS_COLOR(p.status);
+      html += '<div onclick="depAddSelected(\'' + esc(p.project_number) + '\')" style="display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:0.5px solid #F3F1EB;" onmouseenter="this.style.background=\'#F0F4FF\'" onmouseleave="this.style.background=\'transparent\'">';
+      html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);min-width:50px;">' + esc(p.project_number) + '</span>';
+      html += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(p.title) + '</span>';
+      html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:' + sc + '18;color:' + sc + ';flex-shrink:0;">' + esc(p.status) + '</span>';
+      html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#E6F1FB;color:#0C447C;flex-shrink:0;">Project</span>';
+      html += '</div>';
+    });
+  }
+
+  // Search tasks — group by project
+  var matchedTasks = TASKS.filter(function(t) {
+    if (t.task_number === currentTaskNum) return false;
+    if (selectedRefs.indexOf(t.task_number) >= 0) return false;
+    if (t.status === 'Canceled') return false;
+    return (t.task_number && t.task_number.toLowerCase().indexOf(q) >= 0) ||
+           (t.title && t.title.toLowerCase().indexOf(q) >= 0) ||
+           (t.project && t.project.toLowerCase().indexOf(q) >= 0);
+  }).slice(0, 15);
+
+  // Group tasks by project
+  var tasksByProject = {};
+  matchedTasks.forEach(function(t) {
+    var proj = t.project || '(no project)';
+    if (!tasksByProject[proj]) tasksByProject[proj] = [];
+    tasksByProject[proj].push(t);
+  });
+
+  Object.keys(tasksByProject).sort().forEach(function(projName) {
+    var projObj = PROJECTS.find(function(p) { return p.title === projName; });
+    var projNum = projObj ? projObj.project_number : '';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);padding:5px 8px;background:var(--bg-surface,#F3F1EB);border-bottom:0.5px solid #E8E6DF;letter-spacing:0.04em;">TASKS — ' + esc(projName) + (projNum ? ' (' + projNum + ')' : '') + '</div>';
+    tasksByProject[projName].forEach(function(t) {
+      var sc = STATUS_COLOR(t.status);
+      html += '<div onclick="depAddSelected(\'' + esc(t.task_number) + '\')" style="display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;font-size:12px;border-bottom:0.5px solid #F3F1EB;" onmouseenter="this.style.background=\'#F0F4FF\'" onmouseleave="this.style.background=\'transparent\'">';
+      html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);min-width:70px;">' + esc(t.task_number) + '</span>';
+      html += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(t.title) + '</span>';
+      html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:' + sc + '18;color:' + sc + ';flex-shrink:0;">' + esc(t.status) + '</span>';
+      html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#FAEEDA;color:#633806;flex-shrink:0;">Task</span>';
+      html += '</div>';
+    });
+  });
+
+  if (!html) {
+    html = '<div style="padding:10px;font-size:12px;color:var(--text-muted);text-align:center;">No matching tasks or projects found.</div>';
+  }
+  resultsEl.innerHTML = html;
+}
+
+function depAddSelected(ref) {
+  // Read current blocked_by from hidden state, add ref, rebuild
+  var container = document.getElementById('fm-blocked-by-list');
+  if (!container) return;
+  var currentRefs = depGetCurrentRefs();
+  if (currentRefs.indexOf(ref) >= 0) return;
+  currentRefs.push(ref);
+  var projTitle = (document.getElementById('fm-project-val') || document.getElementById('fm-project') || {}).value || '';
+  var taskNum = (document.getElementById('dep-current-task-num') || {}).value || '';
+  refreshBlockerList(projTitle, taskNum, currentRefs.join(','));
+}
+
+function depRemoveSelected(ref) {
+  var currentRefs = depGetCurrentRefs().filter(function(r) { return r !== ref; });
+  var projTitle = (document.getElementById('fm-project-val') || document.getElementById('fm-project') || {}).value || '';
+  var taskNum = (document.getElementById('dep-current-task-num') || {}).value || '';
+  refreshBlockerList(projTitle, taskNum, currentRefs.join(','));
+}
+
+function depGetCurrentRefs() {
+  var refs = [];
+  document.querySelectorAll('#dep-selected-list [onclick*="depRemoveSelected"]').forEach(function(el) {
+    var match = el.getAttribute('onclick').match(/depRemoveSelected\('(.+?)'\)/);
+    if (match) refs.push(match[1]);
+  });
+  return refs;
 }
 
 // ── Inline attention badge helpers ─────────────────────────────────

@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.15.1.0001 (see Version History at bottom)
+> **Current Version:** 0.15.2.0001 (see Version History at bottom)
 
 ---
 
@@ -1551,6 +1551,12 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.15.0.0006 | Write active field explicitly when creating new team members |
 | 0.15.0.0007 | Fix active field overwrite on member edit; complete save-path audit |
 | 0.15.1.0001 | Beta features framework: feature flags support three states (true/beta/false); isFeatureOn() checks global flag + user beta opt-in; BETA_FEATURES registry; Beta Features section in Preferences with orange toggle switches; updateBetaPref() function |
+| 0.15.1.0002 | Move FEATURE_DEPENDENCIES to 'beta' state for opt-in testing |
+| 0.15.1.0003 | Default assignee/contact to signed-in user on new tasks, projects, and ideas |
+| 0.15.1.0004 | Show active/on hold/waiting tasks under each project in My Week section |
+| 0.15.1.0005 | Replace full-width attention bar with column-specific summary bars on My Work tab |
+| 0.15.1.0006 | Move alert counts into My Projects/My Tasks section headers; reposition +New button next to My Tasks badge |
+| 0.15.2.0001 | Cross-project and project-level dependencies: searchable type-ahead picker replaces checkbox list; search tasks/projects by number or name; project-level deps (P-001) resolved when project completes; resolveDependency() and isProjectRef() helpers; task detail shows project deps with folder icon and Resolved/Unresolved badges; depAddSelected/depRemoveSelected/depGetCurrentRefs for picker state management |
 
 ---
 
