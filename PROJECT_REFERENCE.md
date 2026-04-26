@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.15.2.0001 (see Version History at bottom)
+> **Current Version:** 0.16.0.0001 (see Version History at bottom)
 
 ---
 
@@ -1557,6 +1557,9 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.15.1.0005 | Replace full-width attention bar with column-specific summary bars on My Work tab |
 | 0.15.1.0006 | Move alert counts into My Projects/My Tasks section headers; reposition +New button next to My Tasks badge |
 | 0.15.2.0001 | Cross-project and project-level dependencies: searchable type-ahead picker replaces checkbox list; search tasks/projects by number or name; project-level deps (P-001) resolved when project completes; resolveDependency() and isProjectRef() helpers; task detail shows project deps with folder icon and Resolved/Unresolved badges; depAddSelected/depRemoveSelected/depGetCurrentRefs for picker state management |
+| 0.15.2.0002 | Dependency picker: exclude complete/canceled items, show full list with checkboxes, filter on type |
+| 0.15.2.0003 | Replace confusing checkbox emoji with P/T type badges in dependency picker |
+| 0.16.0.0001 | Complete Overview tab dashboard rebuild: 7-panel layout with portfolio snapshot metric cards, team workload bars, upcoming deadlines list, task completion velocity chart, work by category stacked bars, created vs completed intake balance line chart, overdue trend line chart; all computed from live PROJECTS/TASKS/RESOURCES_DATA; inline SVG charts |
 
 ---
 
