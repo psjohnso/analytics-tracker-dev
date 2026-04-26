@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.16.0.0002';
+const APP_VERSION = '0.16.0.0003';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -5398,7 +5398,7 @@ function renderOverview(area) {
     var wPct = Math.round(d.waiting / maxCat * 100);
     var fPct = Math.round(d.futureScheduled / maxCat * 100);
     catHtml += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:11px;">';
-    catHtml += '<div style="width:110px;text-align:right;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;">' + esc(cat) + '</div>';
+    catHtml += '<div style="width:200px;text-align:right;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;">' + esc(cat) + '</div>';
     catHtml += '<div style="flex:1;height:13px;background:var(--bg-surface, #F3F1EB);border-radius:2px;overflow:hidden;display:flex;">';
     if (d.active) catHtml += '<span style="width:' + aPct + '%;height:100%;background:#83AC16;"></span>';
     if (d.onHold) catHtml += '<span style="width:' + hPct + '%;height:100%;background:#FFDB22;"></span>';
