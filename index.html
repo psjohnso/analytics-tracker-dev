@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.16.0.0006';
+const APP_VERSION = '0.16.0.0007';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -5511,25 +5511,25 @@ function renderOverview(area) {
   // Row 2: Project pipeline + Upcoming deadlines
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
   html += card('Project pipeline', pipelineHtml);
-  html += card('Upcoming deadlines', deadlineHtml);
+  html += card('Upcoming project and task deadlines', deadlineHtml);
   html += '</div>';
 
   // Row 3: Velocity + Category
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
   html += card('Open task priority breakdown', priHtml);
-  html += card('Work by category', catHtml);
+  html += card('Projects by category', catHtml);
   html += '</div>';
 
   // Row 4: Created vs Completed + Overdue trend
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
-  html += card('Created vs. completed — intake balance',
+  html += card('Tasks created vs. completed — intake balance',
     '<div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted);margin-bottom:8px;">' +
     '<span><span style="width:16px;height:2px;background:#E24B4A;display:inline-block;margin-right:4px;vertical-align:middle;border-radius:1px;"></span>Created</span>' +
     '<span><span style="width:16px;height:2px;background:#185FA5;display:inline-block;margin-right:4px;vertical-align:middle;border-radius:1px;"></span>Completed</span>' +
     '</div>' + cvcSvg +
     '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Net: +' + totalCreated + ' created, -' + totalCompleted + ' completed = ' + (totalCreated > totalCompleted ? '+' : '') + (totalCreated - totalCompleted) + ' backlog change</div>'
   );
-  html += card('Overdue trend — last 10 weeks',
+  html += card('Overdue projects and tasks — last 10 weeks',
     '<div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted);margin-bottom:8px;">' +
     '<span><span style="width:16px;height:2px;background:#E24B4A;display:inline-block;margin-right:4px;vertical-align:middle;border-radius:1px;"></span>Overdue count</span>' +
     '<span style="color:#0F6E56;">- - - Target (zero)</span>' +
