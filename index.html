@@ -3475,7 +3475,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.16.0.0004';
+const APP_VERSION = '0.16.0.0005';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -5296,15 +5296,15 @@ function renderOverview(area) {
     if (cnt === 0) return;
     var sc = STATUS_COLOR(s) || '#9CA3AF';
     var pct = Math.round(cnt / maxPipeline * 100);
-    pipelineHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:12px;">';
-    pipelineHtml += '<div style="width:85px;text-align:right;color:var(--text-muted);flex-shrink:0;">' + esc(s) + '</div>';
-    pipelineHtml += '<div style="flex:1;height:20px;background:var(--bg-surface, #F3F1EB);border-radius:3px;overflow:hidden;">';
+    pipelineHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:13px;">';
+    pipelineHtml += '<div style="width:95px;text-align:right;color:var(--text-muted);flex-shrink:0;">' + esc(s) + '</div>';
+    pipelineHtml += '<div style="flex:1;height:22px;background:var(--bg-surface, #F3F1EB);border-radius:3px;overflow:hidden;">';
     pipelineHtml += '<div style="height:100%;width:' + pct + '%;background:' + sc + ';border-radius:3px;opacity:0.85;"></div>';
     pipelineHtml += '</div>';
-    pipelineHtml += '<div style="width:28px;font-size:13px;font-weight:700;color:var(--text-body);flex-shrink:0;text-align:right;">' + cnt + '</div>';
+    pipelineHtml += '<div style="width:30px;font-size:14px;font-weight:700;color:var(--text-body);flex-shrink:0;text-align:right;">' + cnt + '</div>';
     pipelineHtml += '</div>';
   });
-  pipelineHtml += '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">' + pipelineTotal + ' open projects · ' + PROJECTS.filter(function(p) { return p.status === 'Complete'; }).length + ' completed · ' + PROJECTS.length + ' total</div>';
+  pipelineHtml += '<div style="font-size:12px;color:var(--text-muted);margin-top:8px;">' + pipelineTotal + ' open projects · ' + PROJECTS.filter(function(p) { return p.status === 'Complete'; }).length + ' completed · ' + PROJECTS.length + ' total</div>';
 
   // ── Upcoming deadlines ────────────────────────────────────
   var deadlineItems = [];
@@ -5332,11 +5332,11 @@ function renderOverview(area) {
     var pillText = isOverdue ? Math.abs(daysDiff) + 'd late' : daysDiff + 'd';
     var onclick = d.isProject ? 'openProject(' + d.objectId + ')' : 'openTask(' + d.objectId + ')';
     var dateLabel = d.date.slice(5).replace('-', '/');
-    deadlineHtml += '<div style="display:flex;align-items:center;gap:5px;padding:5px 0;font-size:12px;border-bottom:0.5px solid #F3F1EB;cursor:pointer;" onclick="' + onclick + '">';
-    deadlineHtml += '<div style="width:46px;font-weight:700;flex-shrink:0;color:' + dateColor + ';">' + dateLabel + '</div>';
+    deadlineHtml += '<div style="display:flex;align-items:center;gap:6px;padding:6px 0;font-size:13px;border-bottom:0.5px solid #F3F1EB;cursor:pointer;" onclick="' + onclick + '">';
+    deadlineHtml += '<div style="width:50px;font-weight:700;flex-shrink:0;color:' + dateColor + ';">' + dateLabel + '</div>';
     deadlineHtml += '<div style="flex:1;color:var(--text-body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(d.title) + '</div>';
-    deadlineHtml += '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;background:' + pillBg + ';color:' + pillColor + ';flex-shrink:0;">' + pillText + '</span>';
-    deadlineHtml += '<span style="font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--bg-surface, #F3F1EB);color:var(--text-muted);flex-shrink:0;">' + d.type + '</span>';
+    deadlineHtml += '<span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:3px;background:' + pillBg + ';color:' + pillColor + ';flex-shrink:0;">' + pillText + '</span>';
+    deadlineHtml += '<span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--bg-surface, #F3F1EB);color:var(--text-muted);flex-shrink:0;">' + d.type + '</span>';
     deadlineHtml += '</div>';
   });
   if (!deadlineHtml) deadlineHtml = '<div style="font-size:12px;color:var(--text-muted);padding:10px 0;">No upcoming deadlines.</div>';
@@ -5360,15 +5360,15 @@ function renderOverview(area) {
     var h = maxVel > 0 ? Math.max(4, Math.round(v.count / maxVel * 95)) : 4;
     var color = i >= 6 ? '#378ADD' : '#85B7EB';
     velHtml += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">';
-    velHtml += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);">' + v.count + '</div>';
+    velHtml += '<div style="font-size:12px;font-weight:700;color:var(--text-muted);">' + v.count + '</div>';
     velHtml += '<div style="width:100%;height:' + h + 'px;background:' + color + ';border-radius:3px 3px 0 0;"></div>';
     velHtml += '</div>';
   });
   velHtml += '</div>';
-  velHtml += '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);padding:0 2px;">';
+  velHtml += '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);padding:0 2px;">';
   velWeeks.forEach(function(v) { velHtml += '<span>' + v.label + '</span>'; });
   velHtml += '</div>';
-  velHtml += '<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">Avg: ' + avgVel + ' tasks/week · ' + totalVel + ' total · Trend: ' + (avgVel > 4 ? 'healthy' : 'watch') + '</div>';
+  velHtml += '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Avg: ' + avgVel + ' tasks/week · ' + totalVel + ' total · Trend: ' + (avgVel > 4 ? 'healthy' : 'watch') + '</div>';
 
   // ── Work by category ──────────────────────────────────────
   var categories = {};
@@ -5385,7 +5385,7 @@ function renderOverview(area) {
   });
   var catEntries = Object.entries(categories).sort(function(a, b) { return b[1].total - a[1].total; });
   var maxCat = catEntries.length > 0 ? catEntries[0][1].total : 1;
-  var catHtml = '<div style="display:flex;gap:10px;font-size:11px;color:var(--text-muted);margin-bottom:8px;flex-wrap:wrap;">';
+  var catHtml = '<div style="display:flex;gap:12px;font-size:12px;color:var(--text-muted);margin-bottom:10px;flex-wrap:wrap;">';
   catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#83AC16;display:inline-block;margin-right:3px;vertical-align:middle;"></span>Active</span>';
   catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#FFDB22;display:inline-block;margin-right:3px;vertical-align:middle;"></span>On hold</span>';
   catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#002669;display:inline-block;margin-right:3px;vertical-align:middle;"></span>Waiting</span>';
@@ -5397,15 +5397,15 @@ function renderOverview(area) {
     var hPct = Math.round(d.onHold / maxCat * 100);
     var wPct = Math.round(d.waiting / maxCat * 100);
     var fPct = Math.round(d.futureScheduled / maxCat * 100);
-    catHtml += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;font-size:12px;">';
+    catHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:13px;">';
     catHtml += '<div style="width:200px;text-align:right;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;">' + esc(cat) + '</div>';
-    catHtml += '<div style="flex:1;height:15px;background:var(--bg-surface, #F3F1EB);border-radius:2px;overflow:hidden;display:flex;">';
+    catHtml += '<div style="flex:1;height:18px;background:var(--bg-surface, #F3F1EB);border-radius:2px;overflow:hidden;display:flex;">';
     if (d.active) catHtml += '<span style="width:' + aPct + '%;height:100%;background:#83AC16;"></span>';
     if (d.onHold) catHtml += '<span style="width:' + hPct + '%;height:100%;background:#FFDB22;"></span>';
     if (d.waiting) catHtml += '<span style="width:' + wPct + '%;height:100%;background:#002669;"></span>';
     if (d.futureScheduled) catHtml += '<span style="width:' + fPct + '%;height:100%;background:#9E0059;"></span>';
     catHtml += '</div>';
-    catHtml += '<div style="width:18px;font-size:12px;font-weight:700;color:var(--text-muted);flex-shrink:0;text-align:right;">' + d.total + '</div>';
+    catHtml += '<div style="width:22px;font-size:13px;font-weight:700;color:var(--text-muted);flex-shrink:0;text-align:right;">' + d.total + '</div>';
     catHtml += '</div>';
   });
 
@@ -5425,32 +5425,24 @@ function renderOverview(area) {
   var totalCompleted = cvcWeeks.reduce(function(s, w) { return s + w.completed; }, 0);
 
   // Build SVG line chart
-  var cvcSvg = '<svg viewBox="0 0 540 120" style="width:100%;height:120px;">';
-  // Grid lines
-  cvcSvg += '<line x1="20" y1="95" x2="530" y2="95" stroke="#E8E6DF" stroke-width="0.5"/>';
-  cvcSvg += '<line x1="20" y1="65" x2="530" y2="65" stroke="#E8E6DF" stroke-width="0.5" stroke-dasharray="2,3"/>';
-  cvcSvg += '<line x1="20" y1="35" x2="530" y2="35" stroke="#E8E6DF" stroke-width="0.5" stroke-dasharray="2,3"/>';
+  var cvcSvg = '<svg viewBox="0 0 100 26" preserveAspectRatio="none" style="width:100%;height:140px;display:block;">';
+  cvcSvg += '<line x1="5" y1="22" x2="99" y2="22" stroke="#E8E6DF" stroke-width="0.1"/>';
+  cvcSvg += '<line x1="5" y1="14" x2="99" y2="14" stroke="#E8E6DF" stroke-width="0.1" stroke-dasharray="0.4,0.4"/>';
+  cvcSvg += '<line x1="5" y1="6" x2="99" y2="6" stroke="#E8E6DF" stroke-width="0.1" stroke-dasharray="0.4,0.4"/>';
   var yLabels = [0, Math.round(maxCvc / 2), maxCvc];
-  cvcSvg += '<text x="16" y="98" text-anchor="end" font-size="9" fill="#888">' + yLabels[0] + '</text>';
-  cvcSvg += '<text x="16" y="68" text-anchor="end" font-size="9" fill="#888">' + yLabels[1] + '</text>';
-  cvcSvg += '<text x="16" y="38" text-anchor="end" font-size="9" fill="#888">' + yLabels[2] + '</text>';
-
-  function cvcX(i) { return 30 + i * (495 / (cvcWeeks.length - 1)); }
-  function cvcY(val) { return 95 - (val / maxCvc * 60); }
-
-  // Created line (red)
+  cvcSvg += '<text x="4.5" y="22.5" text-anchor="end" font-size="1.6" fill="#888">' + yLabels[0] + '</text>';
+  cvcSvg += '<text x="4.5" y="14.5" text-anchor="end" font-size="1.6" fill="#888">' + yLabels[1] + '</text>';
+  cvcSvg += '<text x="4.5" y="6.5" text-anchor="end" font-size="1.6" fill="#888">' + yLabels[2] + '</text>';
+  function cvcX(i) { return 7 + i * (91 / (cvcWeeks.length - 1)); }
+  function cvcY(val) { return 22 - (val / maxCvc * 16); }
   var createdPts = cvcWeeks.map(function(w, i) { return cvcX(i) + ',' + cvcY(w.created); }).join(' ');
-  cvcSvg += '<polyline points="' + createdPts + '" fill="none" stroke="#E24B4A" stroke-width="1.5"/>';
-  cvcWeeks.forEach(function(w, i) { cvcSvg += '<circle cx="' + cvcX(i) + '" cy="' + cvcY(w.created) + '" r="2.5" fill="#E24B4A"/>'; });
-
-  // Completed line (blue)
+  cvcSvg += '<polyline points="' + createdPts + '" fill="none" stroke="#E24B4A" stroke-width="0.35"/>';
+  cvcWeeks.forEach(function(w, i) { cvcSvg += '<circle cx="' + cvcX(i) + '" cy="' + cvcY(w.created) + '" r="0.5" fill="#E24B4A"/>'; });
   var completedPts = cvcWeeks.map(function(w, i) { return cvcX(i) + ',' + cvcY(w.completed); }).join(' ');
-  cvcSvg += '<polyline points="' + completedPts + '" fill="none" stroke="#185FA5" stroke-width="1.5"/>';
-  cvcWeeks.forEach(function(w, i) { cvcSvg += '<circle cx="' + cvcX(i) + '" cy="' + cvcY(w.completed) + '" r="2.5" fill="#185FA5"/>'; });
-
-  // X labels (every other)
+  cvcSvg += '<polyline points="' + completedPts + '" fill="none" stroke="#185FA5" stroke-width="0.35"/>';
+  cvcWeeks.forEach(function(w, i) { cvcSvg += '<circle cx="' + cvcX(i) + '" cy="' + cvcY(w.completed) + '" r="0.5" fill="#185FA5"/>'; });
   cvcWeeks.forEach(function(w, i) {
-    if (i % 2 === 0) cvcSvg += '<text x="' + cvcX(i) + '" y="112" text-anchor="middle" font-size="9" fill="#888">' + w.label + '</text>';
+    if (i % 2 === 0) cvcSvg += '<text x="' + cvcX(i) + '" y="24.5" text-anchor="middle" font-size="1.6" fill="#888">' + w.label + '</text>';
   });
   cvcSvg += '</svg>';
 
@@ -5472,29 +5464,23 @@ function renderOverview(area) {
   var peakOd = Math.max.apply(null, odWeeks.map(function(w) { return w.count; }));
   var currentOd = odWeeks[odWeeks.length - 1].count;
 
-  var odSvg = '<svg viewBox="0 0 540 120" style="width:100%;height:120px;">';
-  odSvg += '<line x1="20" y1="95" x2="530" y2="95" stroke="#E8E6DF" stroke-width="0.5"/>';
-  odSvg += '<line x1="20" y1="65" x2="530" y2="65" stroke="#E8E6DF" stroke-width="0.5" stroke-dasharray="2,3"/>';
-  odSvg += '<line x1="20" y1="35" x2="530" y2="35" stroke="#E8E6DF" stroke-width="0.5" stroke-dasharray="2,3"/>';
-  odSvg += '<text x="16" y="98" text-anchor="end" font-size="9" fill="#888">0</text>';
-  odSvg += '<text x="16" y="68" text-anchor="end" font-size="9" fill="#888">' + Math.round(maxOd / 2) + '</text>';
-  odSvg += '<text x="16" y="38" text-anchor="end" font-size="9" fill="#888">' + maxOd + '</text>';
-  // Target line at zero
-  odSvg += '<line x1="20" y1="95" x2="530" y2="95" stroke="#0F6E56" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/>';
-
-  function odX(i) { return 30 + i * (495 / (odWeeks.length - 1)); }
-  function odY(val) { return 95 - (val / maxOd * 60); }
-
-  // Shaded area
+  var odSvg = '<svg viewBox="0 0 100 26" preserveAspectRatio="none" style="width:100%;height:140px;display:block;">';
+  odSvg += '<line x1="5" y1="22" x2="99" y2="22" stroke="#E8E6DF" stroke-width="0.1"/>';
+  odSvg += '<line x1="5" y1="14" x2="99" y2="14" stroke="#E8E6DF" stroke-width="0.1" stroke-dasharray="0.4,0.4"/>';
+  odSvg += '<line x1="5" y1="6" x2="99" y2="6" stroke="#E8E6DF" stroke-width="0.1" stroke-dasharray="0.4,0.4"/>';
+  odSvg += '<text x="4.5" y="22.5" text-anchor="end" font-size="1.6" fill="#888">0</text>';
+  odSvg += '<text x="4.5" y="14.5" text-anchor="end" font-size="1.6" fill="#888">' + Math.round(maxOd / 2) + '</text>';
+  odSvg += '<text x="4.5" y="6.5" text-anchor="end" font-size="1.6" fill="#888">' + maxOd + '</text>';
+  odSvg += '<line x1="5" y1="22" x2="99" y2="22" stroke="#0F6E56" stroke-width="0.15" stroke-dasharray="0.5,0.5" opacity="0.5"/>';
+  function odX(i) { return 7 + i * (91 / (odWeeks.length - 1)); }
+  function odY(val) { return 22 - (val / maxOd * 16); }
   var odPoly = odWeeks.map(function(w, i) { return odX(i) + ',' + odY(w.count); }).join(' ');
-  odPoly += ' ' + odX(odWeeks.length - 1) + ',90 ' + odX(0) + ',90';
+  odPoly += ' ' + odX(odWeeks.length - 1) + ',22 ' + odX(0) + ',22';
   odSvg += '<polygon points="' + odPoly + '" fill="#E24B4A" opacity="0.06"/>';
-  // Line
   var odLine = odWeeks.map(function(w, i) { return odX(i) + ',' + odY(w.count); }).join(' ');
-  odSvg += '<polyline points="' + odLine + '" fill="none" stroke="#E24B4A" stroke-width="1.5"/>';
-  odWeeks.forEach(function(w, i) { odSvg += '<circle cx="' + odX(i) + '" cy="' + odY(w.count) + '" r="2.5" fill="#E24B4A"/>'; });
-  // X labels
-  odWeeks.forEach(function(w, i) { if (i % 3 === 0) odSvg += '<text x="' + odX(i) + '" y="112" text-anchor="middle" font-size="9" fill="#888">' + w.label + '</text>'; });
+  odSvg += '<polyline points="' + odLine + '" fill="none" stroke="#E24B4A" stroke-width="0.35"/>';
+  odWeeks.forEach(function(w, i) { odSvg += '<circle cx="' + odX(i) + '" cy="' + odY(w.count) + '" r="0.5" fill="#E24B4A"/>'; });
+  odWeeks.forEach(function(w, i) { if (i % 3 === 0) odSvg += '<text x="' + odX(i) + '" y="24.5" text-anchor="middle" font-size="1.6" fill="#888">' + w.label + '</text>'; });
   odSvg += '</svg>';
 
   var trendDir = currentOd < peakOd ? 'improving' : currentOd === peakOd ? 'flat' : 'worsening';
@@ -5503,17 +5489,17 @@ function renderOverview(area) {
   var html = '';
 
   // Section header helper
-  function secHdr(label) { return '<div style="font-size:14px;font-weight:700;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border);">' + label + '</div>'; }
-  function card(title, content) { return '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;"><div style="font-size:14px;font-weight:700;color:var(--text-body);margin-bottom:10px;">' + title + '</div>' + content + '</div>'; }
+  function secHdr(label) { return '<div style="font-size:15px;font-weight:700;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--border);">' + label + '</div>'; }
+  function card(title, content) { return '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px 18px;"><div style="font-size:15px;font-weight:700;color:var(--text-body);margin-bottom:12px;">' + title + '</div>' + content + '</div>'; }
 
   // Row 1: Metric cards
   html += '<div style="margin-bottom:16px;">';
   html += secHdr('Portfolio snapshot');
   html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">';
-  html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:10px 12px;"><div style="font-size:12px;color:var(--text-muted);margin-bottom:1px;">Active projects</div><div style="font-size:24px;font-weight:900;color:var(--text-body);">' + activeProjects + '</div><div style="font-size:11px;color:#0F6E56;margin-top:2px;">of ' + PROJECTS.length + ' total</div></div>';
-  html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:10px 12px;"><div style="font-size:12px;color:var(--text-muted);margin-bottom:1px;">Open tasks</div><div style="font-size:24px;font-weight:900;color:var(--text-body);">' + openTasks + '</div><div style="font-size:11px;color:#854F0B;margin-top:2px;">' + dueThisWeek + ' due this week</div></div>';
-  html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:10px 12px;"><div style="font-size:12px;color:var(--text-muted);margin-bottom:1px;">Overdue items</div><div style="font-size:24px;font-weight:900;color:' + (overdueCount > 0 ? '#A32D2D' : 'var(--text-body)') + ';">' + overdueCount + '</div><div style="font-size:11px;color:#A32D2D;margin-top:2px;">' + overdueProjects.length + ' projects · ' + overdueTasks.length + ' tasks</div></div>';
-  html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:10px 12px;"><div style="font-size:12px;color:var(--text-muted);margin-bottom:1px;">Completed this quarter</div><div style="font-size:24px;font-weight:900;color:var(--text-body);">' + (completedProjects + completedTasks) + '</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + completedProjects + ' projects · ' + completedTasks + ' tasks</div></div>';
+  html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:12px 14px;"><div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Active projects</div><div style="font-size:28px;font-weight:900;color:var(--text-body);">' + activeProjects + '</div><div style="font-size:12px;color:#0F6E56;margin-top:2px;">of ' + PROJECTS.length + ' total</div></div>';
+  html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:12px 14px;"><div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Open tasks</div><div style="font-size:28px;font-weight:900;color:var(--text-body);">' + openTasks + '</div><div style="font-size:12px;color:#854F0B;margin-top:2px;">' + dueThisWeek + ' due this week</div></div>';
+  html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:12px 14px;"><div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Overdue items</div><div style="font-size:28px;font-weight:900;color:' + (overdueCount > 0 ? '#A32D2D' : 'var(--text-body)') + ';">' + overdueCount + '</div><div style="font-size:12px;color:#A32D2D;margin-top:2px;">' + overdueProjects.length + ' projects · ' + overdueTasks.length + ' tasks</div></div>';
+  html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:12px 14px;"><div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Completed this quarter</div><div style="font-size:28px;font-weight:900;color:var(--text-body);">' + (completedProjects + completedTasks) + '</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + completedProjects + ' projects · ' + completedTasks + ' tasks</div></div>';
   html += '</div></div>';
 
   // Row 2: Project pipeline + Upcoming deadlines
@@ -5531,18 +5517,18 @@ function renderOverview(area) {
   // Row 4: Created vs Completed + Overdue trend
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
   html += card('Created vs. completed — intake balance',
-    '<div style="display:flex;gap:12px;font-size:11px;color:var(--text-muted);margin-bottom:6px;">' +
-    '<span><span style="width:14px;height:2px;background:#E24B4A;display:inline-block;margin-right:3px;vertical-align:middle;border-radius:1px;"></span>Created</span>' +
-    '<span><span style="width:14px;height:2px;background:#185FA5;display:inline-block;margin-right:3px;vertical-align:middle;border-radius:1px;"></span>Completed</span>' +
+    '<div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted);margin-bottom:8px;">' +
+    '<span><span style="width:16px;height:2px;background:#E24B4A;display:inline-block;margin-right:4px;vertical-align:middle;border-radius:1px;"></span>Created</span>' +
+    '<span><span style="width:16px;height:2px;background:#185FA5;display:inline-block;margin-right:4px;vertical-align:middle;border-radius:1px;"></span>Completed</span>' +
     '</div>' + cvcSvg +
-    '<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">Net: +' + totalCreated + ' created, -' + totalCompleted + ' completed = ' + (totalCreated > totalCompleted ? '+' : '') + (totalCreated - totalCompleted) + ' backlog change</div>'
+    '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Net: +' + totalCreated + ' created, -' + totalCompleted + ' completed = ' + (totalCreated > totalCompleted ? '+' : '') + (totalCreated - totalCompleted) + ' backlog change</div>'
   );
   html += card('Overdue trend — last 10 weeks',
-    '<div style="display:flex;gap:12px;font-size:11px;color:var(--text-muted);margin-bottom:6px;">' +
-    '<span><span style="width:14px;height:2px;background:#E24B4A;display:inline-block;margin-right:3px;vertical-align:middle;border-radius:1px;"></span>Overdue count</span>' +
+    '<div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted);margin-bottom:8px;">' +
+    '<span><span style="width:16px;height:2px;background:#E24B4A;display:inline-block;margin-right:4px;vertical-align:middle;border-radius:1px;"></span>Overdue count</span>' +
     '<span style="color:#0F6E56;">- - - Target (zero)</span>' +
     '</div>' + odSvg +
-    '<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">Current: ' + currentOd + ' overdue · Peak: ' + peakOd + ' · Trend: ' + trendDir + '</div>'
+    '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Current: ' + currentOd + ' overdue · Peak: ' + peakOd + ' · Trend: ' + trendDir + '</div>'
   );
   html += '</div>';
 
