@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.16.0.0001 (see Version History at bottom)
+> **Current Version:** 0.17.0.0001 (see Version History at bottom)
 
 ---
 
@@ -1560,6 +1560,13 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.15.2.0002 | Dependency picker: exclude complete/canceled items, show full list with checkboxes, filter on type |
 | 0.15.2.0003 | Replace confusing checkbox emoji with P/T type badges in dependency picker |
 | 0.16.0.0001 | Complete Overview tab dashboard rebuild: 7-panel layout with portfolio snapshot metric cards, team workload bars, upcoming deadlines list, task completion velocity chart, work by category stacked bars, created vs completed intake balance line chart, overdue trend line chart; all computed from live PROJECTS/TASKS/RESOURCES_DATA; inline SVG charts |
+| 0.16.0.0002 | Replace team workload with project pipeline bars; fix velocity chart height; update category chart segments (remove Complete, add On Hold and Waiting, rename Pipeline to Future/Scheduled) |
+| 0.16.0.0003 | Widen category name column in Work by Category chart |
+| 0.16.0.0004 | Expand SVG charts to fill card width; bump all dashboard font sizes |
+| 0.16.0.0005 | Expand SVG charts with percentage-based viewBox; bump all dashboard fonts again |
+| 0.16.0.0006 | Replace velocity chart with open task priority breakdown (stacked bar + count cards) |
+| 0.16.0.0007 | Clarify dashboard card titles to specify projects, tasks, or both |
+| 0.17.0.0001 | AI-Guided Project Intake (new capability, beta): 3-step guided idea form with AI-generated follow-up questions and project summary; FEATURE_AI_INTAKE flag; starter questions (title, category, problem, dept, urgency, deadline); AI generates 4-6 tailored follow-ups via Cloudflare Worker proxy; AI-generated structured summary (description, value, technical considerations, size estimate, risks); editable summary before submission; intake_responses JSON field; fallback to generic questions when AI unavailable; existing simple form preserved for non-beta users |
 
 ---
 

@@ -2166,6 +2166,8 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .idea-btn-submit:hover { background: #F0CC00; }
 .idea-btn-submit:active { transform: scale(0.97); }
 
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* ── IDEA REVIEW PAGE ───────────────────────────────────────────────── */
 .review-page {
   padding: 0;
@@ -3475,7 +3477,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.16.0.0007';
+const APP_VERSION = '0.17.0.0001';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -6952,16 +6954,18 @@ function markSynced(msg) {
 // Values: true = enabled for everyone, 'beta' = opt-in via user prefs, false = disabled for everyone
 const FEATURE_DEPENDENCIES = 'beta';
 const FEATURE_TASK_HISTORY = true;
+const FEATURE_AI_INTAKE = 'beta';
 
 // Registry of beta-eligible features (shown in Preferences when flag === 'beta')
 var BETA_FEATURES = {
   dependencies:  { flag: 'FEATURE_DEPENDENCIES',  label: 'Task Dependencies', desc: 'Track dependencies across tasks and projects. Search and add tasks from any project or entire projects as dependencies. Shows dependency icons, blocked indicators on timeline, and resolved/unresolved status on detail pages.' },
   taskHistory:   { flag: 'FEATURE_TASK_HISTORY',   label: 'Notes & Status History', desc: 'Add notes to tasks and automatically track status changes with optional reasons for On Hold, Waiting, and Canceled transitions.' },
+  aiIntake:      { flag: 'FEATURE_AI_INTAKE',      label: 'AI-Guided Project Intake', desc: 'Replace the standard idea form with a guided intake that asks starter questions, generates smart follow-up questions based on your responses, and produces an AI-written project summary for reviewers.' },
 };
 
 // Check if a feature is enabled (global flag OR user beta opt-in)
 function isFeatureOn(featureName) {
-  var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY };
+  var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY, aiIntake: FEATURE_AI_INTAKE };
   var flag = flags[featureName];
   if (flag === true) return true;
   if (flag === false) return false;
@@ -12024,6 +12028,14 @@ function buildForecastPage() {
 function openIdeaForm() {
   if (!Auth.loggedIn) { showToast('You must be signed in to submit ideas.', 'warn'); return; }
   refreshEnums();
+  if (isFeatureOn('aiIntake')) {
+    openGuidedIdeaForm();
+  } else {
+    openSimpleIdeaForm();
+  }
+}
+
+function openSimpleIdeaForm() {
   const body = document.getElementById('idea-modal-body');
   body.innerHTML = `
     <div class="idea-field">
@@ -12081,8 +12093,390 @@ function openIdeaForm() {
       <strong>📅 What happens next:</strong> Your idea will appear in the project list with an <em>Idea</em> status. Leadership reviews new ideas every Monday and will reach out if they have questions.
     </div>
   `;
+  // Update footer for simple form
+  var footer = document.querySelector('#idea-modal .idea-modal-footer');
+  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="closeIdeaFormDirect()">Cancel</button><button class="idea-btn-submit" onclick="submitIdeaForm()">💡 Submit Idea</button>';
   document.getElementById('idea-modal-backdrop').classList.add('open');
   setTimeout(() => document.getElementById('idea-title').focus(), 50);
+}
+
+// ── AI-Guided Intake Form ─────────────────────────────────────────
+var _guidedIntakeState = { step: 1, starterAnswers: {}, aiQuestions: [], followUpAnswers: {}, aiSummary: '' };
+
+function openGuidedIdeaForm() {
+  _guidedIntakeState = { step: 1, starterAnswers: {}, aiQuestions: [], followUpAnswers: {}, aiSummary: '' };
+  renderGuidedStep1();
+  document.getElementById('idea-modal-backdrop').classList.add('open');
+}
+
+function renderGuidedStep1() {
+  var header = document.querySelector('#idea-modal .idea-modal-header');
+  if (header) {
+    header.querySelector('h2').textContent = '💡 Guided Project Intake — Step 1 of 3';
+    header.querySelector('p').textContent = 'Answer these starter questions to help us understand your idea. We\'ll generate tailored follow-up questions next.';
+  }
+  var body = document.getElementById('idea-modal-body');
+  var s = _guidedIntakeState.starterAnswers;
+  body.innerHTML = `
+    <div style="display:flex;gap:6px;margin-bottom:16px;">
+      <div style="flex:1;height:4px;background:var(--navy);border-radius:2px;"></div>
+      <div style="flex:1;height:4px;background:#E8E6DF;border-radius:2px;"></div>
+      <div style="flex:1;height:4px;background:#E8E6DF;border-radius:2px;"></div>
+    </div>
+    <div class="idea-field">
+      <label>Idea Title <span class="req">*</span></label>
+      <input id="gi-title" class="idea-input" type="text" placeholder="Give your idea a clear, descriptive title…" maxlength="200" value="${esc(s.title || '')}">
+    </div>
+    <div class="idea-field">
+      <label>Submitted By <span class="req">*</span></label>
+      <select id="gi-contact" class="idea-select">
+        <option value="">Select your name…</option>
+        ${(FM_ACTIVE_MEMBERS || FM_TASK_ASSIGNEES).map(n => `<option value="${esc(n)}"${n === (s.contact || Auth.fullName) ? ' selected' : ''}>${esc(n)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="idea-field">
+      <label>Category <span class="req">*</span></label>
+      <select id="gi-category" class="idea-select">
+        <option value="">Select a category…</option>
+        ${(FM_PROJ_CATEGORIES || []).map(c => `<option value="${esc(c)}"${c === s.category ? ' selected' : ''}>${esc(c)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="idea-field">
+      <label>What problem does this solve and who benefits? <span class="req">*</span></label>
+      <textarea id="gi-problem" class="idea-textarea" rows="3" placeholder="Describe the problem, who experiences it, and what impact it has…">${esc(s.problem || '')}</textarea>
+    </div>
+    <div class="idea-field">
+      <label>Partner / Requesting Department</label>
+      <select id="gi-dept" class="idea-select">
+        <option value="">Select department…</option>
+        ${FM_PARTNER_DEPTS.map(d => `<option value="${esc(d)}"${d === s.dept ? ' selected' : ''}>${esc(d)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="idea-field">
+      <label>How urgent is this?</label>
+      <select id="gi-urgency" class="idea-select">
+        <option value="">Select urgency…</option>
+        <option value="Immediate — blocking other work"${s.urgency === 'Immediate — blocking other work' ? ' selected' : ''}>Immediate — blocking other work</option>
+        <option value="This quarter"${s.urgency === 'This quarter' ? ' selected' : ''}>This quarter</option>
+        <option value="Next quarter"${s.urgency === 'Next quarter' ? ' selected' : ''}>Next quarter</option>
+        <option value="No rush — just an idea"${s.urgency === 'No rush — just an idea' ? ' selected' : ''}>No rush — just an idea</option>
+      </select>
+    </div>
+    <div class="idea-field">
+      <label>Is there a hard deadline? If so, what's driving it?</label>
+      <textarea id="gi-deadline" class="idea-textarea" rows="2" placeholder="e.g. Council presentation on June 15, grant deadline, regulatory requirement…">${esc(s.deadline || '')}</textarea>
+    </div>
+  `;
+  var footer = document.querySelector('#idea-modal .idea-modal-footer');
+  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="closeIdeaFormDirect()">Cancel</button><button class="idea-btn-submit" onclick="guidedStep1Next()">Continue →</button>';
+  setTimeout(() => document.getElementById('gi-title').focus(), 50);
+}
+
+async function guidedStep1Next() {
+  // Validate required fields
+  var title = (document.getElementById('gi-title').value || '').trim();
+  var contact = document.getElementById('gi-contact').value;
+  var category = document.getElementById('gi-category').value;
+  var problem = (document.getElementById('gi-problem').value || '').trim();
+  var valid = true;
+  if (!title) { document.getElementById('gi-title').classList.add('err'); valid = false; }
+  else document.getElementById('gi-title').classList.remove('err');
+  if (!contact) { document.getElementById('gi-contact').style.borderColor = '#EF4444'; valid = false; }
+  else document.getElementById('gi-contact').style.borderColor = '';
+  if (!category) { document.getElementById('gi-category').style.borderColor = '#EF4444'; valid = false; }
+  else document.getElementById('gi-category').style.borderColor = '';
+  if (!problem) { document.getElementById('gi-problem').classList.add('err'); valid = false; }
+  else document.getElementById('gi-problem').classList.remove('err');
+  if (!valid) { showToast('Please fill in all required fields.', 'warn'); return; }
+
+  // Save starter answers
+  _guidedIntakeState.starterAnswers = {
+    title: title,
+    contact: contact,
+    category: category,
+    problem: problem,
+    dept: document.getElementById('gi-dept').value || '',
+    urgency: document.getElementById('gi-urgency').value || '',
+    deadline: (document.getElementById('gi-deadline').value || '').trim()
+  };
+
+  // Show loading state
+  var body = document.getElementById('idea-modal-body');
+  body.innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:8px;">Generating follow-up questions...</div><div style="font-size:12px;color:var(--text-muted);">Our AI is analyzing your responses to ask the right questions for a ' + esc(category) + ' project.</div><div style="margin-top:16px;"><div style="width:40px;height:40px;border:3px solid #E8E6DF;border-top-color:var(--navy);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div></div></div>';
+  var footer = document.querySelector('#idea-modal .idea-modal-footer');
+  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="closeIdeaFormDirect()">Cancel</button>';
+
+  // Generate AI follow-up questions
+  try {
+    var sa = _guidedIntakeState.starterAnswers;
+    var prompt = 'You are helping a City of Tucson GIS/Data Analytics team collect project intake information. A team member has submitted this project idea:\n\n' +
+      'Title: ' + sa.title + '\n' +
+      'Category: ' + sa.category + '\n' +
+      'Problem/Need: ' + sa.problem + '\n' +
+      (sa.dept ? 'Requesting Department: ' + sa.dept + '\n' : '') +
+      (sa.urgency ? 'Urgency: ' + sa.urgency + '\n' : '') +
+      (sa.deadline ? 'Deadline: ' + sa.deadline + '\n' : '') +
+      '\nThe team works with: ArcGIS Online, ArcGIS Pro, ArcGIS Server, FME, Python, SQL, Power BI, Snowflake, and web development (HTML/CSS/JS).\n\n' +
+      'Based on this information, generate 4-6 follow-up questions that would help the project leads determine:\n' +
+      '1. Whether this project should be done (value, alignment, impact)\n' +
+      '2. Whether the team can do it (skills, data, dependencies)\n' +
+      '3. When to schedule it (effort, phases, constraints)\n' +
+      '4. Who should work on it (skills needed, SME knowledge)\n\n' +
+      'Make the questions specific to this particular idea and category — not generic.\n' +
+      'For each question, indicate the input type: "text" for free-form, "select" for multiple choice (provide 3-5 options), or "yesno" for yes/no.\n\n' +
+      'Respond ONLY with a JSON array, no other text. Example format:\n' +
+      '[{"id":"q1","question":"...","type":"text"},{"id":"q2","question":"...","type":"select","options":["Option A","Option B","Option C"]},{"id":"q3","question":"...","type":"yesno"}]';
+
+    var response = await fetch(AI_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    var data = await response.json();
+    var aiText = '';
+    if (data.content) data.content.forEach(function(c) { if (c.type === 'text') aiText += c.text; });
+    // Parse JSON from response
+    var jsonMatch = aiText.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      _guidedIntakeState.aiQuestions = JSON.parse(jsonMatch[0]);
+    } else {
+      throw new Error('Could not parse AI response');
+    }
+    renderGuidedStep2();
+  } catch (err) {
+    console.error('AI question generation failed:', err);
+    // Fallback: generic follow-up questions
+    _guidedIntakeState.aiQuestions = [
+      { id: 'q1', question: 'What data sources are needed for this project? Do they already exist?', type: 'text' },
+      { id: 'q2', question: 'Are there any dependencies on other teams, systems, or projects?', type: 'text' },
+      { id: 'q3', question: 'Has something similar been attempted before?', type: 'yesno' },
+      { id: 'q4', question: 'Can this be broken into phases or delivered incrementally?', type: 'yesno' },
+      { id: 'q5', question: 'What does success look like? How will you know this project delivered value?', type: 'text' }
+    ];
+    renderGuidedStep2();
+    showToast('Using standard follow-up questions (AI unavailable).', 'warn');
+  }
+}
+
+function renderGuidedStep2() {
+  var header = document.querySelector('#idea-modal .idea-modal-header');
+  if (header) {
+    header.querySelector('h2').textContent = '💡 Guided Project Intake — Step 2 of 3';
+    header.querySelector('p').textContent = 'Answer these follow-up questions to help the team scope and prioritize your idea.';
+  }
+  var body = document.getElementById('idea-modal-body');
+  var questions = _guidedIntakeState.aiQuestions;
+  var answers = _guidedIntakeState.followUpAnswers;
+
+  var html = '<div style="display:flex;gap:6px;margin-bottom:16px;">';
+  html += '<div style="flex:1;height:4px;background:var(--navy);border-radius:2px;"></div>';
+  html += '<div style="flex:1;height:4px;background:var(--navy);border-radius:2px;"></div>';
+  html += '<div style="flex:1;height:4px;background:#E8E6DF;border-radius:2px;"></div>';
+  html += '</div>';
+
+  html += '<div style="background:#F0F4FF;border:1px solid #BFDBFE;border-radius:6px;padding:10px 14px;font-size:12px;color:#1E40AF;margin-bottom:12px;">These questions were generated based on your project description and category. They help leadership evaluate and schedule your idea.</div>';
+
+  questions.forEach(function(q, i) {
+    html += '<div class="idea-field">';
+    html += '<label>' + (i + 1) + '. ' + esc(q.question) + '</label>';
+    if (q.type === 'select' && q.options) {
+      html += '<select id="gi-q-' + q.id + '" class="idea-select">';
+      html += '<option value="">Select…</option>';
+      q.options.forEach(function(opt) {
+        html += '<option value="' + esc(opt) + '"' + (answers[q.id] === opt ? ' selected' : '') + '>' + esc(opt) + '</option>';
+      });
+      html += '</select>';
+    } else if (q.type === 'yesno') {
+      html += '<select id="gi-q-' + q.id + '" class="idea-select">';
+      html += '<option value="">Select…</option>';
+      html += '<option value="Yes"' + (answers[q.id] === 'Yes' ? ' selected' : '') + '>Yes</option>';
+      html += '<option value="No"' + (answers[q.id] === 'No' ? ' selected' : '') + '>No</option>';
+      html += '<option value="Not sure"' + (answers[q.id] === 'Not sure' ? ' selected' : '') + '>Not sure</option>';
+      html += '</select>';
+    } else {
+      html += '<textarea id="gi-q-' + q.id + '" class="idea-textarea" rows="2" placeholder="Your answer…">' + esc(answers[q.id] || '') + '</textarea>';
+    }
+    html += '</div>';
+  });
+
+  body.innerHTML = html;
+  var footer = document.querySelector('#idea-modal .idea-modal-footer');
+  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="renderGuidedStep1()">← Back</button><button class="idea-btn-submit" onclick="guidedStep2Next()">Generate Summary →</button>';
+}
+
+async function guidedStep2Next() {
+  // Collect follow-up answers
+  var questions = _guidedIntakeState.aiQuestions;
+  questions.forEach(function(q) {
+    var el = document.getElementById('gi-q-' + q.id);
+    if (el) _guidedIntakeState.followUpAnswers[q.id] = (el.value || '').trim();
+  });
+
+  // Show loading
+  var body = document.getElementById('idea-modal-body');
+  body.innerHTML = '<div style="text-align:center;padding:40px 20px;"><div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:8px;">Generating project summary...</div><div style="font-size:12px;color:var(--text-muted);">Writing a structured summary for the review team.</div><div style="margin-top:16px;"><div style="width:40px;height:40px;border:3px solid #E8E6DF;border-top-color:var(--navy);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div></div></div>';
+  var footer = document.querySelector('#idea-modal .idea-modal-footer');
+  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="closeIdeaFormDirect()">Cancel</button>';
+
+  // Build Q&A text for the summary prompt
+  var qaText = '';
+  var sa = _guidedIntakeState.starterAnswers;
+  qaText += 'Title: ' + sa.title + '\n';
+  qaText += 'Category: ' + sa.category + '\n';
+  qaText += 'Problem/Need: ' + sa.problem + '\n';
+  if (sa.dept) qaText += 'Requesting Department: ' + sa.dept + '\n';
+  if (sa.urgency) qaText += 'Urgency: ' + sa.urgency + '\n';
+  if (sa.deadline) qaText += 'Deadline: ' + sa.deadline + '\n\n';
+  qaText += 'Follow-up Q&A:\n';
+  _guidedIntakeState.aiQuestions.forEach(function(q) {
+    var ans = _guidedIntakeState.followUpAnswers[q.id] || '(no answer)';
+    qaText += '- ' + q.question + '\n  Answer: ' + ans + '\n';
+  });
+
+  try {
+    var summaryPrompt = 'You are helping a City of Tucson GIS/Data Analytics team summarize a project intake submission for leadership review.\n\n' +
+      'Here is all the information collected:\n\n' + qaText + '\n\n' +
+      'Write a structured project summary with these sections:\n' +
+      '1. **Project Description** — A clear 2-3 sentence description of what this project would deliver.\n' +
+      '2. **Business Value** — Why this matters, who benefits, and what impact it would have.\n' +
+      '3. **Technical Considerations** — What tools, data sources, skills, or dependencies are involved.\n' +
+      '4. **Suggested Size** — Estimate the project size as S (1-2 weeks), M (3-6 weeks), L (7-13 weeks), or XL (14+ weeks) with a brief justification.\n' +
+      '5. **Risks & Open Questions** — Any concerns, unknowns, or things that need clarification.\n\n' +
+      'Write in a professional but conversational tone. Keep each section to 2-3 sentences. Do not use markdown formatting — use plain text with section labels.';
+
+    var response = await fetch(AI_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: summaryPrompt }]
+      })
+    });
+    var data = await response.json();
+    var summaryText = '';
+    if (data.content) data.content.forEach(function(c) { if (c.type === 'text') summaryText += c.text; });
+    _guidedIntakeState.aiSummary = summaryText.trim();
+    renderGuidedStep3();
+  } catch (err) {
+    console.error('AI summary generation failed:', err);
+    _guidedIntakeState.aiSummary = 'Summary generation failed. The raw Q&A responses have been saved below.';
+    renderGuidedStep3();
+    showToast('Could not generate AI summary. Responses will be saved as-is.', 'warn');
+  }
+}
+
+function renderGuidedStep3() {
+  var header = document.querySelector('#idea-modal .idea-modal-header');
+  if (header) {
+    header.querySelector('h2').textContent = '💡 Guided Project Intake — Step 3 of 3';
+    header.querySelector('p').textContent = 'Review the AI-generated summary and submit your idea.';
+  }
+  var sa = _guidedIntakeState.starterAnswers;
+  var body = document.getElementById('idea-modal-body');
+
+  var html = '<div style="display:flex;gap:6px;margin-bottom:16px;">';
+  html += '<div style="flex:1;height:4px;background:var(--navy);border-radius:2px;"></div>';
+  html += '<div style="flex:1;height:4px;background:var(--navy);border-radius:2px;"></div>';
+  html += '<div style="flex:1;height:4px;background:var(--navy);border-radius:2px;"></div>';
+  html += '</div>';
+
+  // Summary card
+  html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:14px 16px;margin-bottom:12px;">';
+  html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:0.04em;margin-bottom:4px;">PROJECT TITLE</div>';
+  html += '<div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:8px;">' + esc(sa.title) + '</div>';
+  html += '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--text-muted);">';
+  html += '<span>📂 ' + esc(sa.category) + '</span>';
+  if (sa.dept) html += '<span>🏛 ' + esc(sa.dept) + '</span>';
+  if (sa.urgency) html += '<span>⏱ ' + esc(sa.urgency) + '</span>';
+  html += '<span>👤 ' + esc(sa.contact) + '</span>';
+  html += '</div>';
+  html += '</div>';
+
+  // AI Summary (editable)
+  html += '<div class="idea-field">';
+  html += '<label>AI-Generated Summary <span style="font-weight:400;color:var(--text-muted);">(you can edit this)</span></label>';
+  html += '<textarea id="gi-summary" class="idea-textarea" rows="12" style="font-size:13px;line-height:1.6;">' + esc(_guidedIntakeState.aiSummary) + '</textarea>';
+  html += '</div>';
+
+  // Team lead check
+  html += '<div style="background:#FEF3C7;border:1.5px solid #F59E0B;border-radius:6px;padding:12px 14px;font-size:12px;color:#92400E;line-height:1.6;margin-bottom:8px;">';
+  html += '<strong>⚠️ Before you submit</strong> — have you discussed this idea with your team lead?';
+  html += '</div>';
+  html += '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;color:var(--text-body);line-height:1.5;">';
+  html += '<input type="checkbox" id="gi-team-check" style="margin-top:3px;accent-color:var(--orange);width:15px;height:15px;flex-shrink:0;">';
+  html += '<span>I have discussed this idea with my team lead and they are aware of the submission.</span>';
+  html += '</label>';
+
+  body.innerHTML = html;
+  var footer = document.querySelector('#idea-modal .idea-modal-footer');
+  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="renderGuidedStep2()">← Back</button><button class="idea-btn-submit" onclick="submitGuidedIdeaForm()">💡 Submit Idea</button>';
+}
+
+async function submitGuidedIdeaForm() {
+  var teamCheck = document.getElementById('gi-team-check');
+  if (teamCheck && !teamCheck.checked) {
+    teamCheck.closest('label').style.color = '#EF4444';
+    teamCheck.style.outline = '2px solid #EF4444';
+    showToast('Please confirm you\'ve discussed this with your team lead.', 'warn');
+    return;
+  }
+
+  var sa = _guidedIntakeState.starterAnswers;
+  var summary = (document.getElementById('gi-summary').value || '').trim();
+
+  // Business rule: unique title
+  var duplicate = PROJECTS.find(function(p) { return p.title.toLowerCase() === sa.title.toLowerCase(); });
+  if (duplicate) { showToast('A project named "' + sa.title + '" already exists.', 'warn'); return; }
+
+  // Build intake_responses JSON
+  var intakeData = {
+    starterAnswers: sa,
+    aiQuestions: _guidedIntakeState.aiQuestions.map(function(q) {
+      return { question: q.question, answer: _guidedIntakeState.followUpAnswers[q.id] || '' };
+    }),
+    aiSummary: summary,
+    submittedVia: 'guided-intake',
+    submittedAt: new Date().toISOString()
+  };
+
+  var todayStr = new Date().toISOString().slice(0, 10);
+
+  await DataStore.createProject({
+    title:             sa.title,
+    status:            'Idea',
+    priority:          null,
+    contact:           sa.contact,
+    other_members:     null,
+    partner_dept:      sa.dept || null,
+    itd_team:          null,
+    category:          sa.category,
+    start:             todayStr,
+    end:               null,
+    actual_end:        null,
+    problem_statement: sa.problem,
+    description:       summary,
+    urgency_notes:     (sa.urgency ? sa.urgency + (sa.deadline ? ' — ' + sa.deadline : '') : sa.deadline) || null,
+    intake_responses:  JSON.stringify(intakeData),
+  });
+
+  closeIdeaFormDirect();
+  markDirty();
+
+  // Reset header
+  var header = document.querySelector('#idea-modal .idea-modal-header');
+  if (header) {
+    header.querySelector('h2').textContent = '💡 Submit a New Idea';
+    header.querySelector('p').textContent = 'Share your project idea with the analytics team. Leadership will review it every Monday.';
+  }
+
+  showToast('Idea "' + sa.title + '" submitted with AI-generated summary!', 'success');
+  markDataDirty();
+  render();
 }
 
 function closeIdeaForm(e) {
@@ -15579,7 +15973,7 @@ function buildPreferencesPanel() {
 
   // Beta Features section — only show features with flag === 'beta'
   var betaKeys = Object.keys(BETA_FEATURES).filter(function(key) {
-    var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY };
+    var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY, aiIntake: FEATURE_AI_INTAKE };
     return flags[key] === 'beta';
   });
 
