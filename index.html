@@ -3514,7 +3514,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.17.1.0002';
+const APP_VERSION = '0.17.2.0005';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -7084,6 +7084,13 @@ const ARCGIS_CONFIG = {
   timeEntriesUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/time_series/FeatureServer/0',
   statusHistoryUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/status_history/FeatureServer/0',
   issuesUrl:        'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/issues/FeatureServer/0',
+  // Public views — ArcGIS Online Item IDs for read-only feature layer views.
+  // Create views in ArcGIS Online: Content → source layer → Manage → Create View Layer.
+  // Share the views publicly or org-wide. Find the Item ID in the URL bar of the item page.
+  // Leave empty to disable read-only public access.
+  publicProjectsItemId: '8d28b20af78d4e01bffbac8abd9dd8ed',
+  publicTasksItemId:    '1b24f6c11021452e938747ff18cd5340',
+  publicConfigItemId:   '693882a97ea84c92ad2b41f7d35fa529',
 };
 
 // ── AI TASK SUGGESTION PROXY ─────────────────────────────────────────
@@ -7558,24 +7565,61 @@ async function agolQueryPublic(serviceUrl, where) {
   return allFeatures;
 }
 
-// Load just projects and tasks without authentication (read-only mode)
-async function loadPublicData() {
-  showLoadingOverlay('Loading project data...');
-  try {
-    var projectFeatures = await agolQueryPublic(ARCGIS_CONFIG.projectsUrl);
-    PROJECTS.length = 0;
-    projectFeatures.forEach(function(f) { PROJECTS.push(agolProjectToLocal(f)); });
+// Resolve an ArcGIS Online Item ID to its REST endpoint URL
+async function resolveItemId(itemId) {
+  if (!itemId) return null;
+  var resp = await fetch('https://www.arcgis.com/sharing/rest/content/items/' + itemId + '?f=json');
+  if (!resp.ok) throw new Error('Failed to resolve Item ID: ' + itemId);
+  var data = await resp.json();
+  if (data.error) throw new Error('Item ID error: ' + (data.error.message || JSON.stringify(data.error)));
+  if (!data.url) throw new Error('Item ' + itemId + ' has no service URL');
+  // Append /0 for the first layer if not already present
+  var url = data.url;
+  if (!url.match(/\/\d+$/)) url += '/0';
+  return url;
+}
 
-    updateLoadingOverlay('Loaded ' + PROJECTS.length + ' projects. Loading tasks...');
-    var taskFeatures = await agolQueryPublic(ARCGIS_CONFIG.tasksUrl);
-    TASKS.length = 0;
-    taskFeatures.forEach(function(f) { TASKS.push(agolTaskToLocal(f)); });
+// Load just projects and tasks without authentication (read-only mode)
+// Resolves Item IDs to REST URLs, then queries without a token.
+async function loadPublicData() {
+  var projItemId = ARCGIS_CONFIG.publicProjectsItemId;
+  var taskItemId = ARCGIS_CONFIG.publicTasksItemId;
+  var configItemId = ARCGIS_CONFIG.publicConfigItemId;
+
+  // If no public Item IDs are configured, don't attempt public load
+  if (!projItemId && !taskItemId) {
+    console.log('No public view Item IDs configured. Skipping public data load.');
+    return false;
+  }
+
+  showLoadingOverlay('Resolving public data sources...');
+  try {
+    // Resolve Item IDs to REST URLs
+    var projUrl = projItemId ? await resolveItemId(projItemId) : null;
+    var taskUrl = taskItemId ? await resolveItemId(taskItemId) : null;
+    var configUrl = configItemId ? await resolveItemId(configItemId) : null;
+
+    if (projUrl) {
+      updateLoadingOverlay('Loading projects...');
+      var projectFeatures = await agolQueryPublic(projUrl);
+      PROJECTS.length = 0;
+      projectFeatures.forEach(function(f) { PROJECTS.push(agolProjectToLocal(f)); });
+    }
+
+    if (taskUrl) {
+      updateLoadingOverlay('Loaded ' + PROJECTS.length + ' projects. Loading tasks...');
+      var taskFeatures = await agolQueryPublic(taskUrl);
+      TASKS.length = 0;
+      taskFeatures.forEach(function(f) { TASKS.push(agolTaskToLocal(f)); });
+    }
 
     // Try to load app config publicly too
-    try {
-      var configFeatures = await agolQueryPublic(ARCGIS_CONFIG.appConfigUrl);
-      applyAppConfig(configFeatures);
-    } catch(e) { console.warn('Public config load failed, using defaults:', e); }
+    if (configUrl) {
+      try {
+        var configFeatures = await agolQueryPublic(configUrl);
+        applyAppConfig(configFeatures);
+      } catch(e) { console.warn('Public config load failed, using defaults:', e); }
+    }
 
     updateLoadingOverlay('All data loaded (read-only).');
     Auth.dataLoaded = true;
