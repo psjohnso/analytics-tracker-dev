@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.17.0.0001 (see Version History at bottom)
+> **Current Version:** 0.17.1.0001 (see Version History at bottom)
 
 ---
 
@@ -1567,6 +1567,7 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.16.0.0006 | Replace velocity chart with open task priority breakdown (stacked bar + count cards) |
 | 0.16.0.0007 | Clarify dashboard card titles to specify projects, tasks, or both |
 | 0.17.0.0001 | AI-Guided Project Intake (new capability, beta): 3-step guided idea form with AI-generated follow-up questions and project summary; FEATURE_AI_INTAKE flag; starter questions (title, category, problem, dept, urgency, deadline); AI generates 4-6 tailored follow-ups via Cloudflare Worker proxy; AI-generated structured summary (description, value, technical considerations, size estimate, risks); editable summary before submission; intake_responses JSON field; fallback to generic questions when AI unavailable; existing simple form preserved for non-beta users |
+| 0.17.1.0001 | Session guard and form auto-save: proactive token check before all edit operations (openFormModal, openIdeaForm, markTaskComplete, applyBatchUpdate, handleFormDelete, mwQuickStatus); styled session expired modal with re-auth button; form state auto-saved to localStorage every 15 seconds while form is open; auto-save restore prompt after re-authentication; 5-minute token expiry warning toast with refresh link; showToast updated to support HTML content, custom duration, and clickable links |
 
 ---
 

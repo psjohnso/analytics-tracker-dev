@@ -3477,7 +3477,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.17.0.0001';
+const APP_VERSION = '0.17.1.0001';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -7124,6 +7124,160 @@ function clearAgolToken() {
   sessionStorage.removeItem('agol_token_expires');
 }
 
+// ── SESSION GUARD: check token before any edit operation ─────────
+function isTokenValid() {
+  var expires = sessionStorage.getItem('agol_token_expires');
+  if (!expires) return false;
+  return Date.now() < parseInt(expires, 10);
+}
+
+function getTokenMinutesRemaining() {
+  var expires = sessionStorage.getItem('agol_token_expires');
+  if (!expires) return 0;
+  return Math.max(0, Math.round((parseInt(expires, 10) - Date.now()) / 60000));
+}
+
+function ensureValidSession(callback) {
+  if (!Auth.loggedIn) {
+    showToast('You must be signed in to make changes.', 'warn');
+    return false;
+  }
+  if (isTokenValid()) {
+    if (callback) callback();
+    return true;
+  }
+  // Token expired — show re-auth modal
+  showSessionExpiredModal(callback);
+  return false;
+}
+
+function showSessionExpiredModal(pendingCallback) {
+  var backdrop = document.getElementById('session-expired-backdrop');
+  if (!backdrop) return;
+  window._sessionPendingCallback = pendingCallback || null;
+  backdrop.style.display = 'flex';
+}
+
+function sessionReAuth() {
+  // Save any pending form state before redirecting
+  autoSaveFormState();
+  var backdrop = document.getElementById('session-expired-backdrop');
+  if (backdrop) backdrop.style.display = 'none';
+  window.location.replace(agolAuthorizeUrl());
+}
+
+function sessionDismiss() {
+  var backdrop = document.getElementById('session-expired-backdrop');
+  if (backdrop) backdrop.style.display = 'none';
+  window._sessionPendingCallback = null;
+}
+
+// ── AUTO-SAVE: preserve form edits in localStorage ──────────────
+function autoSaveFormState() {
+  // Check if the form modal is currently open
+  var formModal = document.getElementById('form-modal-backdrop');
+  if (!formModal || !formModal.classList.contains('open')) return;
+
+  var formData = {
+    mode: Editor.mode,
+    editId: Editor.editId,
+    timestamp: Date.now(),
+    fields: {}
+  };
+
+  // Collect all form field values
+  var inputs = document.querySelectorAll('#fm-body input, #fm-body select, #fm-body textarea');
+  inputs.forEach(function(el) {
+    if (el.id) {
+      if (el.type === 'checkbox') formData.fields[el.id] = el.checked;
+      else formData.fields[el.id] = el.value;
+    }
+  });
+
+  if (Object.keys(formData.fields).length > 0) {
+    try { localStorage.setItem('tracker_form_autosave', JSON.stringify(formData)); } catch(e) {}
+  }
+}
+
+function checkForAutoSavedForm() {
+  try {
+    var saved = localStorage.getItem('tracker_form_autosave');
+    if (!saved) return;
+    var formData = JSON.parse(saved);
+    // Only restore if less than 30 minutes old
+    if (Date.now() - formData.timestamp > 30 * 60 * 1000) {
+      localStorage.removeItem('tracker_form_autosave');
+      return;
+    }
+    // Show restore prompt
+    showAutoSaveRestorePrompt(formData);
+  } catch(e) {
+    localStorage.removeItem('tracker_form_autosave');
+  }
+}
+
+function showAutoSaveRestorePrompt(formData) {
+  var isProject = formData.mode.indexOf('project') >= 0;
+  var isEdit = formData.mode.indexOf('edit') >= 0;
+  var type = isProject ? 'project' : 'task';
+  var action = isEdit ? 'editing a ' + type : 'creating a new ' + type;
+  var minutesAgo = Math.round((Date.now() - formData.timestamp) / 60000);
+  var timeLabel = minutesAgo < 1 ? 'just now' : minutesAgo + ' minute' + (minutesAgo !== 1 ? 's' : '') + ' ago';
+
+  showToast('You have unsaved ' + type + ' edits from ' + timeLabel + '. <a href="#" onclick="event.preventDefault();restoreAutoSavedForm();" style="color:#002669;font-weight:700;text-decoration:underline;">Restore</a> or <a href="#" onclick="event.preventDefault();dismissAutoSave();" style="color:#6B7280;text-decoration:underline;">discard</a>.', 'info', 15000);
+}
+
+function restoreAutoSavedForm() {
+  try {
+    var saved = localStorage.getItem('tracker_form_autosave');
+    if (!saved) return;
+    var formData = JSON.parse(saved);
+
+    // Open the form in the same mode
+    openFormModal(formData.mode, formData.editId);
+
+    // Wait for form to render, then restore field values
+    setTimeout(function() {
+      Object.keys(formData.fields).forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (el.type === 'checkbox') el.checked = formData.fields[id];
+        else el.value = formData.fields[id];
+        // Trigger change event for dependent fields
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      showToast('Form edits restored.', 'success');
+    }, 200);
+
+    localStorage.removeItem('tracker_form_autosave');
+  } catch(e) {
+    showToast('Could not restore form data.', 'error');
+    localStorage.removeItem('tracker_form_autosave');
+  }
+}
+
+function dismissAutoSave() {
+  localStorage.removeItem('tracker_form_autosave');
+  showToast('Unsaved edits discarded.', 'info');
+}
+
+// Auto-save form state periodically while form is open
+setInterval(function() {
+  var formModal = document.getElementById('form-modal-backdrop');
+  if (formModal && formModal.classList.contains('open')) {
+    autoSaveFormState();
+  }
+}, 15000); // every 15 seconds
+
+// Check for token expiry warning every 2 minutes
+setInterval(function() {
+  if (!Auth.loggedIn) return;
+  var mins = getTokenMinutesRemaining();
+  if (mins > 0 && mins <= 5) {
+    showToast('Your session expires in ' + mins + ' minute' + (mins !== 1 ? 's' : '') + '. Save your work soon or <a href="#" onclick="event.preventDefault();sessionReAuth();" style="color:#002669;font-weight:700;text-decoration:underline;">refresh your session</a>.', 'warn', 10000);
+  }
+}, 120000);
+
 // ── LOGIN / LOGOUT STATE MANAGEMENT ──────────────────────────────────
 
 function toggleAuth() {
@@ -7806,6 +7960,11 @@ async function loadArcGISData() {
     // Apply default tab preference after everything is loaded
     if (Auth.loggedIn && UserPrefs.defaultTab && UserPrefs.defaultTab !== 'overview') {
       switchTab(UserPrefs.defaultTab);
+    }
+
+    // Check for auto-saved form state from a previous session
+    if (Auth.loggedIn) {
+      setTimeout(function() { checkForAutoSavedForm(); }, 1000);
     }
 
     return true;
@@ -9906,7 +10065,7 @@ function buildTaskForm(t) {
 }
 
 function openFormModal(mode, id) {
-  if (!Auth.loggedIn) { showToast('You must be signed in to make changes.', 'warn'); return; }
+  if (!ensureValidSession(function() { openFormModal(mode, id); })) return;
   refreshEnums(); // Rebuild enum lists from live data so new values are always present
   Editor.mode   = mode;
   Editor.editId = (id !== undefined) ? id : null;
@@ -9995,6 +10154,8 @@ function closeFormModal() {
   document.getElementById('form-modal-backdrop').classList.remove('open');
   var btn = document.getElementById('fm-save-btn');
   if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+  // Clear auto-saved form state
+  try { localStorage.removeItem('tracker_form_autosave'); } catch(e) {}
 }
 
 function getVal(id) {
@@ -10235,7 +10396,7 @@ async function handleFormSubmit(andDownload) {
 }
 
 async function handleFormDelete() {
-  if (!Auth.loggedIn) { showToast('You must be signed in to delete records.', 'warn'); return; }
+  if (!ensureValidSession(function() { handleFormDelete(); })) return;
   const isProject = Editor.mode.indexOf('project') >= 0;
   if (isProject) {
     var proj = PROJECTS.find(function(p) { return p.objectId == Editor.editId; });
@@ -10408,7 +10569,7 @@ function dismissPhaseSuggestions() {
 }
 
 async function markTaskComplete(taskId) {
-  if (!Auth.loggedIn) { showToast('You must be signed in.', 'warn'); return; }
+  if (!ensureValidSession(function() { markTaskComplete(taskId); })) return;
   const task = TASKS.find(function(t) { return t.objectId == taskId; });
   if (!task) return;
   const today = new Date();
@@ -10569,7 +10730,7 @@ function updateBatchBar() {
 }
 
 async function applyBatchUpdate() {
-  if (!Auth.loggedIn) { showToast('You must be signed in.', 'warn'); return; }
+  if (!ensureValidSession(function() { applyBatchUpdate(); })) return;
   var ids = getSelectedTaskIds();
   if (ids.length === 0) { showToast('No tasks selected.', 'warn'); return; }
 
@@ -12026,7 +12187,7 @@ function buildForecastPage() {
 // ─── IDEA SUBMISSION ──────────────────────────────────────────────────
 
 function openIdeaForm() {
-  if (!Auth.loggedIn) { showToast('You must be signed in to submit ideas.', 'warn'); return; }
+  if (!ensureValidSession(function() { openIdeaForm(); })) return;
   refreshEnums();
   if (isFeatureOn('aiIntake')) {
     openGuidedIdeaForm();
@@ -12839,7 +13000,7 @@ function renderIdeaAvail(projectId) {
 
 // ─── TOAST NOTIFICATION ───────────────────────────────────────────────
 
-function showToast(msg, type) {
+function showToast(msg, type, customDuration) {
   let t = document.getElementById('app-toast');
   if (!t) {
     t = document.createElement('div');
@@ -12847,7 +13008,7 @@ function showToast(msg, type) {
     t.style.cssText = `position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);
       color:#fff;padding:10px 22px;border-radius:24px;max-width:500px;text-align:center;
       font-size:13px;font-weight:700;font-family:Lato,sans-serif;z-index:9999;
-      opacity:0;transition:opacity 0.25s ease,transform 0.25s ease;pointer-events:none;
+      opacity:0;transition:opacity 0.25s ease,transform 0.25s ease;
       backdrop-filter:blur(8px);box-shadow:0 4px 20px rgba(0,0,0,0.25);`;
     document.body.appendChild(t);
   }
@@ -12855,10 +13016,12 @@ function showToast(msg, type) {
     error: 'rgba(194,66,0,0.95)',
     warn:  'rgba(180,83,9,0.95)',
     info:  'rgba(0,38,105,0.92)',
+    success: 'rgba(39,80,10,0.92)',
   };
   t.style.background = colors[type] || colors.info;
-  t.textContent = msg;
-  const duration = type === 'error' ? 5000 : type === 'warn' ? 4000 : 3000;
+  t.innerHTML = msg;
+  t.style.pointerEvents = 'auto';
+  const duration = customDuration || (type === 'error' ? 5000 : type === 'warn' ? 4000 : 3000);
   requestAnimationFrame(() => {
     t.style.opacity = '1';
     t.style.transform = 'translateX(-50%) translateY(0)';
@@ -12866,6 +13029,7 @@ function showToast(msg, type) {
     t._timer = setTimeout(() => {
       t.style.opacity = '0';
       t.style.transform = 'translateX(-50%) translateY(10px)';
+      t.style.pointerEvents = 'none';
     }, duration);
   });
 }
@@ -14600,7 +14764,13 @@ async function mwQuickStatus(selectEl) {
   var type = selectEl.dataset.type;
   var id = parseInt(selectEl.dataset.id);
   var newStatus = selectEl.value;
-  if (!Auth.loggedIn) { showToast('You must be signed in.', 'warn'); return; }
+  if (!Auth.loggedIn || !isTokenValid()) {
+    showToast('Your session has expired. Please sign in again.', 'warn');
+    var oldItem = type === 'task' ? TASKS.find(function(t) { return t.objectId == id; }) : PROJECTS.find(function(p) { return p.objectId == id; });
+    if (oldItem) selectEl.value = oldItem.status;
+    showSessionExpiredModal();
+    return;
+  }
 
   var today = new Date();
   var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
@@ -17066,6 +17236,19 @@ async function absValueChanged(input) {
     <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
       <button id="sr-cancel-btn" style="padding:6px 16px;font-size:12px;font-weight:700;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:var(--white);color:var(--text-muted);font-family:'Lato',sans-serif;">Cancel</button>
       <button id="sr-confirm-btn" style="padding:6px 16px;font-size:12px;font-weight:700;background:var(--navy);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Lato',sans-serif;">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="session-expired-backdrop" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10000;align-items:center;justify-content:center;">
+  <div style="background:var(--white);border-radius:12px;border:1px solid var(--border);padding:28px 32px;width:400px;max-width:90vw;font-family:'Lato',sans-serif;text-align:center;">
+    <div style="font-size:40px;margin-bottom:12px;">🔒</div>
+    <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px;">Session Expired</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px;line-height:1.6;">Your ArcGIS Online session has expired. You need to sign in again to save changes.</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:20px;">Don't worry — if you had a form open, your edits will be saved and can be restored after signing back in.</div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button onclick="sessionDismiss()" style="padding:8px 20px;font-size:13px;font-weight:700;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:var(--white);color:var(--text-muted);font-family:'Lato',sans-serif;">Cancel</button>
+      <button onclick="sessionReAuth()" style="padding:8px 24px;font-size:13px;font-weight:700;background:var(--navy);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Lato',sans-serif;">Sign In Again</button>
     </div>
   </div>
 </div>
