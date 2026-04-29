@@ -1555,9 +1555,40 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .read-only-mode .modal-edit-btn,
 .read-only-mode .modal-del-btn,
 .read-only-mode #unsaved-dot,
-.read-only-mode #weekly-filter-btn {
+.read-only-mode #weekly-filter-btn,
+.read-only-mode #preview-mode-btn,
+.read-only-mode #tab-mywork,
+.read-only-mode #tab-resources,
+.read-only-mode #tab-forecast,
+.read-only-mode #tab-insights,
+.read-only-mode #tab-settings,
+.read-only-mode #tab-issues,
+.read-only-mode .detail-edit-btn,
+.read-only-mode .detail-delete-btn,
+.read-only-mode .detail-complete-btn,
+.read-only-mode .mw-quick-status,
+.read-only-mode .batch-toolbar {
   display: none !important;
 }
+
+.read-only-banner {
+  background: linear-gradient(135deg, #002669 0%, #0C447C 100%);
+  color: #fff;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-family: 'Lato', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.read-only-banner a {
+  color: #FFDB22;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.read-only-banner a:hover { text-decoration: underline; }
 
 /* ── SAVE BUTTON + UNSAVED INDICATOR ───────────────── */
 #btn-save-file {
@@ -2643,6 +2674,12 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   </div>
 </header>
 
+<div id="read-only-banner" class="read-only-banner" style="display:none;">
+  <span>📖 You are viewing this application in read-only mode.</span>
+  <a onclick="toggleAuth()">Sign in</a>
+  <span>for full access including My Work, editing, and idea submission.</span>
+</div>
+
 <!-- BODY -->
 <div class="app-body">
   <!-- TAB BAR — full width above sidebar + content -->
@@ -3477,7 +3514,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.17.1.0001';
+const APP_VERSION = '0.17.1.0002';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -4720,6 +4757,12 @@ function updateFilterIndicator() {
 
 // ─── TAB SWITCH ───────────────────────────────────────────────────────
 function switchTab(tab, preserveFilters) {
+  // Guard: auth-only tabs require sign-in
+  var authOnlyTabs = ['mywork', 'resources', 'forecast', 'insights', 'issues', 'settings'];
+  if (!Auth.loggedIn && authOnlyTabs.indexOf(tab) >= 0) {
+    showToast('Sign in to access ' + tab + '.', 'warn');
+    return;
+  }
   currentDetail = null;
   currentTab = tab;
   currentPage = 1;
@@ -7143,10 +7186,9 @@ function ensureValidSession(callback) {
     return false;
   }
   if (isTokenValid()) {
-    if (callback) callback();
-    return true;
+    return true; // Token is valid — caller continues normally
   }
-  // Token expired — show re-auth modal
+  // Token expired — show re-auth modal (callback retries after re-auth)
   showSessionExpiredModal(callback);
   return false;
 }
@@ -7311,6 +7353,7 @@ function applyAuthState() {
   const btn = document.getElementById('auth-toggle-btn');
   const userDisplay = document.getElementById('user-display');
   const roleBadge = document.getElementById('user-role-badge');
+  const banner = document.getElementById('read-only-banner');
 
   // Selectors for all editable controls
   const editSelectors = [
@@ -7324,12 +7367,14 @@ function applyAuthState() {
     // Signed in — show user info, enable editing
     btn.textContent = 'Sign Out';
     document.body.classList.remove('read-only-mode');
+    if (banner) banner.style.display = 'none';
   } else {
-    // Signed out — hide user info, disable editing
+    // Signed out — hide user info, disable editing, show banner
     btn.textContent = 'Sign In';
     if (userDisplay) userDisplay.style.display = 'none';
     if (roleBadge) roleBadge.style.display = 'none';
     document.body.classList.add('read-only-mode');
+    if (banner) banner.style.display = 'flex';
   }
 }
 
@@ -7487,6 +7532,60 @@ async function agolQuery(serviceUrl, where) {
     offset += features.length;
   }
   return allFeatures;
+}
+
+// Query ArcGIS without a token (for read-only public access)
+async function agolQueryPublic(serviceUrl, where) {
+  if (!where) where = '1=1';
+  var allFeatures = [];
+  var offset = 0;
+  var batchSize = 1000;
+  var hasMore = true;
+  while (hasMore) {
+    var params = new URLSearchParams({
+      where: where, outFields: '*', f: 'json',
+      resultOffset: String(offset), resultRecordCount: String(batchSize),
+    });
+    var resp = await fetch(serviceUrl + '/query?' + params.toString());
+    if (!resp.ok) throw new Error('Public query failed: ' + resp.status);
+    var data = await resp.json();
+    if (data.error) throw new Error('Public query error: ' + (data.error.message || JSON.stringify(data.error)));
+    var features = data.features || [];
+    allFeatures = allFeatures.concat(features);
+    hasMore = features.length >= batchSize && data.exceededTransferLimit !== false;
+    offset += features.length;
+  }
+  return allFeatures;
+}
+
+// Load just projects and tasks without authentication (read-only mode)
+async function loadPublicData() {
+  showLoadingOverlay('Loading project data...');
+  try {
+    var projectFeatures = await agolQueryPublic(ARCGIS_CONFIG.projectsUrl);
+    PROJECTS.length = 0;
+    projectFeatures.forEach(function(f) { PROJECTS.push(agolProjectToLocal(f)); });
+
+    updateLoadingOverlay('Loaded ' + PROJECTS.length + ' projects. Loading tasks...');
+    var taskFeatures = await agolQueryPublic(ARCGIS_CONFIG.tasksUrl);
+    TASKS.length = 0;
+    taskFeatures.forEach(function(f) { TASKS.push(agolTaskToLocal(f)); });
+
+    // Try to load app config publicly too
+    try {
+      var configFeatures = await agolQueryPublic(ARCGIS_CONFIG.appConfigUrl);
+      applyAppConfig(configFeatures);
+    } catch(e) { console.warn('Public config load failed, using defaults:', e); }
+
+    updateLoadingOverlay('All data loaded (read-only).');
+    Auth.dataLoaded = true;
+    hideLoadingOverlay();
+    return true;
+  } catch (err) {
+    console.warn('Public data load failed:', err);
+    hideLoadingOverlay();
+    return false;
+  }
 }
 
 /**
@@ -10852,53 +10951,77 @@ async function batchDeleteTasks() {
   // Set initial sidebar filter order (projects on top for overview)
   reorderSidebarFilters(currentTab);
 
-  // Step 1: Ensure we have a valid OAuth token.
-  // If no token, the user will be redirected to ArcGIS Online login
-  // and this function will not continue past this point.
-  const token = await ensureAgolToken();
-  if (!token) return; // redirect to login is in progress
+  // Step 1: Check for existing token (from hash or sessionStorage)
+  // Do NOT redirect to login if missing — try public read-only instead
+  Auth.token = extractTokenFromHash();
+  if (!Auth.token) Auth.token = getStoredToken();
 
-  // Mark as logged in and update UI
-  Auth.loggedIn = true;
-  applyAuthState();
+  if (Auth.token) {
+    // ── AUTHENTICATED PATH ──────────────────────────────
+    Auth.loggedIn = true;
+    applyAuthState();
 
-  // Show My Work tab immediately for all logged-in users
-  const myWorkTabEarly = document.getElementById('tab-mywork');
-  if (myWorkTabEarly) myWorkTabEarly.style.display = '';
+    // Show My Work tab immediately for all logged-in users
+    const myWorkTabEarly = document.getElementById('tab-mywork');
+    if (myWorkTabEarly) myWorkTabEarly.style.display = '';
 
-  // Fetch and display the logged-in user's name (must complete before render
-  // so Auth.isTeamLead and Auth.fullName are available for My Work tab)
-  await fetchAgolUserInfo(token);
+    // Fetch and display the logged-in user's name
+    await fetchAgolUserInfo(Auth.token);
 
-  // Step 2: Load data from ArcGIS Online
-  const loaded = await loadArcGISData();
-  if (loaded) {
-    // Set default filters: current user's open projects and tasks
-    if (Auth.fullName) {
-      activeFilters.status = [...OPEN_PROJECT_STATUSES];
-      activeFilters.member = [Auth.fullName];
+    // Load data from ArcGIS Online (with token)
+    const loaded = await loadArcGISData();
+    if (loaded) {
+      if (Auth.fullName) {
+        activeFilters.status = [...OPEN_PROJECT_STATUSES];
+        activeFilters.member = [Auth.fullName];
+      }
+      markDataDirty();
+      render();
+    } else {
+      markDataDirty();
+      render();
     }
+
+    // Load aggregated task hours
+    await loadTaskHours();
+
+    // Load personal time entries
+    if (Auth.fullName && isTimeTrackingEnabled()) {
+      await loadTimeEntries();
+    }
+
+    // Load issues
+    await loadIssues();
+
     markDataDirty();
     render();
+    window.scrollTo(0, 0);
+
   } else {
-    markDataDirty();
-    render();
+    // ── READ-ONLY PATH (no token) ───────────────────────
+    Auth.loggedIn = false;
+    applyAuthState();
+
+    // Try to load data without authentication
+    var publicLoaded = await loadPublicData();
+
+    if (publicLoaded) {
+      // Public data loaded — show read-only view
+      activeFilters.status = [...OPEN_PROJECT_STATUSES];
+      markDataDirty();
+      render();
+      window.scrollTo(0, 0);
+    } else {
+      // Public load failed — services require auth, show login prompt
+      document.getElementById('content-area').innerHTML =
+        '<div style="text-align:center;padding:60px 20px;">' +
+        '<div style="font-size:40px;margin-bottom:16px;">🔒</div>' +
+        '<div style="font-size:20px;font-weight:700;color:var(--navy);margin-bottom:8px;">Sign in to access the Analytics Project Tracker</div>' +
+        '<div style="font-size:14px;color:var(--text-muted);margin-bottom:24px;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.6;">This application requires an ArcGIS Online account with access to the City of Tucson organization.</div>' +
+        '<button onclick="toggleAuth()" style="padding:10px 28px;font-size:14px;font-weight:700;background:var(--navy);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:Lato,sans-serif;">Sign In with ArcGIS Online</button>' +
+        '</div>';
+    }
   }
-
-  // Step 3: Load aggregated task hours (visible to all users)
-  await loadTaskHours();
-
-  // Step 4: Load personal time entries (requires Auth.fullName from step 1)
-  if (Auth.fullName && isTimeTrackingEnabled()) {
-    await loadTimeEntries();
-  }
-
-  // Step 5: Load issues
-  await loadIssues();
-
-  markDataDirty();
-  render(); // re-render with time data
-  window.scrollTo(0, 0); // ensure page starts at top after full load
 })();
 
 
