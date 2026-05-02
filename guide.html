@@ -106,7 +106,7 @@ li strong { color: var(--navy); }
 <header class="guide-header">
   <div>
     <h1>Analytics Project Tracker <span class="subtitle">User Guide</span></h1>
-    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">Updated for v0.14.0.0001</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">Updated for v0.18.0.0001</div>
   </div>
   <a href="javascript:void(0)" onclick="window.close();" class="back-btn">← Back to Tracker</a>
 </header>
@@ -129,6 +129,7 @@ li strong { color: var(--navy); }
   <div class="nav-section">Features</div>
   <a href="#strategic-alignment">Strategic Alignment</a>
   <a href="#dependencies">Task Dependencies</a>
+  <a href="#deep-linking">Deep Linking</a>
   <a href="#filters">Filters & Search</a>
   <div class="nav-section">Reference</div>
   <a href="#capacity-math">Capacity & Utilization Math</a>
@@ -168,7 +169,7 @@ li strong { color: var(--navy); }
   <li><strong>📊 Forecast:</strong> (Admin only) Forward-looking capacity projection showing team availability and utilization trends.</li>
   <li><strong>💡 Insights:</strong> (Admin only) Strategic reporting and data analysis views.</li>
   <li><strong>🐛 Issues:</strong> Issue tracking and bug reporting for the team.</li>
-  <li><strong>⚙️ Settings:</strong> (Admin only) Team member management, dropdown list configuration, AI features, and developer tools.</li>
+  <li><strong>⚙️ Settings:</strong> Personal preferences (all users) plus team member management, dropdown list configuration, AI features, and developer tools (admin only).</li>
 </ul>
 
 <h3>Sidebar Filters</h3>
@@ -437,8 +438,23 @@ li strong { color: var(--navy); }
 <p>The Issues tab provides a space for tracking bugs, feature requests, and operational issues. It is visible to all team members.</p>
 
 <!-- ═══════════════════════════════════════════════════ -->
-<h2 id="settings-tab">Settings Tab (Admin Only)</h2>
-<p>The Settings tab is only visible to admins. It uses a two-column layout: a sidebar on the left with navigation groups (People, Project Config, System) and a content panel on the right. Admins can toggle a <strong>"Preview as member"</strong> button in the header to see the app as a standard user would.</p>
+<h2 id="settings-tab">Settings Tab</h2>
+<p>The Settings tab is visible to all logged-in users. Non-admin users see only the <strong>Preferences</strong> section. Admin users see Preferences plus all admin sections (Team Members, Allocations, Dropdown Lists, etc.).</p>
+
+<h3>Preferences (All Users)</h3>
+<p>Personal settings that customize how the application looks and works for you. Preferences are saved to your team member record and persist across sessions and devices. Available preferences:</p>
+<ul>
+  <li><strong>Default tab</strong> — Which tab to show when you first open the application (Overview, My Work, Projects, or Tasks).</li>
+  <li><strong>Projects tab layout</strong> — Default layout for the Projects tab (List view or Grid view).</li>
+  <li><strong>Timeline range</strong> — How many months the My Work timeline shows ahead (3, 6, 9, or 12 months).</li>
+  <li><strong>Start with sidebar collapsed</strong> — Hide the filter sidebar by default.</li>
+  <li><strong>Collapse completed sections</strong> — Start with Complete and Canceled sections collapsed on project detail pages.</li>
+  <li><strong>Show all tasks on timeline</strong> — Show all project tasks on the My Work timeline, or only your assigned tasks.</li>
+  <li><strong>Compact rows</strong> — Use tighter row spacing in tables for a denser view.</li>
+</ul>
+
+<h3>Admin Sections</h3>
+<p>The following sections are only visible to admins. Admins can toggle a <strong>"Preview as member"</strong> button in the header to see the app as a standard user would.</p>
 
 <h3>Team Members</h3>
 <p>Lists all team members with their name, role, team, member group, project allocation percentage, and work schedule. The <strong>Member Group</strong> field classifies each person as either "Data Intelligence" (core team) or "Affiliated" (collaborator from another team) — this controls whether they appear by default in the sidebar member filter.</p>
@@ -494,6 +510,11 @@ li strong { color: var(--navy); }
 <p>Dependencies use a single <code>blocked_by</code> text field on the tasks feature service, storing comma-separated task numbers (e.g., "P-319-003,P-319-005"). Reverse links (which tasks depend on this one) are derived at runtime. To disable the entire feature, set <code>FEATURE_DEPENDENCIES = false</code> in the application code.</p>
 
 <!-- ═══════════════════════════════════════════════════ -->
+<h2 id="deep-linking">Deep Linking</h2>
+<p>The tracker supports direct links to specific projects via URL query parameters. This is used by the Tucson DATA leadership app's "Open in tracker" buttons and can be used in emails, Slack messages, or any other context where you want to link someone directly to a project.</p>
+<p>URL format: <code>https://psjohnso.github.io/analytics-tracker/?project=P-NNN</code></p>
+<p>The <code>project</code> parameter accepts a project number (e.g., <code>P-319</code>). The app will load, find the matching project, and open its detail page automatically. The URL is cleaned after navigation so refreshing the page doesn't re-open the project detail. If the project is not found, a toast error is shown.</p>
+
 <h2 id="filters">Filters & Search</h2>
 <p>The sidebar filter system provides consistent filtering across the Projects and Tasks tabs.</p>
 
@@ -582,7 +603,7 @@ li strong { color: var(--navy); }
   <tr><th>Service</th><th>Purpose</th><th>Key Fields</th></tr>
   <tr><td><strong>projects</strong></td><td>Analytics project records with metadata, dates, status, and assignments</td><td>title, status, priority, category, contact, start, end</td></tr>
   <tr><td><strong>tasks</strong></td><td>Individual work items linked to projects</td><td>title, status, assignee, due_date, project_id, blocked_by</td></tr>
-  <tr><td><strong>team_members</strong></td><td>Team roster with roles, capacity, schedule, and time tracking opt-in</td><td>name, role, team, member_group, proj_pct, schedule_type, week1_hours, week2_hours, rdo_day, time_tracking</td></tr>
+  <tr><td><strong>team_members</strong></td><td>Team roster with roles, capacity, schedule, and time tracking opt-in</td><td>name, role, team, member_group, proj_pct, schedule_type, week1_hours, week2_hours, rdo_day, time_tracking, user_preferences</td></tr>
   <tr><td><strong>absences</strong></td><td>Per-person, per-week time off records</td><td>name, week_date, absence_hours</td></tr>
   <tr><td><strong>allocations</strong></td><td>Per-person, per-project, per-week allocation records</td><td>name, project, week_date, fraction, hours</td></tr>
   <tr><td><strong>app_config</strong></td><td>Shared key-value config store for dropdown lists</td><td>config_key, config_value</td></tr>
@@ -614,8 +635,8 @@ li strong { color: var(--navy); }
 <h3>Permission Summary</h3>
 <table class="guide-table">
   <tr><th>Action</th><th>Standard User</th><th>Admin</th></tr>
-  <tr><td>View Overview, My Work, Projects, Tasks, Issues</td><td>✅ Yes</td><td>✅ Yes</td></tr>
-  <tr><td>View Resources, Forecast, Insights, Settings</td><td>❌ No</td><td>✅ Yes</td></tr>
+  <tr><td>View Overview, My Work, Projects, Tasks, Issues, Settings (Preferences)</td><td>✅ Yes</td><td>✅ Yes</td></tr>
+  <tr><td>View Resources, Forecast, Insights, Settings (Admin sections)</td><td>❌ No</td><td>✅ Yes</td></tr>
   <tr><td>Create tasks</td><td>✅ Yes</td><td>✅ Yes</td></tr>
   <tr><td>Edit / delete projects (as project lead)</td><td>✅ Own projects</td><td>✅ All projects</td></tr>
   <tr><td>Submit project ideas</td><td>✅ Yes</td><td>✅ Yes</td></tr>

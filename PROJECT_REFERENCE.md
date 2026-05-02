@@ -5,7 +5,7 @@
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
 > **Last Updated:** April 2026
-> **Current Version:** 0.17.1.0001 (see Version History at bottom)
+> **Current Version:** 0.18.0.0001 (see Version History at bottom)
 
 ---
 
@@ -1568,6 +1568,13 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.16.0.0007 | Clarify dashboard card titles to specify projects, tasks, or both |
 | 0.17.0.0001 | AI-Guided Project Intake (new capability, beta): 3-step guided idea form with AI-generated follow-up questions and project summary; FEATURE_AI_INTAKE flag; starter questions (title, category, problem, dept, urgency, deadline); AI generates 4-6 tailored follow-ups via Cloudflare Worker proxy; AI-generated structured summary (description, value, technical considerations, size estimate, risks); editable summary before submission; intake_responses JSON field; fallback to generic questions when AI unavailable; existing simple form preserved for non-beta users |
 | 0.17.1.0001 | Session guard and form auto-save: proactive token check before all edit operations (openFormModal, openIdeaForm, markTaskComplete, applyBatchUpdate, handleFormDelete, mwQuickStatus); styled session expired modal with re-auth button; form state auto-saved to localStorage every 15 seconds while form is open; auto-save restore prompt after re-authentication; 5-minute token expiry warning toast with refresh link; showToast updated to support HTML content, custom duration, and clickable links |
+| 0.17.1.0002 | Fix infinite recursion in ensureValidSession that prevented task creation — don't call callback when token is valid |
+| 0.17.2.0001 | Read-only public view: Overview, Projects, Tasks visible without sign-in; agolQueryPublic and loadPublicData for unauthenticated queries; read-only banner; auth-only tabs hidden via CSS; switchTab guards restricted tabs |
+| 0.17.2.0002 | Read-only view uses ArcGIS Online view layers; publicProjectsUrl/publicTasksUrl/publicConfigUrl config fields |
+| 0.17.2.0003 | Public views use ArcGIS Online Item IDs with resolveItemId() for automatic URL resolution |
+| 0.17.2.0004 | Configure projects and tasks public view Item IDs |
+| 0.17.2.0005 | Add app_config public view Item ID; all three views configured |
+| 0.18.0.0001 | Deep-link support: handleDeepLink() reads ?project=P-NNN from URL, finds project by project_number (with objectId fallback), opens project detail; cleans URL via history.replaceState; works in both authenticated and read-only paths; used by Tucson DATA "Open in tracker" links |
 
 ---
 
