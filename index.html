@@ -3660,7 +3660,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.0.0.0009';
+const APP_VERSION = '1.0.0.0010';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -18366,10 +18366,12 @@ function prGetProjectsForReview(rt, statuses, assignee) {
 
 // Build the assignee dropdown options for a review type.
 // Names come from the in-scope projects (lead + other_members in project mode; task assignees in task mode).
+// In task-mode reviews the list is restricted to active employees, since task review is about live work.
 function prGetAssigneeOptions(rt) {
   var inScope = prGetProjectsForReview(rt);
   var names = {};
-  if (prGetReviewMode(rt) === 'task') {
+  var isTaskMode = (prGetReviewMode(rt) === 'task');
+  if (isTaskMode) {
     var ids = {};
     inScope.forEach(function(p) { ids[p.id] = true; });
     TASKS.forEach(function(t) {
@@ -18387,7 +18389,14 @@ function prGetAssigneeOptions(rt) {
       }
     });
   }
-  return Object.keys(names).sort();
+  var sorted = Object.keys(names).sort();
+  if (isTaskMode && typeof RESOURCES_DATA !== 'undefined' && RESOURCES_DATA && RESOURCES_DATA.people) {
+    sorted = sorted.filter(function(n) {
+      var person = RESOURCES_DATA.people[n];
+      return person && person.active !== false;
+    });
+  }
+  return sorted;
 }
 
 function prSetAssigneeFilter(name) {
@@ -18526,7 +18535,7 @@ function renderProjectReview(area) {
       statusCounts[s] = (statusCounts[s] || 0) + 1;
       totalForAll++;
     });
-    statusOrder = ['Active', 'In Progress', 'Pending', 'Not Started', 'Waiting for Response', 'On Hold', 'Complete', 'Completed', 'Canceled', 'Cancelled'];
+    statusOrder = ['Active', 'In Progress', 'Pending', 'Not Started', 'Waiting for Response', 'On Hold', 'Complete', 'Canceled'];
   } else {
     assigneeNarrowed.forEach(function(p) {
       var s = p.status || '(none)';
@@ -18544,7 +18553,9 @@ function renderProjectReview(area) {
   }
   html += '<div class="pr-toolbar">';
   html += chip('all', 'All', totalForAll);
-  statusOrder.forEach(function(s) { if (statusCounts[s]) html += chip(s, s, statusCounts[s]); });
+  // Always render the canonical statuses (even if count is 0) so chip set stays consistent across assignees.
+  statusOrder.forEach(function(s) { html += chip(s, s, statusCounts[s] || 0); });
+  // Surface any non-canonical status spellings that actually appear in the data (e.g. 'Completed' vs 'Complete').
   Object.keys(statusCounts).forEach(function(s) {
     if (statusOrder.indexOf(s) < 0 && statusCounts[s]) html += chip(s, s, statusCounts[s]);
   });
