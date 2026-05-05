@@ -3660,7 +3660,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.0.0.0013';
+const APP_VERSION = '1.0.0.0014';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -5913,8 +5913,8 @@ const CALC_EXPLANATIONS = {
   },
   projCapacity: {
     title: 'Project capacity',
-    body: 'The maximum hours available for project work this week, after accounting for your schedule, absences, the 75% productivity factor, and your project time percentage.',
-    formula: '(Scheduled Hours \u2212 Absences) \u00d7 0.75 \u00d7 Project Time %',
+    body: 'The maximum hours available for project work this week, after accounting for your schedule, absences, the {PRODUCTIVITY}% productivity factor, and your project time percentage.',
+    formula: '(Scheduled Hours \u2212 Absences) \u00d7 {PRODUCTIVITY_FRAC} \u00d7 Project Time %',
     guide: 'capacity-math'
   },
   availableHours: {
@@ -5970,8 +5970,8 @@ const CALC_EXPLANATIONS = {
     guide: 'resources-tab'
   },
   productivityFactor: {
-    title: 'Productivity factor (75%)',
-    body: 'Only 75% of available work hours are counted as productive project time. The remaining 25% accounts for meetings, email, admin tasks, and context-switching.',
+    title: 'Productivity factor ({PRODUCTIVITY}%)',
+    body: 'Only {PRODUCTIVITY}% of available work hours are counted as productive project time. The remaining {PRODUCTIVITY_REM}% accounts for meetings, email, admin tasks, and context-switching.',
     guide: 'capacity-math'
   },
   overdue: {
@@ -6001,11 +6001,18 @@ function showCalcPopup(evt, key) {
       }
     });
   }
+  // Substitute current productivity ratio so popups stay in sync with the admin-tunable value.
+  var prPct = Math.round((_productivityRatio || 0.75) * 100);
+  var prRem = 100 - prPct;
+  var prFrac = (_productivityRatio || 0.75).toFixed(2);
+  function fillPlaceholders(s) {
+    return String(s || '').replace(/\{PRODUCTIVITY\}/g, prPct).replace(/\{PRODUCTIVITY_REM\}/g, prRem).replace(/\{PRODUCTIVITY_FRAC\}/g, prFrac);
+  }
   var html = '<button class="calc-popup-close" onclick="document.getElementById(\'calc-popup\').style.display=\'none\'">\u2715</button>';
-  html += '<div class="calc-popup-title">' + esc(info.title) + '</div>';
-  html += '<div class="calc-popup-body">' + esc(info.body) + '</div>';
+  html += '<div class="calc-popup-title">' + esc(fillPlaceholders(info.title)) + '</div>';
+  html += '<div class="calc-popup-body">' + esc(fillPlaceholders(info.body)) + '</div>';
   if (info.formula) {
-    html += '<div class="calc-popup-formula">' + esc(info.formula) + '</div>';
+    html += '<div class="calc-popup-formula">' + esc(fillPlaceholders(info.formula)) + '</div>';
   }
   if (info.guide) {
     html += '<a class="calc-popup-link" href="guide.html#' + info.guide + '" target="_blank">Learn more in the guide \u2192</a>';
@@ -8011,16 +8018,6 @@ async function loadResourcesData() {
   // Build people from team_members
   const people = {};
 
-  // Pay period reference: 2025-12-28 is a Week A (Sunday) start.
-  // Every 14 days alternates A/B. Week A = week1_hours, Week B = week2_hours.
-  const PAY_PERIOD_REF = new Date('2025-12-28T00:00:00');
-  function getPayPeriodWeek(weekDateStr) {
-    const d = new Date(weekDateStr + 'T00:00:00');
-    const diffDays = Math.round((d - PAY_PERIOD_REF) / (1000 * 60 * 60 * 24));
-    const weekNum = Math.floor(diffDays / 7);
-    return (weekNum % 2 === 0) ? 'A' : 'B';
-  }
-
   memberFeatures.forEach(function(f) {
     const a = f.attributes;
     const nm = a.name;
@@ -8163,23 +8160,23 @@ async function loadResourcesData() {
   });
 
   // Compute capacity, allocations, and utilization
-  computeCapacityAndAllocations(people, weeks, weekIdx, allocFeatures, N, getPayPeriodWeek);
+  computeCapacityAndAllocations(people, weeks, weekIdx, allocFeatures, N);
 
   RESOURCES_DATA = { weeks: weeks, people: people, _memberFieldNames: memberFeatures.length ? Object.keys(memberFeatures[0].attributes) : [] };
   console.log('[Resources] Loaded:', memberFeatures.length, 'members,', absenceFeatures.length, 'absence records,',
     allocFeatures.length, 'allocation records');
 }
 
-function computeCapacityAndAllocations(people, weeks, weekIdx, allocFeatures, N, getPayPeriodWeek) {
-  // Compute proj_cap from formula: (scheduled_hours - absence_hours) × 75% productivity × proj_pct
-  // The 0.75 factor accounts for non-project-work time (meetings, email, breaks, etc.)
+function computeCapacityAndAllocations(people, weeks, weekIdx, allocFeatures, N) {
+  // Compute proj_cap from formula: (scheduled_hours - absence_hours) × _productivityRatio × proj_pct.
+  // _productivityRatio (default 0.75, admin-tunable) accounts for non-project overhead.
   // For 9/80 schedules, Week A = week1_hours (44), Week B = week2_hours (36).
   Object.entries(people).forEach(function(entry) {
     const p = entry[1];
     for (let i = 0; i < N; i++) {
       const ppWeek = getPayPeriodWeek(weeks[i]);
       const scheduledHours = (ppWeek === 'A') ? p.week1_hours : p.week2_hours;
-      p.proj_cap[i] = (scheduledHours - (p.absences[i] || 0)) * 0.75 * p.proj_pct;
+      p.proj_cap[i] = (scheduledHours - (p.absences[i] || 0)) * _productivityRatio * p.proj_pct;
     }
   });
 
@@ -13408,7 +13405,21 @@ const _defaultItdTeams = [
 ];
 
 // ObjectIds for the two config records (populated on load from ArcGIS)
-const _configOids = { partner_depts: null, itd_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null };
+const _configOids = { partner_depts: null, itd_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null };
+
+// Productivity factor applied to per-week project capacity. Admin-tunable via Settings → Allocations.
+// Default 0.75 accounts for non-project overhead (meetings, email, breaks, context-switching).
+let _productivityRatio = 0.75;
+
+// Pay period reference: 2025-12-28 is a Week A (Sunday) start.
+// Every 14 days alternates A/B. Week A = week1_hours, Week B = week2_hours.
+const PAY_PERIOD_REF = new Date('2025-12-28T00:00:00');
+function getPayPeriodWeek(weekDateStr) {
+  const d = new Date(weekDateStr + 'T00:00:00');
+  const diffDays = Math.round((d - PAY_PERIOD_REF) / (1000 * 60 * 60 * 24));
+  const weekNum = Math.floor(diffDays / 7);
+  return (weekNum % 2 === 0) ? 'A' : 'B';
+}
 
 // ── Project Review configuration ──────────────────────────────
 // Default review types — seeded into app_config on first load if missing.
@@ -13647,6 +13658,15 @@ function applyAppConfig(features) {
         console.log('[Config] Loaded ai_phase_assignment:', _aiPhaseAssignment);
         return;
       }
+      if (key === 'productivity_ratio') {
+        var n = (typeof parsed === 'number') ? parsed : parseFloat(parsed);
+        if (!isNaN(n) && n > 0 && n <= 1) {
+          _productivityRatio = n;
+          _configOids.productivity_ratio = oid;
+          console.log('[Config] Loaded productivity_ratio:', _productivityRatio);
+        }
+        return;
+      }
       if (!Array.isArray(parsed)) return;
       if (key === 'partner_depts') {
         _customPartnerDepts = parsed;
@@ -13854,6 +13874,42 @@ function renderAllocDefaultsEditor() {
   html += '<button class="settings-btn settings-btn-primary" onclick="saveAllocDefaults()">Save Defaults</button>';
   html += '</div>';
   container.innerHTML = html;
+}
+
+// Recompute proj_cap and allocation hours for every loaded person using the current _productivityRatio.
+// Called after the admin saves a new ratio so the change is visible immediately.
+function recomputeAllProjCap() {
+  if (!RESOURCES_DATA || !RESOURCES_DATA.people) return;
+  const weeks = RESOURCES_DATA.weeks;
+  Object.entries(RESOURCES_DATA.people).forEach(function(entry) {
+    const p = entry[1];
+    for (let i = 0; i < weeks.length; i++) {
+      const ppWeek = getPayPeriodWeek(weeks[i]);
+      const scheduledHours = (ppWeek === 'A') ? p.week1_hours : p.week2_hours;
+      p.proj_cap[i] = (scheduledHours - (p.absences[i] || 0)) * _productivityRatio * p.proj_pct;
+    }
+    (p.allocations || []).forEach(function(a) {
+      a.hours = (a.fracs || []).map(function(f, i) { return f * (p.proj_cap[i] || 0); });
+    });
+  });
+}
+
+async function saveProductivityRatio() {
+  const el = document.getElementById('settings-productivity-ratio');
+  if (!el) return;
+  const pctEntered = parseFloat(el.value);
+  if (isNaN(pctEntered) || pctEntered <= 0 || pctEntered > 100) {
+    showToast('Productivity ratio must be between 1 and 100.', 'error');
+    return;
+  }
+  const ratio = Math.round(pctEntered) / 100;
+  _productivityRatio = ratio;
+  const success = await saveConfigKey('productivity_ratio', ratio);
+  if (success) {
+    recomputeAllProjCap();
+    showToast('Productivity ratio saved (' + Math.round(ratio * 100) + '%).', 'success');
+    render();
+  }
 }
 
 async function saveAllocDefaults() {
@@ -16821,7 +16877,20 @@ function renderSettingsPage(area) {
   }
 
   else if (_settingsSection === 'allocations') {
-    panelHtml = '<div class="settings-panel-title">Allocation defaults</div>' +
+    var prPct = Math.round((_productivityRatio || 0.75) * 100);
+    panelHtml = '<div class="settings-panel-title">Allocations</div>' +
+      '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:18px 20px;margin-bottom:24px;">' +
+        '<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">Capacity formula</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Each person\'s weekly project capacity = (scheduled hours − absences) × <strong>productivity ratio</strong> × their project-available %.</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+          '<label for="settings-productivity-ratio" style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">Productivity ratio</label>' +
+          '<input type="number" id="settings-productivity-ratio" min="1" max="100" step="1" value="' + prPct + '" style="width:80px;padding:6px 8px;text-align:center;border:1px solid #E8E6DF;border-radius:6px;font-size:14px;font-family:Lato,sans-serif;font-weight:700;color:var(--navy);">' +
+          '<span style="font-size:13px;color:var(--text-muted);">%</span>' +
+          '<button class="settings-btn settings-btn-primary" onclick="saveProductivityRatio()" style="margin-left:auto;">Save Ratio</button>' +
+        '</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);margin-top:10px;">Default 75%. Lower = more conservative — accounts for meetings, email, context-switching, breaks. Saved value is shared across all users.</div>' +
+      '</div>' +
+      '<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">Allocation defaults</div>' +
       '<div class="settings-panel-desc">Default weekly allocation percentages applied when auto-filling allocations. Values represent the percentage of a person\'s project-available time dedicated to a single project per week.</div>' +
       '<div id="alloc-defaults-editor"></div>';
   }
@@ -17528,8 +17597,8 @@ async function absValueChanged(input) {
   const oldHrs = p.absences[wi] || 0;
   p.absences[wi] = hrs;
 
-  // Recalculate proj_cap for this week: (40 - absences) × 75% productivity × proj_pct
-  p.proj_cap[wi] = (40 - hrs) * 0.75 * p.proj_pct;
+  // Recalculate proj_cap for this week: (40 - absences) × productivity × proj_pct
+  p.proj_cap[wi] = (40 - hrs) * _productivityRatio * p.proj_pct;
 
   // Recalculate hours and utilization for this week
   p.allocations.forEach(function(a) {
