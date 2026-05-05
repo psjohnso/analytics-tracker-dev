@@ -3632,7 +3632,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.0.0.0002';
+const APP_VERSION = '1.0.0.0003';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13426,13 +13426,16 @@ const _defaultReviewTypes = [
     id: 'data-team',
     name: 'Data Team Review',
     description: 'Biweekly cross-team review covering the broader Data Team — Data Intelligence, Architecture, DBA, and Cloud Engineering (Snowflake).',
-    filter: { itd_teams: [
-      'Data Program',
-      'Emerging Data Infrastructure - Cloud Data Services',
-      'Data Intelligence - GIS',
-      'Data Intelligence - Business and Advanced Analytics',
-      'Data Intelligence - Artificial Intelligence'
-    ] },
+    filter: {
+      itd_teams: [
+        'Data Program',
+        'Emerging Data Infrastructure - Cloud Data Services',
+        'Data Intelligence - GIS',
+        'Data Intelligence - Business and Advanced Analytics',
+        'Data Intelligence - Artificial Intelligence'
+      ],
+      require_data_program: true
+    },
     cadence_days: 14,
     default_attendees: [
       'Peter Johnson','James McGinnis','Andrew Sutton','Jessica Fraver',
@@ -13641,6 +13644,12 @@ function applyAppConfig(features) {
       } else if (key === 'review_types') {
         _reviewTypes = parsed;
         _configOids.review_types = oid;
+        // Migration: ensure the Data Team review requires the Data Program flag.
+        // Persists in-memory only; next admin save writes it back to ArcGIS.
+        var dataTeamRt = _reviewTypes.find(function(rt) { return rt.id === 'data-team'; });
+        if (dataTeamRt && dataTeamRt.filter && dataTeamRt.filter.require_data_program == null) {
+          dataTeamRt.filter.require_data_program = true;
+        }
       } else if (key === 'proj_categories') {
         if (parsed.length && typeof parsed[0] === 'object') _customProjCategories = expandDescList(parsed);
         _configOids.proj_categories = oid;
@@ -18193,11 +18202,13 @@ function prGetTasksForProject(p) {
 function prGetProjectsForReview(rt, mode) {
   if (!rt || !rt.filter || !Array.isArray(rt.filter.itd_teams)) return [];
   var teams = rt.filter.itd_teams;
+  var requireDataProgram = !!(rt.filter && rt.filter.require_data_program);
   var inScope = PROJECTS.filter(function(p) {
     if (!p.itd_team) return false;
     if (teams.indexOf(p.itd_team) < 0) return false;
     // Exclude Idea (not yet promoted). Show others — reviewers decide what to skip.
     if (p.status === 'Idea') return false;
+    if (requireDataProgram && !p.is_data_program) return false;
     return true;
   });
   if (mode === 'active') {
@@ -18798,6 +18809,11 @@ function prRtOpenForm(index) {
   }
   html += '</div></div>';
 
+  var rdpChecked = (data.filter && data.filter.require_data_program) ? ' checked' : '';
+  html += '<div class="pr-field"><label class="pr-field-label">Additional filter</label>';
+  html += '<label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="pr-rt-input-require-dp"' + rdpChecked + '> Only include projects flagged as Data Program</label>';
+  html += '<div class="pr-field-help">When on, projects must also have a Data Program Goal set to appear in this review.</div></div>';
+
   html += '<div class="pr-field"><label class="pr-field-label">Default Attendees</label>';
   html += '<input type="text" id="pr-rt-input-attendees" value="' + esc((data.default_attendees || []).join(', ')) + '" placeholder="Comma-separated names">';
   html += '<div class="pr-field-help">Free text. Click a chip to append a team member name.</div>';
@@ -18851,6 +18867,7 @@ async function prRtSaveForm(index) {
   var teamCbs = document.querySelectorAll('.pr-rt-team-cb');
   var teams = [];
   teamCbs.forEach(function(cb) { if (cb.checked) teams.push(cb.value); });
+  var requireDp = !!(document.getElementById('pr-rt-input-require-dp') || {}).checked;
 
   name = name.trim();
   id = id.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
@@ -18865,12 +18882,12 @@ async function prRtSaveForm(index) {
       if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Add Review Type'; }
       return;
     }
-    _reviewTypes.push({ id: id, name: name, description: desc, filter: { itd_teams: teams }, cadence_days: cadence, default_attendees: attendees });
+    _reviewTypes.push({ id: id, name: name, description: desc, filter: { itd_teams: teams, require_data_program: requireDp }, cadence_days: cadence, default_attendees: attendees });
   } else {
     var existing = _reviewTypes[index];
     existing.name = name;
     existing.description = desc;
-    existing.filter = { itd_teams: teams };
+    existing.filter = { itd_teams: teams, require_data_program: requireDp };
     existing.cadence_days = cadence;
     existing.default_attendees = attendees;
   }
