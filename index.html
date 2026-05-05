@@ -2651,6 +2651,21 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .pr-tb-chip { font-family:'Lato',sans-serif;font-size:11px;font-weight:700;padding:6px 12px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text-body);letter-spacing:0.04em; }
 .pr-tb-chip.active { background:var(--orange);color:#fff;border-color:var(--orange); }
 .pr-tb-chip .pr-count { margin-left:6px;opacity:0.7;font-weight:400; }
+.pr-view-toggle { margin-left:auto;display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden; }
+.pr-vt-btn { font-family:'Lato',sans-serif;font-size:11px;font-weight:700;padding:6px 14px;cursor:pointer;border:none;background:#fff;color:var(--text-body);letter-spacing:0.04em;transition:background 0.15s; }
+.pr-vt-btn:hover { background:#F3F1EB; }
+.pr-vt-btn.active { background:var(--navy);color:#fff; }
+.pr-vt-btn.active:hover { background:var(--navy); }
+.pr-simple-table { width:100%;border-collapse:collapse;font-family:'Lato',sans-serif;font-size:12px;background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px; }
+.pr-simple-table th { text-align:left;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);background:var(--bg-surface,#F3F1EB);border-bottom:1px solid var(--border); }
+.pr-simple-table td { padding:10px 12px;border-bottom:1px solid #F0EEE8;color:var(--text-body);vertical-align:top; }
+.pr-simple-table tbody tr.pr-simple-row { cursor:pointer; }
+.pr-simple-table tbody tr.pr-simple-row:hover { background:#FAFAF7; }
+.pr-simple-table tbody tr:last-child td { border-bottom:none; }
+.pr-st-num { font-size:10px;color:var(--text-muted);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:2px; }
+.pr-st-title { font-weight:700;color:var(--navy);line-height:1.3; }
+.pr-status-pill { display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--bg-surface,#F3F1EB);color:var(--text-body);letter-spacing:0.04em;white-space:nowrap; }
+.pr-actions-pill { display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;background:#FFF7ED;color:#9A3412;border-radius:6px; }
 .pr-quarter-section { margin-bottom:18px; }
 .pr-quarter-header { display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-surface,#F3F1EB);border:1px solid transparent;border-radius:8px;cursor:pointer;font-family:'Lato',sans-serif;font-weight:700;font-size:13px;color:var(--text-body);user-select:none;transition:background 0.15s; }
 .pr-quarter-header:hover { background:#E8E6DF; }
@@ -3642,7 +3657,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.0.0.0004';
+const APP_VERSION = '1.0.0.0005';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -18115,11 +18130,12 @@ async function deleteIssue(issueId) {
 // ══════════════════════════════════════════════════════════════════════
 
 var _currentReviewTypeId = null;
-var _reviewFilterMode = 'all';
-var _prTasksOpen = {};       // map of project_number -> bool (tasks expanded)
-var _prShowAllLog = {};      // map of project_number -> bool (show all log entries)
-var _prSectionOpen = {};     // map of bucket key -> bool (quarter section expanded). undefined = use bucket default.
-var _prModalState = null;    // { projectNumber, reviewTypeId, editObjectId }
+var _reviewFilterMode = 'all';   // 'all' or a project status (e.g. 'Active', 'On Hold')
+var _prViewMode = 'card';        // 'card' (expanded cards, default) or 'table' (simplified table)
+var _prTasksOpen = {};           // map of project_number -> bool. undefined = open by default.
+var _prShowAllLog = {};          // map of project_number -> bool (show all log entries)
+var _prSectionOpen = {};         // map of bucket key -> bool (quarter section expanded). undefined = use bucket default.
+var _prModalState = null;        // { projectNumber, reviewTypeId, editObjectId }
 
 function prFmtDate(v) {
   if (v == null) return '';
@@ -18275,6 +18291,7 @@ function prGetTasksForProject(p) {
 }
 
 // Filter PROJECTS to those in scope for a review type.
+// mode: 'all' for the full in-scope set, or a project status name to narrow further.
 function prGetProjectsForReview(rt, mode) {
   if (!rt || !rt.filter || !Array.isArray(rt.filter.itd_teams)) return [];
   var teams = rt.filter.itd_teams;
@@ -18287,31 +18304,8 @@ function prGetProjectsForReview(rt, mode) {
     if (requireDataProgram && !p.is_data_program) return false;
     return true;
   });
-  if (mode === 'active') {
-    return inScope.filter(function(p) { return p.status === 'Active' || p.status === 'Scheduled'; });
-  }
-  if (mode === 'due' || mode === 'overdue') {
-    return inScope.filter(function(p) {
-      var last = getLastReviewForProject(p.project_number, rt.id);
-      var lastMs = last ? last.meeting_date : null;
-      var days = prDaysSince(lastMs);
-      var cap = rt.cadence_days || 14;
-      if (mode === 'due') {
-        if (days == null) return true; // never reviewed counts as due
-        return days > cap; // overdue any amount counts as "due this cycle"
-      }
-      // 'overdue'
-      if (days == null) return false;
-      return days > cap * 1.5;
-    });
-  }
-  if (mode === 'has_actions') {
-    return inScope.filter(function(p) {
-      var last = getLastReviewForProject(p.project_number, rt.id);
-      return last && last.action_items && last.action_items.trim().length > 0;
-    });
-  }
-  return inScope;
+  if (!mode || mode === 'all') return inScope;
+  return inScope.filter(function(p) { return p.status === mode; });
 }
 
 function prSwitchReviewType(id) {
@@ -18329,7 +18323,9 @@ function prSetFilterMode(mode) {
 }
 
 function prToggleTasks(projNum) {
-  _prTasksOpen[projNum] = !_prTasksOpen[projNum];
+  // Default state is open; explicitly track collapsed/expanded once user toggles.
+  var currentOpen = (_prTasksOpen[projNum] === false) ? false : true;
+  _prTasksOpen[projNum] = !currentOpen;
   var el = document.getElementById('pr-tasks-' + projNum);
   if (el) el.classList.toggle('open', !!_prTasksOpen[projNum]);
 }
@@ -18372,7 +18368,7 @@ function renderProjectReview(area) {
     html += '<div class="pr-rt-selector">';
     html += '<span class="pr-rt-label">Review Type</span>';
     _reviewTypes.forEach(function(t) {
-      var inScopeCount = prGetProjectsForReview(t, 'active').length;
+      var inScopeCount = prGetProjectsForReview(t, 'all').filter(function(p) { return p.status === 'Active' || p.status === 'Scheduled'; }).length;
       var cls = 'pr-rt-pill' + (t.id === _currentReviewTypeId ? ' active' : '');
       html += '<button class="' + cls + '" onclick="prSwitchReviewType(\'' + esc(t.id) + '\')">' +
         esc(t.name) +
@@ -18405,12 +18401,17 @@ function renderProjectReview(area) {
   html += '<div class="pr-cs-block pr-cs-attendees"><div class="pr-cs-label">Default Attendees</div><div>' + esc(attendees) + '</div></div>';
   html += '</div>';
 
-  // Filter chips with counts
+  // Reset any pre-existing legacy filter modes (cycle/action-item filters were replaced by status filters).
+  if (['active','due','overdue','has_actions'].indexOf(_reviewFilterMode) >= 0) _reviewFilterMode = 'all';
+
+  // Status filter chips with counts (statuses in a sensible review order; only render those with > 0 in scope).
   var allInScope = prGetProjectsForReview(rt, 'all');
-  var dueCount = prGetProjectsForReview(rt, 'due').length;
-  var overdueCount = prGetProjectsForReview(rt, 'overdue').length;
-  var activeCount = prGetProjectsForReview(rt, 'active').length;
-  var actionsCount = prGetProjectsForReview(rt, 'has_actions').length;
+  var statusCounts = {};
+  allInScope.forEach(function(p) {
+    var s = p.status || '(none)';
+    statusCounts[s] = (statusCounts[s] || 0) + 1;
+  });
+  var statusOrder = ['Active', 'Scheduled', 'On Hold', 'Waiting for Response', 'Future', 'Pending', 'Complete', 'Canceled'];
 
   function chip(mode, label, count) {
     var cls = 'pr-tb-chip' + (_reviewFilterMode === mode ? ' active' : '');
@@ -18418,11 +18419,16 @@ function renderProjectReview(area) {
       label + '<span class="pr-count">' + count + '</span></button>';
   }
   html += '<div class="pr-toolbar">';
-  html += chip('all', 'All in scope', allInScope.length);
-  html += chip('active', 'Active only', activeCount);
-  html += chip('due', 'Due this cycle', dueCount);
-  html += chip('overdue', 'Overdue', overdueCount);
-  html += chip('has_actions', 'Has open action items', actionsCount);
+  html += chip('all', 'All', allInScope.length);
+  statusOrder.forEach(function(s) { if (statusCounts[s]) html += chip(s, s, statusCounts[s]); });
+  Object.keys(statusCounts).forEach(function(s) {
+    if (statusOrder.indexOf(s) < 0 && statusCounts[s]) html += chip(s, s, statusCounts[s]);
+  });
+  // View toggle pushed to the right
+  html += '<div class="pr-view-toggle">';
+  html += '<button class="pr-vt-btn' + (_prViewMode === 'card' ? ' active' : '') + '" onclick="prSetViewMode(\'card\')">Cards</button>';
+  html += '<button class="pr-vt-btn' + (_prViewMode === 'table' ? ' active' : '') + '" onclick="prSetViewMode(\'table\')">Table</button>';
+  html += '</div>';
   html += '</div>';
 
   // Project cards
@@ -18454,17 +18460,11 @@ function renderProjectReview(area) {
         html += '<span class="pr-quarter-count">' + b.projects.length + '</span>';
         html += '</div>';
         html += '<div class="pr-quarter-body">';
-        if (!b.projects.length) {
-          html += '<div class="pr-empty-state" style="margin:8px 0;">No projects in this bucket.</div>';
-        } else {
-          b.projects.forEach(function(p) { html += renderProjectReviewCard(p, rt); });
-        }
+        html += renderProjectsForReview(b.projects, rt, true);
         html += '</div></div>';
       });
     } else {
-      projects.forEach(function(p) {
-        html += renderProjectReviewCard(p, rt);
-      });
+      html += renderProjectsForReview(projects, rt, false);
     }
   }
 
@@ -18474,6 +18474,53 @@ function renderProjectReview(area) {
   html += '<div class="pr-modal-backdrop" id="pr-modal-backdrop" onclick="if(event.target===this)prCloseLogModal()"><div class="pr-modal" id="pr-modal"></div></div>';
 
   area.innerHTML = html;
+}
+
+// Dispatch a list of in-scope projects to either the card view or the simplified table view.
+function renderProjectsForReview(projectsArr, rt, isInBucket) {
+  if (!projectsArr.length) return '<div class="pr-empty-state" style="margin:' + (isInBucket ? '8px 0' : '0') + ';">No projects in this bucket.</div>';
+  if (_prViewMode === 'table') return renderProjectReviewTable(projectsArr, rt);
+  var out = '';
+  projectsArr.forEach(function(p) { out += renderProjectReviewCard(p, rt); });
+  return out;
+}
+
+// Simplified table view — quick-scan alternative to the cards.
+function renderProjectReviewTable(projects, rt) {
+  var todayStr = new Date().toISOString().slice(0, 10);
+  var html = '<table class="pr-simple-table"><thead><tr>' +
+    '<th>Project</th>' +
+    '<th>Status</th>' +
+    '<th>Contact</th>' +
+    '<th>Target End</th>' +
+    '<th>Last Reviewed</th>' +
+    '<th>Action Items</th>' +
+    '</tr></thead><tbody>';
+  projects.forEach(function(p) {
+    var pn = p.project_number || ('#' + (p.id || ''));
+    var endStr = p.working_due || p.end || '';
+    var endLate = endStr && endStr < todayStr;
+    var last = getLastReviewForProject(p.project_number, rt.id);
+    var lastLabel = last ? prFmtDate(last.meeting_date) + ' <span style="color:var(--text-muted);">(' + prDaysSince(last.meeting_date) + 'd)</span>' : '<em style="color:var(--text-muted);">Never</em>';
+    var hasActions = last && last.action_items && last.action_items.trim().length > 0;
+    var clickHandler = p.objectId ? ' onclick="openProject(' + p.objectId + ')"' : '';
+    html += '<tr class="pr-simple-row"' + clickHandler + '>';
+    html += '<td><div class="pr-st-num">' + esc(pn) + '</div><div class="pr-st-title">' + esc(p.title || '(no title)') + '</div></td>';
+    html += '<td><span class="pr-status-pill">' + esc(p.status || '—') + '</span></td>';
+    html += '<td>' + esc(p.contact || '—') + '</td>';
+    html += '<td' + (endLate ? ' style="color:#A32D2D;font-weight:700;"' : '') + '>' + (endStr ? prFmtDate(endStr) : '—') + '</td>';
+    html += '<td>' + lastLabel + '</td>';
+    html += '<td>' + (hasActions ? '<span class="pr-actions-pill">Open</span>' : '<span style="color:var(--text-muted);">—</span>') + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  return html;
+}
+
+function prSetViewMode(mode) {
+  if (mode !== 'card' && mode !== 'table') return;
+  _prViewMode = mode;
+  render();
 }
 
 function renderProjectReviewCard(p, rt) {
@@ -18544,7 +18591,7 @@ function renderProjectReviewCard(p, rt) {
   if (counts.Pending) summaryParts.push(counts.Pending + ' pending');
   if (counts.Other) summaryParts.push(counts.Other + ' other');
 
-  var openCls = _prTasksOpen[pn] ? ' open' : '';
+  var openCls = (_prTasksOpen[pn] === false) ? '' : ' open';
   html += '<div>';
   html += '<div class="pr-section-label">Work in Progress</div>';
   html += '<div class="pr-tasks-block' + openCls + '" id="pr-tasks-' + esc(pn) + '">';
