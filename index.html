@@ -525,7 +525,7 @@ body {
 /* ── Two-level tab navigation ───────────────────────────── */
 .primary-bar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 24px; gap: 0; }
 .primary-tab {
-  padding: 14px 20px 12px;
+  padding: 14px 20px;
   border: none;
   background: transparent;
   font-family: 'Lato', sans-serif;
@@ -533,15 +533,15 @@ body {
   font-weight: 700;
   color: var(--text-muted);
   cursor: pointer;
-  border-bottom: 3px solid transparent;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color 0.15s, background 0.15s;
   letter-spacing: 0.02em;
 }
 .primary-tab:hover { color: var(--navy); background: var(--surface, #F3F1EB); }
-.primary-tab.active { color: var(--navy); border-bottom-color: var(--orange); background: transparent; }
+.primary-tab.active { color: var(--navy); background: var(--yellow); border-radius: 8px 8px 0 0; font-weight: 800; }
+.primary-tab.active:hover { background: var(--yellow); }
 .primary-tab .tab-count { display: inline-block; background: var(--gray-light); border-radius: 10px; font-size: 11px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
 .primary-tab .tab-count:empty { display: none; }
-.primary-tab.active .tab-count { background: var(--orange); color: #fff; }
+.primary-tab.active .tab-count { background: var(--navy); color: var(--yellow); }
 
 .sub-bar {
   background: var(--surface, #F3F1EB);
@@ -3756,7 +3756,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.7.0.0001';
+const APP_VERSION = '1.7.0.0002';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
