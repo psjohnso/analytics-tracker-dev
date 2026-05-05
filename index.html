@@ -1283,6 +1283,7 @@ td.ae-wk-td.ae-cur { background:#F0F4FF; }
 .ae-pct-input.has-val  { background:#E8F4FD; color:#002855; border-color:#7BBDE8; font-weight:600; }
 .ae-pct-input.cur-wk  { border-color:var(--navy) !important; border-width:2px; }
 .ae-pct-input.over    { background:#FEF2F2; color:#DC2626; border-color:#FCA5A5; }
+.ae-hrs { font-size:9px; line-height:1; color:var(--text-muted); margin-top:2px; min-height:11px; font-family:'Lato',sans-serif; font-weight:600; }
 /* Total row */
 tr.ae-total-row td { background:#F0F4FF; border-top:2px solid #C7D2FE; padding:6px 4px; }
 tr.ae-total-row td.ae-proj-td { font-size:11px; font-weight:800; color:var(--navy); padding:8px 14px 8px 16px; background:#E8EDFF; }
@@ -3659,7 +3660,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.0.0.0012';
+const APP_VERSION = '1.0.0.0013';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -6551,6 +6552,8 @@ function aeToggleContrib() {
 function aeRenderGrid() {
   const weeks  = RESOURCES_DATA.weeks;
   const allocs = Editor.draft[Editor.person];
+  const personRec = RESOURCES_DATA.people[Editor.person] || {};
+  const projCap = personRec.proj_cap || [];
   const wEnd   = Math.min(Editor.aeWindowStart + AE_COLS, weeks.length);
   const wIdxs  = [];
   for (let i = Editor.aeWindowStart; i < wEnd; i++) wIdxs.push(i);
@@ -6645,11 +6648,14 @@ function aeRenderGrid() {
       }
       let cls = 'ae-pct-input' + (hasVal ? ' has-val' : '') + (isCur ? ' cur-wk' : '');
       const tabIdx = ci * numRows + ai + 1;
+      const cap = projCap[wi] || 0;
+      const hoursLabel = hasVal ? (Math.round((pct / 100) * cap * 10) / 10) + 'h' : '';
       row += '<td class="ae-wk-td' + (isCur ? ' ae-cur' : '') + rangeClass + '">' +
         '<input type="number" min="0" max="100" value="' + pct + '" class="' + cls + '" ' +
         'tabindex="' + tabIdx + '" ' +
         'data-ai="' + ai + '" data-wi="' + wi + '" ' +
         'onchange="aeCellChange(' + ai + ',' + wi + ',this)" onfocus="this.select()">' +
+        '<div class="ae-hrs" id="ae-hrs-' + ai + '-' + wi + '">' + hoursLabel + '</div>' +
         '</td>';
     }
     row += '</tr>';
@@ -6696,6 +6702,11 @@ function aeCellChange(ai, wi, input) {
   Editor.draft[Editor.person][ai].fracs[wi] = pct / 100;
   const isCur = wi === window.currentWeekIdx;
   input.className = 'ae-pct-input' + (pct > 0 ? ' has-val' : '') + (isCur ? ' cur-wk' : '');
+  // Refresh the per-cell hours label.
+  const personRec = RESOURCES_DATA.people[Editor.person] || {};
+  const cap = (personRec.proj_cap || [])[wi] || 0;
+  const hrsEl = document.getElementById('ae-hrs-' + ai + '-' + wi);
+  if (hrsEl) hrsEl.textContent = pct > 0 ? (Math.round((pct / 100) * cap * 10) / 10) + 'h' : '';
   aeTotRefresh(wi);
 }
 
