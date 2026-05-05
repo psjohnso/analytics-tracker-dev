@@ -2819,6 +2819,56 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .pr-modal-footer { padding:14px 24px;border-top:1px solid var(--border);background:var(--surface);display:flex;justify-content:flex-end;gap:8px; }
 .pr-itd-checkboxes { display:flex;flex-direction:column;gap:6px;border:1px solid var(--border);border-radius:var(--radius-btn);padding:8px;background:var(--surface);max-height:200px;overflow-y:auto; }
 .pr-itd-checkboxes label { font-family:'Cardo',serif;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;padding:3px 4px;border-radius:4px; }
+
+/* ── Live timer chip (header) ──────────────────────────── */
+.timer-chip {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:6px 12px 6px 10px;
+  background:rgba(131,172,22,0.18);
+  border:1px solid rgba(131,172,22,0.55);
+  border-radius:999px;
+  font-family:'Lato',sans-serif; font-size:12px; color:#fff;
+  cursor:pointer; max-width:340px; user-select:none;
+  transition:background 0.15s, border-color 0.15s, transform 0.05s;
+}
+.timer-chip:hover { background:rgba(131,172,22,0.32); border-color:rgba(131,172,22,0.85); }
+.timer-chip:active { transform:translateY(1px); }
+.timer-chip-pulse {
+  width:8px; height:8px; background:#83AC16; border-radius:50%; flex-shrink:0;
+  box-shadow:0 0 0 0 rgba(131,172,22,0.7);
+  animation: timerChipPulse 1.6s ease-out infinite;
+}
+@keyframes timerChipPulse {
+  0%   { box-shadow:0 0 0 0 rgba(131,172,22,0.7); }
+  70%  { box-shadow:0 0 0 8px rgba(131,172,22,0); }
+  100% { box-shadow:0 0 0 0 rgba(131,172,22,0); }
+}
+.timer-chip-elapsed { font-weight:800; font-variant-numeric:tabular-nums; color:#fff; letter-spacing:0.03em; flex-shrink:0; }
+.timer-chip-task { font-weight:600; opacity:0.9; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.timer-chip-badge { background:rgba(255,255,255,0.18); color:#fff; font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px; letter-spacing:0.04em; flex-shrink:0; cursor:pointer; }
+.timer-chip-badge:hover { background:rgba(255,255,255,0.3); }
+.timer-chip-caret { opacity:0.7; font-size:11px; flex-shrink:0; }
+.timer-chip-stop { border:none; background:rgba(255,255,255,0.15); color:#fff; width:22px; height:22px; border-radius:50%; font-size:10px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; transition:background 0.15s; }
+.timer-chip-stop:hover { background:rgba(220,38,38,0.6); }
+
+/* Dropdown shown for 4+ timers (or when expanding "+N more" badge) */
+.timer-chip-dropdown {
+  position:absolute; top:calc(100% + 6px); right:0; min-width:340px; max-width:420px;
+  background:#fff; color:var(--text-body); border-radius:8px;
+  padding:6px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.25);
+  z-index:200;
+}
+.timer-chip-dd-header { font-size:9px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; padding:6px 10px 4px; }
+.timer-chip-dd-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:6px; cursor:pointer; }
+.timer-chip-dd-row:hover { background:var(--surface, #F3F1EB); }
+.timer-chip-dd-title { font-size:12px; font-weight:700; color:var(--navy); }
+.timer-chip-dd-meta { font-size:10px; color:var(--text-muted); }
+.timer-chip-dd-elapsed { font-weight:800; font-variant-numeric:tabular-nums; color:var(--navy); font-size:12px; }
+.timer-chip-dd-stop { border:none; background:rgba(220,38,38,0.1); color:#991B1B; width:22px; height:22px; border-radius:50%; font-size:10px; cursor:pointer; }
+.timer-chip-dd-stop:hover { background:rgba(220,38,38,0.25); }
+.timer-chip-dd-footer { border-top:1px solid var(--border); margin-top:4px; padding:8px 10px; display:flex; justify-content:space-between; align-items:center; font-size:11px; }
+.timer-chip-dd-footer a { font-weight:700; color:var(--navy); text-decoration:none; }
 .pr-itd-checkboxes label:hover { background:#fff; }
 .pr-rt-table { width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:13px; }
 .pr-rt-table th { background:#FDFCF8;padding:10px 14px;text-align:left;font-weight:700;color:var(--navy);border-bottom:2px solid var(--border);font-size:12px;text-transform:uppercase;letter-spacing:0.04em; }
@@ -2859,6 +2909,11 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
     </div>
   </div>
   <div id="user-info" style="display:flex;align-items:center;gap:10px;margin-left:auto;padding-right:16px;font-size:12px;color:rgba(255,255,255,0.8);">
+    <!-- Live timer chip — visible when one or more time-tracking timers are running. -->
+    <div id="timer-chip-wrap" style="position:relative;display:none;">
+      <button id="timer-chip" class="timer-chip" onclick="onTimerChipClick(event)"></button>
+      <div id="timer-chip-dropdown" class="timer-chip-dropdown" style="display:none;"></div>
+    </div>
     <span id="user-display" style="display:none;align-items:center;gap:6px;">
       <span id="user-avatar" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;letter-spacing:0.02em;overflow:hidden;"></span>
       <span style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;">
@@ -3701,7 +3756,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.6.0.0001';
+const APP_VERSION = '1.7.0.0001';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -7681,6 +7736,8 @@ function applyAuthState() {
     if (roleBadge) roleBadge.style.display = 'none';
     document.body.classList.add('read-only-mode');
     if (banner) banner.style.display = 'flex';
+    var chipWrap = document.getElementById('timer-chip-wrap');
+    if (chipWrap) chipWrap.style.display = 'none';
   }
   if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();
 }
@@ -11328,6 +11385,7 @@ async function batchDeleteTasks() {
     // Load personal time entries
     if (Auth.fullName && isTimeTrackingEnabled()) {
       await loadTimeEntries();
+      if (typeof renderTimerChip === 'function') renderTimerChip();
     }
 
     // Load issues
@@ -14441,6 +14499,7 @@ async function loadTaskHours() {
 async function reloadAllTimeData() {
   await loadTaskHours();
   await loadTimeEntries();
+  if (typeof renderTimerChip === 'function') renderTimerChip();
 }
 
 // ── STATUS HISTORY ────────────────────────────────────────────────────
@@ -15203,15 +15262,159 @@ function toDatetimeLocal(epochMs) {
     'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
 }
 
+// Stopwatch-style HH:MM:SS formatter for the live header chip.
+function formatTimerChip(ms) {
+  if (ms < 0) ms = 0;
+  var s = Math.floor(ms / 1000);
+  var h = Math.floor(s / 3600);
+  var m = Math.floor((s % 3600) / 60);
+  var sec = s % 60;
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  return pad(h) + ':' + pad(m) + ':' + pad(sec);
+}
+
+// Build (or rebuild) the header timer chip based on current active timers.
+// 0 timers → chip hidden. 1 → full chip. 2–3 → most-recent + "+N more" badge. 4+ → summary pill.
+function renderTimerChip() {
+  var wrap = document.getElementById('timer-chip-wrap');
+  var chip = document.getElementById('timer-chip');
+  if (!wrap || !chip) return;
+  if (!Auth || !Auth.fullName) { wrap.style.display = 'none'; return; }
+  var timers = (typeof getActiveTimers === 'function') ? getActiveTimers() : [];
+  if (!timers.length) {
+    wrap.style.display = 'none';
+    var dd = document.getElementById('timer-chip-dropdown');
+    if (dd) dd.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'inline-block';
+
+  // Most recent first
+  timers = timers.slice().sort(function(a, b) { return b.start_time - a.start_time; });
+  var primary = timers[0];
+  var task = TASKS.find(function(t) { return t.idx === primary.task_idx; });
+  var title = task ? task.title : 'Task #' + primary.task_idx;
+  var titleEsc = (typeof esc === 'function') ? esc(title) : title;
+
+  var html = '';
+  if (timers.length === 1) {
+    html += '<span class="timer-chip-pulse"></span>';
+    html += '<span class="timer-chip-elapsed" id="chip-primary-elapsed">' + formatTimerChip(Date.now() - primary.start_time) + '</span>';
+    html += '<span class="timer-chip-task" title="' + titleEsc + '">' + titleEsc + '</span>';
+    html += '<button class="timer-chip-stop" onclick="event.stopPropagation();stopTimer(' + primary.oid + ');" title="Stop timer">⏹</button>';
+  } else if (timers.length <= 3) {
+    html += '<span class="timer-chip-pulse"></span>';
+    html += '<span class="timer-chip-elapsed" id="chip-primary-elapsed">' + formatTimerChip(Date.now() - primary.start_time) + '</span>';
+    html += '<span class="timer-chip-task" title="' + titleEsc + '">' + titleEsc + '</span>';
+    html += '<span class="timer-chip-badge" onclick="event.stopPropagation();toggleTimerChipDropdown();">+' + (timers.length - 1) + ' more</span>';
+    html += '<button class="timer-chip-stop" onclick="event.stopPropagation();stopTimer(' + primary.oid + ');" title="Stop most recent timer">⏹</button>';
+  } else {
+    var combined = timers.reduce(function(s, e) { return s + (Date.now() - e.start_time); }, 0);
+    html += '<span class="timer-chip-pulse"></span>';
+    html += '<span class="timer-chip-elapsed" id="chip-summary-elapsed">' + formatTimerChip(combined) + '</span>';
+    html += '<span class="timer-chip-task">' + timers.length + ' timers running</span>';
+    html += '<span class="timer-chip-caret">▾</span>';
+  }
+  chip.innerHTML = html;
+
+  // Re-render dropdown content (keeps state in sync if open)
+  renderTimerChipDropdown(timers);
+
+  // Make sure the per-second tick is running.
+  startTimerTick();
+}
+
+function renderTimerChipDropdown(timers) {
+  var dd = document.getElementById('timer-chip-dropdown');
+  if (!dd) return;
+  if (!timers || !timers.length) { dd.style.display = 'none'; return; }
+  var html = '<div class="timer-chip-dd-header">Active timers</div>';
+  timers.forEach(function(e) {
+    var task = TASKS.find(function(t) { return t.idx === e.task_idx; });
+    var title = task ? task.title : 'Task #' + e.task_idx;
+    var titleEsc = (typeof esc === 'function') ? esc(title) : title;
+    var projTitle = '';
+    if (task && task.project) projTitle = task.project;
+    else if (task && task.project_id) {
+      var proj = PROJECTS.find(function(p) { return p.id == task.project_id; });
+      if (proj) projTitle = proj.title;
+    }
+    html += '<div class="timer-chip-dd-row" onclick="switchTab(\'mywork\');closeTimerChipDropdown();">';
+    html += '<span class="timer-chip-pulse" style="width:6px;height:6px;"></span>';
+    html += '<div style="flex:1;min-width:0;">';
+    html += '<div class="timer-chip-dd-title">' + titleEsc + '</div>';
+    if (projTitle) html += '<div class="timer-chip-dd-meta">' + (typeof esc === 'function' ? esc(projTitle) : projTitle) + '</div>';
+    html += '</div>';
+    html += '<span class="timer-chip-dd-elapsed" id="chip-dd-elapsed-' + e.oid + '">' + formatTimerChip(Date.now() - e.start_time) + '</span>';
+    html += '<button class="timer-chip-dd-stop" onclick="event.stopPropagation();stopTimer(' + e.oid + ');" title="Stop this timer">⏹</button>';
+    html += '</div>';
+  });
+  html += '<div class="timer-chip-dd-footer">';
+  html += '<span style="color:var(--text-muted);">' + timers.length + ' running</span>';
+  html += '<a href="#" onclick="event.preventDefault();closeTimerChipDropdown();switchTab(\'mywork\');">Manage in My Work →</a>';
+  html += '</div>';
+  dd.innerHTML = html;
+}
+
+function toggleTimerChipDropdown() {
+  var dd = document.getElementById('timer-chip-dropdown');
+  if (!dd) return;
+  dd.style.display = (dd.style.display === 'block') ? 'none' : 'block';
+}
+
+function closeTimerChipDropdown() {
+  var dd = document.getElementById('timer-chip-dropdown');
+  if (dd) dd.style.display = 'none';
+}
+
+function onTimerChipClick(evt) {
+  // For the 4+ case, the chip itself opens the dropdown; otherwise it jumps to My Work.
+  var timers = getActiveTimers();
+  if (timers.length >= 4) {
+    toggleTimerChipDropdown();
+  } else {
+    switchTab('mywork');
+  }
+}
+
+// Close dropdown when clicking outside the chip wrapper.
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('timer-chip-wrap');
+  if (!wrap) return;
+  if (!wrap.contains(e.target)) closeTimerChipDropdown();
+});
+
 function startTimerTick() {
-  if (Internal.timerInterval) clearInterval(Internal.timerInterval);
+  if (Internal.timerInterval) return; // already ticking
   Internal.timerInterval = setInterval(function() {
-    const activeTimers = getActiveTimers();
+    var activeTimers = getActiveTimers();
+    if (!activeTimers.length) {
+      // Stop ticking when there's nothing to update — restart on next renderTimerChip call.
+      clearInterval(Internal.timerInterval);
+      Internal.timerInterval = null;
+      return;
+    }
     activeTimers.forEach(function(e) {
-      const el = document.getElementById('timer-elapsed-' + e.oid);
+      // My Work card elapsed (existing)
+      var el = document.getElementById('timer-elapsed-' + e.oid);
       if (el) el.textContent = formatDuration(Date.now() - e.start_time);
+      // Chip dropdown row elapsed (when dropdown is open)
+      var dEl = document.getElementById('chip-dd-elapsed-' + e.oid);
+      if (dEl) dEl.textContent = formatTimerChip(Date.now() - e.start_time);
     });
-  }, 10000); // update every 10 seconds
+    // Chip primary elapsed (1–3 timers case)
+    var primaryEl = document.getElementById('chip-primary-elapsed');
+    if (primaryEl && activeTimers.length <= 3) {
+      var sorted = activeTimers.slice().sort(function(a, b) { return b.start_time - a.start_time; });
+      primaryEl.textContent = formatTimerChip(Date.now() - sorted[0].start_time);
+    }
+    // Chip summary elapsed (4+ case)
+    var summaryEl = document.getElementById('chip-summary-elapsed');
+    if (summaryEl && activeTimers.length >= 4) {
+      var combined = activeTimers.reduce(function(s, e) { return s + (Date.now() - e.start_time); }, 0);
+      summaryEl.textContent = formatTimerChip(combined);
+    }
+  }, 1000);
 }
 
 function buildTimeEntryRowHTML(e, opts) {
