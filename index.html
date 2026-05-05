@@ -2647,14 +2647,17 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .pr-cs-label { font-family:'Lato',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted); }
 .pr-cs-value { font-family:'Lato',sans-serif;font-size:14px;font-weight:700;color:var(--navy); }
 .pr-cs-attendees { flex:1;min-width:280px;font-family:'Cardo',serif;font-size:13px;color:var(--text-body); }
-.pr-toolbar { display:flex;gap:10px;margin-bottom:18px;align-items:center;flex-wrap:wrap; }
+.pr-controls-bar { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap; }
+.pr-control-group { display:flex;align-items:center;gap:8px; }
+.pr-control-label { font-family:'Lato',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted); }
+.pr-chips-bar { display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px; }
+.pr-chips-label { margin-right:4px; }
 .pr-tb-chip { font-family:'Lato',sans-serif;font-size:11px;font-weight:700;padding:6px 12px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text-body);letter-spacing:0.04em; }
 .pr-tb-chip.active { background:var(--orange);color:#fff;border-color:var(--orange); }
 .pr-tb-chip .pr-count { margin-left:6px;opacity:0.7;font-weight:400; }
-.pr-toolbar-right { margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap; }
-.pr-assignee-select { font-family:'Lato',sans-serif;font-size:12px;font-weight:600;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text-body);cursor:pointer;min-width:180px;max-width:260px; }
+.pr-assignee-select { font-family:'Lato',sans-serif;font-size:12px;font-weight:600;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text-body);cursor:pointer;min-width:200px;max-width:280px; }
 .pr-assignee-select:focus { outline:none;border-color:var(--navy); }
-.pr-view-toggle { display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden; }
+.pr-view-toggle { display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0; }
 .pr-vt-btn { font-family:'Lato',sans-serif;font-size:11px;font-weight:700;padding:6px 14px;cursor:pointer;border:none;background:#fff;color:var(--text-body);letter-spacing:0.04em;transition:background 0.15s; }
 .pr-vt-btn:hover { background:#F3F1EB; }
 .pr-vt-btn.active { background:var(--navy);color:#fff; }
@@ -3660,7 +3663,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.0.0.0010';
+const APP_VERSION = '1.0.0.0011';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -18551,7 +18554,26 @@ function renderProjectReview(area) {
     return '<button class="' + cls + '" onclick="prToggleFilterStatus(\'' + value + '\')">' +
       label + '<span class="pr-count">' + count + '</span></button>';
   }
-  html += '<div class="pr-toolbar">';
+  // Row 1 — controls bar: assignee dropdown (left) + view toggle (right). Stable single row on any reasonable width.
+  html += '<div class="pr-controls-bar">';
+  html += '<div class="pr-control-group">';
+  html += '<label class="pr-control-label" for="pr-assignee-select">Assignee</label>';
+  html += '<select id="pr-assignee-select" class="pr-assignee-select" onchange="prSetAssigneeFilter(this.value)">';
+  html += '<option value=""' + (!_reviewAssigneeFilter ? ' selected' : '') + '>All assignees</option>';
+  assigneeOpts.forEach(function(n) {
+    html += '<option value="' + esc(n) + '"' + (_reviewAssigneeFilter === n ? ' selected' : '') + '>' + esc(n) + '</option>';
+  });
+  html += '</select>';
+  html += '</div>';
+  html += '<div class="pr-view-toggle">';
+  html += '<button class="pr-vt-btn' + (_prViewMode === 'card' ? ' active' : '') + '" onclick="prSetViewMode(\'card\')">Cards</button>';
+  html += '<button class="pr-vt-btn' + (_prViewMode === 'table' ? ' active' : '') + '" onclick="prSetViewMode(\'table\')">Table</button>';
+  html += '</div>';
+  html += '</div>';
+
+  // Row 2 — status chip bar. Wraps within the row at narrow widths but never displaces the controls bar.
+  html += '<div class="pr-chips-bar">';
+  html += '<span class="pr-control-label pr-chips-label">Status</span>';
   html += chip('all', 'All', totalForAll);
   // Always render the canonical statuses (even if count is 0) so chip set stays consistent across assignees.
   statusOrder.forEach(function(s) { html += chip(s, s, statusCounts[s] || 0); });
@@ -18559,19 +18581,6 @@ function renderProjectReview(area) {
   Object.keys(statusCounts).forEach(function(s) {
     if (statusOrder.indexOf(s) < 0 && statusCounts[s]) html += chip(s, s, statusCounts[s]);
   });
-  // Right-side controls: assignee dropdown + view toggle
-  html += '<div class="pr-toolbar-right">';
-  html += '<select class="pr-assignee-select" onchange="prSetAssigneeFilter(this.value)" title="Filter by assignee">';
-  html += '<option value=""' + (!_reviewAssigneeFilter ? ' selected' : '') + '>All assignees</option>';
-  assigneeOpts.forEach(function(n) {
-    html += '<option value="' + esc(n) + '"' + (_reviewAssigneeFilter === n ? ' selected' : '') + '>' + esc(n) + '</option>';
-  });
-  html += '</select>';
-  html += '<div class="pr-view-toggle">';
-  html += '<button class="pr-vt-btn' + (_prViewMode === 'card' ? ' active' : '') + '" onclick="prSetViewMode(\'card\')">Cards</button>';
-  html += '<button class="pr-vt-btn' + (_prViewMode === 'table' ? ' active' : '') + '" onclick="prSetViewMode(\'table\')">Table</button>';
-  html += '</div>';
-  html += '</div>';
   html += '</div>';
 
   // Project cards
