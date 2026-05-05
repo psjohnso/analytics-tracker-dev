@@ -3756,7 +3756,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.7.0.0002';
+const APP_VERSION = '1.7.0.0003';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -15238,13 +15238,6 @@ async function saveTimeEntryEdit(oid) {
   }
 }
 
-function formatDuration(ms) {
-  const totalMin = Math.floor(ms / 60000);
-  const h = Math.floor(totalMin / 60);
-  const m = totalMin % 60;
-  return h + 'h ' + (m < 10 ? '0' : '') + m + 'm';
-}
-
 function formatTimeShort(epochMs) {
   if (!epochMs) return '—';
   const d = new Date(epochMs);
@@ -15395,9 +15388,9 @@ function startTimerTick() {
       return;
     }
     activeTimers.forEach(function(e) {
-      // My Work card elapsed (existing)
+      // My Work card elapsed (now ticks in HH:MM:SS to match the header chip)
       var el = document.getElementById('timer-elapsed-' + e.oid);
-      if (el) el.textContent = formatDuration(Date.now() - e.start_time);
+      if (el) el.textContent = formatTimerChip(Date.now() - e.start_time);
       // Chip dropdown row elapsed (when dropdown is open)
       var dEl = document.getElementById('chip-dd-elapsed-' + e.oid);
       if (dEl) dEl.textContent = formatTimerChip(Date.now() - e.start_time);
@@ -15466,7 +15459,7 @@ function buildActiveTimersHTML(activeTimers) {
       const proj = PROJECTS.find(function(p) { return p.id == task.project_id; });
       if (proj) projTitle = proj.title;
     }
-    const elapsed = formatDuration(Date.now() - e.start_time);
+    const elapsed = formatTimerChip(Date.now() - e.start_time);
     html += '<div class="timer-card">';
     html += '<div class="timer-pulse"></div>';
     html += '<div class="flex-1-min0">';
