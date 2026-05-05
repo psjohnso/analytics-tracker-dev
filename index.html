@@ -3657,7 +3657,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.0.0.0006';
+const APP_VERSION = '1.0.0.0007';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13460,7 +13460,8 @@ const _defaultReviewTypes = [
         'Data Intelligence - Artificial Intelligence'
       ],
       require_data_program: true,
-      group_by_quarter: true
+      group_by_quarter: true,
+      default_statuses: ['Active', 'Scheduled', 'On Hold', 'Future']
     },
     cadence_days: 14,
     default_attendees: [
@@ -13676,6 +13677,7 @@ function applyAppConfig(features) {
         if (dataTeamRt && dataTeamRt.filter) {
           if (dataTeamRt.filter.require_data_program == null) dataTeamRt.filter.require_data_program = true;
           if (dataTeamRt.filter.group_by_quarter == null) dataTeamRt.filter.group_by_quarter = true;
+          if (!Array.isArray(dataTeamRt.filter.default_statuses)) dataTeamRt.filter.default_statuses = ['Active', 'Scheduled', 'On Hold', 'Future'];
         }
       } else if (key === 'proj_categories') {
         if (parsed.length && typeof parsed[0] === 'object') _customProjCategories = expandDescList(parsed);
@@ -18308,9 +18310,14 @@ function prGetProjectsForReview(rt, statuses) {
   return inScope.filter(function(p) { return statuses.indexOf(p.status) >= 0; });
 }
 
+function prGetDefaultStatusesFor(rt) {
+  if (rt && rt.filter && Array.isArray(rt.filter.default_statuses)) return rt.filter.default_statuses.slice();
+  return [];
+}
+
 function prSwitchReviewType(id) {
   _currentReviewTypeId = id;
-  _reviewFilterStatuses = [];
+  _reviewFilterStatuses = prGetDefaultStatusesFor(getReviewType(id));
   _prTasksOpen = {};
   _prShowAllLog = {};
   _prSectionOpen = {};
@@ -18360,6 +18367,7 @@ function renderProjectReview(area) {
   // Pick a default review type if none selected (or if previous is gone)
   if (!_currentReviewTypeId || !getReviewType(_currentReviewTypeId)) {
     _currentReviewTypeId = (_reviewTypes && _reviewTypes.length) ? _reviewTypes[0].id : null;
+    _reviewFilterStatuses = prGetDefaultStatusesFor(getReviewType(_currentReviewTypeId));
   }
   var rt = getReviewType(_currentReviewTypeId);
 
@@ -19053,9 +19061,12 @@ async function prRtSaveForm(index) {
     _reviewTypes.push({ id: id, name: name, description: desc, filter: { itd_teams: teams, require_data_program: requireDp, group_by_quarter: groupQ }, cadence_days: cadence, default_attendees: attendees });
   } else {
     var existing = _reviewTypes[index];
+    // Preserve any existing filter fields (e.g. default_statuses) that aren't surfaced in this form.
+    var preservedDefaults = (existing.filter && Array.isArray(existing.filter.default_statuses)) ? existing.filter.default_statuses.slice() : null;
     existing.name = name;
     existing.description = desc;
     existing.filter = { itd_teams: teams, require_data_program: requireDp, group_by_quarter: groupQ };
+    if (preservedDefaults) existing.filter.default_statuses = preservedDefaults;
     existing.cadence_days = cadence;
     existing.default_attendees = attendees;
   }
