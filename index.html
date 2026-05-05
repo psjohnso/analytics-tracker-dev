@@ -522,6 +522,57 @@ body {
   color: var(--yellow);
 }
 
+/* ── Two-level tab navigation ───────────────────────────── */
+.primary-bar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 24px; gap: 0; }
+.primary-tab {
+  padding: 14px 20px 12px;
+  border: none;
+  background: transparent;
+  font-family: 'Lato', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  letter-spacing: 0.02em;
+}
+.primary-tab:hover { color: var(--navy); background: var(--surface, #F3F1EB); }
+.primary-tab.active { color: var(--navy); border-bottom-color: var(--orange); background: transparent; }
+.primary-tab .tab-count { display: inline-block; background: var(--gray-light); border-radius: 10px; font-size: 11px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
+.primary-tab .tab-count:empty { display: none; }
+.primary-tab.active .tab-count { background: var(--orange); color: #fff; }
+
+.sub-bar {
+  background: var(--surface, #F3F1EB);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 24px;
+  gap: 6px;
+  align-items: center;
+  position: sticky;
+  top: calc(var(--header-h) + 48px);
+  z-index: 49;
+}
+.sub-bar-group { display: flex; gap: 6px; align-items: center; }
+.sub-tab {
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: 'Lato', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-body);
+  cursor: pointer;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.sub-tab:hover { background: rgba(0,38,105,0.06); }
+.sub-tab.active { background: var(--white); color: var(--navy); border-color: var(--border); }
+.sub-tab .tab-count { display: inline-block; background: var(--gray-light); border-radius: 10px; font-size: 10px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
+.sub-tab .tab-count:empty { display: none; }
+.sub-tab.active .tab-count { background: var(--navy); color: var(--yellow); }
+
 /* TOOLBAR */
 .toolbar {
   padding: 12px 24px;
@@ -2828,51 +2879,41 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 
 <!-- BODY -->
 <div class="app-body">
-  <!-- TAB BAR — full width above sidebar + content -->
-  <nav class="tab-bar">
-      <button class="tab-btn active" onclick="switchTab('overview')" >
-        Overview
+  <!-- PRIMARY TAB BAR — top-level groups -->
+  <nav class="tab-bar primary-bar">
+    <button class="primary-tab active" data-group="overview" id="tab-overview" onclick="switchPrimaryGroup('overview')">Overview</button>
+    <button class="primary-tab" data-group="mywork" id="tab-mywork" onclick="switchPrimaryGroup('mywork')" style="display:none;">👤 My Work</button>
+    <button class="primary-tab" data-group="portfolio" onclick="switchPrimaryGroup('portfolio')">Portfolio</button>
+    <button class="primary-tab" data-group="capacity" onclick="switchPrimaryGroup('capacity')" style="display:none;">Capacity</button>
+    <button class="primary-tab" data-group="issues" id="tab-issues" onclick="switchPrimaryGroup('issues')">🐛 Issues <span class="tab-count" id="issues-tab-count"></span></button>
+    <button class="primary-tab" data-group="settings" id="tab-settings" onclick="switchPrimaryGroup('settings')" style="display:none;">⚙️ Settings</button>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 4px 0 0;align-self:center;">
+      <span id="unsaved-dot" title="Unsaved changes" class="show"></span>
+      <button id="btn-submit-idea" onclick="openIdeaForm()" style="display:flex;align-items:center;gap:5px;padding:7px 14px;background:#FFDB22;color:#92400E;border:none;border-radius:6px;font-size:12px;font-weight:800;font-family:Lato,sans-serif;cursor:pointer;letter-spacing:0.03em;transition:background 0.15s;" onmouseover="this.style.background='#F0CC00'" onmouseout="this.style.background='#FFDB22'">
+        💡 Submit Idea
       </button>
-      <button class="tab-btn" id="tab-mywork" onclick="switchTab('mywork')" style="display:none;">
-        👤 My Work
+      <button id="btn-save-file" onclick="saveAllData()" title="Refresh data from ArcGIS Online" class="">
+        🔄 Refresh
       </button>
-      <button class="tab-btn" onclick="switchTab('projects')">
-        Projects <span class="tab-count" id="proj-tab-count">387</span>
-      </button>
-      <button class="tab-btn" onclick="switchTab('tasks')">
-        Tasks <span class="tab-count" id="task-tab-count">1936</span>
-      </button>
-      <button class="tab-btn" id="tab-projectreview" onclick="switchTab('projectReview')" style="display:none;">
-        🔁 Project Review
-      </button>
-      <button class="tab-btn" id="tab-resources" onclick="switchTab('resources')" style="display:none;">
-        Resources
-      </button>
-      <button class="tab-btn" id="tab-forecast" onclick="switchTab('forecast')" style="display:none;">
-        📊 Forecast
-      </button>
-      <button class="tab-btn" id="tab-insights" onclick="switchTab('insights')" style="display:none;">
-        💡 Insights
-      </button>
-      <button class="tab-btn" onclick="switchTab('issues')">
-        🐛 Issues <span class="tab-count" id="issues-tab-count"></span>
-      </button>
-      <button class="tab-btn" id="tab-settings" onclick="switchTab('settings')" style="display:none;">
-        ⚙️ Settings
-      </button>
-      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 4px 0 0;align-self:center;">
-        <span id="unsaved-dot" title="Unsaved changes" class="show"></span>
-        <button id="btn-submit-idea" onclick="openIdeaForm()" style="display:flex;align-items:center;gap:5px;padding:7px 14px;background:#FFDB22;color:#92400E;border:none;border-radius:6px;font-size:12px;font-weight:800;font-family:Lato,sans-serif;cursor:pointer;letter-spacing:0.03em;transition:background 0.15s;" onmouseover="this.style.background='#F0CC00'" onmouseout="this.style.background='#FFDB22'">
-          💡 Submit Idea
-        </button>
-        <button id="btn-save-file" onclick="saveAllData()" title="Refresh data from ArcGIS Online" class="">
-          🔄 Refresh
-        </button>
-        <a href="javascript:void(0)" onclick="window.open('guide.html','_blank')" id="btn-help" title="User Guide & Help">About / Help</a>
-      </div>
-    </nav>
-    <!-- Desert Editorial Accent Bar -->
-    <div style="height:4px;background:linear-gradient(90deg,#C24200 25%,#FFDB22 25%,#FFDB22 50%,#83AC16 50%,#83AC16 75%,#002669 75%);flex-shrink:0;"></div>
+      <a href="javascript:void(0)" onclick="window.open('guide.html','_blank')" id="btn-help" title="User Guide & Help">About / Help</a>
+    </div>
+  </nav>
+
+  <!-- SUB-TAB BAR — children of the active primary group; hidden on single-destination groups (Overview, My Work, Issues, Settings) -->
+  <nav class="tab-bar sub-bar" id="sub-bar" style="display:none;">
+    <div class="sub-bar-group" data-group="portfolio" style="display:none;">
+      <button class="sub-tab" id="tab-projects" onclick="switchTab('projects')">Projects <span class="tab-count" id="proj-tab-count">387</span></button>
+      <button class="sub-tab" id="tab-tasks" onclick="switchTab('tasks')">Tasks <span class="tab-count" id="task-tab-count">1936</span></button>
+      <button class="sub-tab" id="tab-projectreview" onclick="switchTab('projectReview')" style="display:none;">🔁 Project Review</button>
+    </div>
+    <div class="sub-bar-group" data-group="capacity" style="display:none;">
+      <button class="sub-tab" id="tab-resources" onclick="switchTab('resources')" style="display:none;">Resources</button>
+      <button class="sub-tab" id="tab-forecast" onclick="switchTab('forecast')" style="display:none;">📊 Forecast</button>
+      <button class="sub-tab" id="tab-insights" onclick="switchTab('insights')" style="display:none;">💡 Insights</button>
+    </div>
+  </nav>
+  <!-- Desert Editorial Accent Bar -->
+  <div style="height:4px;background:linear-gradient(90deg,#C24200 25%,#FFDB22 25%,#FFDB22 50%,#83AC16 50%,#83AC16 75%,#002669 75%);flex-shrink:0;"></div>
 
   <!-- TOOLBAR — full width below tab bar -->
   <div class="toolbar">
@@ -3660,7 +3701,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.5.0.0002';
+const APP_VERSION = '1.6.0.0001';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -4873,6 +4914,71 @@ function updateFilterIndicator() {
 }
 
 // ─── TAB SWITCH ───────────────────────────────────────────────────────
+// ── Tab grouping ──────────────────────────────────────────────────
+// Two-level navigation: primary tabs collapse 10 flat tabs into 5 groups.
+// Sub-tabs preserve original tab IDs (`tab-mywork`, `tab-resources`, etc.) so
+// existing visibility / read-only / beta gating CSS and JS continue to work.
+const TAB_GROUPS = {
+  overview:  { label: 'Overview',   subs: ['overview'] },                                  // single-destination
+  mywork:    { label: '👤 My Work', subs: ['mywork'] },                                    // single-destination, auth-only
+  portfolio: { label: 'Portfolio',  subs: ['projects', 'tasks', 'projectReview'] },
+  capacity:  { label: 'Capacity',   subs: ['resources', 'forecast', 'insights'] },
+  issues:    { label: '🐛 Issues',  subs: ['issues'] },                                    // single-destination
+  settings:  { label: '⚙️ Settings', subs: ['settings'] }                                  // single-destination, auth-only
+};
+const TAB_TO_GROUP = {};
+Object.keys(TAB_GROUPS).forEach(function(g) { TAB_GROUPS[g].subs.forEach(function(t) { TAB_TO_GROUP[t] = g; }); });
+
+// Per-group memory of last-visited sub-tab so returning to a primary lands on the same place.
+// Only multi-sub groups need entries; single-destination groups route directly via switchTab.
+var _groupLastSub = { portfolio: 'projects', capacity: 'resources' };
+
+function tabIdToElementId(tab) {
+  // Sub-tab buttons use lowercase ids (tab-projectreview, not tab-projectReview).
+  return 'tab-' + String(tab).toLowerCase();
+}
+
+// Hide a primary tab button when all of its sub-tabs are hidden by other visibility logic.
+function applyPrimaryTabVisibility() {
+  Object.keys(TAB_GROUPS).forEach(function(g) {
+    var anyVisible = TAB_GROUPS[g].subs.some(function(tab) {
+      var el = document.getElementById(tabIdToElementId(tab));
+      if (!el) return false;
+      // Element is visible if its computed display is not 'none'. We only set display:none for hidden, so checking inline style + offsetParent covers both inline and class-based hides.
+      return el.style.display !== 'none' && (el.offsetParent !== null || el.style.display === 'flex' || el.style.display === '');
+    });
+    var primary = document.querySelector('.primary-tab[data-group="' + g + '"]');
+    if (primary) primary.style.display = anyVisible ? '' : 'none';
+    var subBar = document.querySelector('.sub-bar-group[data-group="' + g + '"]');
+    if (subBar && !anyVisible) subBar.style.display = 'none';
+  });
+  // Sub-bar wrapper visibility: hide entirely on single-destination groups (Issues, Settings).
+  var wrapper = document.getElementById('sub-bar');
+  if (wrapper) {
+    var curGroup = TAB_TO_GROUP[currentTab];
+    var hasSubBar = curGroup && TAB_GROUPS[curGroup] && TAB_GROUPS[curGroup].subs.length > 1;
+    wrapper.style.display = hasSubBar ? '' : 'none';
+  }
+}
+
+// Click handler for primary tabs: route to the last-visited (or first visible) sub-tab in the group.
+function switchPrimaryGroup(groupId) {
+  var group = TAB_GROUPS[groupId];
+  if (!group) return;
+  if (group.subs.length === 1) {
+    switchTab(group.subs[0]);
+    return;
+  }
+  var preferred = _groupLastSub[groupId];
+  // Pick first visible sub-tab as fallback
+  var visibleSubs = group.subs.filter(function(t) {
+    var el = document.getElementById(tabIdToElementId(t));
+    return el && el.style.display !== 'none';
+  });
+  var target = (preferred && visibleSubs.indexOf(preferred) >= 0) ? preferred : visibleSubs[0];
+  if (target) switchTab(target);
+}
+
 function switchTab(tab, preserveFilters) {
   // Guard: auth-only tabs require sign-in
   var authOnlyTabs = ['mywork', 'resources', 'forecast', 'insights', 'issues', 'settings', 'projectReview'];
@@ -4883,10 +4989,20 @@ function switchTab(tab, preserveFilters) {
   currentDetail = null;
   currentTab = tab;
   currentPage = 1;
-  const tabIds = ['overview','mywork','projects','tasks','projectReview','resources','forecast','insights','issues','settings'];
-  document.querySelectorAll('.tab-btn').forEach((b,i) => {
-    b.classList.toggle('active', tabIds[i] === tab);
+  // Highlight active sub-tab (ID-based — robust to DOM reordering).
+  document.querySelectorAll('.sub-tab').forEach(function(b) {
+    b.classList.toggle('active', b.id === tabIdToElementId(tab));
   });
+  // Highlight the primary tab whose group contains this sub-tab; show that group's sub-bar, hide others.
+  var groupId = TAB_TO_GROUP[tab];
+  document.querySelectorAll('.primary-tab').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.group === groupId);
+  });
+  document.querySelectorAll('.sub-bar-group').forEach(function(g) {
+    g.style.display = (g.dataset.group === groupId) ? '' : 'none';
+  });
+  if (groupId && TAB_GROUPS[groupId].subs.length > 1) _groupLastSub[groupId] = tab;
+  applyPrimaryTabVisibility();
   document.getElementById('view-toggle').style.display = (tab === 'overview' || tab === 'mywork' || tab === 'resources' || tab === 'settings' || tab === 'forecast' || tab === 'insights' || tab === 'issues' || tab === 'projectReview') ? 'none' : 'flex';
   // Sync toggle button highlight with current view preference
   document.getElementById('view-grid').classList.toggle('active', currentView === 'grid');
@@ -7197,6 +7313,7 @@ function isFeatureOn(featureName) {
 function applyBetaTabVisibility() {
   var prTab = document.getElementById('tab-projectreview');
   if (prTab) prTab.style.display = (Auth.loggedIn && isFeatureOn('projectReview')) ? '' : 'none';
+  if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();
 }
 
 // ── User Preferences ──────────────────────────────────────────────
@@ -7527,6 +7644,7 @@ function toggleAuth() {
     if (myWorkTab) myWorkTab.style.display = 'none';
     ['tab-resources', 'tab-forecast', 'tab-insights', 'tab-projectreview'].forEach(function(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; });
     if (currentTab === 'settings' || currentTab === 'mywork' || currentTab === 'resources' || currentTab === 'forecast' || currentTab === 'insights' || currentTab === 'projectReview') switchTab('overview');
+    if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();
     applyAuthState();
   } else {
     // Log in: redirect to ArcGIS Online OAuth (replace to avoid back-button loop)
@@ -7564,6 +7682,7 @@ function applyAuthState() {
     document.body.classList.add('read-only-mode');
     if (banner) banner.style.display = 'flex';
   }
+  if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();
 }
 
 /**
@@ -7668,6 +7787,7 @@ async function fetchAgolUserInfo(token) {
         console.warn('Could not check group membership:', gErr);
       }
     }
+    if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();
   } catch (err) {
     console.warn('Failed to fetch user info:', err);
   }
