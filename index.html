@@ -1561,6 +1561,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .read-only-mode #tab-resources,
 .read-only-mode #tab-forecast,
 .read-only-mode #tab-insights,
+.read-only-mode #tab-projectreview,
 .read-only-mode #tab-settings,
 .read-only-mode #tab-issues,
 .read-only-mode .detail-edit-btn,
@@ -2629,6 +2630,120 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .te-row-title { font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .te-row-hours { font-size:14px;font-weight:800;color:var(--navy);white-space:nowrap; }
 .flex-1-min0 { flex:1;min-width:0; }
+
+/* ─── PROJECT REVIEW TAB ─────────────────────────────────────── */
+.pr-page { padding:24px 32px 80px;max-width:1320px;margin:0 auto; }
+.pr-header { display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:18px;flex-wrap:wrap; }
+.pr-title { font-family:'Lato',sans-serif;font-size:22px;font-weight:900;color:var(--navy);letter-spacing:-0.01em; }
+.pr-subtitle { font-family:'Cardo',serif;font-size:14px;font-style:italic;color:var(--text-muted);margin-top:2px; }
+.pr-rt-selector { display:flex;gap:8px;align-items:center;flex-wrap:wrap; }
+.pr-rt-label { font-family:'Lato',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-right:8px; }
+.pr-rt-pill { font-family:'Lato',sans-serif;font-size:12px;font-weight:700;padding:8px 14px;border-radius:999px;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--text-body);letter-spacing:0.02em;transition:all 0.15s ease; }
+.pr-rt-pill:hover { border-color:var(--orange); }
+.pr-rt-pill.active { background:var(--navy);color:#fff;border-color:var(--navy); }
+.pr-rt-pill .pr-rt-meta { font-weight:400;font-size:10px;opacity:0.75;margin-left:6px; }
+.pr-cycle-strip { background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:18px;display:flex;align-items:center;gap:28px;flex-wrap:wrap; }
+.pr-cs-block { display:flex;flex-direction:column;gap:2px; }
+.pr-cs-label { font-family:'Lato',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted); }
+.pr-cs-value { font-family:'Lato',sans-serif;font-size:14px;font-weight:700;color:var(--navy); }
+.pr-cs-attendees { flex:1;min-width:280px;font-family:'Cardo',serif;font-size:13px;color:var(--text-body); }
+.pr-toolbar { display:flex;gap:10px;margin-bottom:18px;align-items:center;flex-wrap:wrap; }
+.pr-tb-chip { font-family:'Lato',sans-serif;font-size:11px;font-weight:700;padding:6px 12px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text-body);letter-spacing:0.04em; }
+.pr-tb-chip.active { background:var(--orange);color:#fff;border-color:var(--orange); }
+.pr-tb-chip .pr-count { margin-left:6px;opacity:0.7;font-weight:400; }
+.pr-card { background:#fff;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden; }
+.pr-card-header { padding:18px 22px 14px;display:flex;gap:16px;align-items:flex-start;border-bottom:1px solid var(--border); }
+.pr-card-header-main { flex:1;min-width:0; }
+.pr-card-id { font-family:'Lato',sans-serif;font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;background:var(--surface);padding:4px 8px;border-radius:4px;margin-bottom:6px;display:inline-block;cursor:pointer; }
+.pr-card-id:hover { color:var(--navy); }
+.pr-card-title { font-family:'Lato',sans-serif;font-size:17px;font-weight:900;color:var(--navy);line-height:1.3;letter-spacing:-0.01em;cursor:pointer; }
+.pr-card-title:hover { color:var(--orange); }
+.pr-card-meta-row { display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;font-family:'Lato',sans-serif;font-size:11px;color:var(--text-muted); }
+.pr-card-meta-row strong { color:var(--text-body);font-weight:700;margin-right:4px; }
+.pr-status-badge { font-family:'Lato',sans-serif;font-size:10px;font-weight:800;padding:4px 10px;border-radius:4px;letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap; }
+.pr-status-Active { background:#E8F5D8;color:#527512; }
+.pr-status-Scheduled { background:#FDF1C2;color:#7A5500; }
+.pr-status-Future { background:#E0EBFA;color:#1B4380; }
+.pr-status-OnHold { background:#FFE8D4;color:#8E4A04; }
+.pr-status-Complete { background:#D6F2E8;color:#055A3A; }
+.pr-status-Canceled { background:#F1F1F0;color:#6B7280; }
+.pr-cycle-badge { font-family:'Lato',sans-serif;font-size:10px;font-weight:800;padding:4px 10px;border-radius:4px;letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap; }
+.pr-cycle-fresh { background:#E8F5D8;color:#527512; }
+.pr-cycle-due { background:#FDF1C2;color:#7A5500; }
+.pr-cycle-overdue { background:#FBDBC8;color:#8E2C04; }
+.pr-cycle-never { background:var(--surface);color:var(--text-muted);border:1px dashed var(--border); }
+.pr-card-body { padding:16px 22px;display:grid;grid-template-columns:1fr 1fr;gap:24px; }
+.pr-section-label { font-family:'Lato',sans-serif;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--orange);margin-bottom:8px; }
+.pr-people-chips { display:flex;flex-wrap:wrap;gap:6px; }
+.pr-person-chip { font-family:'Lato',sans-serif;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--surface);color:var(--navy);border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px; }
+.pr-person-chip.pr-lead { background:var(--yellow);border-color:var(--orange); }
+.pr-person-chip .pr-role-tag { font-size:9px;font-weight:700;opacity:0.7;text-transform:uppercase;letter-spacing:0.05em; }
+.pr-tasks-block { margin-top:6px; }
+.pr-tasks-toggle { font-family:'Lato',sans-serif;font-size:11px;font-weight:700;color:var(--navy);cursor:pointer;padding:6px 0;display:flex;align-items:center;gap:6px;letter-spacing:0.04em; user-select:none; }
+.pr-tasks-toggle .pr-chev { transition:transform 0.15s ease; }
+.pr-tasks-block.open .pr-tasks-toggle .pr-chev { transform:rotate(90deg); }
+.pr-tasks-by-person { display:none;padding-top:8px; }
+.pr-tasks-block.open .pr-tasks-by-person { display:block; }
+.pr-tbp-person { border-left:2px solid var(--border);padding:6px 0 6px 12px;margin-bottom:10px; }
+.pr-tbp-person-name { font-family:'Lato',sans-serif;font-size:12px;font-weight:800;color:var(--navy);margin-bottom:4px; }
+.pr-tbp-task { font-family:'Cardo',serif;font-size:13px;color:var(--text-body);display:flex;align-items:center;gap:8px;padding:3px 0; }
+.pr-task-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+.pr-task-dot-Complete { background:var(--green); }
+.pr-task-dot-Active, .pr-task-dot-InProgress { background:var(--orange); }
+.pr-task-dot-Pending, .pr-task-dot-NotStarted, .pr-task-dot-default { background:#D1D5DB;border:1px solid #BBB; }
+.pr-task-dot-OnHold { background:#FFB266; }
+.pr-task-dot-Canceled { background:#E5D086; }
+.pr-tbp-task .pr-due { font-family:'Lato',sans-serif;font-size:11px;color:var(--text-muted);margin-left:auto; }
+.pr-tbp-empty { font-family:'Cardo',serif;font-style:italic;font-size:13px;color:var(--text-muted); }
+.pr-log-section { border-top:1px solid var(--border);padding:14px 22px;background:var(--surface); }
+.pr-log-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap; }
+.pr-log-entry { background:#fff;border-left:3px solid var(--green);border-radius:6px;padding:10px 14px;margin-bottom:8px;position:relative; }
+.pr-log-entry-old { border-left-color:var(--sand); }
+.pr-log-entry-head { display:flex;gap:12px;align-items:baseline;margin-bottom:6px;font-family:'Lato',sans-serif;flex-wrap:wrap; }
+.pr-log-date { font-size:12px;font-weight:800;color:var(--navy); }
+.pr-log-attendees { font-size:11px;color:var(--text-muted); }
+.pr-log-block { margin-bottom:6px; }
+.pr-log-block-label { font-family:'Lato',sans-serif;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--orange);margin-bottom:2px; }
+.pr-log-block-text { font-family:'Cardo',serif;font-size:13px;line-height:1.5;white-space:pre-wrap; }
+.pr-log-empty { font-family:'Cardo',serif;font-style:italic;font-size:13px;color:var(--text-muted);padding:6px 0; }
+.pr-log-actions { position:absolute;top:8px;right:10px;display:none;gap:4px; }
+.pr-log-entry:hover .pr-log-actions { display:flex; }
+.pr-log-action-btn { font-family:'Lato',sans-serif;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:#fff;cursor:pointer;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted); }
+.pr-log-action-btn:hover { color:var(--navy);border-color:var(--navy); }
+.pr-log-action-btn.pr-danger:hover { color:#8E2C04;border-color:#8E2C04; }
+.pr-empty-state { background:#fff;border:1px dashed var(--border);border-radius:var(--radius);padding:48px 24px;text-align:center;font-family:'Cardo',serif;font-size:14px;color:var(--text-muted);font-style:italic; }
+.pr-btn { font-family:'Lato',sans-serif;font-size:11px;font-weight:800;padding:8px 14px;border-radius:var(--radius-btn);border:none;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;transition:all 0.15s ease; }
+.pr-btn-primary { background:var(--orange);color:#fff; }
+.pr-btn-primary:hover { background:#A33700; }
+.pr-btn-secondary { background:#fff;color:var(--navy);border:1px solid var(--border); }
+.pr-btn-secondary:hover { background:var(--surface); }
+.pr-modal-backdrop { position:fixed;inset:0;background:rgba(0,38,105,0.65);display:none;align-items:flex-start;justify-content:center;padding:60px 20px;z-index:200;overflow-y:auto; }
+.pr-modal-backdrop.open { display:flex; }
+.pr-modal { background:#fff;border-radius:var(--radius);width:100%;max-width:680px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.25); }
+.pr-modal-header { padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; }
+.pr-modal-title { font-family:'Lato',sans-serif;font-size:16px;font-weight:900;color:var(--navy);letter-spacing:-0.01em; }
+.pr-modal-title small { font-family:'Cardo',serif;font-style:italic;font-weight:400;font-size:13px;color:var(--text-muted);margin-left:8px; }
+.pr-modal-close { background:transparent;border:none;cursor:pointer;font-size:22px;color:var(--text-muted);line-height:1;padding:0 4px; }
+.pr-modal-body { padding:20px 24px;max-height:70vh;overflow-y:auto; }
+.pr-field { margin-bottom:16px; }
+.pr-field-label { font-family:'Lato',sans-serif;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-body);margin-bottom:6px;display:block; }
+.pr-field-help { font-family:'Cardo',serif;font-style:italic;font-size:12px;color:var(--text-muted);margin-top:4px; }
+.pr-field input, .pr-field textarea, .pr-field select { width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-btn);font-family:'Cardo',serif;font-size:14px;background:#fff;color:var(--text-body); }
+.pr-field textarea { min-height:70px;resize:vertical; }
+.pr-field input:focus, .pr-field textarea:focus, .pr-field select:focus { outline:none;border-color:var(--orange); }
+.pr-suggestions { display:flex;flex-wrap:wrap;gap:4px;margin-top:6px; }
+.pr-sug-chip { font-family:'Lato',sans-serif;font-size:10px;font-weight:700;background:var(--surface);color:var(--navy);padding:3px 8px;border-radius:999px;cursor:pointer;border:1px solid var(--border);user-select:none; }
+.pr-sug-chip:hover { background:var(--yellow);border-color:var(--orange); }
+.pr-modal-footer { padding:14px 24px;border-top:1px solid var(--border);background:var(--surface);display:flex;justify-content:flex-end;gap:8px; }
+.pr-itd-checkboxes { display:flex;flex-direction:column;gap:6px;border:1px solid var(--border);border-radius:var(--radius-btn);padding:8px;background:var(--surface);max-height:200px;overflow-y:auto; }
+.pr-itd-checkboxes label { font-family:'Cardo',serif;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;padding:3px 4px;border-radius:4px; }
+.pr-itd-checkboxes label:hover { background:#fff; }
+.pr-rt-table { width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:13px; }
+.pr-rt-table th { background:#FDFCF8;padding:10px 14px;text-align:left;font-weight:700;color:var(--navy);border-bottom:2px solid var(--border);font-size:12px;text-transform:uppercase;letter-spacing:0.04em; }
+.pr-rt-table td { padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top; }
+.pr-rt-table tr:last-child td { border-bottom:none; }
+@media (max-width: 800px) { .pr-card-body { grid-template-columns:1fr; } }
+
 </style>
 </head>
 <body>
@@ -2695,6 +2810,9 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
       </button>
       <button class="tab-btn" onclick="switchTab('tasks')">
         Tasks <span class="tab-count" id="task-tab-count">1936</span>
+      </button>
+      <button class="tab-btn" id="tab-projectreview" onclick="switchTab('projectReview')" style="display:none;">
+        🔁 Project Review
       </button>
       <button class="tab-btn" id="tab-resources" onclick="switchTab('resources')" style="display:none;">
         Resources
@@ -3514,7 +3632,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '0.18.0.0001';
+const APP_VERSION = '1.0.0.0001';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -4758,7 +4876,7 @@ function updateFilterIndicator() {
 // ─── TAB SWITCH ───────────────────────────────────────────────────────
 function switchTab(tab, preserveFilters) {
   // Guard: auth-only tabs require sign-in
-  var authOnlyTabs = ['mywork', 'resources', 'forecast', 'insights', 'issues', 'settings'];
+  var authOnlyTabs = ['mywork', 'resources', 'forecast', 'insights', 'issues', 'settings', 'projectReview'];
   if (!Auth.loggedIn && authOnlyTabs.indexOf(tab) >= 0) {
     showToast('Sign in to access ' + tab + '.', 'warn');
     return;
@@ -4766,17 +4884,17 @@ function switchTab(tab, preserveFilters) {
   currentDetail = null;
   currentTab = tab;
   currentPage = 1;
-  const tabIds = ['overview','mywork','projects','tasks','resources','forecast','insights','issues','settings'];
+  const tabIds = ['overview','mywork','projects','tasks','projectReview','resources','forecast','insights','issues','settings'];
   document.querySelectorAll('.tab-btn').forEach((b,i) => {
     b.classList.toggle('active', tabIds[i] === tab);
   });
-  document.getElementById('view-toggle').style.display = (tab === 'overview' || tab === 'mywork' || tab === 'resources' || tab === 'settings' || tab === 'forecast' || tab === 'insights' || tab === 'issues') ? 'none' : 'flex';
+  document.getElementById('view-toggle').style.display = (tab === 'overview' || tab === 'mywork' || tab === 'resources' || tab === 'settings' || tab === 'forecast' || tab === 'insights' || tab === 'issues' || tab === 'projectReview') ? 'none' : 'flex';
   // Sync toggle button highlight with current view preference
   document.getElementById('view-grid').classList.toggle('active', currentView === 'grid');
   document.getElementById('view-list').classList.toggle('active', currentView === 'list');
   document.getElementById('sort-select').style.display = (tab === 'projects' || tab === 'tasks') ? '' : 'none';
   // Hide entire toolbar on tabs that don't need it
-  document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues') ? 'none' : '';
+  document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'projectReview') ? 'none' : '';
   const addBtn = document.getElementById('btn-add-new');
   if (tab === 'tasks') { addBtn.style.display='flex'; addBtn.textContent='＋ New Task'; }
   else { addBtn.style.display='none'; }
@@ -4790,7 +4908,7 @@ function switchTab(tab, preserveFilters) {
     const badge = document.getElementById('idea-count-badge');
     if (badge) badge.textContent = ideaCount > 0 ? ideaCount : '';
   }
-  if (tab === 'forecast' || tab === 'settings' || tab === 'mywork' || tab === 'insights' || tab === 'issues') {
+  if (tab === 'forecast' || tab === 'settings' || tab === 'mywork' || tab === 'insights' || tab === 'issues' || tab === 'projectReview') {
     document.getElementById('view-toggle').style.display = 'none';
     document.getElementById('btn-add-new').style.display = 'none';
   }
@@ -5025,6 +5143,15 @@ function render() {
   if (currentTab === 'issues') {
     document.querySelector('.app-body').classList.remove('detail-mode');
     area.innerHTML = buildIssuesPage();
+    const pg = document.getElementById('pagination');
+    if (pg) pg.remove();
+    document.getElementById('result-count').textContent = '';
+    return;
+  }
+
+  if (currentTab === 'projectReview') {
+    document.querySelector('.app-body').classList.remove('detail-mode');
+    renderProjectReview(area);
     const pg = document.getElementById('pagination');
     if (pg) pg.remove();
     document.getElementById('result-count').textContent = '';
@@ -7029,17 +7156,19 @@ function markSynced(msg) {
 const FEATURE_DEPENDENCIES = 'beta';
 const FEATURE_TASK_HISTORY = true;
 const FEATURE_AI_INTAKE = 'beta';
+const FEATURE_PROJECT_REVIEW = 'beta';
 
 // Registry of beta-eligible features (shown in Preferences when flag === 'beta')
 var BETA_FEATURES = {
   dependencies:  { flag: 'FEATURE_DEPENDENCIES',  label: 'Task Dependencies', desc: 'Track dependencies across tasks and projects. Search and add tasks from any project or entire projects as dependencies. Shows dependency icons, blocked indicators on timeline, and resolved/unresolved status on detail pages.' },
   taskHistory:   { flag: 'FEATURE_TASK_HISTORY',   label: 'Notes & Status History', desc: 'Add notes to tasks and automatically track status changes with optional reasons for On Hold, Waiting, and Canceled transitions.' },
   aiIntake:      { flag: 'FEATURE_AI_INTAKE',      label: 'AI-Guided Project Intake', desc: 'Replace the standard idea form with a guided intake that asks starter questions, generates smart follow-up questions based on your responses, and produces an AI-written project summary for reviewers.' },
+  projectReview: { flag: 'FEATURE_PROJECT_REVIEW', label: 'Project Review', desc: 'Recurring portfolio review tab — walk through projects with the people assigned, log notes/decisions/action items per cycle. Configurable review types (e.g., Data Intelligence weekly, Data Team biweekly).' },
 };
 
 // Check if a feature is enabled (global flag OR user beta opt-in)
 function isFeatureOn(featureName) {
-  var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY, aiIntake: FEATURE_AI_INTAKE };
+  var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY, aiIntake: FEATURE_AI_INTAKE, projectReview: FEATURE_PROJECT_REVIEW };
   var flag = flags[featureName];
   if (flag === true) return true;
   if (flag === false) return false;
@@ -7048,6 +7177,12 @@ function isFeatureOn(featureName) {
     return !!UserPrefs.betaFeatures[featureName];
   }
   return false;
+}
+
+// Toggle tabs that are gated behind a beta feature flag.
+function applyBetaTabVisibility() {
+  var prTab = document.getElementById('tab-projectreview');
+  if (prTab) prTab.style.display = (Auth.loggedIn && isFeatureOn('projectReview')) ? '' : 'none';
 }
 
 // ── User Preferences ──────────────────────────────────────────────
@@ -7115,6 +7250,7 @@ const ARCGIS_CONFIG = {
   timeEntriesUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/time_series/FeatureServer/0',
   statusHistoryUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/status_history/FeatureServer/0',
   issuesUrl:        'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/issues/FeatureServer/0',
+  projectReviewsUrl:'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/Project_Reviews/FeatureServer/0',
   // Public views — ArcGIS Online Item IDs for read-only feature layer views.
   // Create views in ArcGIS Online: Content → source layer → Manage → Create View Layer.
   // Share the views publicly or org-wide. Find the Item ID in the URL bar of the item page.
@@ -7375,8 +7511,8 @@ function toggleAuth() {
     if (settingsTab) settingsTab.style.display = 'none';
     const myWorkTab = document.getElementById('tab-mywork');
     if (myWorkTab) myWorkTab.style.display = 'none';
-    ['tab-resources', 'tab-forecast', 'tab-insights'].forEach(function(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; });
-    if (currentTab === 'settings' || currentTab === 'mywork' || currentTab === 'resources' || currentTab === 'forecast' || currentTab === 'insights') switchTab('overview');
+    ['tab-resources', 'tab-forecast', 'tab-insights', 'tab-projectreview'].forEach(function(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    if (currentTab === 'settings' || currentTab === 'mywork' || currentTab === 'resources' || currentTab === 'forecast' || currentTab === 'insights' || currentTab === 'projectReview') switchTab('overview');
     applyAuthState();
   } else {
     // Log in: redirect to ArcGIS Online OAuth (replace to avoid back-button loop)
@@ -8123,8 +8259,13 @@ async function loadArcGISData() {
     await loadResourcesData();
     initResourcesWeekIndices();
     loadUserPrefs();
+    applyBetaTabVisibility();
     // Apply default view preference
     currentView = UserPrefs.projectView || 'list';
+
+    // Seed default review_types config if missing, then load review log entries.
+    await ensureReviewTypesSeeded();
+    await loadProjectReviews();
 
     updateLoadingOverlay('All data loaded.');
     await loadStatusHistory();
@@ -13260,7 +13401,52 @@ const _defaultItdTeams = [
 ];
 
 // ObjectIds for the two config records (populated on load from ArcGIS)
-const _configOids = { partner_depts: null, itd_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null };
+const _configOids = { partner_depts: null, itd_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null };
+
+// ── Project Review configuration ──────────────────────────────
+// Default review types — seeded into app_config on first load if missing.
+const _defaultReviewTypes = [
+  {
+    id: 'data-intel',
+    name: 'Data Intelligence Review',
+    description: 'Weekly review of Data Intelligence team projects (GIS, Analytics, AI sub-teams).',
+    filter: { itd_teams: [
+      'Data Intelligence - GIS',
+      'Data Intelligence - Business and Advanced Analytics',
+      'Data Intelligence - Artificial Intelligence'
+    ] },
+    cadence_days: 7,
+    default_attendees: [
+      'Peter Johnson','Jessica Fraver','James McGinnis','Kate Carter',
+      'Andrew Sutton','Vladimir Berg','Liz Wilshin','Jean Paul Nduwayo Ntore',
+      'Daniel Jackson-Reeves'
+    ]
+  },
+  {
+    id: 'data-team',
+    name: 'Data Team Review',
+    description: 'Biweekly cross-team review covering the broader Data Team — Data Intelligence, Architecture, DBA, and Cloud Engineering (Snowflake).',
+    filter: { itd_teams: [
+      'Data Program',
+      'Emerging Data Infrastructure - Cloud Data Services',
+      'Data Intelligence - GIS',
+      'Data Intelligence - Business and Advanced Analytics',
+      'Data Intelligence - Artificial Intelligence'
+    ] },
+    cadence_days: 14,
+    default_attendees: [
+      'Peter Johnson','James McGinnis','Andrew Sutton','Jessica Fraver',
+      'Kate Carter','Jason Barrett','Adam Silva','Debbie Vulcan',
+      'Chance Muscarella','Tracey McCroskey','Eric Pfaff'
+    ]
+  }
+];
+let _reviewTypes = _defaultReviewTypes.map(function(rt) { return JSON.parse(JSON.stringify(rt)); });
+
+// In-memory store of all project review log entries, keyed by project_number then review_type_id.
+// Each entry: { objectId, review_id, review_type_id, project_number, meeting_date, attendees, notes, decisions, action_items, created_by, created_at }
+let PROJECT_REVIEWS = [];
+let _projectReviewsLoaded = false;
 
 // Start with defaults; overwritten by applyAppConfig() after ArcGIS load
 let _customPartnerDepts = [..._defaultPartnerDepts];
@@ -13452,6 +13638,9 @@ function applyAppConfig(features) {
       } else if (key === 'itd_teams') {
         _customItdTeams = parsed;
         _configOids.itd_teams = oid;
+      } else if (key === 'review_types') {
+        _reviewTypes = parsed;
+        _configOids.review_types = oid;
       } else if (key === 'proj_categories') {
         if (parsed.length && typeof parsed[0] === 'object') _customProjCategories = expandDescList(parsed);
         _configOids.proj_categories = oid;
@@ -13526,7 +13715,82 @@ async function saveCustomLists(listKey) {
     await saveConfigKey('task_categories', compressDescList(_customTaskCategories));
   } else if (listKey === 'task_tool') {
     await saveConfigKey('task_tools', compressDescList(_customTaskTools));
+  } else if (listKey === 'review_types') {
+    await saveConfigKey('review_types', _reviewTypes);
   }
+}
+
+// Seed the default review_types into app_config if no record exists yet.
+async function ensureReviewTypesSeeded() {
+  if (_configOids.review_types) return; // already in ArcGIS
+  if (!Auth.loggedIn) return;             // need write access
+  console.log('[Reviews] No review_types config found; seeding defaults.');
+  try {
+    await saveConfigKey('review_types', _reviewTypes);
+  } catch (e) {
+    console.warn('[Reviews] Failed to seed default review_types:', e);
+  }
+}
+
+// Load all entries from the Project_Reviews layer into PROJECT_REVIEWS.
+async function loadProjectReviews() {
+  if (!Auth.loggedIn) return;
+  try {
+    const features = await agolQuery(ARCGIS_CONFIG.projectReviewsUrl);
+    PROJECT_REVIEWS = features.map(function(f) {
+      const a = f.attributes || {};
+      return {
+        objectId: a.OBJECTID || a.ObjectId || a.objectid,
+        review_id: a.review_id,
+        review_type_id: a.review_type_id,
+        project_number: a.project_number,
+        meeting_date: a.meeting_date,   // epoch ms (DateOnly) — keep raw for sort
+        attendees: a.attendees || '',
+        notes: a.notes || '',
+        decisions: a.decisions || '',
+        action_items: a.action_items || '',
+        created_by: a.created_by || '',
+        created_at: a.created_at
+      };
+    });
+    _projectReviewsLoaded = true;
+    console.log('[Reviews] Loaded', PROJECT_REVIEWS.length, 'review entries.');
+  } catch (e) {
+    console.warn('[Reviews] Failed to load project reviews:', e);
+    PROJECT_REVIEWS = [];
+  }
+}
+
+// Compute next review_id (max existing + 1, or 1 if empty).
+function nextReviewId() {
+  let max = 0;
+  PROJECT_REVIEWS.forEach(function(r) {
+    if (typeof r.review_id === 'number' && r.review_id > max) max = r.review_id;
+  });
+  return max + 1;
+}
+
+// Find the most recent review for a project under a given review type.
+function getLastReviewForProject(projectNumber, reviewTypeId) {
+  let best = null;
+  PROJECT_REVIEWS.forEach(function(r) {
+    if (r.project_number !== projectNumber) return;
+    if (r.review_type_id !== reviewTypeId) return;
+    if (!best || (r.meeting_date || 0) > (best.meeting_date || 0)) best = r;
+  });
+  return best;
+}
+
+// All reviews for a project under a given review type, sorted newest first.
+function getReviewsForProject(projectNumber, reviewTypeId) {
+  return PROJECT_REVIEWS
+    .filter(function(r) { return r.project_number === projectNumber && r.review_type_id === reviewTypeId; })
+    .sort(function(a, b) { return (b.meeting_date || 0) - (a.meeting_date || 0); });
+}
+
+// Find a review type by id.
+function getReviewType(id) {
+  return _reviewTypes.find(function(rt) { return rt.id === id; }) || null;
 }
 
 // ── Allocation Defaults Editor ──────────────────────────────────
@@ -16403,6 +16667,12 @@ function updateBetaPref(featureKey, enabled) {
   if (!UserPrefs.betaFeatures) UserPrefs.betaFeatures = {};
   UserPrefs.betaFeatures[featureKey] = !!enabled;
   saveUserPrefs();
+  applyBetaTabVisibility();
+  // If a tab-gated feature is being turned off while the user is on its tab, fall back.
+  if (!enabled && featureKey === 'projectReview' && currentTab === 'projectReview') {
+    switchTab('overview');
+    return;
+  }
   render();
   showToast(BETA_FEATURES[featureKey].label + (enabled ? ' enabled.' : ' disabled.'), 'success');
 }
@@ -16452,6 +16722,7 @@ function renderSettingsPage(area) {
       '<div class="settings-nav-label">Project config</div>' +
       navItem('lists', 'Dropdown lists') +
       navItem('categories', 'Categories and tools') +
+      navItem('reviewtypes', 'Review types') +
     '</div>' +
     '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">System</div>' +
@@ -16607,6 +16878,15 @@ function renderSettingsPage(area) {
       '<div class="list-editor-note">Changes are saved to ArcGIS Online and shared across all users. The "Help me choose" wizard uses a fixed decision tree — adding items here will make them available in the dropdown but not automatically in the wizard.</div>';
   }
 
+  else if (_settingsSection === 'reviewtypes') {
+    panelHtml = '<div class="settings-panel-title">Review types</div>' +
+      '<div class="settings-panel-desc">Define the recurring portfolio reviews that appear on the Project Review tab. Each review type has a filter (which itd_teams are in scope), a cadence in days, and a default attendees list.</div>' +
+      '<div style="margin-bottom:14px;"><button class="settings-btn settings-btn-primary" onclick="prRtOpenForm()">＋ Add review type</button></div>' +
+      '<div id="review-types-table"></div>' +
+      '<div class="list-editor-note" style="margin-top:14px;">Changes are saved to ArcGIS Online and shared across all users. To make a review type visible to your team, ensure they have opted into the Project Review beta in their Preferences.</div>' +
+      '<div class="pr-modal-backdrop" id="pr-rt-modal-backdrop" onclick="if(event.target===this)prRtCloseForm()"><div class="pr-modal" id="pr-rt-modal"></div></div>';
+  }
+
   else if (_settingsSection === 'ai') {
     var aiPhaseChecked = _aiPhaseAssignment ? ' checked' : '';
     panelHtml = '<div class="settings-panel-title">AI features</div>' +
@@ -16649,6 +16929,9 @@ function renderSettingsPage(area) {
   }
   if (_settingsSection === 'allocations') {
     renderAllocDefaultsEditor();
+  }
+  if (_settingsSection === 'reviewtypes') {
+    renderReviewTypesTable();
   }
   if (_settingsSection === 'team' && Editor.selectedMember && people[Editor.selectedMember]) {
     renderAbsenceEditor(Editor.selectedMember);
@@ -17805,6 +18088,828 @@ async function deleteIssue(issueId) {
     showToast('Failed to delete: ' + err.message, 'error');
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════
+//  PROJECT REVIEW TAB (beta)
+// ══════════════════════════════════════════════════════════════════════
+
+var _currentReviewTypeId = null;
+var _reviewFilterMode = 'all';
+var _prTasksOpen = {};       // map of project_number -> bool (tasks expanded)
+var _prShowAllLog = {};      // map of project_number -> bool (show all log entries)
+var _prModalState = null;    // { projectNumber, reviewTypeId, editObjectId }
+
+function prFmtDate(v) {
+  if (v == null) return '';
+  var d = (typeof v === 'number') ? new Date(v) : new Date(String(v));
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+function prFmtDateShort(v) {
+  if (v == null) return '—';
+  var d = (typeof v === 'number') ? new Date(v) : new Date(String(v));
+  if (isNaN(d.getTime())) return '—';
+  return (d.getMonth()+1) + '/' + d.getDate();
+}
+function prDaysSince(epoch) {
+  if (epoch == null) return null;
+  var ms = (typeof epoch === 'number') ? epoch : Date.parse(epoch);
+  if (isNaN(ms)) return null;
+  return Math.floor((Date.now() - ms) / 86400000);
+}
+function prDateToEpoch(yyyymmdd) {
+  if (!yyyymmdd) return null;
+  // Treat as a UTC date (DateOnly) at noon to avoid timezone shifts
+  var parts = yyyymmdd.split('-');
+  if (parts.length !== 3) return null;
+  return Date.UTC(parseInt(parts[0],10), parseInt(parts[1],10) - 1, parseInt(parts[2],10), 12, 0, 0);
+}
+function prEpochToInputDate(epoch) {
+  if (epoch == null) return '';
+  var d = new Date(epoch);
+  if (isNaN(d.getTime())) return '';
+  return d.getUTCFullYear() + '-' +
+    String(d.getUTCMonth()+1).padStart(2,'0') + '-' +
+    String(d.getUTCDate()).padStart(2,'0');
+}
+
+function prCycleBadge(lastEpoch, cadenceDays) {
+  if (lastEpoch == null) return { cls: 'pr-cycle-never', label: 'Not yet reviewed' };
+  var days = prDaysSince(lastEpoch);
+  if (days == null) return { cls: 'pr-cycle-never', label: 'Not yet reviewed' };
+  var cap = cadenceDays || 14;
+  if (days <= cap) return { cls: 'pr-cycle-fresh', label: 'Reviewed ' + days + 'd ago' };
+  if (days <= cap * 1.5) return { cls: 'pr-cycle-due', label: 'Due (' + days + 'd)' };
+  return { cls: 'pr-cycle-overdue', label: 'Overdue (' + days + 'd)' };
+}
+
+// Parse contact + other_members into a unique ordered list of {name, isLead}.
+function prGetRoster(p) {
+  var seen = {};
+  var roster = [];
+  if (p.contact) {
+    seen[p.contact] = true;
+    roster.push({ name: p.contact, isLead: true });
+  }
+  if (p.other_members) {
+    String(p.other_members).split(',').forEach(function(raw) {
+      var n = raw.trim();
+      if (!n || seen[n]) return;
+      seen[n] = true;
+      roster.push({ name: n, isLead: false });
+    });
+  }
+  return roster;
+}
+
+function prTaskDotClass(status) {
+  if (!status) return 'pr-task-dot-default';
+  var s = String(status).replace(/[^A-Za-z]/g, '');
+  return 'pr-task-dot-' + s;
+}
+
+// Group tasks for a project by assignee. Returns Map-like {name: [tasks]}.
+function prGetTasksForProject(p) {
+  var byPerson = {};
+  for (var i = 0; i < TASKS.length; i++) {
+    var t = TASKS[i];
+    if (t.project_id !== p.id) continue;
+    var who = t.assignee || '(Unassigned)';
+    if (!byPerson[who]) byPerson[who] = [];
+    byPerson[who].push(t);
+  }
+  // Sort each person's tasks: Active/InProgress first, then Pending/NotStarted, then OnHold/Waiting, then Complete/Canceled
+  var rank = { 'In Progress': 0, 'Active': 0, 'Not Started': 1, 'Pending': 1, 'Waiting for Response': 2, 'On Hold': 2, 'Complete': 3, 'Completed': 3, 'Canceled': 4, 'Cancelled': 4 };
+  Object.keys(byPerson).forEach(function(name) {
+    byPerson[name].sort(function(a, b) {
+      return ((rank[a.status] != null ? rank[a.status] : 5) - (rank[b.status] != null ? rank[b.status] : 5)) ||
+        (String(a.title || '').localeCompare(String(b.title || '')));
+    });
+  });
+  return byPerson;
+}
+
+// Filter PROJECTS to those in scope for a review type.
+function prGetProjectsForReview(rt, mode) {
+  if (!rt || !rt.filter || !Array.isArray(rt.filter.itd_teams)) return [];
+  var teams = rt.filter.itd_teams;
+  var inScope = PROJECTS.filter(function(p) {
+    if (!p.itd_team) return false;
+    if (teams.indexOf(p.itd_team) < 0) return false;
+    // Exclude Idea (not yet promoted). Show others — reviewers decide what to skip.
+    if (p.status === 'Idea') return false;
+    return true;
+  });
+  if (mode === 'active') {
+    return inScope.filter(function(p) { return p.status === 'Active' || p.status === 'Scheduled'; });
+  }
+  if (mode === 'due' || mode === 'overdue') {
+    return inScope.filter(function(p) {
+      var last = getLastReviewForProject(p.project_number, rt.id);
+      var lastMs = last ? last.meeting_date : null;
+      var days = prDaysSince(lastMs);
+      var cap = rt.cadence_days || 14;
+      if (mode === 'due') {
+        if (days == null) return true; // never reviewed counts as due
+        return days > cap; // overdue any amount counts as "due this cycle"
+      }
+      // 'overdue'
+      if (days == null) return false;
+      return days > cap * 1.5;
+    });
+  }
+  if (mode === 'has_actions') {
+    return inScope.filter(function(p) {
+      var last = getLastReviewForProject(p.project_number, rt.id);
+      return last && last.action_items && last.action_items.trim().length > 0;
+    });
+  }
+  return inScope;
+}
+
+function prSwitchReviewType(id) {
+  _currentReviewTypeId = id;
+  _reviewFilterMode = 'all';
+  _prTasksOpen = {};
+  _prShowAllLog = {};
+  render();
+}
+
+function prSetFilterMode(mode) {
+  _reviewFilterMode = mode;
+  render();
+}
+
+function prToggleTasks(projNum) {
+  _prTasksOpen[projNum] = !_prTasksOpen[projNum];
+  var el = document.getElementById('pr-tasks-' + projNum);
+  if (el) el.classList.toggle('open', !!_prTasksOpen[projNum]);
+}
+
+function prToggleAllLog(projNum) {
+  _prShowAllLog[projNum] = !_prShowAllLog[projNum];
+  render();
+}
+
+function renderProjectReview(area) {
+  // Pick a default review type if none selected (or if previous is gone)
+  if (!_currentReviewTypeId || !getReviewType(_currentReviewTypeId)) {
+    _currentReviewTypeId = (_reviewTypes && _reviewTypes.length) ? _reviewTypes[0].id : null;
+  }
+  var rt = getReviewType(_currentReviewTypeId);
+
+  var html = '<div class="pr-page">';
+
+  // Header + review type selector
+  html += '<div class="pr-header">';
+  html += '<div>';
+  html += '<div class="pr-title">Project Review <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;background:#FFF7ED;color:#9A3412;border:1px solid #FED7AA;margin-left:8px;vertical-align:middle;letter-spacing:0.06em;text-transform:uppercase;font-family:Lato,sans-serif;">Beta</span></div>';
+  html += '<div class="pr-subtitle">Recurring portfolio review &mdash; one card per project, walked through person-by-person.</div>';
+  html += '</div>';
+  if (_reviewTypes && _reviewTypes.length) {
+    html += '<div class="pr-rt-selector">';
+    html += '<span class="pr-rt-label">Review Type</span>';
+    _reviewTypes.forEach(function(t) {
+      var inScopeCount = prGetProjectsForReview(t, 'active').length;
+      var cls = 'pr-rt-pill' + (t.id === _currentReviewTypeId ? ' active' : '');
+      html += '<button class="' + cls + '" onclick="prSwitchReviewType(\'' + esc(t.id) + '\')">' +
+        esc(t.name) +
+        '<span class="pr-rt-meta">' + ((t.cadence_days === 7) ? 'weekly' : ((t.cadence_days === 14) ? 'biweekly' : (t.cadence_days || '?') + 'd')) + ' &middot; ' + inScopeCount + ' active</span>' +
+        '</button>';
+    });
+    html += '</div>';
+  }
+  html += '</div>'; // pr-header
+
+  if (!rt) {
+    html += '<div class="pr-empty-state">No review types configured. A Team Lead can add one in Settings &rarr; Reviews.</div>';
+    html += '</div>';
+    area.innerHTML = html;
+    return;
+  }
+
+  // Cycle strip
+  var cadenceLabel = (rt.cadence_days === 7) ? 'Weekly &middot; 7 days' :
+                     (rt.cadence_days === 14) ? 'Biweekly &middot; 14 days' :
+                     (rt.cadence_days ? (rt.cadence_days + ' days') : '—');
+  var attendees = (rt.default_attendees && rt.default_attendees.length)
+    ? rt.default_attendees.join(', ')
+    : '(none configured)';
+  html += '<div class="pr-cycle-strip">';
+  html += '<div class="pr-cs-block"><div class="pr-cs-label">Cadence</div><div class="pr-cs-value">' + cadenceLabel + '</div></div>';
+  if (rt.description) {
+    html += '<div class="pr-cs-block" style="flex:1;min-width:240px;"><div class="pr-cs-label">Description</div><div style="font-family:Cardo,serif;font-size:13px;font-style:italic;color:var(--text-body);">' + esc(rt.description) + '</div></div>';
+  }
+  html += '<div class="pr-cs-block pr-cs-attendees"><div class="pr-cs-label">Default Attendees</div><div>' + esc(attendees) + '</div></div>';
+  html += '</div>';
+
+  // Filter chips with counts
+  var allInScope = prGetProjectsForReview(rt, 'all');
+  var dueCount = prGetProjectsForReview(rt, 'due').length;
+  var overdueCount = prGetProjectsForReview(rt, 'overdue').length;
+  var activeCount = prGetProjectsForReview(rt, 'active').length;
+  var actionsCount = prGetProjectsForReview(rt, 'has_actions').length;
+
+  function chip(mode, label, count) {
+    var cls = 'pr-tb-chip' + (_reviewFilterMode === mode ? ' active' : '');
+    return '<button class="' + cls + '" onclick="prSetFilterMode(\'' + mode + '\')">' +
+      label + '<span class="pr-count">' + count + '</span></button>';
+  }
+  html += '<div class="pr-toolbar">';
+  html += chip('all', 'All in scope', allInScope.length);
+  html += chip('active', 'Active only', activeCount);
+  html += chip('due', 'Due this cycle', dueCount);
+  html += chip('overdue', 'Overdue', overdueCount);
+  html += chip('has_actions', 'Has open action items', actionsCount);
+  html += '</div>';
+
+  // Project cards
+  var projects = prGetProjectsForReview(rt, _reviewFilterMode);
+  if (!projects.length) {
+    html += '<div class="pr-empty-state">No projects match the current filter.</div>';
+  } else {
+    // Sort: Active first, then Scheduled, then On Hold, then others; within each, by overdue cycle desc
+    var statusRank = { 'Active': 0, 'Scheduled': 1, 'On Hold': 2, 'Future': 3, 'Complete': 4, 'Canceled': 5 };
+    projects.sort(function(a, b) {
+      var sa = statusRank[a.status] != null ? statusRank[a.status] : 9;
+      var sb = statusRank[b.status] != null ? statusRank[b.status] : 9;
+      if (sa !== sb) return sa - sb;
+      var la = getLastReviewForProject(a.project_number, rt.id);
+      var lb = getLastReviewForProject(b.project_number, rt.id);
+      var da = la ? prDaysSince(la.meeting_date) : 9999;
+      var db = lb ? prDaysSince(lb.meeting_date) : 9999;
+      return db - da; // most overdue first within status
+    });
+    projects.forEach(function(p) {
+      html += renderProjectReviewCard(p, rt);
+    });
+  }
+
+  html += '</div>'; // pr-page
+
+  // Modal placeholder
+  html += '<div class="pr-modal-backdrop" id="pr-modal-backdrop" onclick="if(event.target===this)prCloseLogModal()"><div class="pr-modal" id="pr-modal"></div></div>';
+
+  area.innerHTML = html;
+}
+
+function renderProjectReviewCard(p, rt) {
+  var pn = p.project_number || '';
+  var statusCls = 'pr-status-' + String(p.status || '').replace(/[^A-Za-z]/g, '');
+  var last = getLastReviewForProject(pn, rt.id);
+  var badge = prCycleBadge(last ? last.meeting_date : null, rt.cadence_days);
+
+  var html = '<article class="pr-card">';
+
+  // Header
+  html += '<div class="pr-card-header">';
+  html += '<div class="pr-card-header-main">';
+  html += '<span class="pr-card-id" onclick="if(' + (p.objectId || 0) + ')openProject(' + (p.objectId || 0) + ')">Project &middot; ' + esc(pn || ('#' + p.id)) + '</span>';
+  html += '<div class="pr-card-title" onclick="if(' + (p.objectId || 0) + ')openProject(' + (p.objectId || 0) + ')">' + esc(p.title || '(no title)') + '</div>';
+  html += '<div class="pr-card-meta-row">';
+  if (p.partner_dept) html += '<span><strong>Partner:</strong>' + esc(p.partner_dept) + '</span>';
+  if (p.category) html += '<span><strong>Category:</strong>' + esc(p.category) + '</span>';
+  if (p.itd_team) html += '<span><strong>ITD Team:</strong>' + esc(p.itd_team) + '</span>';
+  if (p.project_size) html += '<span><strong>Size:</strong>' + esc(p.project_size) + '</span>';
+  if (p.start || p.end) {
+    html += '<span><strong>Window:</strong>' + (p.start ? prFmtDate(p.start) : '—') + ' &mdash; ' + (p.end ? prFmtDate(p.end) : '—') + '</span>';
+  }
+  html += '</div>';
+  html += '</div>'; // pr-card-header-main
+  html += '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">';
+  html += '<span class="pr-status-badge ' + statusCls + '">' + esc(p.status || '—') + '</span>';
+  html += '<span class="pr-cycle-badge ' + badge.cls + '">' + esc(badge.label) + '</span>';
+  html += '</div>';
+  html += '</div>'; // pr-card-header
+
+  // Body
+  html += '<div class="pr-card-body">';
+
+  // People
+  var roster = prGetRoster(p);
+  html += '<div>';
+  html += '<div class="pr-section-label">People on Project</div>';
+  if (roster.length) {
+    html += '<div class="pr-people-chips">';
+    roster.forEach(function(r) {
+      html += '<span class="pr-person-chip' + (r.isLead ? ' pr-lead' : '') + '">' + esc(r.name) +
+        (r.isLead ? '<span class="pr-role-tag">Lead</span>' : '') + '</span>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="pr-tbp-empty">No contact or other members listed on the project record.</div>';
+  }
+  html += '</div>';
+
+  // Tasks
+  var byPerson = prGetTasksForProject(p);
+  var personNames = Object.keys(byPerson);
+  var taskCount = personNames.reduce(function(s, n) { return s + byPerson[n].length; }, 0);
+  var counts = { Complete:0, Active:0, Pending:0, Other:0 };
+  personNames.forEach(function(n) {
+    byPerson[n].forEach(function(t) {
+      var s = t.status || '';
+      if (s === 'Complete' || s === 'Completed') counts.Complete++;
+      else if (s === 'Active' || s === 'In Progress') counts.Active++;
+      else if (s === 'Pending' || s === 'Not Started') counts.Pending++;
+      else counts.Other++;
+    });
+  });
+  var summaryParts = [taskCount + ' task' + (taskCount === 1 ? '' : 's')];
+  if (counts.Complete) summaryParts.push(counts.Complete + ' complete');
+  if (counts.Active) summaryParts.push(counts.Active + ' active');
+  if (counts.Pending) summaryParts.push(counts.Pending + ' pending');
+  if (counts.Other) summaryParts.push(counts.Other + ' other');
+
+  var openCls = _prTasksOpen[pn] ? ' open' : '';
+  html += '<div>';
+  html += '<div class="pr-section-label">Work in Progress</div>';
+  html += '<div class="pr-tasks-block' + openCls + '" id="pr-tasks-' + esc(pn) + '">';
+  if (taskCount === 0) {
+    html += '<div class="pr-tbp-empty">No tasks logged for this project yet.</div>';
+  } else {
+    html += '<div class="pr-tasks-toggle" onclick="prToggleTasks(\'' + esc(pn) + '\')">' +
+      '<span class="pr-chev">&#9656;</span> ' + summaryParts.join(' &middot; ') + '</div>';
+    html += '<div class="pr-tasks-by-person">';
+    // Group: roster people first (in roster order), then anyone else
+    var rosterNames = roster.map(function(r) { return r.name; });
+    var ordered = rosterNames.slice();
+    personNames.forEach(function(n) { if (ordered.indexOf(n) < 0) ordered.push(n); });
+    ordered.forEach(function(n) {
+      var tasks = byPerson[n] || [];
+      if (!tasks.length && rosterNames.indexOf(n) < 0) return; // skip empties for non-roster
+      html += '<div class="pr-tbp-person">';
+      html += '<div class="pr-tbp-person-name">' + esc(n) + ' &mdash; ' + tasks.length + ' task' + (tasks.length === 1 ? '' : 's') + '</div>';
+      if (!tasks.length) {
+        html += '<div class="pr-tbp-empty">No tasks logged. Speak to the project at the program level.</div>';
+      } else {
+        var maxShow = 6;
+        tasks.slice(0, maxShow).forEach(function(t) {
+          var dotCls = 'pr-task-dot ' + prTaskDotClass(t.status);
+          var dueLabel = '';
+          if (t.actual_end) dueLabel = 'done ' + prFmtDateShort(t.actual_end);
+          else if (t.due) dueLabel = 'due ' + prFmtDateShort(t.due);
+          else if (t.start) dueLabel = 'start ' + prFmtDateShort(t.start);
+          html += '<div class="pr-tbp-task"><span class="' + dotCls + '"></span>' +
+            esc(t.title || '(untitled task)') +
+            (dueLabel ? '<span class="pr-due">' + dueLabel + '</span>' : '') +
+            '</div>';
+        });
+        if (tasks.length > maxShow) {
+          html += '<div class="pr-tbp-task" style="color:var(--text-muted);font-style:italic;">+ ' + (tasks.length - maxShow) + ' more&hellip;</div>';
+        }
+      }
+      html += '</div>'; // pr-tbp-person
+    });
+    html += '</div>'; // pr-tasks-by-person
+  }
+  html += '</div>'; // pr-tasks-block
+  html += '</div>'; // tasks col
+  html += '</div>'; // pr-card-body
+
+  // Review log
+  var entries = getReviewsForProject(pn, rt.id);
+  var defaultShow = 2;
+  var showAll = !!_prShowAllLog[pn];
+  var visible = showAll ? entries : entries.slice(0, defaultShow);
+  var canEdit = function(e) { return Auth.fullName && e.created_by === Auth.fullName; };
+  var canDelete = function(e) { return canEdit(e) || isAdmin(); };
+
+  html += '<div class="pr-log-section">';
+  html += '<div class="pr-log-header">';
+  html += '<div class="pr-section-label" style="margin-bottom:0;">Review Log &middot; ' + esc(rt.name) + '</div>';
+  if (Auth.loggedIn && !Auth.previewMode) {
+    html += '<button class="pr-btn pr-btn-primary" onclick="prOpenLogModal(\'' + esc(pn) + '\',\'' + esc(rt.id) + '\')">+ Log this cycle&rsquo;s review</button>';
+  }
+  html += '</div>';
+  if (entries.length === 0) {
+    html += '<div class="pr-log-empty">No review entries logged yet for this project.</div>';
+  } else {
+    visible.forEach(function(e, i) {
+      var oldCls = i > 0 ? ' pr-log-entry-old' : '';
+      html += '<div class="pr-log-entry' + oldCls + '">';
+      html += '<div class="pr-log-actions">';
+      if (canEdit(e)) html += '<button class="pr-log-action-btn" onclick="prOpenLogModal(\'' + esc(pn) + '\',\'' + esc(rt.id) + '\',' + e.objectId + ')">Edit</button>';
+      if (canDelete(e)) html += '<button class="pr-log-action-btn pr-danger" onclick="prDeleteLog(' + e.objectId + ')">Delete</button>';
+      html += '</div>';
+      html += '<div class="pr-log-entry-head">';
+      html += '<span class="pr-log-date">' + esc(prFmtDate(e.meeting_date)) + '</span>';
+      if (e.attendees) html += '<span class="pr-log-attendees">' + esc(e.attendees) + '</span>';
+      if (e.created_by) html += '<span class="pr-log-attendees" style="margin-left:auto;">logged by ' + esc(e.created_by) + '</span>';
+      html += '</div>';
+      if (e.notes) {
+        html += '<div class="pr-log-block"><div class="pr-log-block-label">Notes</div><div class="pr-log-block-text">' + esc(e.notes) + '</div></div>';
+      }
+      if (e.decisions) {
+        html += '<div class="pr-log-block"><div class="pr-log-block-label">Decisions</div><div class="pr-log-block-text">' + esc(e.decisions) + '</div></div>';
+      }
+      if (e.action_items) {
+        html += '<div class="pr-log-block"><div class="pr-log-block-label">Action Items</div><div class="pr-log-block-text">' + esc(e.action_items) + '</div></div>';
+      }
+      html += '</div>'; // pr-log-entry
+    });
+    if (entries.length > defaultShow) {
+      html += '<div style="text-align:center;margin-top:6px;">' +
+        '<button class="pr-log-action-btn" onclick="prToggleAllLog(\'' + esc(pn) + '\')">' +
+        (showAll ? 'Hide older entries' : 'Show ' + (entries.length - defaultShow) + ' older entr' + (entries.length - defaultShow === 1 ? 'y' : 'ies')) +
+        '</button></div>';
+    }
+  }
+  html += '</div>'; // pr-log-section
+
+  html += '</article>';
+  return html;
+}
+
+// ── LOG REVIEW MODAL ─────────────────────────────────────────
+function prOpenLogModal(projectNumber, reviewTypeId, editObjectId) {
+  var p = PROJECTS.find(function(x) { return x.project_number === projectNumber; });
+  var rt = getReviewType(reviewTypeId);
+  if (!p || !rt) { showToast('Could not open review form.', 'error'); return; }
+
+  var existing = null;
+  if (editObjectId) {
+    existing = PROJECT_REVIEWS.find(function(r) { return r.objectId === editObjectId; });
+  }
+
+  _prModalState = { projectNumber: projectNumber, reviewTypeId: reviewTypeId, editObjectId: editObjectId || null };
+
+  var meetingDate = existing ? prEpochToInputDate(existing.meeting_date) :
+    (function() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
+  var attendeesValue = existing ? existing.attendees : (rt.default_attendees ? rt.default_attendees.join(', ') : '');
+
+  // Build suggestion list: union of team_members names + review type defaults
+  var suggestionSet = {};
+  if (rt.default_attendees) rt.default_attendees.forEach(function(n) { suggestionSet[n] = true; });
+  if (RESOURCES_DATA && RESOURCES_DATA.people) {
+    Object.keys(RESOURCES_DATA.people).forEach(function(n) {
+      if (RESOURCES_DATA.people[n].active !== false) suggestionSet[n] = true;
+    });
+  }
+  var suggestions = Object.keys(suggestionSet).sort();
+
+  var html = '';
+  html += '<div class="pr-modal-header">';
+  html += '<div class="pr-modal-title">' + (existing ? 'Edit Review Entry' : 'Log Review') + ' &mdash; ' + esc(rt.name) + '<small>' + ((rt.cadence_days === 7) ? 'weekly' : (rt.cadence_days === 14) ? 'biweekly' : ((rt.cadence_days || '?') + 'd')) + ' cadence</small></div>';
+  html += '<button class="pr-modal-close" onclick="prCloseLogModal()">&times;</button>';
+  html += '</div>';
+
+  html += '<div class="pr-modal-body">';
+  html += '<div class="pr-field"><label class="pr-field-label">Project</label>';
+  html += '<input type="text" disabled value="' + esc((p.project_number || '') + ' — ' + (p.title || '')) + '"></div>';
+
+  html += '<div class="pr-field"><label class="pr-field-label">Meeting Date</label>';
+  html += '<input type="date" id="pr-input-meeting-date" value="' + esc(meetingDate) + '"></div>';
+
+  html += '<div class="pr-field"><label class="pr-field-label">Attendees</label>';
+  html += '<input type="text" id="pr-input-attendees" value="' + esc(attendeesValue) + '" placeholder="Comma-separated names">';
+  html += '<div class="pr-field-help">Free text. Click a chip to add.</div>';
+  html += '<div class="pr-suggestions">';
+  suggestions.forEach(function(n) {
+    html += '<span class="pr-sug-chip" onclick="prAddAttendeeChip(' + JSON.stringify(n).replace(/"/g, '&quot;') + ')">+ ' + esc(n) + '</span>';
+  });
+  html += '</div></div>';
+
+  html += '<div class="pr-field"><label class="pr-field-label">Notes</label>';
+  html += '<textarea id="pr-input-notes" placeholder="What did the team discuss? Status, blockers, dependencies…">' + esc(existing ? existing.notes : '') + '</textarea></div>';
+
+  html += '<div class="pr-field"><label class="pr-field-label">Decisions</label>';
+  html += '<textarea id="pr-input-decisions" placeholder="What was decided in this meeting?">' + esc(existing ? existing.decisions : '') + '</textarea></div>';
+
+  html += '<div class="pr-field"><label class="pr-field-label">Action Items</label>';
+  html += '<textarea id="pr-input-action-items" placeholder="One per line. Owner — action — due date if applicable.">' + esc(existing ? existing.action_items : '') + '</textarea></div>';
+
+  html += '</div>'; // pr-modal-body
+
+  html += '<div class="pr-modal-footer">';
+  html += '<button class="pr-btn pr-btn-secondary" onclick="prCloseLogModal()">Cancel</button>';
+  html += '<button class="pr-btn pr-btn-primary" id="pr-save-btn" onclick="prSaveLog()">' + (existing ? 'Save Changes' : 'Save Review Entry') + '</button>';
+  html += '</div>';
+
+  document.getElementById('pr-modal').innerHTML = html;
+  document.getElementById('pr-modal-backdrop').classList.add('open');
+}
+
+function prCloseLogModal() {
+  var bd = document.getElementById('pr-modal-backdrop');
+  if (bd) bd.classList.remove('open');
+  _prModalState = null;
+}
+
+function prAddAttendeeChip(name) {
+  var input = document.getElementById('pr-input-attendees');
+  if (!input) return;
+  var list = input.value.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+  if (list.indexOf(name) >= 0) return;
+  list.push(name);
+  input.value = list.join(', ');
+}
+
+async function prSaveLog() {
+  if (!_prModalState) return;
+  var saveBtn = document.getElementById('pr-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+
+  var meetingDate = (document.getElementById('pr-input-meeting-date') || {}).value || '';
+  var attendees = (document.getElementById('pr-input-attendees') || {}).value || '';
+  var notes = (document.getElementById('pr-input-notes') || {}).value || '';
+  var decisions = (document.getElementById('pr-input-decisions') || {}).value || '';
+  var actionItems = (document.getElementById('pr-input-action-items') || {}).value || '';
+
+  if (!meetingDate) {
+    showToast('Meeting date is required.', 'error');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Review Entry'; }
+    return;
+  }
+
+  var meetingEpoch = prDateToEpoch(meetingDate);
+  var nowEpoch = Date.now();
+
+  try {
+    if (_prModalState.editObjectId) {
+      // Update
+      var existing = PROJECT_REVIEWS.find(function(r) { return r.objectId === _prModalState.editObjectId; });
+      var updateAttrs = {
+        OBJECTID: _prModalState.editObjectId,
+        meeting_date: meetingEpoch,
+        attendees: attendees,
+        notes: notes,
+        decisions: decisions,
+        action_items: actionItems
+      };
+      var result = await agolApplyEdits(ARCGIS_CONFIG.projectReviewsUrl, { updates: [{ attributes: updateAttrs }] });
+      if (result.updateResults && result.updateResults[0] && !result.updateResults[0].success) {
+        var err = result.updateResults[0].error || {};
+        throw new Error(err.description || 'Update failed');
+      }
+      // Update in-memory copy
+      if (existing) {
+        existing.meeting_date = meetingEpoch;
+        existing.attendees = attendees;
+        existing.notes = notes;
+        existing.decisions = decisions;
+        existing.action_items = actionItems;
+      }
+      showToast('Review entry updated.', 'success');
+    } else {
+      // Add
+      var newReviewId = nextReviewId();
+      var addAttrs = {
+        review_id: newReviewId,
+        review_type_id: _prModalState.reviewTypeId,
+        project_number: _prModalState.projectNumber,
+        meeting_date: meetingEpoch,
+        attendees: attendees,
+        notes: notes,
+        decisions: decisions,
+        action_items: actionItems,
+        created_by: Auth.fullName || (Auth.username || ''),
+        created_at: nowEpoch
+      };
+      var result2 = await agolApplyEdits(ARCGIS_CONFIG.projectReviewsUrl, { adds: [{ attributes: addAttrs }] });
+      if (result2.addResults && result2.addResults[0] && !result2.addResults[0].success) {
+        var err2 = result2.addResults[0].error || {};
+        throw new Error(err2.description || 'Add failed');
+      }
+      var newOid = result2.addResults && result2.addResults[0] ? result2.addResults[0].objectId : null;
+      PROJECT_REVIEWS.push({
+        objectId: newOid,
+        review_id: newReviewId,
+        review_type_id: addAttrs.review_type_id,
+        project_number: addAttrs.project_number,
+        meeting_date: addAttrs.meeting_date,
+        attendees: addAttrs.attendees,
+        notes: addAttrs.notes,
+        decisions: addAttrs.decisions,
+        action_items: addAttrs.action_items,
+        created_by: addAttrs.created_by,
+        created_at: addAttrs.created_at
+      });
+      showToast('Review entry saved.', 'success');
+    }
+    prCloseLogModal();
+    render();
+  } catch (e) {
+    console.error('Save review failed:', e);
+    showToast('Save failed: ' + e.message, 'error');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = _prModalState && _prModalState.editObjectId ? 'Save Changes' : 'Save Review Entry'; }
+  }
+}
+
+async function prDeleteLog(objectId) {
+  if (!objectId) return;
+  if (!confirm('Delete this review entry? This cannot be undone.')) return;
+  try {
+    var result = await agolApplyEdits(ARCGIS_CONFIG.projectReviewsUrl, { deletes: [objectId] });
+    if (result.deleteResults && result.deleteResults[0] && !result.deleteResults[0].success) {
+      var err = result.deleteResults[0].error || {};
+      throw new Error(err.description || 'Delete failed');
+    }
+    PROJECT_REVIEWS = PROJECT_REVIEWS.filter(function(r) { return r.objectId !== objectId; });
+    showToast('Review entry deleted.', 'success');
+    render();
+  } catch (e) {
+    console.error('Delete review failed:', e);
+    showToast('Delete failed: ' + e.message, 'error');
+  }
+}
+
+// ── Settings: Review Types editor ────────────────────────────
+function renderReviewTypesTable() {
+  var container = document.getElementById('review-types-table');
+  if (!container) return;
+  if (!_reviewTypes || !_reviewTypes.length) {
+    container.innerHTML = '<div style="background:#fff;border:1px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-muted);font-style:italic;font-family:Cardo,serif;">No review types defined yet. Click &ldquo;Add review type&rdquo; to create one.</div>';
+    return;
+  }
+  var html = '<table class="pr-rt-table">';
+  html += '<thead><tr><th>Name</th><th>Cadence</th><th>ITD Teams in scope</th><th>Default attendees</th><th style="text-align:right;">Actions</th></tr></thead><tbody>';
+  _reviewTypes.forEach(function(rt, i) {
+    var cadenceLabel = (rt.cadence_days === 7) ? 'Weekly' :
+                       (rt.cadence_days === 14) ? 'Biweekly' :
+                       (rt.cadence_days ? rt.cadence_days + ' days' : '—');
+    var teams = (rt.filter && rt.filter.itd_teams) ? rt.filter.itd_teams : [];
+    var attendees = rt.default_attendees || [];
+    var teamsLabel = teams.length ? teams.length + ' team' + (teams.length === 1 ? '' : 's') : '—';
+    var teamsTitle = teams.join('\n');
+    var attendeesPreview = attendees.length ? (attendees.slice(0, 3).join(', ') + (attendees.length > 3 ? ' +' + (attendees.length - 3) + ' more' : '')) : '—';
+    html += '<tr>';
+    html += '<td><div style="font-weight:800;color:var(--navy);">' + esc(rt.name) + '</div>';
+    html += '<div style="font-size:11px;color:var(--text-muted);font-style:italic;margin-top:2px;">id: ' + esc(rt.id) + '</div>';
+    if (rt.description) html += '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">' + esc(rt.description) + '</div>';
+    html += '</td>';
+    html += '<td>' + cadenceLabel + '</td>';
+    html += '<td title="' + esc(teamsTitle) + '">' + teamsLabel + '</td>';
+    html += '<td>' + esc(attendeesPreview) + '</td>';
+    html += '<td style="text-align:right;white-space:nowrap;">';
+    html += '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="prRtOpenForm(' + i + ')">✏️ Edit</button>';
+    html += '<button class="settings-btn settings-btn-danger" onclick="prRtDelete(' + i + ')">🗑</button>';
+    html += '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function prRtOpenForm(index) {
+  var isNew = (index == null);
+  var existing = isNew ? null : _reviewTypes[index];
+  var data = existing ? JSON.parse(JSON.stringify(existing)) : {
+    id: '', name: '', description: '',
+    filter: { itd_teams: [] },
+    cadence_days: 14,
+    default_attendees: []
+  };
+
+  var teamsList = (_customItdTeams && _customItdTeams.length) ? _customItdTeams : [];
+  var memberNames = (RESOURCES_DATA && RESOURCES_DATA.people) ?
+    Object.keys(RESOURCES_DATA.people).filter(function(n) { return RESOURCES_DATA.people[n].active !== false; }).sort() : [];
+
+  var html = '';
+  html += '<div class="pr-modal-header">';
+  html += '<div class="pr-modal-title">' + (isNew ? 'Add Review Type' : 'Edit Review Type') + '</div>';
+  html += '<button class="pr-modal-close" onclick="prRtCloseForm()">&times;</button>';
+  html += '</div>';
+
+  html += '<div class="pr-modal-body">';
+  html += '<div class="pr-field"><label class="pr-field-label">Name</label>';
+  html += '<input type="text" id="pr-rt-input-name" value="' + esc(data.name) + '" placeholder="e.g. Data Team Review"></div>';
+
+  html += '<div class="pr-field"><label class="pr-field-label">ID</label>';
+  html += '<input type="text" id="pr-rt-input-id" value="' + esc(data.id) + '" ' + (isNew ? '' : 'disabled ') + 'placeholder="kebab-case slug, e.g. data-team">';
+  html += '<div class="pr-field-help">Used as a stable key in stored review entries. Cannot be changed once review entries exist.</div></div>';
+
+  html += '<div class="pr-field"><label class="pr-field-label">Description</label>';
+  html += '<textarea id="pr-rt-input-desc" placeholder="Short description shown in the cycle strip on the Project Review tab.">' + esc(data.description || '') + '</textarea></div>';
+
+  html += '<div class="pr-field"><label class="pr-field-label">Cadence (days)</label>';
+  html += '<input type="number" id="pr-rt-input-cadence" min="1" max="365" value="' + (data.cadence_days || 14) + '">';
+  html += '<div class="pr-field-help">7 = weekly, 14 = biweekly, 30 = monthly.</div></div>';
+
+  html += '<div class="pr-field"><label class="pr-field-label">ITD Teams in scope</label>';
+  html += '<div class="pr-itd-checkboxes">';
+  if (!teamsList.length) {
+    html += '<div style="font-style:italic;color:var(--text-muted);font-family:Cardo,serif;font-size:13px;">No ITD teams defined yet. Add some in Dropdown lists first.</div>';
+  } else {
+    teamsList.forEach(function(t) {
+      var checked = (data.filter && data.filter.itd_teams && data.filter.itd_teams.indexOf(t) >= 0) ? ' checked' : '';
+      html += '<label><input type="checkbox" class="pr-rt-team-cb" value="' + esc(t) + '"' + checked + '> ' + esc(t) + '</label>';
+    });
+  }
+  html += '</div></div>';
+
+  html += '<div class="pr-field"><label class="pr-field-label">Default Attendees</label>';
+  html += '<input type="text" id="pr-rt-input-attendees" value="' + esc((data.default_attendees || []).join(', ')) + '" placeholder="Comma-separated names">';
+  html += '<div class="pr-field-help">Free text. Click a chip to append a team member name.</div>';
+  if (memberNames.length) {
+    html += '<div class="pr-suggestions">';
+    memberNames.forEach(function(n) {
+      html += '<span class="pr-sug-chip" onclick="prRtAddAttendee(' + JSON.stringify(n).replace(/"/g, '&quot;') + ')">+ ' + esc(n) + '</span>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  html += '</div>'; // pr-modal-body
+
+  html += '<div class="pr-modal-footer">';
+  html += '<button class="pr-btn pr-btn-secondary" onclick="prRtCloseForm()">Cancel</button>';
+  html += '<button class="pr-btn pr-btn-primary" id="pr-rt-save-btn" onclick="prRtSaveForm(' + (isNew ? '-1' : index) + ')">' + (isNew ? 'Add Review Type' : 'Save Changes') + '</button>';
+  html += '</div>';
+
+  document.getElementById('pr-rt-modal').innerHTML = html;
+  document.getElementById('pr-rt-modal-backdrop').classList.add('open');
+}
+
+function prRtCloseForm() {
+  var bd = document.getElementById('pr-rt-modal-backdrop');
+  if (bd) bd.classList.remove('open');
+}
+
+function prRtAddAttendee(name) {
+  var input = document.getElementById('pr-rt-input-attendees');
+  if (!input) return;
+  var list = input.value.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+  if (list.indexOf(name) >= 0) return;
+  list.push(name);
+  input.value = list.join(', ');
+}
+
+async function prRtSaveForm(index) {
+  var saveBtn = document.getElementById('pr-rt-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+
+  var name = (document.getElementById('pr-rt-input-name') || {}).value || '';
+  var id = (document.getElementById('pr-rt-input-id') || {}).value || '';
+  var desc = (document.getElementById('pr-rt-input-desc') || {}).value || '';
+  var cadenceRaw = (document.getElementById('pr-rt-input-cadence') || {}).value || '14';
+  var cadence = parseInt(cadenceRaw, 10);
+  if (isNaN(cadence) || cadence < 1) cadence = 14;
+  var attendeesStr = (document.getElementById('pr-rt-input-attendees') || {}).value || '';
+  var attendees = attendeesStr.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+
+  var teamCbs = document.querySelectorAll('.pr-rt-team-cb');
+  var teams = [];
+  teamCbs.forEach(function(cb) { if (cb.checked) teams.push(cb.value); });
+
+  name = name.trim();
+  id = id.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+
+  if (!name) { showToast('Name is required.', 'error'); if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = (index < 0 ? 'Add Review Type' : 'Save Changes'); } return; }
+  if (!id) { showToast('ID is required.', 'error'); if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = (index < 0 ? 'Add Review Type' : 'Save Changes'); } return; }
+
+  var isNew = (index < 0);
+  if (isNew) {
+    if (_reviewTypes.some(function(rt) { return rt.id === id; })) {
+      showToast('A review type with id "' + id + '" already exists.', 'error');
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Add Review Type'; }
+      return;
+    }
+    _reviewTypes.push({ id: id, name: name, description: desc, filter: { itd_teams: teams }, cadence_days: cadence, default_attendees: attendees });
+  } else {
+    var existing = _reviewTypes[index];
+    existing.name = name;
+    existing.description = desc;
+    existing.filter = { itd_teams: teams };
+    existing.cadence_days = cadence;
+    existing.default_attendees = attendees;
+  }
+
+  try {
+    var ok = await saveConfigKey('review_types', _reviewTypes);
+    if (!ok) throw new Error('Save failed');
+    showToast('Review type ' + (isNew ? 'added' : 'updated') + '.', 'success');
+    prRtCloseForm();
+    renderReviewTypesTable();
+  } catch (e) {
+    showToast('Save failed: ' + e.message, 'error');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = (isNew ? 'Add Review Type' : 'Save Changes'); }
+  }
+}
+
+async function prRtDelete(index) {
+  var rt = _reviewTypes[index];
+  if (!rt) return;
+  // Check if any reviews exist for this type
+  var existingCount = PROJECT_REVIEWS.filter(function(r) { return r.review_type_id === rt.id; }).length;
+  var msg = 'Delete review type "' + rt.name + '"?';
+  if (existingCount > 0) {
+    msg += '\n\n' + existingCount + ' review entr' + (existingCount === 1 ? 'y' : 'ies') + ' use this type. They will remain in the database but will not appear on the Project Review tab.';
+  }
+  if (!confirm(msg)) return;
+  _reviewTypes.splice(index, 1);
+  // If the deleted type was selected on the Project Review tab, fall back
+  if (_currentReviewTypeId === rt.id) _currentReviewTypeId = null;
+  try {
+    var ok = await saveConfigKey('review_types', _reviewTypes);
+    if (!ok) throw new Error('Save failed');
+    showToast('Review type deleted.', 'success');
+    renderReviewTypesTable();
+  } catch (e) {
+    showToast('Delete failed: ' + e.message, 'error');
+  }
+}
+
 </script>
 
 
