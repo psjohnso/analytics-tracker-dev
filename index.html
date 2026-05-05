@@ -2651,6 +2651,16 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .pr-tb-chip { font-family:'Lato',sans-serif;font-size:11px;font-weight:700;padding:6px 12px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text-body);letter-spacing:0.04em; }
 .pr-tb-chip.active { background:var(--orange);color:#fff;border-color:var(--orange); }
 .pr-tb-chip .pr-count { margin-left:6px;opacity:0.7;font-weight:400; }
+.pr-quarter-section { margin-bottom:18px; }
+.pr-quarter-header { display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-surface,#F3F1EB);border:1px solid transparent;border-radius:8px;cursor:pointer;font-family:'Lato',sans-serif;font-weight:700;font-size:13px;color:var(--text-body);user-select:none;transition:background 0.15s; }
+.pr-quarter-header:hover { background:#E8E6DF; }
+.pr-quarter-header.current { background:#FFF7ED;border-color:#FED7AA;color:#9A3412; }
+.pr-quarter-header.past { background:#FCEBEB;border-color:#F3CCCC;color:#791F1F; }
+.pr-quarter-caret { display:inline-block;width:10px;font-size:10px;transition:transform 0.15s; }
+.pr-quarter-section.open .pr-quarter-caret { transform:rotate(90deg); }
+.pr-quarter-count { margin-left:auto;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,0.06); }
+.pr-quarter-body { display:none;padding-top:12px; }
+.pr-quarter-section.open .pr-quarter-body { display:block; }
 .pr-card { background:#fff;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden; }
 .pr-card-header { padding:18px 22px 14px;display:flex;gap:16px;align-items:flex-start;border-bottom:1px solid var(--border); }
 .pr-card-header-main { flex:1;min-width:0; }
@@ -3632,7 +3642,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.0.0.0003';
+const APP_VERSION = '1.0.0.0004';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13434,7 +13444,8 @@ const _defaultReviewTypes = [
         'Data Intelligence - Business and Advanced Analytics',
         'Data Intelligence - Artificial Intelligence'
       ],
-      require_data_program: true
+      require_data_program: true,
+      group_by_quarter: true
     },
     cadence_days: 14,
     default_attendees: [
@@ -13644,11 +13655,12 @@ function applyAppConfig(features) {
       } else if (key === 'review_types') {
         _reviewTypes = parsed;
         _configOids.review_types = oid;
-        // Migration: ensure the Data Team review requires the Data Program flag.
+        // Migration: bring the Data Team review's filter up to current defaults.
         // Persists in-memory only; next admin save writes it back to ArcGIS.
         var dataTeamRt = _reviewTypes.find(function(rt) { return rt.id === 'data-team'; });
-        if (dataTeamRt && dataTeamRt.filter && dataTeamRt.filter.require_data_program == null) {
-          dataTeamRt.filter.require_data_program = true;
+        if (dataTeamRt && dataTeamRt.filter) {
+          if (dataTeamRt.filter.require_data_program == null) dataTeamRt.filter.require_data_program = true;
+          if (dataTeamRt.filter.group_by_quarter == null) dataTeamRt.filter.group_by_quarter = true;
         }
       } else if (key === 'proj_categories') {
         if (parsed.length && typeof parsed[0] === 'object') _customProjCategories = expandDescList(parsed);
@@ -18106,6 +18118,7 @@ var _currentReviewTypeId = null;
 var _reviewFilterMode = 'all';
 var _prTasksOpen = {};       // map of project_number -> bool (tasks expanded)
 var _prShowAllLog = {};      // map of project_number -> bool (show all log entries)
+var _prSectionOpen = {};     // map of bucket key -> bool (quarter section expanded). undefined = use bucket default.
 var _prModalState = null;    // { projectNumber, reviewTypeId, editObjectId }
 
 function prFmtDate(v) {
@@ -18125,6 +18138,69 @@ function prDaysSince(epoch) {
   var ms = (typeof epoch === 'number') ? epoch : Date.parse(epoch);
   if (isNaN(ms)) return null;
   return Math.floor((Date.now() - ms) / 86400000);
+}
+
+// Tucson fiscal-year convention: FY runs Jul 1 → Jun 30.
+// FY-name = the calendar year the FY ends in. So Jul 2025–Jun 2026 = FY26.
+// Q1=Jul-Sep, Q2=Oct-Dec, Q3=Jan-Mar, Q4=Apr-Jun.
+function prFiscalQuarter(dateStr) {
+  if (!dateStr) return null;
+  var s = String(dateStr).slice(0, 10);
+  var parts = s.split('-');
+  if (parts.length !== 3) return null;
+  var y = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+  if (isNaN(y) || isNaN(m)) return null;
+  var fyYear = (m >= 7) ? (y + 1) : y;
+  var q = (m >= 7 && m <= 9) ? 1 : (m >= 10 && m <= 12) ? 2 : (m >= 1 && m <= 3) ? 3 : 4;
+  return {
+    fyYear: fyYear,
+    q: q,
+    key: 'fy' + fyYear + '-q' + q,
+    label: 'FY' + String(fyYear).slice(-2) + ' Q' + q,
+    sortIdx: fyYear * 4 + q
+  };
+}
+function prCurrentFiscalQuarter() {
+  var d = new Date();
+  return prFiscalQuarter(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01');
+}
+
+// Bucket projects into ordered fiscal-quarter sections.
+// Past quarters are lumped; current and each future quarter that has projects get their own bucket.
+// Projects without a target end date land in "No target date".
+// Sort within each bucket is preserved from the input array.
+function prGroupByFiscalQuarter(projects) {
+  var current = prCurrentFiscalQuarter();
+  var pastBucket = { key: 'past', label: 'Past quarters', defaultOpen: true, projects: [], sortIdx: -1 };
+  var noDateBucket = { key: 'no-date', label: 'No target date', defaultOpen: false, projects: [], sortIdx: 1e9 };
+  var futureMap = {}; // key -> bucket
+  var currentBucket = null;
+  projects.forEach(function(p) {
+    var dateStr = p.working_due || p.end;
+    var fq = prFiscalQuarter(dateStr);
+    if (!fq) { noDateBucket.projects.push(p); return; }
+    if (fq.sortIdx < current.sortIdx) {
+      pastBucket.projects.push(p);
+    } else if (fq.sortIdx === current.sortIdx) {
+      if (!currentBucket) {
+        currentBucket = { key: fq.key, label: fq.label + ' — current', defaultOpen: true, projects: [], sortIdx: fq.sortIdx };
+      }
+      currentBucket.projects.push(p);
+    } else {
+      if (!futureMap[fq.key]) {
+        futureMap[fq.key] = { key: fq.key, label: fq.label, defaultOpen: false, projects: [], sortIdx: fq.sortIdx };
+      }
+      futureMap[fq.key].projects.push(p);
+    }
+  });
+  // Always show Past + Current sections (even if empty) so reviewers can confirm "nothing past due."
+  if (!currentBucket) currentBucket = { key: current.key, label: current.label + ' — current', defaultOpen: true, projects: [], sortIdx: current.sortIdx };
+  var buckets = [pastBucket, currentBucket];
+  Object.keys(futureMap).map(function(k) { return futureMap[k]; })
+    .sort(function(a, b) { return a.sortIdx - b.sortIdx; })
+    .forEach(function(b) { buckets.push(b); });
+  if (noDateBucket.projects.length) buckets.push(noDateBucket);
+  return buckets;
 }
 function prDateToEpoch(yyyymmdd) {
   if (!yyyymmdd) return null;
@@ -18243,6 +18319,7 @@ function prSwitchReviewType(id) {
   _reviewFilterMode = 'all';
   _prTasksOpen = {};
   _prShowAllLog = {};
+  _prSectionOpen = {};
   render();
 }
 
@@ -18255,6 +18332,20 @@ function prToggleTasks(projNum) {
   _prTasksOpen[projNum] = !_prTasksOpen[projNum];
   var el = document.getElementById('pr-tasks-' + projNum);
   if (el) el.classList.toggle('open', !!_prTasksOpen[projNum]);
+}
+
+function prToggleSection(bucketKey) {
+  // Resolve current state (respects per-bucket default), then flip and store explicitly.
+  var defaults = { 'past': true, 'no-date': false };
+  var current;
+  if (_prSectionOpen[bucketKey] != null) current = _prSectionOpen[bucketKey];
+  else if (defaults[bucketKey] != null) current = defaults[bucketKey];
+  else if (bucketKey.indexOf('fy') === 0) {
+    var cur = prCurrentFiscalQuarter();
+    current = (cur && bucketKey === cur.key);
+  } else current = false;
+  _prSectionOpen[bucketKey] = !current;
+  render();
 }
 
 function prToggleAllLog(projNum) {
@@ -18351,9 +18442,30 @@ function renderProjectReview(area) {
       var db = lb ? prDaysSince(lb.meeting_date) : 9999;
       return db - da; // most overdue first within status
     });
-    projects.forEach(function(p) {
-      html += renderProjectReviewCard(p, rt);
-    });
+    if (rt.filter && rt.filter.group_by_quarter) {
+      var buckets = prGroupByFiscalQuarter(projects);
+      buckets.forEach(function(b) {
+        var isOpen = (_prSectionOpen[b.key] != null) ? _prSectionOpen[b.key] : b.defaultOpen;
+        var headerCls = 'pr-quarter-header' + (b.key === 'past' ? ' past' : '') + (b.label.indexOf('current') >= 0 ? ' current' : '');
+        html += '<div class="pr-quarter-section' + (isOpen ? ' open' : '') + '">';
+        html += '<div class="' + headerCls + '" onclick="prToggleSection(\'' + b.key + '\')">';
+        html += '<span class="pr-quarter-caret">▶</span>';
+        html += '<span>' + b.label + '</span>';
+        html += '<span class="pr-quarter-count">' + b.projects.length + '</span>';
+        html += '</div>';
+        html += '<div class="pr-quarter-body">';
+        if (!b.projects.length) {
+          html += '<div class="pr-empty-state" style="margin:8px 0;">No projects in this bucket.</div>';
+        } else {
+          b.projects.forEach(function(p) { html += renderProjectReviewCard(p, rt); });
+        }
+        html += '</div></div>';
+      });
+    } else {
+      projects.forEach(function(p) {
+        html += renderProjectReviewCard(p, rt);
+      });
+    }
   }
 
   html += '</div>'; // pr-page
@@ -18810,9 +18922,11 @@ function prRtOpenForm(index) {
   html += '</div></div>';
 
   var rdpChecked = (data.filter && data.filter.require_data_program) ? ' checked' : '';
-  html += '<div class="pr-field"><label class="pr-field-label">Additional filter</label>';
-  html += '<label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="pr-rt-input-require-dp"' + rdpChecked + '> Only include projects flagged as Data Program</label>';
-  html += '<div class="pr-field-help">When on, projects must also have a Data Program Goal set to appear in this review.</div></div>';
+  var gbqChecked = (data.filter && data.filter.group_by_quarter) ? ' checked' : '';
+  html += '<div class="pr-field"><label class="pr-field-label">Additional options</label>';
+  html += '<label style="display:flex;align-items:center;gap:8px;font-weight:400;margin-bottom:6px;"><input type="checkbox" id="pr-rt-input-require-dp"' + rdpChecked + '> Only include projects flagged as Data Program</label>';
+  html += '<label style="display:flex;align-items:center;gap:8px;font-weight:400;"><input type="checkbox" id="pr-rt-input-group-quarter"' + gbqChecked + '> Group projects by fiscal quarter (Past · Current · Future)</label>';
+  html += '<div class="pr-field-help">FY runs Jul 1 – Jun 30. Projects bucket by their target end date; slipped projects stay in their original quarter.</div></div>';
 
   html += '<div class="pr-field"><label class="pr-field-label">Default Attendees</label>';
   html += '<input type="text" id="pr-rt-input-attendees" value="' + esc((data.default_attendees || []).join(', ')) + '" placeholder="Comma-separated names">';
@@ -18868,6 +18982,7 @@ async function prRtSaveForm(index) {
   var teams = [];
   teamCbs.forEach(function(cb) { if (cb.checked) teams.push(cb.value); });
   var requireDp = !!(document.getElementById('pr-rt-input-require-dp') || {}).checked;
+  var groupQ = !!(document.getElementById('pr-rt-input-group-quarter') || {}).checked;
 
   name = name.trim();
   id = id.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
@@ -18882,12 +18997,12 @@ async function prRtSaveForm(index) {
       if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Add Review Type'; }
       return;
     }
-    _reviewTypes.push({ id: id, name: name, description: desc, filter: { itd_teams: teams, require_data_program: requireDp }, cadence_days: cadence, default_attendees: attendees });
+    _reviewTypes.push({ id: id, name: name, description: desc, filter: { itd_teams: teams, require_data_program: requireDp, group_by_quarter: groupQ }, cadence_days: cadence, default_attendees: attendees });
   } else {
     var existing = _reviewTypes[index];
     existing.name = name;
     existing.description = desc;
-    existing.filter = { itd_teams: teams, require_data_program: requireDp };
+    existing.filter = { itd_teams: teams, require_data_program: requireDp, group_by_quarter: groupQ };
     existing.cadence_days = cadence;
     existing.default_attendees = attendees;
   }
