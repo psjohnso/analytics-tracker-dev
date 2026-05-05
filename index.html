@@ -3660,7 +3660,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.0.0.0014';
+const APP_VERSION = '1.0.0.0015';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13894,6 +13894,73 @@ function recomputeAllProjCap() {
   });
 }
 
+// One-time migration: recompute hours = fraction × proj_cap for every allocation record in ArcGIS
+// using the current productivity ratio. Useful after admin changes the ratio so external consumers
+// (Power BI, exports, dashboards) see fresh values. The in-app behavior doesn't depend on this —
+// loaded allocations always have hours recomputed locally.
+async function migrateAllocationHours() {
+  if (!RESOURCES_DATA) {
+    showToast('Resources data is still loading. Try again in a moment.', 'error');
+    return;
+  }
+  var ratioPct = Math.round((_productivityRatio || 0.75) * 100);
+  if (!confirm('Recalculate stored hours on every allocation record using the current productivity ratio (' + ratioPct + '%)?\n\nOnly records whose stored hours differ from the new value will be updated. Records for inactive people or out-of-range weeks will be skipped.\n\nThis may take a minute on large datasets.')) return;
+
+  var btn = document.getElementById('btn-migrate-alloc-hours');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading allocations…'; }
+
+  try {
+    var allocFeatures = await agolQuery(ARCGIS_CONFIG.allocationsUrl);
+    var weekIdx = {};
+    RESOURCES_DATA.weeks.forEach(function(w, i) { weekIdx[w] = i; });
+    var people = RESOURCES_DATA.people;
+
+    var updates = [];
+    var skipped = 0;
+    allocFeatures.forEach(function(f) {
+      var a = f.attributes;
+      var oid = a.OBJECTID || a.ObjectId || a.objectid;
+      var p = people[a.name];
+      if (!p) { skipped++; return; }
+      var wkStr = epochToDateStr(a.week_date);
+      var wi = weekIdx[wkStr];
+      if (wi === undefined) { skipped++; return; }
+      var fraction = a.fraction || 0;
+      var newHours = Math.round(fraction * (p.proj_cap[wi] || 0) * 100) / 100;
+      var oldHours = Math.round((a.hours || 0) * 100) / 100;
+      if (Math.abs(newHours - oldHours) < 0.01) return; // no meaningful change
+      updates.push({ attributes: { OBJECTID: oid, hours: newHours } });
+    });
+
+    if (updates.length === 0) {
+      showToast('All ' + allocFeatures.length + ' allocation records already match the current ratio.', 'success');
+      return;
+    }
+
+    var updated = 0, failed = 0;
+    for (var i = 0; i < updates.length; i += 100) {
+      var batch = updates.slice(i, i + 100);
+      if (btn) btn.textContent = 'Updating ' + Math.min(i + 100, updates.length) + ' / ' + updates.length + '…';
+      var result = await agolApplyEdits(ARCGIS_CONFIG.allocationsUrl, { updates: batch });
+      if (result && result.updateResults) {
+        result.updateResults.forEach(function(r) { if (r.success) updated++; else failed++; });
+      } else {
+        updated += batch.length;
+      }
+    }
+
+    var msg = 'Updated ' + updated + ' allocation record' + (updated === 1 ? '' : 's');
+    if (skipped > 0) msg += ' · ' + skipped + ' skipped';
+    if (failed > 0) msg += ' · ' + failed + ' failed';
+    showToast(msg + '.', failed > 0 ? 'error' : 'success');
+  } catch (e) {
+    console.error('[Migration] Failed:', e);
+    showToast('Migration failed: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Update stored allocation hours'; }
+  }
+}
+
 async function saveProductivityRatio() {
   const el = document.getElementById('settings-productivity-ratio');
   if (!el) return;
@@ -16889,6 +16956,11 @@ function renderSettingsPage(area) {
           '<button class="settings-btn settings-btn-primary" onclick="saveProductivityRatio()" style="margin-left:auto;">Save Ratio</button>' +
         '</div>' +
         '<div style="font-size:11px;color:var(--text-muted);margin-top:10px;">Default 75%. Lower = more conservative — accounts for meetings, email, context-switching, breaks. Saved value is shared across all users.</div>' +
+        '<div style="margin-top:14px;padding-top:12px;border-top:1px dashed #E8E6DF;">' +
+          '<div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:4px;">Update stored allocation hours</div>' +
+          '<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">In-app calculations always use the current ratio. Run this if external tools (Power BI, exports, dashboards) read allocation hours directly from ArcGIS — it rewrites stored hours on every allocation record using the saved ratio. Only records whose stored value differs are touched.</div>' +
+          '<button id="btn-migrate-alloc-hours" class="settings-btn settings-btn-secondary" onclick="migrateAllocationHours()">Update stored allocation hours</button>' +
+        '</div>' +
       '</div>' +
       '<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">Allocation defaults</div>' +
       '<div class="settings-panel-desc">Default weekly allocation percentages applied when auto-filling allocations. Values represent the percentage of a person\'s project-available time dedicated to a single project per week.</div>' +
