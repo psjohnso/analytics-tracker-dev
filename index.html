@@ -3657,7 +3657,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.0.0.0007';
+const APP_VERSION = '1.0.0.0008';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -13434,12 +13434,16 @@ const _defaultReviewTypes = [
   {
     id: 'data-intel',
     name: 'Data Intelligence Review',
-    description: 'Weekly review of Data Intelligence team projects (GIS, Analytics, AI sub-teams).',
-    filter: { itd_teams: [
-      'Data Intelligence - GIS',
-      'Data Intelligence - Business and Advanced Analytics',
-      'Data Intelligence - Artificial Intelligence'
-    ] },
+    description: 'Weekly task-level review for the Data Intelligence team (GIS, Analytics, AI sub-teams).',
+    filter: {
+      itd_teams: [
+        'Data Intelligence - GIS',
+        'Data Intelligence - Business and Advanced Analytics',
+        'Data Intelligence - Artificial Intelligence'
+      ],
+      review_mode: 'task',
+      default_statuses: ['Active', 'On Hold', 'Waiting for Response']
+    },
     cadence_days: 7,
     default_attendees: [
       'Peter Johnson','Jessica Fraver','James McGinnis','Kate Carter',
@@ -13671,13 +13675,18 @@ function applyAppConfig(features) {
       } else if (key === 'review_types') {
         _reviewTypes = parsed;
         _configOids.review_types = oid;
-        // Migration: bring the Data Team review's filter up to current defaults.
+        // Migration: bring the seeded review types' filters up to current defaults.
         // Persists in-memory only; next admin save writes it back to ArcGIS.
         var dataTeamRt = _reviewTypes.find(function(rt) { return rt.id === 'data-team'; });
         if (dataTeamRt && dataTeamRt.filter) {
           if (dataTeamRt.filter.require_data_program == null) dataTeamRt.filter.require_data_program = true;
           if (dataTeamRt.filter.group_by_quarter == null) dataTeamRt.filter.group_by_quarter = true;
           if (!Array.isArray(dataTeamRt.filter.default_statuses)) dataTeamRt.filter.default_statuses = ['Active', 'Scheduled', 'On Hold', 'Future'];
+        }
+        var dataIntelRt = _reviewTypes.find(function(rt) { return rt.id === 'data-intel'; });
+        if (dataIntelRt && dataIntelRt.filter) {
+          if (dataIntelRt.filter.review_mode == null) dataIntelRt.filter.review_mode = 'task';
+          if (!Array.isArray(dataIntelRt.filter.default_statuses)) dataIntelRt.filter.default_statuses = ['Active', 'On Hold', 'Waiting for Response'];
         }
       } else if (key === 'proj_categories') {
         if (parsed.length && typeof parsed[0] === 'object') _customProjCategories = expandDescList(parsed);
@@ -18272,11 +18281,14 @@ function prTaskDotClass(status) {
 }
 
 // Group tasks for a project by assignee. Returns Map-like {name: [tasks]}.
-function prGetTasksForProject(p) {
+// statusFilter: optional array of task statuses to include. Empty/missing = all.
+function prGetTasksForProject(p, statusFilter) {
   var byPerson = {};
+  var hasFilter = Array.isArray(statusFilter) && statusFilter.length > 0;
   for (var i = 0; i < TASKS.length; i++) {
     var t = TASKS[i];
     if (t.project_id !== p.id) continue;
+    if (hasFilter && statusFilter.indexOf(t.status) < 0) continue;
     var who = t.assignee || '(Unassigned)';
     if (!byPerson[who]) byPerson[who] = [];
     byPerson[who].push(t);
@@ -18292,8 +18304,15 @@ function prGetTasksForProject(p) {
   return byPerson;
 }
 
+// Resolve the review mode: 'project' (default) or 'task'.
+function prGetReviewMode(rt) {
+  return (rt && rt.filter && rt.filter.review_mode === 'task') ? 'task' : 'project';
+}
+
 // Filter PROJECTS to those in scope for a review type.
-// statuses: optional array of project status names to OR-filter the in-scope set. Empty/missing = all in scope.
+// statuses: optional array of status names. In project mode these match project.status;
+// in task mode a project is in scope if it has ≥1 task whose status is in the list.
+// Empty/missing = all in scope (no status narrowing).
 function prGetProjectsForReview(rt, statuses) {
   if (!rt || !rt.filter || !Array.isArray(rt.filter.itd_teams)) return [];
   var teams = rt.filter.itd_teams;
@@ -18307,6 +18326,11 @@ function prGetProjectsForReview(rt, statuses) {
     return true;
   });
   if (!Array.isArray(statuses) || !statuses.length) return inScope;
+  if (prGetReviewMode(rt) === 'task') {
+    return inScope.filter(function(p) {
+      return TASKS.some(function(t) { return t.project_id === p.id && statuses.indexOf(t.status) >= 0; });
+    });
+  }
   return inScope.filter(function(p) { return statuses.indexOf(p.status) >= 0; });
 }
 
@@ -18410,21 +18434,40 @@ function renderProjectReview(area) {
     : '(none configured)';
   html += '<div class="pr-cycle-strip">';
   html += '<div class="pr-cs-block"><div class="pr-cs-label">Cadence</div><div class="pr-cs-value">' + cadenceLabel + '</div></div>';
+  html += '<div class="pr-cs-block"><div class="pr-cs-label">Review Level</div><div class="pr-cs-value">' + (prGetReviewMode(rt) === 'task' ? 'Task-level' : 'Project-level') + '</div></div>';
   if (rt.description) {
     html += '<div class="pr-cs-block" style="flex:1;min-width:240px;"><div class="pr-cs-label">Description</div><div style="font-family:Cardo,serif;font-size:13px;font-style:italic;color:var(--text-body);">' + esc(rt.description) + '</div></div>';
   }
   html += '<div class="pr-cs-block pr-cs-attendees"><div class="pr-cs-label">Default Attendees</div><div>' + esc(attendees) + '</div></div>';
   html += '</div>';
 
-  // Status filter chips with counts (statuses in a sensible review order; only render those with > 0 in scope).
+  // Status filter chips with counts (only render statuses with > 0 matches in scope).
+  // In project mode: chips count and filter projects by project.status.
+  // In task mode: chips count and filter tasks (within in-scope projects) by task.status.
   // Multi-select: clicking chips toggles them in/out; "All" clears the selection.
-  var allInScope = prGetProjectsForReview(rt);
+  var reviewMode = prGetReviewMode(rt);
+  var allInScopeProjects = prGetProjectsForReview(rt);
   var statusCounts = {};
-  allInScope.forEach(function(p) {
-    var s = p.status || '(none)';
-    statusCounts[s] = (statusCounts[s] || 0) + 1;
-  });
-  var statusOrder = ['Active', 'Scheduled', 'On Hold', 'Waiting for Response', 'Future', 'Pending', 'Complete', 'Canceled'];
+  var totalForAll = 0;
+  var statusOrder;
+  if (reviewMode === 'task') {
+    var inScopeIds = {};
+    allInScopeProjects.forEach(function(p) { inScopeIds[p.id] = true; });
+    TASKS.forEach(function(t) {
+      if (!inScopeIds[t.project_id]) return;
+      var s = t.status || '(none)';
+      statusCounts[s] = (statusCounts[s] || 0) + 1;
+      totalForAll++;
+    });
+    statusOrder = ['Active', 'In Progress', 'Pending', 'Not Started', 'Waiting for Response', 'On Hold', 'Complete', 'Completed', 'Canceled', 'Cancelled'];
+  } else {
+    allInScopeProjects.forEach(function(p) {
+      var s = p.status || '(none)';
+      statusCounts[s] = (statusCounts[s] || 0) + 1;
+    });
+    totalForAll = allInScopeProjects.length;
+    statusOrder = ['Active', 'Scheduled', 'On Hold', 'Waiting for Response', 'Future', 'Pending', 'Complete', 'Canceled'];
+  }
 
   function chip(value, label, count) {
     var isActive = (value === 'all') ? (_reviewFilterStatuses.length === 0) : (_reviewFilterStatuses.indexOf(value) >= 0);
@@ -18433,7 +18476,7 @@ function renderProjectReview(area) {
       label + '<span class="pr-count">' + count + '</span></button>';
   }
   html += '<div class="pr-toolbar">';
-  html += chip('all', 'All', allInScope.length);
+  html += chip('all', 'All', totalForAll);
   statusOrder.forEach(function(s) { if (statusCounts[s]) html += chip(s, s, statusCounts[s]); });
   Object.keys(statusCounts).forEach(function(s) {
     if (statusOrder.indexOf(s) < 0 && statusCounts[s]) html += chip(s, s, statusCounts[s]);
@@ -18490,13 +18533,62 @@ function renderProjectReview(area) {
   area.innerHTML = html;
 }
 
-// Dispatch a list of in-scope projects to either the card view or the simplified table view.
+// Dispatch a list of in-scope projects to the appropriate view.
 function renderProjectsForReview(projectsArr, rt, isInBucket) {
   if (!projectsArr.length) return '<div class="pr-empty-state" style="margin:' + (isInBucket ? '8px 0' : '0') + ';">No projects in this bucket.</div>';
-  if (_prViewMode === 'table') return renderProjectReviewTable(projectsArr, rt);
+  if (_prViewMode === 'table') {
+    return (prGetReviewMode(rt) === 'task')
+      ? renderProjectReviewTaskTable(projectsArr, rt)
+      : renderProjectReviewTable(projectsArr, rt);
+  }
   var out = '';
   projectsArr.forEach(function(p) { out += renderProjectReviewCard(p, rt); });
   return out;
+}
+
+// Task-row table view for task-mode reviews. Each row is a task; sorted by project then task title.
+function renderProjectReviewTaskTable(projects, rt) {
+  var todayStr = new Date().toISOString().slice(0, 10);
+  var projectById = {};
+  projects.forEach(function(p) { projectById[p.id] = p; });
+  var taskFilter = _reviewFilterStatuses;
+  var hasFilter = Array.isArray(taskFilter) && taskFilter.length > 0;
+  var rows = [];
+  TASKS.forEach(function(t) {
+    var p = projectById[t.project_id];
+    if (!p) return;
+    if (hasFilter && taskFilter.indexOf(t.status) < 0) return;
+    rows.push({ task: t, project: p });
+  });
+  if (!rows.length) return '<div class="pr-empty-state" style="margin:8px 0;">No tasks match the current filter.</div>';
+  rows.sort(function(a, b) {
+    var ap = String(a.project.title || '').localeCompare(String(b.project.title || ''));
+    if (ap !== 0) return ap;
+    return String(a.task.title || '').localeCompare(String(b.task.title || ''));
+  });
+
+  var html = '<table class="pr-simple-table"><thead><tr>' +
+    '<th>Project</th>' +
+    '<th>Task</th>' +
+    '<th>Status</th>' +
+    '<th>Assignee</th>' +
+    '<th>Due</th>' +
+    '</tr></thead><tbody>';
+  rows.forEach(function(r) {
+    var p = r.project, t = r.task;
+    var dueStr = t.working_due || t.due || '';
+    var dueLate = dueStr && dueStr < todayStr;
+    var clickHandler = t.objectId ? ' onclick="openTask(' + t.objectId + ')"' : '';
+    html += '<tr class="pr-simple-row"' + clickHandler + '>';
+    html += '<td><div class="pr-st-num">' + esc(p.project_number || ('#' + p.id)) + '</div><div class="pr-st-title">' + esc(p.title || '(no title)') + '</div></td>';
+    html += '<td>' + esc(t.title || '(untitled task)') + '</td>';
+    html += '<td><span class="pr-status-pill">' + esc(t.status || '—') + '</span></td>';
+    html += '<td>' + esc(t.assignee || '—') + '</td>';
+    html += '<td' + (dueLate ? ' style="color:#A32D2D;font-weight:700;"' : '') + '>' + (dueStr ? prFmtDate(dueStr) : '—') + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  return html;
 }
 
 // Simplified table view — quick-scan alternative to the cards.
@@ -18586,7 +18678,9 @@ function renderProjectReviewCard(p, rt) {
   html += '</div>';
 
   // Tasks
-  var byPerson = prGetTasksForProject(p);
+  // In task mode, only include tasks matching the active status filter inside the WIP block.
+  var taskFilter = (prGetReviewMode(rt) === 'task' && _reviewFilterStatuses.length) ? _reviewFilterStatuses : null;
+  var byPerson = prGetTasksForProject(p, taskFilter);
   var personNames = Object.keys(byPerson);
   var taskCount = personNames.reduce(function(s, n) { return s + byPerson[n].length; }, 0);
   var counts = { Complete:0, Active:0, Pending:0, Other:0 };
@@ -19061,12 +19155,14 @@ async function prRtSaveForm(index) {
     _reviewTypes.push({ id: id, name: name, description: desc, filter: { itd_teams: teams, require_data_program: requireDp, group_by_quarter: groupQ }, cadence_days: cadence, default_attendees: attendees });
   } else {
     var existing = _reviewTypes[index];
-    // Preserve any existing filter fields (e.g. default_statuses) that aren't surfaced in this form.
+    // Preserve any existing filter fields (default_statuses, review_mode) that aren't surfaced in this form.
     var preservedDefaults = (existing.filter && Array.isArray(existing.filter.default_statuses)) ? existing.filter.default_statuses.slice() : null;
+    var preservedMode = (existing.filter && existing.filter.review_mode) || null;
     existing.name = name;
     existing.description = desc;
     existing.filter = { itd_teams: teams, require_data_program: requireDp, group_by_quarter: groupQ };
     if (preservedDefaults) existing.filter.default_statuses = preservedDefaults;
+    if (preservedMode) existing.filter.review_mode = preservedMode;
     existing.cadence_days = cadence;
     existing.default_attendees = attendees;
   }
