@@ -2651,7 +2651,10 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .pr-tb-chip { font-family:'Lato',sans-serif;font-size:11px;font-weight:700;padding:6px 12px;border-radius:999px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text-body);letter-spacing:0.04em; }
 .pr-tb-chip.active { background:var(--orange);color:#fff;border-color:var(--orange); }
 .pr-tb-chip .pr-count { margin-left:6px;opacity:0.7;font-weight:400; }
-.pr-view-toggle { margin-left:auto;display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden; }
+.pr-toolbar-right { margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap; }
+.pr-assignee-select { font-family:'Lato',sans-serif;font-size:12px;font-weight:600;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text-body);cursor:pointer;min-width:180px;max-width:260px; }
+.pr-assignee-select:focus { outline:none;border-color:var(--navy); }
+.pr-view-toggle { display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden; }
 .pr-vt-btn { font-family:'Lato',sans-serif;font-size:11px;font-weight:700;padding:6px 14px;cursor:pointer;border:none;background:#fff;color:var(--text-body);letter-spacing:0.04em;transition:background 0.15s; }
 .pr-vt-btn:hover { background:#F3F1EB; }
 .pr-vt-btn.active { background:var(--navy);color:#fff; }
@@ -3657,7 +3660,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.0.0.0008';
+const APP_VERSION = '1.0.0.0009';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -18141,7 +18144,8 @@ async function deleteIssue(issueId) {
 // ══════════════════════════════════════════════════════════════════════
 
 var _currentReviewTypeId = null;
-var _reviewFilterStatuses = [];  // array of selected project statuses; empty = show all in scope
+var _reviewFilterStatuses = [];  // array of selected statuses (project or task per review_mode); empty = no narrowing
+var _reviewAssigneeFilter = '';  // single assignee name; empty = all assignees
 var _prViewMode = 'card';        // 'card' (expanded cards, default) or 'table' (simplified table)
 var _prTasksOpen = {};           // map of project_number -> bool. undefined = open by default.
 var _prShowAllLog = {};          // map of project_number -> bool (show all log entries)
@@ -18282,13 +18286,16 @@ function prTaskDotClass(status) {
 
 // Group tasks for a project by assignee. Returns Map-like {name: [tasks]}.
 // statusFilter: optional array of task statuses to include. Empty/missing = all.
-function prGetTasksForProject(p, statusFilter) {
+// assigneeFilter: optional single assignee name. Empty/missing = all.
+function prGetTasksForProject(p, statusFilter, assigneeFilter) {
   var byPerson = {};
-  var hasFilter = Array.isArray(statusFilter) && statusFilter.length > 0;
+  var hasStatusFilter = Array.isArray(statusFilter) && statusFilter.length > 0;
+  var hasAssigneeFilter = !!assigneeFilter;
   for (var i = 0; i < TASKS.length; i++) {
     var t = TASKS[i];
     if (t.project_id !== p.id) continue;
-    if (hasFilter && statusFilter.indexOf(t.status) < 0) continue;
+    if (hasStatusFilter && statusFilter.indexOf(t.status) < 0) continue;
+    if (hasAssigneeFilter && t.assignee !== assigneeFilter) continue;
     var who = t.assignee || '(Unassigned)';
     if (!byPerson[who]) byPerson[who] = [];
     byPerson[who].push(t);
@@ -18309,11 +18316,23 @@ function prGetReviewMode(rt) {
   return (rt && rt.filter && rt.filter.review_mode === 'task') ? 'task' : 'project';
 }
 
+// True if the named person is the project lead or appears in other_members.
+function prProjectInvolves(p, name) {
+  if (!name) return true;
+  if (p.contact === name) return true;
+  if (p.other_members) {
+    var members = String(p.other_members).split(',').map(function(s) { return s.trim(); });
+    if (members.indexOf(name) >= 0) return true;
+  }
+  return false;
+}
+
 // Filter PROJECTS to those in scope for a review type.
 // statuses: optional array of status names. In project mode these match project.status;
 // in task mode a project is in scope if it has ≥1 task whose status is in the list.
-// Empty/missing = all in scope (no status narrowing).
-function prGetProjectsForReview(rt, statuses) {
+// assignee: optional name. In project mode the project must involve this person (contact or other_members);
+// in task mode a project is in scope only if it has ≥1 task assigned to this person.
+function prGetProjectsForReview(rt, statuses, assignee) {
   if (!rt || !rt.filter || !Array.isArray(rt.filter.itd_teams)) return [];
   var teams = rt.filter.itd_teams;
   var requireDataProgram = !!(rt.filter && rt.filter.require_data_program);
@@ -18325,13 +18344,55 @@ function prGetProjectsForReview(rt, statuses) {
     if (requireDataProgram && !p.is_data_program) return false;
     return true;
   });
-  if (!Array.isArray(statuses) || !statuses.length) return inScope;
+  var hasStatuses = Array.isArray(statuses) && statuses.length > 0;
+  var hasAssignee = !!assignee;
+  if (!hasStatuses && !hasAssignee) return inScope;
   if (prGetReviewMode(rt) === 'task') {
     return inScope.filter(function(p) {
-      return TASKS.some(function(t) { return t.project_id === p.id && statuses.indexOf(t.status) >= 0; });
+      return TASKS.some(function(t) {
+        if (t.project_id !== p.id) return false;
+        if (hasStatuses && statuses.indexOf(t.status) < 0) return false;
+        if (hasAssignee && t.assignee !== assignee) return false;
+        return true;
+      });
     });
   }
-  return inScope.filter(function(p) { return statuses.indexOf(p.status) >= 0; });
+  return inScope.filter(function(p) {
+    if (hasStatuses && statuses.indexOf(p.status) < 0) return false;
+    if (hasAssignee && !prProjectInvolves(p, assignee)) return false;
+    return true;
+  });
+}
+
+// Build the assignee dropdown options for a review type.
+// Names come from the in-scope projects (lead + other_members in project mode; task assignees in task mode).
+function prGetAssigneeOptions(rt) {
+  var inScope = prGetProjectsForReview(rt);
+  var names = {};
+  if (prGetReviewMode(rt) === 'task') {
+    var ids = {};
+    inScope.forEach(function(p) { ids[p.id] = true; });
+    TASKS.forEach(function(t) {
+      if (!ids[t.project_id]) return;
+      if (t.assignee) names[t.assignee] = true;
+    });
+  } else {
+    inScope.forEach(function(p) {
+      if (p.contact) names[p.contact] = true;
+      if (p.other_members) {
+        String(p.other_members).split(',').forEach(function(n) {
+          var s = n.trim();
+          if (s) names[s] = true;
+        });
+      }
+    });
+  }
+  return Object.keys(names).sort();
+}
+
+function prSetAssigneeFilter(name) {
+  _reviewAssigneeFilter = name || '';
+  render();
 }
 
 function prGetDefaultStatusesFor(rt) {
@@ -18342,6 +18403,7 @@ function prGetDefaultStatusesFor(rt) {
 function prSwitchReviewType(id) {
   _currentReviewTypeId = id;
   _reviewFilterStatuses = prGetDefaultStatusesFor(getReviewType(id));
+  _reviewAssigneeFilter = '';
   _prTasksOpen = {};
   _prShowAllLog = {};
   _prSectionOpen = {};
@@ -18392,6 +18454,7 @@ function renderProjectReview(area) {
   if (!_currentReviewTypeId || !getReviewType(_currentReviewTypeId)) {
     _currentReviewTypeId = (_reviewTypes && _reviewTypes.length) ? _reviewTypes[0].id : null;
     _reviewFilterStatuses = prGetDefaultStatusesFor(getReviewType(_currentReviewTypeId));
+    _reviewAssigneeFilter = '';
   }
   var rt = getReviewType(_currentReviewTypeId);
 
@@ -18444,28 +18507,32 @@ function renderProjectReview(area) {
   // Status filter chips with counts (only render statuses with > 0 matches in scope).
   // In project mode: chips count and filter projects by project.status.
   // In task mode: chips count and filter tasks (within in-scope projects) by task.status.
-  // Multi-select: clicking chips toggles them in/out; "All" clears the selection.
+  // The assignee filter further narrows what's counted, so chip totals always reflect what's visible.
   var reviewMode = prGetReviewMode(rt);
-  var allInScopeProjects = prGetProjectsForReview(rt);
+  var assigneeOpts = prGetAssigneeOptions(rt);
+  // If the saved assignee is no longer in the available list (e.g. data changed), drop it.
+  if (_reviewAssigneeFilter && assigneeOpts.indexOf(_reviewAssigneeFilter) < 0) _reviewAssigneeFilter = '';
+  var assigneeNarrowed = prGetProjectsForReview(rt, [], _reviewAssigneeFilter);
   var statusCounts = {};
   var totalForAll = 0;
   var statusOrder;
   if (reviewMode === 'task') {
     var inScopeIds = {};
-    allInScopeProjects.forEach(function(p) { inScopeIds[p.id] = true; });
+    assigneeNarrowed.forEach(function(p) { inScopeIds[p.id] = true; });
     TASKS.forEach(function(t) {
       if (!inScopeIds[t.project_id]) return;
+      if (_reviewAssigneeFilter && t.assignee !== _reviewAssigneeFilter) return;
       var s = t.status || '(none)';
       statusCounts[s] = (statusCounts[s] || 0) + 1;
       totalForAll++;
     });
     statusOrder = ['Active', 'In Progress', 'Pending', 'Not Started', 'Waiting for Response', 'On Hold', 'Complete', 'Completed', 'Canceled', 'Cancelled'];
   } else {
-    allInScopeProjects.forEach(function(p) {
+    assigneeNarrowed.forEach(function(p) {
       var s = p.status || '(none)';
       statusCounts[s] = (statusCounts[s] || 0) + 1;
     });
-    totalForAll = allInScopeProjects.length;
+    totalForAll = assigneeNarrowed.length;
     statusOrder = ['Active', 'Scheduled', 'On Hold', 'Waiting for Response', 'Future', 'Pending', 'Complete', 'Canceled'];
   }
 
@@ -18481,15 +18548,23 @@ function renderProjectReview(area) {
   Object.keys(statusCounts).forEach(function(s) {
     if (statusOrder.indexOf(s) < 0 && statusCounts[s]) html += chip(s, s, statusCounts[s]);
   });
-  // View toggle pushed to the right
+  // Right-side controls: assignee dropdown + view toggle
+  html += '<div class="pr-toolbar-right">';
+  html += '<select class="pr-assignee-select" onchange="prSetAssigneeFilter(this.value)" title="Filter by assignee">';
+  html += '<option value=""' + (!_reviewAssigneeFilter ? ' selected' : '') + '>All assignees</option>';
+  assigneeOpts.forEach(function(n) {
+    html += '<option value="' + esc(n) + '"' + (_reviewAssigneeFilter === n ? ' selected' : '') + '>' + esc(n) + '</option>';
+  });
+  html += '</select>';
   html += '<div class="pr-view-toggle">';
   html += '<button class="pr-vt-btn' + (_prViewMode === 'card' ? ' active' : '') + '" onclick="prSetViewMode(\'card\')">Cards</button>';
   html += '<button class="pr-vt-btn' + (_prViewMode === 'table' ? ' active' : '') + '" onclick="prSetViewMode(\'table\')">Table</button>';
   html += '</div>';
   html += '</div>';
+  html += '</div>';
 
   // Project cards
-  var projects = prGetProjectsForReview(rt, _reviewFilterStatuses);
+  var projects = prGetProjectsForReview(rt, _reviewFilterStatuses, _reviewAssigneeFilter);
   if (!projects.length) {
     html += '<div class="pr-empty-state">No projects match the current filter.</div>';
   } else {
@@ -18553,11 +18628,13 @@ function renderProjectReviewTaskTable(projects, rt) {
   projects.forEach(function(p) { projectById[p.id] = p; });
   var taskFilter = _reviewFilterStatuses;
   var hasFilter = Array.isArray(taskFilter) && taskFilter.length > 0;
+  var hasAssignee = !!_reviewAssigneeFilter;
   var rows = [];
   TASKS.forEach(function(t) {
     var p = projectById[t.project_id];
     if (!p) return;
     if (hasFilter && taskFilter.indexOf(t.status) < 0) return;
+    if (hasAssignee && t.assignee !== _reviewAssigneeFilter) return;
     rows.push({ task: t, project: p });
   });
   if (!rows.length) return '<div class="pr-empty-state" style="margin:8px 0;">No tasks match the current filter.</div>';
@@ -18678,9 +18755,11 @@ function renderProjectReviewCard(p, rt) {
   html += '</div>';
 
   // Tasks
-  // In task mode, only include tasks matching the active status filter inside the WIP block.
-  var taskFilter = (prGetReviewMode(rt) === 'task' && _reviewFilterStatuses.length) ? _reviewFilterStatuses : null;
-  var byPerson = prGetTasksForProject(p, taskFilter);
+  // In task mode, only include tasks matching the active status + assignee filters inside the WIP block.
+  var isTaskMode = (prGetReviewMode(rt) === 'task');
+  var taskStatusFilter = (isTaskMode && _reviewFilterStatuses.length) ? _reviewFilterStatuses : null;
+  var taskAssigneeFilter = (isTaskMode && _reviewAssigneeFilter) ? _reviewAssigneeFilter : null;
+  var byPerson = prGetTasksForProject(p, taskStatusFilter, taskAssigneeFilter);
   var personNames = Object.keys(byPerson);
   var taskCount = personNames.reduce(function(s, n) { return s + byPerson[n].length; }, 0);
   var counts = { Complete:0, Active:0, Pending:0, Other:0 };
