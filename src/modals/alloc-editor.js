@@ -1,0 +1,745 @@
+// ─────────────────────────────────────────────────────────────────────
+// modals/alloc-editor.js — Allocation editor modal
+//
+// Owns: AE_COLS (visible week columns) and aeProjectDates state, the
+// open/close/navigate flow, the grid renderer with role grouping,
+// per-cell change handlers, role change re-grouping, the auto-fill-by-
+// defaults helper, totals refresh, the apply-changes diff/save logic,
+// and the dirty/saved/synced UI marker helpers.
+//
+// Forward references: Auth, Editor, RESOURCES_DATA, _allocationDefaults,
+// _productivityRatio, agolApplyEdits, ARCGIS_CONFIG, showToast, esc,
+// render, openProject, computeCapacityAndAllocations, generateWeeks,
+// PROJECTS, TASKS.
+// Backward references: STATUS_COLOR, PROJECT_COLORS.
+// ─────────────────────────────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════════════
+//  ALLOCATION EDITOR
+// ══════════════════════════════════════════════════════════════════════
+let AE_COLS     = 6;    // weeks visible at once
+let aeProjectDates = {}; // { projTitle: { start, end } } — date ranges for highlighting
+
+function openAllocEditor(name) {
+  Editor.person = name;
+  const p = RESOURCES_DATA.people[name];
+  if (!Editor.aeListenerAdded) {
+    document.getElementById('alloc-editor-backdrop').addEventListener('click', function(e) {
+      if (e.target === this) closeAllocEditor();
+    });
+    // Sync horizontal scroll between grid and totals bar
+    var gridWrap = document.querySelector('.ae-grid-wrap');
+    var totalsBar = document.getElementById('ae-totals-bar');
+    if (gridWrap && totalsBar) {
+      gridWrap.addEventListener('scroll', function() { totalsBar.scrollLeft = gridWrap.scrollLeft; });
+      totalsBar.addEventListener('scroll', function() { gridWrap.scrollLeft = totalsBar.scrollLeft; });
+    }
+    Editor.aeListenerAdded = true;
+  }
+
+  // Filter to only projects in the main PROJECTS list, deduplicate, then keep
+  // only Active and On Hold rows.
+  const projTitleSet2 = new Set(PROJECTS.map(proj => proj.title));
+  function canonicalAllocTitle2(raw) {
+    if (projTitleSet2.has(raw)) return raw;
+    const stripped = raw.replace(/\s*-\s*[A-Z][A-Za-z .]+$/, '').trim();
+    return projTitleSet2.has(stripped) ? stripped : raw;
+  }
+  const draftByName = {};
+  p.allocations.forEach(function(a) {
+    const key = canonicalAllocTitle2(a.project);
+    // Look up the CURRENT project status (not the stale status from allocation records)
+    const proj = PROJECTS.find(function(px) { return px.title === key; });
+    const currentStatus = proj ? proj.status : a.status;
+    if (currentStatus !== 'Active' && currentStatus !== 'On Hold') return;
+    if (!draftByName[key]) {
+      // If no role stored, infer from project contact
+      var existingRole = a.role || '';
+      if (!existingRole && proj) {
+        existingRole = proj.contact === name ? 'Lead' : 'Contributor';
+      }
+      draftByName[key] = { project: key, status: currentStatus, fracs: [...a.fracs], role: existingRole };
+    } else {
+      // Merge duplicate / person-split rows
+      a.fracs.forEach((f, i) => { draftByName[key].fracs[i] = (draftByName[key].fracs[i] || 0) + f; });
+    }
+  });
+  // Inject projects where this person is contact or other_members but has no allocation yet
+  const N2 = RESOURCES_DATA.weeks.length;
+  PROJECTS.forEach(function(proj) {
+    if (proj.status !== 'Active' && proj.status !== 'On Hold') return;
+    if (draftByName[proj.title]) return;
+    const members = (proj.other_members || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (proj.contact !== name && !members.includes(name)) return;
+    var inferredRole = proj.contact === name ? 'Lead' : 'Contributor';
+    draftByName[proj.title] = { project: proj.title, status: proj.status, fracs: new Array(N2).fill(0), role: inferredRole };
+  });
+  Editor.draft[name] = Object.values(draftByName);
+  const aeStatusOrder = { 'Active': 0, 'On Hold': 1, 'Scheduled': 2, 'Future': 3, 'Idea': 4 };
+  Editor.draft[name].sort(function(a, b) {
+    const sa = aeStatusOrder[a.status] != null ? aeStatusOrder[a.status] : 9;
+    const sb = aeStatusOrder[b.status] != null ? aeStatusOrder[b.status] : 9;
+    if (sa !== sb) return sa - sb;
+    return a.project.localeCompare(b.project);
+  });
+
+  document.getElementById('editor-person-title').textContent = name;
+  document.getElementById('editor-person-role').textContent =
+    p.role + '  ·  ' + Math.round(p.proj_pct * 100) + '% project-available';
+
+  Editor.aeWindowStart = Math.max(0, window.currentWeekIdx - 1);
+
+  // Build project date map for range highlighting
+  aeProjectDates = {};
+  PROJECTS.forEach(function(proj) {
+    aeProjectDates[proj.title] = { start: proj.start || null, end: proj.actual_end || proj.working_due || proj.end || null };
+  });
+
+  aeRenderGrid();
+  document.getElementById('alloc-editor-backdrop').classList.add('open');
+}
+
+function closeAllocEditor() {
+  document.getElementById('alloc-editor-backdrop').classList.remove('open');
+}
+
+function openProjectFromAlloc(el) {
+  const projTitle = el.getAttribute('data-project');
+  if (!projTitle) return;
+  const proj = PROJECTS.find(function(p) { return p.title === projTitle; });
+  if (!proj) { showToast('Project not found: ' + projTitle, 'error'); return; }
+  closeAllocEditor();
+  openProject(proj.objectId);
+}
+// backdrop click-to-close registered after DOM is ready (see bootstrap section)
+
+function aeShift(dir) {
+  const weeks = RESOURCES_DATA.weeks;
+  Editor.aeWindowStart = Math.max(0, Math.min(Editor.aeWindowStart + dir, weeks.length - AE_COLS));
+  aeRenderGrid();
+}
+
+function aeJumpCurrent() {
+  Editor.aeWindowStart = Math.max(0, window.currentWeekIdx - 1);
+  aeRenderGrid();
+}
+
+function aeMonLabel(wi) {
+  const d = new Date(RESOURCES_DATA.weeks[wi] + 'T00:00:00');
+  d.setDate(d.getDate() + 1);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+var aeContribCollapsed = false;
+
+function aeToggleContrib() {
+  aeContribCollapsed = !aeContribCollapsed;
+  aeRenderGrid();
+}
+
+function aeRenderGrid() {
+  const weeks  = RESOURCES_DATA.weeks;
+  const allocs = Editor.draft[Editor.person];
+  const personRec = RESOURCES_DATA.people[Editor.person] || {};
+  const projCap = personRec.proj_cap || [];
+  const wEnd   = Math.min(Editor.aeWindowStart + AE_COLS, weeks.length);
+  const wIdxs  = [];
+  for (let i = Editor.aeWindowStart; i < wEnd; i++) wIdxs.push(i);
+
+  const startLabel = aeMonLabel(wIdxs[0]);
+  const endLabel   = aeMonLabel(wIdxs[wIdxs.length - 1]);
+  document.getElementById('ae-range-label').textContent = startLabel + ' — ' + endLabel;
+  document.getElementById('ae-range-sub').textContent   = 'W' + (wIdxs[0]+1) + ' – W' + (wIdxs[wIdxs.length-1]+1);
+  document.getElementById('ae-prev-btn').disabled = Editor.aeWindowStart === 0;
+  document.getElementById('ae-next-btn').disabled = wEnd >= weeks.length;
+
+  // Header
+  let thead = '<tr>';
+  thead += '<th class="ae-proj-th">Project</th>';
+  for (const wi of wIdxs) {
+    const isCur = wi === window.currentWeekIdx;
+    thead += '<th class="ae-wk-th' + (isCur ? ' ae-cur' : '') + '">' +
+      aeMonLabel(wi) + '<br><span style="font-size:9px;opacity:.7;">W' + (wi+1) + '</span></th>';
+  }
+  thead += '</tr>';
+  document.getElementById('ae-thead').innerHTML = thead;
+
+  // Split allocs into Lead vs Contributing groups
+  const leadAllocs = [];
+  const contribAllocs = [];
+  allocs.forEach(function(a, ai) {
+    a._origIdx = ai;
+    if (a.role === 'Lead') leadAllocs.push(a);
+    else contribAllocs.push(a);
+  });
+
+  // Project rows
+  let tbody = '';
+  if (!allocs.length) {
+    tbody = '<tr><td colspan="' + (AE_COLS + 1) + '" style="text-align:center;color:var(--text-muted);padding:40px;font-size:13px;">No active projects for this person.</td></tr>';
+    document.getElementById('ae-tbody').innerHTML = tbody;
+    document.getElementById('ae-tfoot').innerHTML = '';
+    document.getElementById('ae-totals-bar').style.display = 'none';
+    return;
+  }
+
+  const numRows = allocs.length;
+
+  function renderAllocRow(a) {
+    const ai = a._origIdx;
+    const statusCol = STATUS_COLOR(a.status) || '#9CA3AF';
+    const chipBg = statusCol + '22';
+    const dates  = aeProjectDates[a.project] || {};
+    const pStart = dates.start || null;
+    const pEnd   = dates.end   || null;
+
+    let row = '<tr><td class="ae-proj-td">' +
+      '<span class="ae-proj-name ae-proj-link" onclick="openProjectFromAlloc(this)" data-project="' + esc(a.project) + '" title="View project details">' + esc(a.project) + '</span>' +
+      '<span class="ae-proj-status" style="color:' + statusCol + ';background:' + chipBg + ';">' + esc(a.status) + '</span>' +
+      '<select class="ae-role-select" data-ai="' + ai + '" onchange="aeRoleChange(' + ai + ',this.value)" title="Role on this project">' +
+        '<option value=""' + (!a.role ? ' selected' : '') + '>Role…</option>' +
+        '<option value="Lead"' + (a.role === 'Lead' ? ' selected' : '') + '>Lead</option>' +
+        '<option value="Contributor"' + (a.role === 'Contributor' ? ' selected' : '') + '>Contributor</option>' +
+        '<option value="Reviewer"' + (a.role === 'Reviewer' ? ' selected' : '') + '>Reviewer</option>' +
+      '</select>';
+    var hasEmptyWeeks = false;
+    for (var ew = 0; ew < weeks.length; ew++) {
+      if ((a.fracs[ew] || 0) > 0) continue;
+      var wDate2 = weeks[ew];
+      var afterStart2 = !pStart || wDate2 >= pStart;
+      var beforeEnd2 = !pEnd || wDate2 <= pEnd;
+      if (afterStart2 && beforeEnd2) { hasEmptyWeeks = true; break; }
+    }
+    if (hasEmptyWeeks) {
+      row += '<span class="ae-autofill-btn" onclick="aeAutofillProject(' + ai + ')" title="Fill empty weeks with default % based on project size and role">&#9889; Auto-fill</span>';
+    }
+    if (pStart || pEnd) {
+      row += '<span class="ae-date-range">';
+      if (pStart) row += '&#9654; ' + pStart;
+      if (pStart && pEnd) row += '&nbsp;&nbsp;';
+      if (pEnd)   row += '&#9632; ' + pEnd;
+      row += '</span>';
+    }
+    row += '</td>';
+
+    for (let ci = 0; ci < wIdxs.length; ci++) {
+      const wi = wIdxs[ci];
+      const pct    = Math.round((a.fracs[wi] || 0) * 100);
+      const isCur  = wi === window.currentWeekIdx;
+      const hasVal = pct > 0;
+      const wDate  = weeks[wi];
+      let rangeClass = '';
+      if (pStart || pEnd) {
+        const afterStart = !pStart || wDate >= pStart;
+        const beforeEnd  = !pEnd   || wDate <= pEnd;
+        rangeClass = (afterStart && beforeEnd) ? ' ae-in-range' : ' ae-out-range';
+      }
+      let cls = 'ae-pct-input' + (hasVal ? ' has-val' : '') + (isCur ? ' cur-wk' : '');
+      const tabIdx = ci * numRows + ai + 1;
+      const cap = projCap[wi] || 0;
+      const hoursLabel = hasVal ? (Math.round((pct / 100) * cap * 10) / 10) + 'h' : '';
+      row += '<td class="ae-wk-td' + (isCur ? ' ae-cur' : '') + rangeClass + '">' +
+        '<input type="number" min="0" max="100" value="' + pct + '" class="' + cls + '" ' +
+        'tabindex="' + tabIdx + '" ' +
+        'data-ai="' + ai + '" data-wi="' + wi + '" ' +
+        'onchange="aeCellChange(' + ai + ',' + wi + ',this)" onfocus="this.select()">' +
+        '<div class="ae-hrs" id="ae-hrs-' + ai + '-' + wi + '">' + hoursLabel + '</div>' +
+        '</td>';
+    }
+    row += '</tr>';
+    return row;
+  }
+
+  // Leading section
+  if (leadAllocs.length > 0) {
+    tbody += '<tr class="ae-group-hdr ae-group-lead"><td colspan="' + (wIdxs.length + 1) + '">Leading (' + leadAllocs.length + ')</td></tr>';
+    leadAllocs.forEach(function(a) { tbody += renderAllocRow(a); });
+  }
+
+  // Contributing section (collapsible)
+  if (contribAllocs.length > 0) {
+    const chevron = aeContribCollapsed ? '&#9654;' : '&#9660;';
+    tbody += '<tr class="ae-group-hdr ae-group-contrib" onclick="aeToggleContrib()"><td colspan="' + (wIdxs.length + 1) + '">' +
+      '<span style="margin-right:6px;font-size:10px;">' + chevron + '</span>Contributing (' + contribAllocs.length + ')' +
+      (aeContribCollapsed ? '<span style="font-weight:400;font-size:10px;margin-left:8px;text-transform:none;letter-spacing:0;">click to expand</span>' : '') +
+      '</td></tr>';
+    if (!aeContribCollapsed) {
+      contribAllocs.forEach(function(a) { tbody += renderAllocRow(a); });
+    }
+  }
+
+  document.getElementById('ae-tbody').innerHTML = tbody;
+
+  // Totals row (inside table tfoot for guaranteed column alignment)
+  let totHtml = '<tr class="ae-total-row"><td class="ae-proj-td ae-total-label">Total allocated' + calcInfoIcon('allocTotal') + '</td>';
+  for (const wi of wIdxs) {
+    const total = allocs.reduce(function(s, a) { return s + Math.round((a.fracs[wi] || 0) * 100); }, 0);
+    const cls   = total === 0 ? 'zero' : total > 100 ? 'over' : 'ok';
+    const isCur = wi === window.currentWeekIdx;
+    totHtml += '<td class="ae-wk-td' + (isCur ? ' ae-cur' : '') + '" id="ae-tot-' + wi + '">' +
+      '<span class="ae-tot-chip ' + cls + '">' + total + '%</span></td>';
+  }
+  totHtml += '</tr>';
+  document.getElementById('ae-tfoot').innerHTML = totHtml;
+  document.getElementById('ae-totals-bar').style.display = 'none';
+}
+
+function aeCellChange(ai, wi, input) {
+  const pct = Math.min(100, Math.max(0, parseFloat(input.value) || 0));
+  input.value = pct;
+  Editor.draft[Editor.person][ai].fracs[wi] = pct / 100;
+  const isCur = wi === window.currentWeekIdx;
+  input.className = 'ae-pct-input' + (pct > 0 ? ' has-val' : '') + (isCur ? ' cur-wk' : '');
+  // Refresh the per-cell hours label.
+  const personRec = RESOURCES_DATA.people[Editor.person] || {};
+  const cap = (personRec.proj_cap || [])[wi] || 0;
+  const hrsEl = document.getElementById('ae-hrs-' + ai + '-' + wi);
+  if (hrsEl) hrsEl.textContent = pct > 0 ? (Math.round((pct / 100) * cap * 10) / 10) + 'h' : '';
+  aeTotRefresh(wi);
+}
+
+function aeRoleChange(ai, role) {
+  Editor.draft[Editor.person][ai].role = role;
+  aeRenderGrid();
+}
+
+function aeAutofillProject(ai) {
+  var alloc = Editor.draft[Editor.person][ai];
+  var projTitle = alloc.project;
+  var role = alloc.role;
+  if (!role) {
+    showToast('Select a role first (Lead, Contributor, or Reviewer).', 'warn');
+    return;
+  }
+  // Look up project size
+  var proj = PROJECTS.find(function(p) { return p.title === projTitle; });
+  var size = proj ? (proj.project_size || '') : '';
+  if (!size) {
+    showToast('This project has no size set. Set the project size in the project editor first.', 'warn');
+    return;
+  }
+  var defaults = _allocationDefaults[size];
+  if (!defaults || !defaults[role]) {
+    showToast('No default found for size "' + size + '" / role "' + role + '".', 'warn');
+    return;
+  }
+  var defaultPct = defaults[role] / 100; // Convert to 0-1 fraction
+  var weeks = RESOURCES_DATA.weeks;
+  var N = weeks.length;
+  // Determine project date range
+  var dates = aeProjectDates[projTitle] || {};
+  var pStart = dates.start || null;
+  var pEnd = dates.end || null;
+  var filled = 0;
+  for (var i = 0; i < N; i++) {
+    // Only fill empty weeks within project date range
+    if (alloc.fracs[i] > 0) continue; // Don't overwrite existing values
+    var wDate = weeks[i];
+    var afterStart = !pStart || wDate >= pStart;
+    var beforeEnd = !pEnd || wDate <= pEnd;
+    if (afterStart && beforeEnd) {
+      alloc.fracs[i] = defaultPct;
+      filled++;
+    }
+  }
+  if (filled === 0) {
+    showToast('No empty weeks found within the project date range to fill.', 'info');
+    return;
+  }
+  showToast('Filled ' + filled + ' week(s) with ' + defaults[role] + '% for ' + role + '.', 'success');
+  aeRenderGrid(); // Re-render to show updated values
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  AUTO-FILL ALLOCATIONS FOR NEW PROJECTS
+//  Called automatically after creating a new Active project with a size.
+//  Creates allocation records in ArcGIS Online for all team members.
+// ══════════════════════════════════════════════════════════════════════
+async function autoFillAllocationsForNewProject(fields) {
+  var size = fields.project_size;
+  var defaults = _allocationDefaults[size];
+  if (!defaults) { console.warn('[AutoAlloc] No defaults for size:', size); return; }
+
+  var startDate = fields.start || null;
+  var endDate = fields.working_due || fields.end || null;
+  if (!startDate || !endDate) {
+    console.log('[AutoAlloc] Skipping — no start or end date set');
+    return;
+  }
+
+  // Gather team members and their roles
+  var members = [];
+  if (fields.contact) {
+    members.push({ name: fields.contact, role: 'Lead' });
+  }
+  if (fields.other_members) {
+    fields.other_members.split(',').map(function(s) { return s.trim(); }).filter(Boolean).forEach(function(name) {
+      var memberRole = _formMemberRoles[name] || 'Contributor';
+      members.push({ name: name, role: memberRole });
+    });
+  }
+  if (members.length === 0) {
+    console.log('[AutoAlloc] Skipping — no team members assigned');
+    return;
+  }
+
+  // Find the project we just created to get analytics_id
+  var proj = PROJECTS.find(function(p) { return p.title === fields.title; });
+  var analyticsId = proj ? proj.id : null;
+
+  // Generate weeks within date range
+  var weeks = RESOURCES_DATA.weeks || [];
+  var adds = [];
+
+  members.forEach(function(member) {
+    var defaultPct = defaults[member.role];
+    if (!defaultPct) return;
+    var fraction = defaultPct / 100;
+
+    // Compute this person's proj_cap per week (if they're in RESOURCES_DATA)
+    var person = RESOURCES_DATA.people ? RESOURCES_DATA.people[member.name] : null;
+
+    for (var i = 0; i < weeks.length; i++) {
+      var wDate = weeks[i];
+      // Check if week is within project date range
+      if (wDate < startDate || wDate > endDate) continue;
+
+      var projCap = person ? (person.proj_cap[i] || 0) : 0;
+      var hours = Math.round(fraction * projCap * 100) / 100;
+
+      adds.push({
+        attributes: {
+          name:           member.name,
+          project:        fields.title,
+          project_status: fields.status || 'Active',
+          project_type:   fields.category || '',
+          analytics_id:   analyticsId,
+          project_role:   member.role,
+          week_date:      wDate,
+          fraction:       fraction,
+          hours:          hours,
+        }
+      });
+    }
+  });
+
+  if (adds.length === 0) {
+    console.log('[AutoAlloc] No allocation records generated');
+    return;
+  }
+
+  console.log('[AutoAlloc] Creating', adds.length, 'allocation records for', members.length, 'members');
+  try {
+    var result = await agolApplyEdits(ARCGIS_CONFIG.allocationsUrl, { adds: adds });
+    console.log('[AutoAlloc] Result:', JSON.stringify(result));
+
+    var errorCount = 0;
+    if (result && result.addResults) {
+      result.addResults.forEach(function(r) { if (!r.success) errorCount++; });
+    }
+    if (errorCount > 0) {
+      showToast('Some allocation records failed to save (' + errorCount + ' errors). Check the allocation editor.', 'warn');
+    } else {
+      showToast('Auto-filled allocations for ' + members.length + ' team member(s).', 'success');
+    }
+
+    // Reload resources to reflect the new allocations
+    await loadResourcesData();
+    initResourcesWeekIndices();
+  } catch (err) {
+    console.error('[AutoAlloc] Failed:', err);
+    showToast('Failed to auto-fill allocations: ' + err.message, 'error');
+  }
+}
+
+function aeTotRefresh(wi) {
+  const allocs = Editor.draft[Editor.person];
+  const total  = allocs.reduce(function(s, a) { return s + Math.round((a.fracs[wi] || 0) * 100); }, 0);
+  const cell   = document.getElementById('ae-tot-' + wi);
+  if (!cell) return;
+  const cls  = total === 0 ? 'zero' : total > 100 ? 'over' : 'ok';
+  const isCur = wi === window.currentWeekIdx;
+  cell.innerHTML = '<span class="ae-tot-chip ' + cls + '">' + total + '%</span>';
+}
+
+function applyEditorChanges() {
+  const name = Editor.person;
+  const p    = RESOURCES_DATA.people[name];
+  const N    = RESOURCES_DATA.weeks.length;
+  const weeks = RESOURCES_DATA.weeks;
+
+  // Build a map of canonicalized→original allocation names so we can match properly
+  const projTitleSet3 = new Set(PROJECTS.map(proj => proj.title));
+  function canonTitle(raw) {
+    if (projTitleSet3.has(raw)) return raw;
+    const stripped = raw.replace(/\s*-\s*[A-Z][A-Za-z .]+$/, '').trim();
+    return projTitleSet3.has(stripped) ? stripped : raw;
+  }
+  // Map canonical name → array of original allocation objects
+  const origByCanon = {};
+  p.allocations.forEach(function(a) {
+    const cn = canonTitle(a.project);
+    if (!origByCanon[cn]) origByCanon[cn] = [];
+    origByCanon[cn].push(a);
+  });
+
+  // Collect changed allocation weeks for REST write-back
+  const editsToSave = [];
+
+  Editor.draft[name].forEach(function(da) {
+    const origArr = origByCanon[da.project] || [];
+
+    // Compute the original merged fracs (same merge logic as openAllocEditor)
+    const mergedOrigFracs = new Array(N).fill(0);
+    origArr.forEach(function(a) {
+      for (let i = 0; i < N; i++) mergedOrigFracs[i] += (a.fracs[i] || 0);
+    });
+
+    // Detect which weeks actually changed
+    for (let i = 0; i < N; i++) {
+      const oldFrac = Math.round(mergedOrigFracs[i] * 10000) / 10000;
+      const newFrac = Math.round((da.fracs[i] || 0) * 10000) / 10000;
+      if (newFrac !== oldFrac) {
+        const newHrs = newFrac * (p.proj_cap[i] || 0);
+        editsToSave.push({
+          name:           name,
+          project:        da.project,
+          project_status: da.status || '',
+          project_type:   origArr.length > 0 ? (origArr[0].type || '') : '',
+          analytics_id:   origArr.length > 0 ? origArr[0].analytics_id : null,
+          project_role:   da.role || null,
+          week_date:      weeks[i],
+          fraction:       newFrac,
+          hours:          Math.round(newHrs * 100) / 100,
+        });
+      }
+    }
+
+    // Update local data: write back to the first matching original allocation
+    // (or create a new one if none exists)
+    if (origArr.length > 0) {
+      // Update the first allocation, zero out any others (de-duplicate)
+      origArr[0].fracs = da.fracs.slice();
+      origArr[0].hours = da.fracs.map(function(f, i) { return f * (p.proj_cap[i] || 0); });
+      origArr[0].role = da.role || origArr[0].role || '';
+      for (let j = 1; j < origArr.length; j++) {
+        origArr[j].fracs = new Array(N).fill(0);
+        origArr[j].hours = new Array(N).fill(0);
+      }
+    } else {
+      // Brand new allocation
+      const proj = PROJECTS.find(function(x) { return x.title === da.project; });
+      p.allocations.push({
+        project:      da.project,
+        status:       proj ? proj.status : da.status,
+        type:         '',
+        role:         da.role || '',
+        fracs:        da.fracs.slice(),
+        hours:        da.fracs.map(function(f, i) { return f * (p.proj_cap[i] || 0); }),
+        analytics_id: proj ? proj.id : null,
+      });
+    }
+  });
+
+  // Recompute weekly_allocated and utilization (as 0.0–1.0 ratio, NOT percentage)
+  p.weekly_allocated = weeks.map(function(_, i) {
+    return p.allocations.reduce(function(s, a) { return s + (a.hours[i] || 0); }, 0);
+  });
+  p.utilization = weeks.map(function(_, i) {
+    return p.proj_cap[i] > 0 ? p.weekly_allocated[i] / p.proj_cap[i] : 0;
+  });
+  closeAllocEditor();
+  markDataDirty();
+  render();
+
+  // Save changed allocations to REST service (non-blocking)
+  console.log('[Allocations] Detected', editsToSave.length, 'changed week(s):', editsToSave);
+  if (editsToSave.length > 0) {
+    saveAllocationsToRest(editsToSave);
+  } else {
+    console.log('[Allocations] No changes to save');
+  }
+}
+
+/**
+ * Write allocation changes to the ArcGIS Online allocations REST service.
+ * Strategy: for each changed person+project+week, find and delete the existing
+ * record (if any), then add a new one with updated values. If fraction is 0,
+ * only delete (sparse storage).
+ */
+async function saveAllocationsToRest(edits) {
+  try {
+    console.log('[Allocations] Starting REST save for', edits.length, 'edits');
+    const token = await ensureAgolToken();
+    if (!token) {
+      console.error('[Allocations] No token available');
+      return;
+    }
+
+    // Query ALL existing allocation records for this person
+    const personName = edits[0].name;
+    console.log('[Allocations] Querying existing records for:', personName);
+    const existing = await agolQuery(ARCGIS_CONFIG.allocationsUrl,
+      "name='" + personName.replace(/'/g, "''") + "'");
+    console.log('[Allocations] Found', existing.length, 'existing records');
+
+    // week_date is a Date Only field — always send "YYYY-MM-DD" strings
+    if (existing.length > 0) {
+      console.log('[Allocations] Sample existing record:', JSON.stringify(existing[0].attributes));
+    }
+
+    // Build lookup: "canonicalProject|week_date_str" → array of OIDs
+    const projTitleSet4 = new Set(PROJECTS.map(proj => proj.title));
+    function canonTitle2(raw) {
+      if (projTitleSet4.has(raw)) return raw;
+      const stripped = raw.replace(/\s*-\s*[A-Z][A-Za-z .]+$/, '').trim();
+      return projTitleSet4.has(stripped) ? stripped : raw;
+    }
+
+    const existingMap = {};
+    existing.forEach(function(f) {
+      const a = f.attributes;
+      const oid = a.ObjectId || a.OBJECTID || a.objectid || a.FID;
+      const wk = epochToDateStr(a.week_date); // normalizes both number and string to "YYYY-MM-DD"
+      const canon = canonTitle2(a.project || '');
+      const key = canon + '|' + wk;
+      if (!existingMap[key]) existingMap[key] = [];
+      existingMap[key].push(oid);
+    });
+
+    const deletes = [];
+    const adds = [];
+
+    edits.forEach(function(e) {
+      const key = e.project + '|' + e.week_date;
+      const existingOids = existingMap[key] || [];
+
+      // Delete all matching existing records for this project+week
+      existingOids.forEach(function(oid) {
+        if (oid !== undefined && oid !== null) deletes.push(oid);
+      });
+
+      // Only add back if fraction > 0 (sparse storage)
+      if (e.fraction > 0) {
+        adds.push({
+          attributes: {
+            name:           e.name,
+            project:        e.project,
+            project_status: e.project_status,
+            project_type:   e.project_type,
+            analytics_id:   e.analytics_id,
+            project_role:   e.project_role || null,
+            week_date:      e.week_date,
+            fraction:       e.fraction,
+            hours:          e.hours,
+          }
+        });
+      }
+    });
+
+    console.log('[Allocations] Deleting', deletes.length, 'OIDs:', deletes);
+    console.log('[Allocations] Adding', adds.length, 'records');
+    if (adds.length > 0) console.log('[Allocations] Sample add payload:', JSON.stringify(adds[0]));
+
+    if (deletes.length === 0 && adds.length === 0) {
+      console.log('[Allocations] Nothing to send');
+      return;
+    }
+
+    // Send edits
+    const editPayload = {};
+    if (deletes.length > 0) editPayload.deletes = deletes;
+    if (adds.length > 0)    editPayload.adds = adds;
+
+    const result = await agolApplyEdits(ARCGIS_CONFIG.allocationsUrl, editPayload);
+    console.log('[Allocations] applyEdits response:', JSON.stringify(result));
+
+    // Check for per-record errors
+    const errors = [];
+    if (result.addResults) {
+      result.addResults.forEach(function(r, i) {
+        if (!r.success) errors.push('Add #' + i + ': ' + (r.error ? r.error.description : 'unknown'));
+      });
+    }
+    if (result.deleteResults) {
+      result.deleteResults.forEach(function(r, i) {
+        if (!r.success) errors.push('Delete #' + i + ': ' + (r.error ? r.error.description : 'unknown'));
+      });
+    }
+
+    if (errors.length > 0) {
+      console.error('[Allocations] Partial failures:', errors);
+      showToast('Some allocation changes failed to save. Check console for details.', 'error');
+    } else {
+      let msg = 'Saved ' + adds.length + ' allocation(s)';
+      if (deletes.length > 0) msg += ', removed ' + deletes.length + ' old record(s)';
+      console.log('[Allocations] ✓', msg);
+      markSynced(msg);
+    }
+  } catch (err) {
+    console.error('[Allocations] Save failed:', err);
+    showToast('Allocation save failed: ' + err.message, 'error');
+  }
+}
+
+async function saveAllData() {
+  // Re-fetch all data from ArcGIS Online to sync local state
+  showLoadingOverlay('Refreshing data from ArcGIS Online...');
+  try {
+    const projectFeatures = await agolQuery(ARCGIS_CONFIG.projectsUrl);
+    PROJECTS.length = 0;
+    projectFeatures.forEach(function(f) { PROJECTS.push(agolProjectToLocal(f)); });
+
+    const taskFeatures = await agolQuery(ARCGIS_CONFIG.tasksUrl);
+    TASKS.length = 0;
+    taskFeatures.forEach(function(f) { TASKS.push(agolTaskToLocal(f)); });
+
+    // Reload config
+    try {
+      const configFeatures = await agolQuery(ARCGIS_CONFIG.appConfigUrl);
+      applyAppConfig(configFeatures);
+    } catch (e) { console.warn('app_config reload failed:', e); }
+
+    await loadResourcesData();
+    initResourcesWeekIndices();
+    loadUserPrefs();
+    await loadIssues();
+
+    hideLoadingOverlay();
+    markSynced('Refreshed: ' + PROJECTS.length + ' projects, ' + TASKS.length + ' tasks');
+    markDataDirty();
+    render();
+  } catch (err) {
+    hideLoadingOverlay();
+    console.error('Refresh failed:', err);
+    showToast('Refresh failed: ' + err.message, 'error');
+  }
+}
+
+// ── Unsaved-changes tracking ──────────────────────────────────────────
+function markDirty() {
+  if (Editor.hasUnsaved) return;
+  Editor.hasUnsaved = true;
+  const dot = document.getElementById('unsaved-dot');
+  const btn = document.getElementById('btn-save-file');
+  if (dot) dot.classList.add('show');
+  if (btn) btn.classList.add('dirty');
+}
+function markSaved() {
+  Editor.hasUnsaved = false;
+  const dot = document.getElementById('unsaved-dot');
+  const btn = document.getElementById('btn-save-file');
+  if (dot) dot.classList.remove('show');
+  if (btn) btn.classList.remove('dirty');
+}
+
+function markSynced(msg) {
+  markSaved();
+  // Brief green flash on sync button
+  const btn = document.getElementById('btn-save-file');
+  if (btn) {
+    btn.style.background = '#83AC16';
+    btn.title = msg || 'Data refreshed from ArcGIS Online';
+    setTimeout(() => { btn.style.background = ''; btn.title = 'Refresh data from ArcGIS Online'; }, 2000);
+  }
+}
