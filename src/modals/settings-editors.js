@@ -1,0 +1,620 @@
+// ─────────────────────────────────────────────────────────────────────
+// modals/settings-editors.js — Settings sub-panels
+//
+// Owns: the saveConfigKey helper that round-trips a single
+// app_config key, the Allocation Defaults editor (size×role percentage
+// grid), the recomputeAllProjCap utility that recalculates everyone's
+// project capacity after the productivity ratio changes, the generic
+// list editor (renderListEditor + saveListEdit), the
+// description-list editor for project/task categories
+// (renderDescListEditor + add/edit/save handlers), and the Status
+// History editor for projects.
+//
+// All of these live inside the Settings tab content area (or the
+// project detail page in the case of status history).
+//
+// Forward references: Auth, Editor, RESOURCES_DATA, _allocationDefaults,
+// _productivityRatio, _configOids, agolApplyEdits, ARCGIS_CONFIG,
+// PROJECTS, TASKS, showToast, esc, render, refreshEnums, markDataDirty.
+// ─────────────────────────────────────────────────────────────────────
+
+// ── saveConfigKey + Allocation Defaults editor ─────────────
+// Save a single config key back to ArcGIS Online
+async function saveConfigKey(key, valueArray) {
+  const oid = _configOids[key];
+  const jsonValue = JSON.stringify(valueArray);
+  console.log('[Config] Saving "' + key + '" (' + jsonValue.length + ' chars)');
+  try {
+    if (oid) {
+      // Update existing record
+      const result = await agolApplyEdits(ARCGIS_CONFIG.appConfigUrl, {
+        updates: [{ attributes: { OBJECTID: oid, config_value: jsonValue } }]
+      });
+      // Check for per-record failure
+      if (result && result.updateResults && result.updateResults[0] && !result.updateResults[0].success) {
+        const err = result.updateResults[0].error || {};
+        throw new Error(err.description || 'Update failed — the config_value field may be too short for ' + jsonValue.length + ' characters. Increase the field length in ArcGIS Online.');
+      }
+      console.log('[Config] Updated "' + key + '" in ArcGIS Online');
+    } else {
+      // Create new record
+      const result = await agolApplyEdits(ARCGIS_CONFIG.appConfigUrl, {
+        adds: [{ attributes: { config_key: key, config_value: jsonValue } }]
+      });
+      // Check for per-record failure
+      if (result && result.addResults && result.addResults[0] && !result.addResults[0].success) {
+        const err = result.addResults[0].error || {};
+        throw new Error(err.description || 'Create failed — the config_value field may be too short for ' + jsonValue.length + ' characters. Increase the field length in ArcGIS Online.');
+      }
+      // Store the new ObjectId for future updates
+      if (result && result.addResults && result.addResults[0] && result.addResults[0].objectId) {
+        _configOids[key] = result.addResults[0].objectId;
+      }
+      console.log('[Config] Created "' + key + '" in ArcGIS Online');
+    }
+    return true;
+  } catch (e) {
+    console.error('Failed to save config "' + key + '" to ArcGIS:', e);
+    showToast('Failed to save "' + key + '": ' + e.message, 'error');
+    return false;
+  }
+}
+
+async function saveCustomLists(listKey) {
+  if (listKey === 'dept') {
+    await saveConfigKey('partner_depts', _customPartnerDepts);
+  } else if (listKey === 'team') {
+    await saveConfigKey('itd_teams', _customItdTeams);
+  } else if (listKey === 'proj_cat') {
+    await saveConfigKey('proj_categories', compressDescList(_customProjCategories));
+  } else if (listKey === 'task_cat') {
+    await saveConfigKey('task_categories', compressDescList(_customTaskCategories));
+  } else if (listKey === 'task_tool') {
+    await saveConfigKey('task_tools', compressDescList(_customTaskTools));
+  } else if (listKey === 'review_types') {
+    await saveConfigKey('review_types', _reviewTypes);
+  }
+}
+
+// ── Allocation Defaults Editor ──────────────────────────────────
+function renderAllocDefaultsEditor() {
+  var container = document.getElementById('alloc-defaults-editor');
+  if (!container) return;
+  var sizes = ['S', 'M', 'L', 'XL'];
+  var sizeLabels = { S: 'Small', M: 'Medium', L: 'Large', XL: 'Extra large' };
+  var roles = ['Lead', 'Contributor', 'Reviewer'];
+  var html = '<table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #E8E6DF;border-radius:10px;overflow:hidden;font-size:13px;">';
+  html += '<thead><tr><th style="background:#FDFCF8;padding:10px 14px;text-align:left;font-weight:700;color:var(--navy);border-bottom:2px solid #E8E6DF;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;">Size</th>';
+  roles.forEach(function(r) {
+    html += '<th style="background:#FDFCF8;padding:10px 14px;text-align:center;font-weight:700;color:var(--navy);border-bottom:2px solid #E8E6DF;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;">' + r + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+  sizes.forEach(function(s) {
+    var d = _allocationDefaults[s] || {};
+    html += '<tr>';
+    html += '<td style="padding:10px 14px;border-bottom:1px solid #F3F1EB;font-weight:700;color:var(--navy);">' + s + ' — ' + sizeLabels[s] + '</td>';
+    roles.forEach(function(r) {
+      html += '<td style="padding:6px 10px;border-bottom:1px solid #F3F1EB;text-align:center;">';
+      html += '<input type="number" min="0" max="100" step="5" value="' + (d[r] || 0) + '" ';
+      html += 'id="ad-' + s + '-' + r + '" ';
+      html += 'style="width:60px;padding:4px 6px;text-align:center;border:1px solid #E8E6DF;border-radius:4px;font-size:13px;font-family:Lato,sans-serif;">';
+      html += '<span style="font-size:11px;color:var(--text-muted);margin-left:2px;">%</span>';
+      html += '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  html += '<div style="margin-top:10px;display:flex;justify-content:flex-end;">';
+  html += '<button class="settings-btn settings-btn-primary" onclick="saveAllocDefaults()">Save Defaults</button>';
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// Recompute proj_cap and allocation hours for every loaded person using the current _productivityRatio.
+// Called after the admin saves a new ratio so the change is visible immediately.
+function recomputeAllProjCap() {
+  if (!RESOURCES_DATA || !RESOURCES_DATA.people) return;
+  const weeks = RESOURCES_DATA.weeks;
+  Object.entries(RESOURCES_DATA.people).forEach(function(entry) {
+    const p = entry[1];
+    for (let i = 0; i < weeks.length; i++) {
+      const ppWeek = getPayPeriodWeek(weeks[i]);
+      const scheduledHours = (ppWeek === 'A') ? p.week1_hours : p.week2_hours;
+      p.proj_cap[i] = (scheduledHours - (p.absences[i] || 0)) * _productivityRatio * p.proj_pct;
+    }
+    (p.allocations || []).forEach(function(a) {
+      a.hours = (a.fracs || []).map(function(f, i) { return f * (p.proj_cap[i] || 0); });
+    });
+  });
+}
+
+// One-time migration: recompute hours = fraction × proj_cap for every allocation record in ArcGIS
+// using the current productivity ratio. Useful after admin changes the ratio so external consumers
+// (Power BI, exports, dashboards) see fresh values. The in-app behavior doesn't depend on this —
+// loaded allocations always have hours recomputed locally.
+async function migrateAllocationHours() {
+  if (!RESOURCES_DATA) {
+    showToast('Resources data is still loading. Try again in a moment.', 'error');
+    return;
+  }
+  var ratioPct = Math.round((_productivityRatio || 0.75) * 100);
+  if (!confirm('Recalculate stored hours on every allocation record using the current productivity ratio (' + ratioPct + '%)?\n\nOnly records whose stored hours differ from the new value will be updated. Records for inactive people or out-of-range weeks will be skipped.\n\nThis may take a minute on large datasets.')) return;
+
+  var btn = document.getElementById('btn-migrate-alloc-hours');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading allocations…'; }
+
+  try {
+    var allocFeatures = await agolQuery(ARCGIS_CONFIG.allocationsUrl);
+    var weekIdx = {};
+    RESOURCES_DATA.weeks.forEach(function(w, i) { weekIdx[w] = i; });
+    var people = RESOURCES_DATA.people;
+
+    var updates = [];
+    var skipped = 0;
+    allocFeatures.forEach(function(f) {
+      var a = f.attributes;
+      var oid = a.OBJECTID || a.ObjectId || a.objectid;
+      var p = people[a.name];
+      if (!p) { skipped++; return; }
+      var wkStr = epochToDateStr(a.week_date);
+      var wi = weekIdx[wkStr];
+      if (wi === undefined) { skipped++; return; }
+      var fraction = a.fraction || 0;
+      var newHours = Math.round(fraction * (p.proj_cap[wi] || 0) * 100) / 100;
+      var oldHours = Math.round((a.hours || 0) * 100) / 100;
+      if (Math.abs(newHours - oldHours) < 0.01) return; // no meaningful change
+      updates.push({ attributes: { OBJECTID: oid, hours: newHours } });
+    });
+
+    if (updates.length === 0) {
+      showToast('All ' + allocFeatures.length + ' allocation records already match the current ratio.', 'success');
+      return;
+    }
+
+    var updated = 0, failed = 0;
+    for (var i = 0; i < updates.length; i += 100) {
+      var batch = updates.slice(i, i + 100);
+      if (btn) btn.textContent = 'Updating ' + Math.min(i + 100, updates.length) + ' / ' + updates.length + '…';
+      var result = await agolApplyEdits(ARCGIS_CONFIG.allocationsUrl, { updates: batch });
+      if (result && result.updateResults) {
+        result.updateResults.forEach(function(r) { if (r.success) updated++; else failed++; });
+      } else {
+        updated += batch.length;
+      }
+    }
+
+    var msg = 'Updated ' + updated + ' allocation record' + (updated === 1 ? '' : 's');
+    if (skipped > 0) msg += ' · ' + skipped + ' skipped';
+    if (failed > 0) msg += ' · ' + failed + ' failed';
+    showToast(msg + '.', failed > 0 ? 'error' : 'success');
+  } catch (e) {
+    console.error('[Migration] Failed:', e);
+    showToast('Migration failed: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Update stored allocation hours'; }
+  }
+}
+
+async function saveProductivityRatio() {
+  const el = document.getElementById('settings-productivity-ratio');
+  if (!el) return;
+  const pctEntered = parseFloat(el.value);
+  if (isNaN(pctEntered) || pctEntered <= 0 || pctEntered > 100) {
+    showToast('Productivity ratio must be between 1 and 100.', 'error');
+    return;
+  }
+  const ratio = Math.round(pctEntered) / 100;
+  _productivityRatio = ratio;
+  const success = await saveConfigKey('productivity_ratio', ratio);
+  if (success) {
+    recomputeAllProjCap();
+    showToast('Productivity ratio saved (' + Math.round(ratio * 100) + '%).', 'success');
+    render();
+  }
+}
+
+async function saveAllocDefaults() {
+  var sizes = ['S', 'M', 'L', 'XL'];
+  var roles = ['Lead', 'Contributor', 'Reviewer'];
+  var newDefaults = {};
+  sizes.forEach(function(s) {
+    newDefaults[s] = {};
+    roles.forEach(function(r) {
+      var el = document.getElementById('ad-' + s + '-' + r);
+      newDefaults[s][r] = el ? parseInt(el.value) || 0 : 0;
+    });
+  });
+  _allocationDefaults = newDefaults;
+  var success = await saveConfigKey('allocation_defaults', newDefaults);
+  if (success) {
+    showToast('Allocation defaults saved.', 'success');
+  }
+}
+
+// ── List editors (generic + descriptive) ───────────────────
+function renderListEditor(containerId, title, items, listKey) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // Get values from project data that aren't in the custom list
+  let fromData = [];
+  if (listKey === 'dept') {
+    fromData = [...new Set(PROJECTS.map(function(p) { return p.partner_dept; }))].filter(function(v) { return v && !items.includes(v); }).sort();
+  } else if (listKey === 'team') {
+    fromData = [...new Set(PROJECTS.map(function(p) { return p.itd_team; }))].filter(function(v) { return v && !items.includes(v); }).sort();
+  }
+
+  const itemsHtml = items.map(function(item, idx) {
+    return '<div class="list-editor-item">' +
+      '<span class="list-editor-item-name">' + esc(item) + '</span>' +
+      '<button class="list-editor-remove" title="Remove" onclick="removeListItem(\'' + listKey + '\',' + idx + ')">✕</button>' +
+    '</div>';
+  }).join('');
+
+  // Show data-sourced items (read-only, can't be removed since they come from project data)
+  const dataItemsHtml = fromData.map(function(item) {
+    return '<div class="list-editor-item">' +
+      '<span class="list-editor-item-name">' + esc(item) + '</span>' +
+      '<span class="list-editor-item-from-data">from project data</span>' +
+    '</div>';
+  }).join('');
+
+  const totalCount = items.length + fromData.length;
+
+  container.innerHTML = '<div class="list-editor-card">' +
+    '<div class="list-editor-card-header">' +
+      '<span>' + title + '</span>' +
+      '<span class="list-count">' + totalCount + ' items</span>' +
+    '</div>' +
+    '<div class="list-editor-items">' + itemsHtml + dataItemsHtml + '</div>' +
+    '<div class="list-editor-add">' +
+      '<input type="text" id="list-add-input-' + listKey + '" placeholder="Add new ' + (listKey === 'dept' ? 'department' : 'team') + '…" onkeydown="if(event.key===\'Enter\')addListItem(\'' + listKey + '\')">' +
+      '<button onclick="addListItem(\'' + listKey + '\')">＋ Add</button>' +
+    '</div>' +
+  '</div>';
+}
+
+async function addListItem(listKey) {
+  const inputId = 'list-add-input-' + listKey;
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) return;
+
+  const list = listKey === 'dept' ? _customPartnerDepts : _customItdTeams;
+  if (list.includes(val)) {
+    showToast('This item already exists in the list.', 'warn');
+    return;
+  }
+  list.push(val);
+  list.sort();
+
+  // Refresh the enum aliases so form dropdowns pick up the change
+  refreshEnums();
+
+  // Re-render the editor immediately (optimistic UI)
+  renderListEditor(
+    listKey === 'dept' ? 'list-editor-dept' : 'list-editor-team',
+    listKey === 'dept' ? 'Partner Departments' : 'ITD Teams',
+    list, listKey
+  );
+
+  // Save to ArcGIS Online
+  await saveCustomLists(listKey);
+}
+
+async function removeListItem(listKey, idx) {
+  const list = listKey === 'dept' ? _customPartnerDepts : _customItdTeams;
+  const item = list[idx];
+  if (!confirm('Remove "' + item + '" from the list?')) return;
+  list.splice(idx, 1);
+
+  // Refresh the enum aliases
+  refreshEnums();
+
+  // Re-render the editor immediately (optimistic UI)
+  renderListEditor(
+    listKey === 'dept' ? 'list-editor-dept' : 'list-editor-team',
+    listKey === 'dept' ? 'Partner Departments' : 'ITD Teams',
+    list, listKey
+  );
+
+  // Save to ArcGIS Online
+  await saveCustomLists(listKey);
+}
+
+// ── Description List Editor (for categories & tools with name + description) ──
+
+function getDescList(listKey) {
+  if (listKey === 'proj_cat') return _customProjCategories;
+  if (listKey === 'task_cat') return _customTaskCategories;
+  if (listKey === 'task_tool') return _customTaskTools;
+  return [];
+}
+
+function getDescListMeta(listKey) {
+  if (listKey === 'proj_cat') return { containerId: 'desc-editor-proj-cat', title: 'Project Categories', dataSource: 'projects', dataField: 'category' };
+  if (listKey === 'task_cat') return { containerId: 'desc-editor-task-cat', title: 'Task Categories', dataSource: 'tasks', dataField: 'category' };
+  if (listKey === 'task_tool') return { containerId: 'desc-editor-task-tool', title: 'Task Tools', dataSource: 'tasks', dataField: 'tool' };
+  return {};
+}
+
+function renderDescListEditor(listKey) {
+  const meta = getDescListMeta(listKey);
+  const container = document.getElementById(meta.containerId);
+  if (!container) return;
+  const list = getDescList(listKey);
+
+  // Values from data not in custom list
+  let dataValues = [];
+  const listNames = list.map(function(i) { return i.name; });
+  if (meta.dataSource === 'projects') {
+    dataValues = [...new Set(PROJECTS.map(function(p) { return p[meta.dataField]; }))].filter(function(v) { return v && !listNames.includes(v); }).sort();
+  } else {
+    dataValues = [...new Set(TASKS.map(function(t) { return t[meta.dataField]; }))].filter(function(v) { return v && !listNames.includes(v); }).sort();
+  }
+
+  const hasActiveFlag = (listKey === 'task_tool'); // Active/retired toggle for task tools
+  const activeCount = hasActiveFlag ? list.filter(function(i) { return i.active !== false; }).length : list.length;
+
+  const itemsHtml = list.map(function(item, idx) {
+    const isInactive = hasActiveFlag && item.active === false;
+    const inactiveStyle = isInactive ? ' style="opacity:0.5;"' : '';
+    let toggleHtml = '';
+    if (hasActiveFlag) {
+      const toggleLabel = isInactive ? 'Retired' : 'Active';
+      const toggleColor = isInactive ? '#EF4444' : '#22C55E';
+      const toggleTitle = isInactive ? 'Click to reactivate' : 'Click to retire';
+      toggleHtml = '<button class="desc-editor-edit" title="' + toggleTitle + '" onclick="toggleDescListActive(\'' + listKey + '\',' + idx + ')" style="font-size:10px;font-weight:700;color:' + toggleColor + ';letter-spacing:0.03em;">' + toggleLabel + '</button>';
+    }
+    return '<div class="desc-editor-item"' + inactiveStyle + '>' +
+      '<div class="desc-editor-item-main">' +
+        '<span class="desc-editor-item-name">' + esc(item.name) + (isInactive ? ' <span style="font-size:10px;color:#EF4444;font-weight:700;">(retired)</span>' : '') + '</span>' +
+        '<div class="desc-editor-item-actions">' +
+          toggleHtml +
+          '<button class="desc-editor-edit" title="Edit" onclick="editDescListItem(\'' + listKey + '\',' + idx + ')">✏️</button>' +
+          '<button class="list-editor-remove" title="Remove" onclick="removeDescListItem(\'' + listKey + '\',' + idx + ')">✕</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="desc-editor-item-desc">' + esc(item.desc || '') + '</div>' +
+    '</div>';
+  }).join('');
+
+  const dataItemsHtml = dataValues.map(function(v) {
+    return '<div class="desc-editor-item">' +
+      '<div class="desc-editor-item-main">' +
+        '<span class="desc-editor-item-name">' + esc(v) + '</span>' +
+        '<span class="list-editor-item-from-data">from data</span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  const countLabel = hasActiveFlag ? activeCount + ' active / ' + list.length + ' total' : (list.length + dataValues.length) + ' items';
+
+  container.innerHTML = '<div class="list-editor-card">' +
+    '<div class="list-editor-card-header">' +
+      '<span>' + meta.title + '</span>' +
+      '<span class="list-count">' + countLabel + '</span>' +
+    '</div>' +
+    '<div class="list-editor-items" style="max-height:400px;">' + itemsHtml + dataItemsHtml + '</div>' +
+    '<div class="desc-editor-add">' +
+      '<input type="text" id="desc-add-name-' + listKey + '" placeholder="Name…" onkeydown="if(event.key===\'Enter\')document.getElementById(\'desc-add-desc-' + listKey + '\').focus()">' +
+      '<input type="text" id="desc-add-desc-' + listKey + '" placeholder="Description…" onkeydown="if(event.key===\'Enter\')addDescListItem(\'' + listKey + '\')">' +
+      '<button onclick="addDescListItem(\'' + listKey + '\')">＋ Add</button>' +
+    '</div>' +
+  '</div>';
+}
+
+async function addDescListItem(listKey) {
+  const nameInput = document.getElementById('desc-add-name-' + listKey);
+  const descInput = document.getElementById('desc-add-desc-' + listKey);
+  if (!nameInput) return;
+  const name = nameInput.value.trim();
+  const desc = descInput ? descInput.value.trim() : '';
+  if (!name) { showToast('Please enter a name.', 'warn'); return; }
+
+  const list = getDescList(listKey);
+  if (list.some(function(i) { return i.name.toLowerCase() === name.toLowerCase(); })) {
+    showToast('An item with this name already exists.', 'warn');
+    return;
+  }
+  const newItem = { name: name, desc: desc };
+  // If this list uses active flags, default new items to active
+  if (list.length > 0 && list[0].active !== undefined) newItem.active = true;
+  list.push(newItem);
+  list.sort(function(a, b) { return a.name.localeCompare(b.name); });
+
+  refreshEnums();
+  renderDescListEditor(listKey);
+  await saveCustomLists(listKey);
+}
+
+async function removeDescListItem(listKey, idx) {
+  const list = getDescList(listKey);
+  const item = list[idx];
+  if (!confirm('Remove "' + item.name + '" from the list?')) return;
+  list.splice(idx, 1);
+  refreshEnums();
+  renderDescListEditor(listKey);
+  await saveCustomLists(listKey);
+}
+
+function editDescListItem(listKey, idx) {
+  const list = getDescList(listKey);
+  const item = list[idx];
+  const meta = getDescListMeta(listKey);
+  const container = document.getElementById(meta.containerId);
+  if (!container) return;
+
+  // Find the item row and replace with inline edit form
+  const items = container.querySelectorAll('.desc-editor-item');
+  if (!items[idx]) return;
+  const row = items[idx];
+  row.innerHTML = '<div class="desc-editor-inline-edit">' +
+    '<input type="text" id="desc-edit-name-' + listKey + '-' + idx + '" class="fm-input" value="' + esc(item.name) + '" style="font-weight:700;margin-bottom:4px;">' +
+    '<input type="text" id="desc-edit-desc-' + listKey + '-' + idx + '" class="fm-input" value="' + esc(item.desc || '') + '" placeholder="Description…" style="font-size:12px;">' +
+    '<div style="display:flex;gap:6px;margin-top:6px;">' +
+      '<button class="settings-btn settings-btn-primary" style="padding:4px 12px;font-size:11px;" onclick="saveDescListEdit(\'' + listKey + '\',' + idx + ')">Save</button>' +
+      '<button class="settings-btn settings-btn-secondary" style="padding:4px 12px;font-size:11px;" onclick="renderDescListEditor(\'' + listKey + '\')">Cancel</button>' +
+    '</div>' +
+  '</div>';
+  document.getElementById('desc-edit-name-' + listKey + '-' + idx).focus();
+}
+
+async function saveDescListEdit(listKey, idx) {
+  const nameEl = document.getElementById('desc-edit-name-' + listKey + '-' + idx);
+  const descEl = document.getElementById('desc-edit-desc-' + listKey + '-' + idx);
+  if (!nameEl) return;
+  const newName = nameEl.value.trim();
+  const newDesc = descEl ? descEl.value.trim() : '';
+  if (!newName) { showToast('Name cannot be empty.', 'warn'); return; }
+
+  const list = getDescList(listKey);
+  // Check for duplicate (excluding self)
+  if (list.some(function(i, ii) { return ii !== idx && i.name.toLowerCase() === newName.toLowerCase(); })) {
+    showToast('An item with this name already exists.', 'warn');
+    return;
+  }
+  list[idx] = { name: newName, desc: newDesc, active: list[idx].active };
+  list.sort(function(a, b) { return a.name.localeCompare(b.name); });
+  refreshEnums();
+  renderDescListEditor(listKey);
+  await saveCustomLists(listKey);
+}
+
+async function toggleDescListActive(listKey, idx) {
+  const list = getDescList(listKey);
+  const item = list[idx];
+  item.active = item.active === false ? true : false;
+  refreshEnums();
+  renderDescListEditor(listKey);
+  await saveCustomLists(listKey);
+}
+
+// ── Status History editor ──────────────────────────────────
+function toggleStatusHistoryEditor(projectId, objectId) {
+  const container = document.getElementById('status-history-editor');
+  if (!container) return;
+  if (Editor.shProjectId === projectId && container.innerHTML !== '') {
+    container.innerHTML = '';
+    Editor.shProjectId = null;
+    return;
+  }
+  Editor.shProjectId = projectId;
+  Editor.shObjectId = objectId;
+  renderStatusHistoryEditor();
+}
+
+function renderStatusHistoryEditor() {
+  const container = document.getElementById('status-history-editor');
+  if (!container || !Editor.shProjectId) return;
+  const history = getProjectStatusHistory(Editor.shProjectId);
+  const proj = PROJECTS.find(function(p) { return p.id == Editor.shProjectId; });
+  const projTitle = proj ? proj.title : '';
+
+  const statusOpts = ['Future','Scheduled','Active','On Hold','Waiting for Response','Complete','Canceled'];
+
+  let rowsHtml = history.map(function(h, idx) {
+    const sc = STATUS_COLOR(h.status) || '#9CA3AF';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #F3F1EB;">' +
+      '<span style="width:10px;height:10px;border-radius:50%;background:' + sc + ';flex-shrink:0;"></span>' +
+      '<span style="flex:1;font-size:12px;font-weight:600;color:var(--text-body);">' + esc(h.status) + '</span>' +
+      '<span style="font-size:11px;color:var(--text-muted);min-width:85px;">' + (h.changed_date || '') + '</span>' +
+      '<span style="font-size:11px;color:var(--text-muted);min-width:100px;">' + esc(h.changed_by || '') + '</span>' +
+      '<button onclick="deleteStatusHistoryRecord(' + idx + ')" style="background:none;border:none;color:#E1E2DD;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;" title="Remove" onmouseover="this.style.color=\'#EF4444\'" onmouseout="this.style.color=\'#E1E2DD\'">✕</button>' +
+    '</div>';
+  }).join('');
+
+  if (!history.length) {
+    rowsHtml = '<div style="padding:12px 0;font-size:12px;color:var(--text-muted);font-style:italic;">No status history records yet. Add entries below to build the timeline.</div>';
+  }
+
+  const statusSelectHtml = statusOpts.map(function(s) {
+    return '<option value="' + s + '">' + s + '</option>';
+  }).join('');
+
+  container.innerHTML = '<div style="margin-top:16px;background:#F7F5EF;border:1px solid var(--border);border-radius:10px;padding:16px;">' +
+    '<div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:10px;">Status History Editor</div>' +
+    '<div style="margin-bottom:12px;">' + rowsHtml + '</div>' +
+    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+      '<select id="sh-add-status" style="padding:6px 10px;border:1.5px solid #E1E2DD;border-radius:6px;font-size:12px;font-family:Lato,sans-serif;">' + statusSelectHtml + '</select>' +
+      '<input type="date" id="sh-add-date" style="padding:6px 10px;border:1.5px solid #E1E2DD;border-radius:6px;font-size:12px;font-family:Lato,sans-serif;" value="' + new Date().toISOString().slice(0, 10) + '">' +
+      '<button onclick="addStatusHistoryRecord()" style="background:var(--navy);color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:Lato,sans-serif;">＋ Add Entry</button>' +
+    '</div>' +
+    '<div style="font-size:10px;color:var(--text-muted);margin-top:8px;">Add historical status changes to build the project timeline. Each entry marks when the project entered that status.</div>' +
+  '</div>';
+}
+
+async function addStatusHistoryRecord() {
+  const statusEl = document.getElementById('sh-add-status');
+  const dateEl = document.getElementById('sh-add-date');
+  if (!statusEl || !dateEl) return;
+  const status = statusEl.value;
+  const dateVal = dateEl.value;
+  if (!status || !dateVal) { showToast('Please select a status and date.', 'warn'); return; }
+
+  const proj = PROJECTS.find(function(p) { return p.id == Editor.shProjectId; });
+  const projTitle = proj ? proj.title : '';
+  const who = Auth.fullName || 'Unknown';
+
+  const record = {
+    project_id: Editor.shProjectId,
+    project_title: projTitle,
+    status: status,
+    changed_date: dateVal,
+    changed_by: who,
+  };
+
+  STATUS_HISTORY.push(record);
+
+  try {
+    const result = await agolApplyEdits(ARCGIS_CONFIG.statusHistoryUrl, {
+      adds: [{ attributes: record }]
+    });
+    if (result && result.addResults && result.addResults[0] && result.addResults[0].objectId) {
+      record.objectId = result.addResults[0].objectId;
+    }
+    console.log('[StatusHistory] Added:', projTitle, '→', status, 'on', dateVal);
+  } catch (err) {
+    console.error('[StatusHistory] Failed to add:', err);
+    showToast('Failed to save: ' + err.message, 'error');
+  }
+
+  renderStatusHistoryEditor();
+  // Re-render the full page to update the timeline bar, then reopen editor
+  const savedProjId = Editor.shProjectId;
+  markDataDirty();
+  render();
+  Editor.shProjectId = savedProjId;
+  renderStatusHistoryEditor();
+}
+
+async function deleteStatusHistoryRecord(histIdx) {
+  const history = getProjectStatusHistory(Editor.shProjectId);
+  if (histIdx < 0 || histIdx >= history.length) return;
+  const record = history[histIdx];
+  if (!confirm('Remove "' + record.status + '" entry from ' + record.changed_date + '?')) return;
+
+  // Remove from local array
+  const globalIdx = STATUS_HISTORY.indexOf(record);
+  if (globalIdx >= 0) STATUS_HISTORY.splice(globalIdx, 1);
+
+  // Delete from ArcGIS Online
+  if (record.objectId) {
+    try {
+      await agolApplyEdits(ARCGIS_CONFIG.statusHistoryUrl, {
+        deletes: [record.objectId]
+      });
+      console.log('[StatusHistory] Deleted record OID:', record.objectId);
+    } catch (err) {
+      console.error('[StatusHistory] Failed to delete:', err);
+    }
+  }
+
+  // Re-render page then reopen editor
+  const savedProjId = Editor.shProjectId;
+  markDataDirty();
+  render();
+  Editor.shProjectId = savedProjId;
+  renderStatusHistoryEditor();
+}
