@@ -2708,6 +2708,9 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .pr-tb-chip .pr-count { margin-left:6px;opacity:0.7;font-weight:400; }
 .pr-assignee-select { font-family:'Lato',sans-serif;font-size:12px;font-weight:600;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text-body);cursor:pointer;min-width:200px;max-width:280px; }
 .pr-assignee-select:focus { outline:none;border-color:var(--navy); }
+.pr-search-input { font-family:'Lato',sans-serif;font-size:12px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text-body);min-width:220px;max-width:280px; }
+.pr-search-input:focus { outline:none;border-color:var(--navy); }
+.pr-search-mark { background:rgba(255,219,34,0.55); color:inherit; padding:0 2px; border-radius:2px; }
 .pr-view-toggle { display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0; }
 .pr-vt-btn { font-family:'Lato',sans-serif;font-size:11px;font-weight:700;padding:6px 14px;cursor:pointer;border:none;background:#fff;color:var(--text-body);letter-spacing:0.04em;transition:background 0.15s; }
 .pr-vt-btn:hover { background:#F3F1EB; }
@@ -3778,7 +3781,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   }
 })();
 
-const APP_VERSION = '1.8.0.0001';
+const APP_VERSION = '1.9.0.0001';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -18607,6 +18610,7 @@ async function deleteIssue(issueId) {
 var _currentReviewTypeId = null;
 var _reviewFilterStatuses = [];  // array of selected statuses (project or task per review_mode); empty = no narrowing
 var _reviewAssigneeFilter = '';  // single assignee name; empty = all assignees
+var _reviewSearchQuery = '';     // free-text search (case-insensitive). Persists across view-mode toggle; clears on review-type switch.
 var _prViewMode = 'card';        // 'card' (expanded cards, default) or 'table' (simplified table)
 var _prTasksOpen = {};           // map of project_number -> bool. undefined = open by default.
 var _prShowAllLog = {};          // map of project_number -> bool (show all log entries)
@@ -18748,15 +18752,15 @@ function prTaskDotClass(status) {
 // Group tasks for a project by assignee. Returns Map-like {name: [tasks]}.
 // statusFilter: optional array of task statuses to include. Empty/missing = all.
 // assigneeFilter: optional single assignee name. Empty/missing = all.
-function prGetTasksForProject(p, statusFilter, assigneeFilter) {
+// searchQuery: optional free-text. Tasks pass when their title/assignee match, OR when the
+//   parent project's title/number match (so typing the project name keeps all the project's tasks visible).
+function prGetTasksForProject(p, statusFilter, assigneeFilter, searchQuery) {
   var byPerson = {};
-  var hasStatusFilter = Array.isArray(statusFilter) && statusFilter.length > 0;
-  var hasAssigneeFilter = !!assigneeFilter;
+  var qLower = (searchQuery && String(searchQuery).trim()) ? String(searchQuery).trim().toLowerCase() : '';
   for (var i = 0; i < TASKS.length; i++) {
     var t = TASKS[i];
     if (t.project_id !== p.id) continue;
-    if (hasStatusFilter && statusFilter.indexOf(t.status) < 0) continue;
-    if (hasAssigneeFilter && t.assignee !== assigneeFilter) continue;
+    if (!prTaskPassesFilters(t, p, statusFilter, assigneeFilter, qLower)) continue;
     var who = t.assignee || '(Unassigned)';
     if (!byPerson[who]) byPerson[who] = [];
     byPerson[who].push(t);
@@ -18790,10 +18794,12 @@ function prProjectInvolves(p, name) {
 
 // Filter PROJECTS to those in scope for a review type.
 // statuses: optional array of status names. In project mode these match project.status;
-// in task mode a project is in scope if it has ≥1 task whose status is in the list.
+//   in task mode a project is in scope if it has ≥1 task whose status is in the list.
 // assignee: optional name. In project mode the project must involve this person (contact or other_members);
-// in task mode a project is in scope only if it has ≥1 task assigned to this person.
-function prGetProjectsForReview(rt, statuses, assignee) {
+//   in task mode a project is in scope only if it has ≥1 task assigned to this person.
+// query: optional free-text search (case-insensitive). Project mode matches title/number/contact/members;
+//   task mode matches task title/assignee plus the parent project's title/number.
+function prGetProjectsForReview(rt, statuses, assignee, query) {
   if (!rt || !rt.filter || !Array.isArray(rt.filter.itd_teams)) return [];
   var teams = rt.filter.itd_teams;
   var requireDataProgram = !!(rt.filter && rt.filter.require_data_program);
@@ -18807,20 +18813,26 @@ function prGetProjectsForReview(rt, statuses, assignee) {
   });
   var hasStatuses = Array.isArray(statuses) && statuses.length > 0;
   var hasAssignee = !!assignee;
-  if (!hasStatuses && !hasAssignee) return inScope;
+  var qLower = (query && String(query).trim()) ? String(query).trim().toLowerCase() : '';
+  if (!hasStatuses && !hasAssignee && !qLower) return inScope;
   if (prGetReviewMode(rt) === 'task') {
     return inScope.filter(function(p) {
       return TASKS.some(function(t) {
         if (t.project_id !== p.id) return false;
-        if (hasStatuses && statuses.indexOf(t.status) < 0) return false;
-        if (hasAssignee && t.assignee !== assignee) return false;
-        return true;
+        return prTaskPassesFilters(t, p, statuses, assignee, qLower);
       });
     });
   }
   return inScope.filter(function(p) {
     if (hasStatuses && statuses.indexOf(p.status) < 0) return false;
     if (hasAssignee && !prProjectInvolves(p, assignee)) return false;
+    if (qLower) {
+      var match = (p.title && p.title.toLowerCase().indexOf(qLower) >= 0) ||
+                  (p.project_number && String(p.project_number).toLowerCase().indexOf(qLower) >= 0) ||
+                  (p.contact && p.contact.toLowerCase().indexOf(qLower) >= 0) ||
+                  (p.other_members && String(p.other_members).toLowerCase().indexOf(qLower) >= 0);
+      if (!match) return false;
+    }
     return true;
   });
 }
@@ -18865,6 +18877,60 @@ function prSetAssigneeFilter(name) {
   render();
 }
 
+function prSetSearchQuery(q) {
+  // Re-render preserves the input's focus and caret position because we keep the same id and
+  // restore selection after the synchronous render.
+  var prev = document.activeElement;
+  var caret = (prev && prev.id === 'pr-search-input') ? prev.selectionStart : null;
+  _reviewSearchQuery = q || '';
+  render();
+  if (caret != null) {
+    var el = document.getElementById('pr-search-input');
+    if (el) {
+      try { el.focus(); el.setSelectionRange(caret, caret); } catch (e) {}
+    }
+  }
+}
+
+// Wrap matches of `query` inside `text` with <mark> tags. HTML-escapes the rest.
+// Returns escaped HTML safe to assign to innerHTML.
+function prHighlight(text, query) {
+  if (text == null) return '';
+  if (!query) return esc(text);
+  var s = String(text);
+  var lower = s.toLowerCase();
+  var qLower = String(query).toLowerCase();
+  var qLen = qLower.length;
+  if (!qLen) return esc(s);
+  var out = '';
+  var i = 0;
+  while (i < s.length) {
+    var idx = lower.indexOf(qLower, i);
+    if (idx < 0) { out += esc(s.substring(i)); break; }
+    if (idx > i) out += esc(s.substring(i, idx));
+    out += '<mark class="pr-search-mark">' + esc(s.substring(idx, idx + qLen)) + '</mark>';
+    i = idx + qLen;
+  }
+  return out;
+}
+
+// Does this task pass the active status / assignee / search filters?
+// In task mode the parent project's title/number also count as a search match (so typing the
+// project name surfaces all of its tasks that pass the other filters).
+function prTaskPassesFilters(t, p, statuses, assignee, qLower) {
+  if (statuses && statuses.length && statuses.indexOf(t.status) < 0) return false;
+  if (assignee && t.assignee !== assignee) return false;
+  if (qLower) {
+    var taskMatch = (t.title && t.title.toLowerCase().indexOf(qLower) >= 0) ||
+                    (t.assignee && t.assignee.toLowerCase().indexOf(qLower) >= 0);
+    if (taskMatch) return true;
+    var projMatch = (p.title && p.title.toLowerCase().indexOf(qLower) >= 0) ||
+                    (p.project_number && String(p.project_number).toLowerCase().indexOf(qLower) >= 0);
+    if (!projMatch) return false;
+  }
+  return true;
+}
+
 function prGetDefaultStatusesFor(rt) {
   if (rt && rt.filter && Array.isArray(rt.filter.default_statuses)) return rt.filter.default_statuses.slice();
   return [];
@@ -18874,6 +18940,7 @@ function prSwitchReviewType(id) {
   _currentReviewTypeId = id;
   _reviewFilterStatuses = prGetDefaultStatusesFor(getReviewType(id));
   _reviewAssigneeFilter = '';
+  _reviewSearchQuery = '';
   _prTasksOpen = {};
   _prShowAllLog = {};
   _prSectionOpen = {};
@@ -19012,8 +19079,13 @@ function renderProjectReview(area) {
     return '<button class="' + cls + '" onclick="prToggleFilterStatus(\'' + value + '\')">' +
       label + '<span class="pr-count">' + count + '</span></button>';
   }
-  // Row 1 — controls bar: assignee dropdown (left) + view toggle (right). Stable single row on any reasonable width.
+  // Row 1 — controls bar: search + assignee (left) + view toggle (right). Stable single row on any reasonable width.
   html += '<div class="pr-controls-bar">';
+  html += '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">';
+  html += '<div class="pr-control-group">';
+  html += '<label class="pr-control-label" for="pr-search-input">Search</label>';
+  html += '<input type="search" id="pr-search-input" class="pr-search-input" placeholder="Title, number, person..." value="' + esc(_reviewSearchQuery || '') + '" oninput="prSetSearchQuery(this.value)" onkeydown="if(event.key===\'Escape\'){this.value=\'\';prSetSearchQuery(\'\');}">';
+  html += '</div>';
   html += '<div class="pr-control-group">';
   html += '<label class="pr-control-label" for="pr-assignee-select">Assignee</label>';
   html += '<select id="pr-assignee-select" class="pr-assignee-select" onchange="prSetAssigneeFilter(this.value)">';
@@ -19022,6 +19094,7 @@ function renderProjectReview(area) {
     html += '<option value="' + esc(n) + '"' + (_reviewAssigneeFilter === n ? ' selected' : '') + '>' + esc(n) + '</option>';
   });
   html += '</select>';
+  html += '</div>';
   html += '</div>';
   html += '<div class="pr-view-toggle">';
   html += '<button class="pr-vt-btn' + (_prViewMode === 'card' ? ' active' : '') + '" onclick="prSetViewMode(\'card\')">Cards</button>';
@@ -19042,9 +19115,10 @@ function renderProjectReview(area) {
   html += '</div>';
 
   // Project cards
-  var projects = prGetProjectsForReview(rt, _reviewFilterStatuses, _reviewAssigneeFilter);
+  var projects = prGetProjectsForReview(rt, _reviewFilterStatuses, _reviewAssigneeFilter, _reviewSearchQuery);
   if (!projects.length) {
-    html += '<div class="pr-empty-state">No projects match the current filter.</div>';
+    var emptyMsg = _reviewSearchQuery ? 'Nothing matches "' + esc(_reviewSearchQuery) + '" with the current filters.' : 'No projects match the current filter.';
+    html += '<div class="pr-empty-state">' + emptyMsg + '</div>';
   } else {
     // Sort: Active first, then Scheduled, then On Hold, then others; within each, by overdue cycle desc
     var statusRank = { 'Active': 0, 'Scheduled': 1, 'On Hold': 2, 'Future': 3, 'Complete': 4, 'Canceled': 5 };
@@ -19105,14 +19179,12 @@ function renderProjectReviewTaskTable(projects, rt) {
   var projectById = {};
   projects.forEach(function(p) { projectById[p.id] = p; });
   var taskFilter = _reviewFilterStatuses;
-  var hasFilter = Array.isArray(taskFilter) && taskFilter.length > 0;
-  var hasAssignee = !!_reviewAssigneeFilter;
+  var qLower = (_reviewSearchQuery && _reviewSearchQuery.trim()) ? _reviewSearchQuery.trim().toLowerCase() : '';
   var rows = [];
   TASKS.forEach(function(t) {
     var p = projectById[t.project_id];
     if (!p) return;
-    if (hasFilter && taskFilter.indexOf(t.status) < 0) return;
-    if (hasAssignee && t.assignee !== _reviewAssigneeFilter) return;
+    if (!prTaskPassesFilters(t, p, taskFilter, _reviewAssigneeFilter || null, qLower)) return;
     rows.push({ task: t, project: p });
   });
   if (!rows.length) return '<div class="pr-empty-state" style="margin:8px 0;">No tasks match the current filter.</div>';
@@ -19135,10 +19207,10 @@ function renderProjectReviewTaskTable(projects, rt) {
     var dueLate = dueStr && dueStr < todayStr;
     var clickHandler = t.objectId ? ' onclick="openTask(' + t.objectId + ')"' : '';
     html += '<tr class="pr-simple-row"' + clickHandler + '>';
-    html += '<td><div class="pr-st-num">' + esc(p.project_number || ('#' + p.id)) + '</div><div class="pr-st-title">' + esc(p.title || '(no title)') + '</div></td>';
-    html += '<td>' + esc(t.title || '(untitled task)') + '</td>';
+    html += '<td><div class="pr-st-num">' + prHighlight(p.project_number || ('#' + p.id), _reviewSearchQuery) + '</div><div class="pr-st-title">' + prHighlight(p.title || '(no title)', _reviewSearchQuery) + '</div></td>';
+    html += '<td>' + prHighlight(t.title || '(untitled task)', _reviewSearchQuery) + '</td>';
     html += '<td><span class="pr-status-pill">' + esc(t.status || '—') + '</span></td>';
-    html += '<td>' + esc(t.assignee || '—') + '</td>';
+    html += '<td>' + prHighlight(t.assignee || '—', _reviewSearchQuery) + '</td>';
     html += '<td' + (dueLate ? ' style="color:#A32D2D;font-weight:700;"' : '') + '>' + (dueStr ? prFmtDate(dueStr) : '—') + '</td>';
     html += '</tr>';
   });
@@ -19166,9 +19238,9 @@ function renderProjectReviewTable(projects, rt) {
     var hasActions = last && last.action_items && last.action_items.trim().length > 0;
     var clickHandler = p.objectId ? ' onclick="openProject(' + p.objectId + ')"' : '';
     html += '<tr class="pr-simple-row"' + clickHandler + '>';
-    html += '<td><div class="pr-st-num">' + esc(pn) + '</div><div class="pr-st-title">' + esc(p.title || '(no title)') + '</div></td>';
+    html += '<td><div class="pr-st-num">' + prHighlight(pn, _reviewSearchQuery) + '</div><div class="pr-st-title">' + prHighlight(p.title || '(no title)', _reviewSearchQuery) + '</div></td>';
     html += '<td><span class="pr-status-pill">' + esc(p.status || '—') + '</span></td>';
-    html += '<td>' + esc(p.contact || '—') + '</td>';
+    html += '<td>' + prHighlight(p.contact || '—', _reviewSearchQuery) + '</td>';
     html += '<td' + (endLate ? ' style="color:#A32D2D;font-weight:700;"' : '') + '>' + (endStr ? prFmtDate(endStr) : '—') + '</td>';
     html += '<td>' + lastLabel + '</td>';
     html += '<td>' + (hasActions ? '<span class="pr-actions-pill">Open</span>' : '<span style="color:var(--text-muted);">—</span>') + '</td>';
@@ -19195,8 +19267,8 @@ function renderProjectReviewCard(p, rt) {
   // Header
   html += '<div class="pr-card-header">';
   html += '<div class="pr-card-header-main">';
-  html += '<span class="pr-card-id" onclick="if(' + (p.objectId || 0) + ')openProject(' + (p.objectId || 0) + ')">Project &middot; ' + esc(pn || ('#' + p.id)) + '</span>';
-  html += '<div class="pr-card-title" onclick="if(' + (p.objectId || 0) + ')openProject(' + (p.objectId || 0) + ')">' + esc(p.title || '(no title)') + '</div>';
+  html += '<span class="pr-card-id" onclick="if(' + (p.objectId || 0) + ')openProject(' + (p.objectId || 0) + ')">Project &middot; ' + prHighlight(pn || ('#' + p.id), _reviewSearchQuery) + '</span>';
+  html += '<div class="pr-card-title" onclick="if(' + (p.objectId || 0) + ')openProject(' + (p.objectId || 0) + ')">' + prHighlight(p.title || '(no title)', _reviewSearchQuery) + '</div>';
   html += '<div class="pr-card-meta-row">';
   if (p.partner_dept) html += '<span><strong>Partner:</strong>' + esc(p.partner_dept) + '</span>';
   if (p.category) html += '<span><strong>Category:</strong>' + esc(p.category) + '</span>';
@@ -19233,11 +19305,12 @@ function renderProjectReviewCard(p, rt) {
   html += '</div>';
 
   // Tasks
-  // In task mode, only include tasks matching the active status + assignee filters inside the WIP block.
+  // In task mode, only include tasks matching the active status + assignee + search filters inside the WIP block.
   var isTaskMode = (prGetReviewMode(rt) === 'task');
   var taskStatusFilter = (isTaskMode && _reviewFilterStatuses.length) ? _reviewFilterStatuses : null;
   var taskAssigneeFilter = (isTaskMode && _reviewAssigneeFilter) ? _reviewAssigneeFilter : null;
-  var byPerson = prGetTasksForProject(p, taskStatusFilter, taskAssigneeFilter);
+  var taskSearchFilter = isTaskMode ? _reviewSearchQuery : '';
+  var byPerson = prGetTasksForProject(p, taskStatusFilter, taskAssigneeFilter, taskSearchFilter);
   var personNames = Object.keys(byPerson);
   var taskCount = personNames.reduce(function(s, n) { return s + byPerson[n].length; }, 0);
   var counts = { Complete:0, Active:0, Pending:0, Other:0 };
@@ -19274,7 +19347,7 @@ function renderProjectReviewCard(p, rt) {
       var tasks = byPerson[n] || [];
       if (!tasks.length && rosterNames.indexOf(n) < 0) return; // skip empties for non-roster
       html += '<div class="pr-tbp-person">';
-      html += '<div class="pr-tbp-person-name">' + esc(n) + ' &mdash; ' + tasks.length + ' task' + (tasks.length === 1 ? '' : 's') + '</div>';
+      html += '<div class="pr-tbp-person-name">' + prHighlight(n, _reviewSearchQuery) + ' &mdash; ' + tasks.length + ' task' + (tasks.length === 1 ? '' : 's') + '</div>';
       if (!tasks.length) {
         html += '<div class="pr-tbp-empty">No tasks logged. Speak to the project at the program level.</div>';
       } else {
@@ -19286,7 +19359,7 @@ function renderProjectReviewCard(p, rt) {
           else if (t.due) dueLabel = 'due ' + prFmtDateShort(t.due);
           else if (t.start) dueLabel = 'start ' + prFmtDateShort(t.start);
           html += '<div class="pr-tbp-task"><span class="' + dotCls + '"></span>' +
-            esc(t.title || '(untitled task)') +
+            prHighlight(t.title || '(untitled task)', _reviewSearchQuery) +
             (dueLabel ? '<span class="pr-due">' + dueLabel + '</span>' : '') +
             '</div>';
         });
