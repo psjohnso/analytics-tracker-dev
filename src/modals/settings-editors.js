@@ -618,3 +618,171 @@ async function deleteStatusHistoryRecord(histIdx) {
   Editor.shProjectId = savedProjId;
   renderStatusHistoryEditor();
 }
+
+// ── Trash panel ────────────────────────────────────────────
+// Lists soft-deleted projects, tasks, and issues. Each item has
+// Restore (clear deleted_at/deleted_by) and Permanent delete (real
+// AGOL delete) actions. Allocations cascaded with deleted projects
+// are NOT restored — restoring a project brings the project back but
+// not the resource allocations that were hard-deleted at delete time.
+
+function buildTrashPanel() {
+  var html = '<div class="settings-panel-title">Trash</div>';
+  html += '<div class="settings-panel-desc">Items moved to trash. Restoring returns them to the active list. Permanent delete removes them from ArcGIS Online entirely and cannot be undone. Tasks deleted as part of a project cascade stay in the trash even after the project is restored — restore them individually if needed.</div>';
+  html += '<div id="trash-content"><div style="padding:40px;text-align:center;color:var(--text-muted);">Loading deleted items…</div></div>';
+  return html;
+}
+
+function _trashTimeAgo(epoch) {
+  if (!epoch) return '—';
+  var ms = Date.now() - epoch;
+  if (ms < 0) return 'just now';
+  var minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return minutes + ' minute' + (minutes !== 1 ? 's' : '') + ' ago';
+  var hours = Math.floor(minutes / 60);
+  if (hours < 24) return hours + ' hour' + (hours !== 1 ? 's' : '') + ' ago';
+  var days = Math.floor(hours / 24);
+  if (days < 30) return days + ' day' + (days !== 1 ? 's' : '') + ' ago';
+  var months = Math.floor(days / 30);
+  return months + ' month' + (months !== 1 ? 's' : '') + ' ago';
+}
+
+async function loadAndRenderTrash() {
+  var container = document.getElementById('trash-content');
+  if (!container) return;
+  container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted);">Loading deleted items…</div>';
+
+  try {
+    var results = await Promise.all([
+      agolQuery(ARCGIS_CONFIG.projectsUrl, 'deleted_at IS NOT NULL'),
+      agolQuery(ARCGIS_CONFIG.tasksUrl, 'deleted_at IS NOT NULL'),
+      agolQuery(ARCGIS_CONFIG.issuesUrl, 'deleted_at IS NOT NULL'),
+    ]);
+    var projectFeatures = results[0];
+    var taskFeatures = results[1];
+    var issueFeatures = results[2];
+
+    var items = [];
+    projectFeatures.forEach(function(f) {
+      var a = f.attributes || {};
+      items.push({
+        type: 'project',
+        oid: a.OBJECTID || a.ObjectId,
+        title: a.title || '(untitled project)',
+        deleted_at: a.deleted_at,
+        deleted_by: a.deleted_by,
+      });
+    });
+    taskFeatures.forEach(function(f) {
+      var a = f.attributes || {};
+      items.push({
+        type: 'task',
+        oid: a.OBJECTID || a.ObjectId,
+        title: a.title || '(untitled task)',
+        project: a.project || '',
+        deleted_at: a.deleted_at,
+        deleted_by: a.deleted_by,
+      });
+    });
+    issueFeatures.forEach(function(f) {
+      var a = f.attributes || {};
+      items.push({
+        type: 'issue',
+        oid: a.OBJECTID || a.ObjectId,
+        title: a.title || '(untitled issue)',
+        deleted_at: a.deleted_at,
+        deleted_by: a.deleted_by,
+      });
+    });
+
+    // Newest first
+    items.sort(function(a, b) { return (b.deleted_at || 0) - (a.deleted_at || 0); });
+
+    if (items.length === 0) {
+      container.innerHTML = '<div style="padding:60px 40px;text-align:center;color:var(--text-muted);">' +
+        '<div style="font-size:40px;margin-bottom:12px;">🗑️</div>' +
+        '<div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">Trash is empty</div>' +
+        '<div style="font-size:12px;">Deleted projects, tasks, and issues appear here.</div>' +
+        '</div>';
+      return;
+    }
+
+    var typeBadge = {
+      project: '<span style="display:inline-block;background:#EEF2FF;color:#1E40AF;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase;">📁 Project</span>',
+      task:    '<span style="display:inline-block;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase;">✓ Task</span>',
+      issue:   '<span style="display:inline-block;background:#FEE2E2;color:#991B1B;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase;">🐛 Issue</span>',
+    };
+
+    var html = '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+    html += '<thead><tr style="background:#FDFCF8;">' +
+      '<th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--navy);border-bottom:2px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">Type</th>' +
+      '<th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--navy);border-bottom:2px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">Title</th>' +
+      '<th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--navy);border-bottom:2px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">Deleted by</th>' +
+      '<th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--navy);border-bottom:2px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">When</th>' +
+      '<th style="padding:10px 14px;text-align:right;font-weight:700;color:var(--navy);border-bottom:2px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">Actions</th>' +
+      '</tr></thead><tbody>';
+    items.forEach(function(item) {
+      var subtitle = item.type === 'task' && item.project
+        ? '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">in ' + esc(item.project) + '</div>'
+        : '';
+      html += '<tr style="border-bottom:1px solid var(--border);">';
+      html += '<td style="padding:12px 14px;vertical-align:top;">' + typeBadge[item.type] + '</td>';
+      html += '<td style="padding:12px 14px;"><div style="font-weight:600;color:var(--text-body);">' + esc(item.title) + '</div>' + subtitle + '</td>';
+      html += '<td style="padding:12px 14px;color:var(--text-body);">' + esc(item.deleted_by || 'Unknown') + '</td>';
+      html += '<td style="padding:12px 14px;color:var(--text-muted);font-size:12px;">' + _trashTimeAgo(item.deleted_at) + '</td>';
+      html += '<td style="padding:12px 14px;text-align:right;white-space:nowrap;">';
+      html += '<button onclick="restoreFromTrash(\'' + item.type + '\',' + item.oid + ')" style="padding:5px 12px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;margin-right:6px;">Restore</button>';
+      html += '<button onclick="hardDeleteFromTrash(\'' + item.type + '\',' + item.oid + ',\'' + escapeAttr(item.title) + '\')" style="padding:5px 12px;background:#fff;color:#EF4444;border:1px solid #FECACA;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Permanent delete</button>';
+      html += '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    html += '<div style="margin-top:12px;font-size:11px;color:var(--text-muted);">' + items.length + ' item' + (items.length !== 1 ? 's' : '') + ' in trash</div>';
+    container.innerHTML = html;
+  } catch (err) {
+    console.error('[Trash] Load failed:', err);
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:#991B1B;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;">Failed to load trash: ' + esc(err.message) + '</div>';
+  }
+}
+
+async function restoreFromTrash(type, oid) {
+  var url, label, reloadFn;
+  if (type === 'project')   { url = ARCGIS_CONFIG.projectsUrl; label = 'Project'; reloadFn = loadArcGISData; }
+  else if (type === 'task') { url = ARCGIS_CONFIG.tasksUrl;    label = 'Task';    reloadFn = loadArcGISData; }
+  else if (type === 'issue'){ url = ARCGIS_CONFIG.issuesUrl;   label = 'Issue';   reloadFn = loadIssues; }
+  else return;
+
+  try {
+    await agolApplyEdits(url, {
+      updates: [{ attributes: { OBJECTID: oid, deleted_at: null, deleted_by: null } }]
+    });
+    showToast(label + ' restored.', 'success');
+    if (reloadFn) {
+      try { await reloadFn(); } catch (e) { console.warn('[Trash] reload after restore failed:', e); }
+    }
+    loadAndRenderTrash();
+  } catch (err) {
+    console.error('[Trash] Restore failed:', err);
+    showToast('Restore failed: ' + err.message, 'error');
+  }
+}
+
+async function hardDeleteFromTrash(type, oid, title) {
+  if (!confirm('Permanently delete "' + title + '"?\n\nThis removes the record from ArcGIS Online entirely and cannot be undone.')) return;
+  var url, label;
+  if (type === 'project')   { url = ARCGIS_CONFIG.projectsUrl; label = 'Project'; }
+  else if (type === 'task') { url = ARCGIS_CONFIG.tasksUrl;    label = 'Task'; }
+  else if (type === 'issue'){ url = ARCGIS_CONFIG.issuesUrl;   label = 'Issue'; }
+  else return;
+
+  try {
+    await agolApplyEdits(url, { deletes: [oid] });
+    showToast(label + ' permanently deleted.', 'success');
+    loadAndRenderTrash();
+  } catch (err) {
+    console.error('[Trash] Permanent delete failed:', err);
+    showToast('Permanent delete failed: ' + err.message, 'error');
+  }
+}

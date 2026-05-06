@@ -265,6 +265,7 @@ function renderSettingsPage(area) {
     '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">System</div>' +
       navItem('ai', 'AI features') +
+      navItem('trash', 'Trash') +
       navItem('developer', 'Developer') +
     '</div>';
   }
@@ -456,6 +457,10 @@ function renderSettingsPage(area) {
       '</div>';
   }
 
+  else if (_settingsSection === 'trash') {
+    panelHtml = buildTrashPanel();
+  }
+
   else if (_settingsSection === 'developer') {
     var devChecked = Auth.devMode ? ' checked' : '';
     panelHtml = '<div class="settings-panel-title">Developer</div>' +
@@ -491,5 +496,8 @@ function renderSettingsPage(area) {
   }
   if (_settingsSection === 'team' && Editor.selectedMember && people[Editor.selectedMember]) {
     renderAbsenceEditor(Editor.selectedMember);
+  }
+  if (_settingsSection === 'trash') {
+    loadAndRenderTrash();
   }
 }
