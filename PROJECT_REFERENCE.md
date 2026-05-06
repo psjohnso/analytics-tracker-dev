@@ -4,8 +4,8 @@
 >
 > **Update Rule:** This document MUST be updated after every application change. When working on this application, always check if this document needs updating.
 >
-> **Last Updated:** May 2026
-> **Current Version:** 1.0.0.0001 — production milestone (see Version History at bottom)
+> **Last Updated:** May 6, 2026
+> **Current Version:** 1.9.1.0024 — Phase 1 code-split refactor complete (see Version History at bottom)
 
 ---
 
@@ -29,6 +29,7 @@
 16. [Branding & Design Specifications](#16-branding--design-specifications)
 17. [Deployment](#17-deployment)
 18. [Development Conventions](#18-development-conventions)
+18.5 [Smoke-Test Harness](#185-smoke-test-harness)
 19. [Reconstruction Checklist](#19-reconstruction-checklist)
 20. [Default Configuration Values](#20-default-configuration-values)
 21. [Version History](#21-version-history)
@@ -37,18 +38,30 @@
 
 ## 1. Application Overview
 
-Single-page HTML application (~11,000+ lines) for managing analytics projects, tasks, team resources, and capacity planning for the City of Tucson ITD GIS/Data Analytics team.
+Web application for managing analytics projects, tasks, team resources, and capacity planning for the City of Tucson ITD GIS/Data Analytics team. As of v1.9.1, the JavaScript and CSS are split into a `src/` folder of feature-scoped modules; `index.html` is a thin shell that loads them in order.
 
 **Files:**
-- `index.html` — The entire application (single file: HTML + CSS + JavaScript)
+- `index.html` — Page shell + body HTML + a single inline boot/data-loading `<script>` (~3,700 lines remaining: layout, modal HTML, init pipeline, app_config loaders, time tracking, status history, member-data helpers, toast)
+- `src/app.css` — All styles (~2,900 lines)
+- `src/util.js` — Pure helpers (esc, escapeAttr, date/time formatters, CSV builders, isProjectRef)
+- `src/constants.js` — `APP_VERSION`, `LIFECYCLE_PHASES`, `REQUIREMENT_LOOKUP`, `BETA_FEATURES`, `STRATEGIC_ALIGNMENT_EDITORS`, `PROJECT_COLORS`, `FM_*` form-option lists, `WWC_CRITERIA_GROUPS`
+- `src/agol.js` — ArcGIS REST API layer (`agolQuery`, `agolApplyEdits`, `agolQueryPublic`, `resolveItemId`, `agolProjectToLocal`, `agolTaskToLocal`, `localToAgolProject`, `localToAgolTask`, `handleAgolTokenError`, `ARCGIS_CONFIG`, `PROJECT_FIELD_MAP`)
+- `src/auth.js` — `Auth` state + OAuth flow + session guard + auto-save + `toggleAuth`/`applyAuthState` + `fetchAgolUserInfo`
+- `src/render.js` — Router state (`currentTab`, `currentDetail`, `currentView`, `activeFilters`, sort keys), status/priority colors, `init`, sidebar filters, `setFilter`/`onSearch`/`clearAllFilters`, tab grouping (`TAB_GROUPS`, `switchTab`, `switchPrimaryGroup`, `applyPrimaryTabVisibility`, `applyBetaTabVisibility`), view/sort, `handleDeepLink`, `goBackFromDetail`
+- `src/tabs/*.js` — One file per tab: `overview.js`, `projects-tasks.js` (list views) + `projects-tasks-detail.js` (detail pages, lifecycle phase helpers, batch bar), `my-work.js` (with gantt + dependency feature + alerts), `resources.js`, `forecast.js`, `insights.js`, `settings.js`, `issues.js`, `project-review.js`
+- `src/modals/*.js` — One file per modal: `forms.js` (project/task forms + wizards + form helpers + alignment AI), `idea.js` (simple + AI-guided + idea review), `member-form.js` (member + absence editors), `alloc-editor.js`, `settings-editors.js` (alloc defaults, list editors, status history editor), `export.js` (CSV)
+- `src/ai/ai-suggestions.js` — Cloudflare Worker proxy URL + task suggestion engine + AI phase assignment (alignment AI lives in `modals/forms.js`, tightly coupled to the project form)
+- `src/test-harness.js` — Pure-function smoke tests, activates at `?test=1`
 - `guide.html` — Standalone user guide with matching branding
-- `PROJECT_REFERENCE.md` — This document (also pushed to the repo)
+- `PROJECT_REFERENCE.md` — This document
 
 **Hosted on GitHub Pages:** [psjohnso/analytics-tracker](https://github.com/psjohnso/analytics-tracker)
 
 ### Key Design Decisions
 
-- **Single HTML file** — no build process, no npm, no bundler, no server-side code
+- **No build process** — files are loaded as plain `<script src="...">` tags in `index.html`. No bundler, no npm, no server-side code. GitHub Pages serves them directly.
+- **Modules are global, not ES modules** — every `<script src>` runs in global scope. Function and `var`/`let`/`const` declarations become properties on the global namespace, so files can call into each other via forward/backward references that resolve at call time. **No `import`/`export` statements; no `<script type="module">`.**
+- **Cache busting via query string** — every script/style tag has `?v=X.Y.Z.NNNN`. Bump the cache-buster on a file *only* when that file changes. `APP_VERSION` (in `constants.js`) is the source of truth for the displayed version; per-file query strings track each file independently.
 - **All data in ArcGIS Online** feature services with full CRUD via REST API
 - **Configuration stored in app_config** service (key-value pairs of JSON arrays), editable from Settings tab
 - **Weeks generated dynamically** via `generateWeeks(2026)` — 52 Sunday-start dates (displayed as Monday in UI)
@@ -317,7 +330,7 @@ Service URL fragment: `services/Project_Reviews/FeatureServer/0`. Table (no geom
 
 ## 4. HTML Structure
 
-The entire application is one HTML file with this structure:
+`index.html` is the page shell — it loads CSS, the modular JS files, declares the body layout and modal markup, and ends with a single inline `<script>` that contains the boot/init pipeline plus the data-layer functions that haven't been split out yet (app_config loaders, time tracking, status history helpers, member-data helpers, toast).
 
 ```html
 <!DOCTYPE html>
@@ -325,43 +338,97 @@ The entire application is one HTML file with this structure:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analytics Project Tracker — City of Tucson</title>
+  <title>Analytics Project Tracker — Tucson Data Team</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Cardo:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-  <style>
-    /* ~1,800 lines of CSS */
-  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="src/app.css?v=1.9.1.0001">
+
+  <!-- Foundation: pure helpers, constants, AGOL, auth, router (loads in order) -->
+  <script src="src/util.js?v=1.9.1.0002"></script>
+  <script src="src/constants.js?v=1.9.1.0024"></script>
+  <script src="src/agol.js?v=1.9.1.0004"></script>
+  <script src="src/auth.js?v=1.9.1.0005"></script>
+  <script src="src/render.js?v=1.9.1.0006"></script>
+
+  <!-- Tabs -->
+  <script src="src/tabs/issues.js?v=1.9.1.0007"></script>
+  <script src="src/tabs/project-review.js?v=1.9.1.0008"></script>
+  <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
+  <script src="src/tabs/forecast.js?v=1.9.1.0010"></script>
+  <script src="src/tabs/overview.js?v=1.9.1.0011"></script>
+  <script src="src/tabs/settings.js?v=1.9.1.0012"></script>
+  <script src="src/tabs/resources.js?v=1.9.1.0013"></script>
+  <script src="src/tabs/my-work.js?v=1.9.1.0014"></script>
+  <script src="src/tabs/projects-tasks.js?v=1.9.1.0015"></script>
+  <script src="src/tabs/projects-tasks-detail.js?v=1.9.1.0016"></script>
+
+  <!-- Modals -->
+  <script src="src/modals/export.js?v=1.9.1.0017"></script>
+  <script src="src/modals/idea.js?v=1.9.1.0018"></script>
+  <script src="src/modals/member-form.js?v=1.9.1.0019"></script>
+  <script src="src/modals/alloc-editor.js?v=1.9.1.0020"></script>
+  <script src="src/modals/settings-editors.js?v=1.9.1.0021"></script>
+  <script src="src/modals/forms.js?v=1.9.1.0022"></script>
+
+  <!-- AI features -->
+  <script src="src/ai/ai-suggestions.js?v=1.9.1.0023"></script>
+
+  <!-- Smoke-test harness (only activates at ?test=1) -->
+  <script src="src/test-harness.js?v=1.9.1.0024"></script>
 </head>
 <body>
 
   <!-- HEADER (fixed, navy background) -->
-  <header id="app-header">
-    <!-- App title, live stats, user name, Refresh/Help buttons -->
-  </header>
+  <header class="app-header">…</header>
 
   <!-- MAIN LAYOUT -->
-  <div id="app-layout">
-    <!-- LEFT SIDEBAR (collapsible, 280px) -->
-    <aside id="sidebar">
-      <!-- Tab navigation buttons -->
-      <!-- Filter panels (status, priority, assignee, etc.) -->
-    </aside>
-
-    <!-- CONTENT AREA -->
-    <main id="content-area">
-      <!-- Dynamically rendered by render() based on currentTab -->
+  <div class="app-shell">
+    <aside class="sidebar">…</aside>            <!-- Filter panels (built dynamically by render.js) -->
+    <main class="main-content">
+      <div id="content-area">…</div>            <!-- Dispatched by render() in inline <script> -->
     </main>
   </div>
 
-  <!-- MODALS (hidden by default) -->
-  <div id="form-modal-backdrop"><!-- Project/Task create/edit form --></div>
-  <div id="member-form-backdrop"><!-- Team member create/edit form --></div>
+  <!-- MODAL HTML (hidden until shown) -->
+  <div id="form-modal-backdrop">…</div>          <!-- Project / Task forms -->
+  <div id="alloc-editor-backdrop">…</div>        <!-- Allocation editor -->
+  <div id="member-form-backdrop">…</div>         <!-- Team member form -->
+  <div id="idea-modal-backdrop">…</div>          <!-- Idea submission -->
+  <div id="issue-form-backdrop">…</div>          <!-- Issue submission -->
+  <div id="session-expired-backdrop">…</div>     <!-- Re-auth prompt -->
 
+  <footer>…</footer>
+
+  <!-- Inline boot script (~3,700 lines) -->
   <script>
-    /* ~5,000+ lines of JavaScript */
+    /* Browser back-button guard IIFE; data-state declarations
+       (PROJECTS, TASKS, ISSUES, RESOURCES_DATA, TIME_ENTRIES, etc.);
+       Editor + Internal state objects; Markdown config;
+       isStrategicAlignmentEditor; agolApplyEdits cascades;
+       loadAllData / loadResourcesData / loadAbsences / loadAllocations
+       / loadTimeEntries / loadProjectReviews / loadIssues /
+       loadTeamMembers / applyAppConfig / refreshEnums /
+       isTimeTrackingEnabled / time-tracking timer functions /
+       parseTaskHistory / appendTaskHistory / parseTaskNotes /
+       addTaskNote / promptStatusReason / showToast / render() and
+       its tab-dispatch switch / appInit IIFE / etc. */
   </script>
 </body>
 </html>
 ```
+
+### Why this layout
+
+- **Load order matters but is forgiving.** Every file's top-level `function` and `var`/`let`/`const` declarations land in global scope. Function-to-function references resolve at *call* time, so a file can reference functions defined in a later-loading script as long as the reference fires at runtime, not at module load. (Top-level code that *invokes* a function does need that function defined first.)
+- **Detail pages > tabs > modals > AI > test harness** is the rough load order. Foundation (util/constants/agol/auth/render) loads first because lots of modules backward-reference them.
+- **Inline boot script stays last** so all module-defined functions exist before init runs.
+
+### Cache busting
+
+Each `?v=X.Y.Z.NNNN` query string is independent. Bump it on a file *only when that file's contents change*; users who already have e.g. `app.css?v=1.9.1.0001` cached will keep using that copy across many releases, which is the intended behavior. `APP_VERSION` (in `constants.js`) is what the header pill and footer display.
 
 ### Header Structure
 
@@ -504,6 +571,52 @@ Waiting:   background:#FEF3C7; color:#92400E;
 ---
 
 ## 6. JavaScript Architecture
+
+### Module Layout
+
+The codebase is split into feature-scoped modules under `src/`. Every module is loaded as a plain `<script src>` tag (no ES modules, no bundler). All declarations land in global scope; modules call each other directly by function name.
+
+```
+src/
+├── app.css                          (~2,900 lines)
+├── util.js                          (~140 lines)  Pure helpers
+├── constants.js                     (~165 lines)  APP_VERSION, lifecycle, beta flags, FM_* lists
+├── agol.js                          (~265 lines)  REST API + field mapping
+├── auth.js                          (~420 lines)  OAuth, session, auto-save
+├── render.js                        (~680 lines)  Router, filters, tab grouping
+├── tabs/
+│   ├── overview.js                  (~300 lines)  Dashboard
+│   ├── projects-tasks.js            (~500 lines)  Grid/list views
+│   ├── projects-tasks-detail.js     (~1,300 lines) Detail pages, lifecycle, batch bar
+│   ├── my-work.js                   (~1,340 lines) Personal view, gantt, dependencies, alerts
+│   ├── resources.js                 (~390 lines)  Capacity chart + allocation table
+│   ├── forecast.js                  (~520 lines)  Utilization grid + capacity planner
+│   ├── insights.js                  (~235 lines)  Retrospective charts
+│   ├── settings.js                  (~495 lines)  Settings page shell + Preferences panel
+│   ├── issues.js                    (~320 lines)  Bug tracker
+│   └── project-review.js            (~1,355 lines) Recurring review (beta)
+├── modals/
+│   ├── forms.js                     (~1,950 lines) Project/task forms + wizards + form helpers
+│   ├── idea.js                      (~830 lines)  Simple + AI-guided + idea review
+│   ├── member-form.js               (~620 lines)  Member + absence editors
+│   ├── alloc-editor.js              (~745 lines)  Allocation editor
+│   ├── settings-editors.js          (~620 lines)  Alloc defaults, list editors, status history
+│   └── export.js                    (~180 lines)  CSV export
+├── ai/
+│   └── ai-suggestions.js            (~500 lines)  Task suggestions + AI phase assignment
+└── test-harness.js                  (~230 lines)  ?test=1 smoke tests
+```
+
+### Forward-reference contract
+
+Because everything is global, files routinely call into each other. The rule:
+
+- **Calling another module's function in a function body**: always fine. The call resolves when the function actually runs, by which time all modules are loaded.
+- **Calling another module's function at top level**: only safe if that module has already loaded.
+
+Top-level code in modules is mostly: variable declarations, `setInterval(...)` registrations (the callback runs later, so it sees a fully-loaded global namespace), and the `REQUIREMENT_LOOKUP.forEach(...)` initializer in `constants.js`. The boot `init()` call at the end of the inline script is the one critical top-level invocation, and `init` is defined in `render.js` which loads earlier.
+
+When a refactor moves a function, the load-order requirement is: *the module containing the new home for that function must finish loading before any top-level code that invokes it*. In practice, every file currently loads before the inline boot script, so all module-to-module calls are safe.
 
 ### Global State Variables
 
@@ -1313,10 +1426,37 @@ git push origin main
 - **After every change:**
   1. Check if `guide.html` needs updating
   2. Update this document (`PROJECT_REFERENCE.md`)
-  3. Copy both to outputs
+  3. Bump `APP_VERSION` in `src/constants.js`
+  4. Bump the cache-buster query string in `index.html` for each file you actually modified
+- **Cache-buster discipline:** Each `<script src="...?v=X.Y.Z.NNNN">` is independent. Bump the query string on a file *only when that file changes*. Don't bump them all globally on every release — that defeats the per-file caching the split was designed to enable.
+- **Module boundaries:** When adding a new feature, prefer adding it to an existing `src/` file when it fits the file's theme. Only create a new file if the new feature is its own coherent surface (a new tab, a new modal, a new external integration). One file per feature; no orphan helpers.
 - **Persistent data:** When features involve persistent data, discuss storing in ArcGIS Online before implementing
 - **Code style:** Use `var` (not `let/const` in loops), `function` declarations, explicit `forEach` over arrow functions — keeps compatibility simple
 - **HTML generation:** All UI is built via string concatenation in JavaScript (`html += '<div>...'`), not template literals or JSX
+- **No ES modules:** Files load as plain `<script src>` tags. No `import`, no `export`, no `<script type="module">`. Cross-file references work because everything is global.
+
+---
+
+## 18.5 Smoke-Test Harness
+
+`src/test-harness.js` runs only when the URL contains `?test=1`. It executes ~50 pure-function assertions against helpers extracted across the refactor and renders an overlay panel showing pass/fail counts with per-test diffs on failure.
+
+**What it covers:**
+- HTML/attribute escaping (`esc`, `escapeAttr`)
+- Date/time formatting (`epochToDateStr`, `formatTimeShort`, `formatTimerChip`)
+- Project Review date helpers (`prFmtDate`, `prFmtDateShort`, `prDaysSince`, `prDateToEpoch` ↔ `prEpochToInputDate` round-trip)
+- Dependency reference parsing (`isProjectRef`)
+- CSV building (`csvEscape`, `buildCsv`)
+- Status colors (`STATUS_COLOR`, `STATUS_TEXT_COLOR`) including the deterministic-fallback for unknown statuses
+- Tucson fiscal-quarter math (`prFiscalQuarter`)
+- Lifecycle phase requirements (`parsePhaseReqs`, `resolveReqInfo`)
+- `PRIORITY_ORDER` and `BETA_FEATURES` registry sanity
+
+**What it doesn't cover (yet):** anything that touches the DOM, ArcGIS, or app state (`PROJECTS`, `TASKS`, `RESOURCES_DATA`, `Auth`). Those need integration tests, not smoke tests.
+
+**How to run:** open `https://psjohnso.github.io/analytics-tracker/?test=1` (or any page URL with `?test=1` appended). The panel appears on top of the normal app — click ✕ Close to dismiss and continue using the app.
+
+**When to extend it:** any time you add or change a pure helper, add or update an assertion. The harness is meant to catch refactors that subtly change a return shape, not exercise every code path.
 
 ---
 
@@ -1644,6 +1784,31 @@ Each requirement has a unique ID like `P3_DEMOS` (Phase 3, Demos conducted). Ful
 | 0.17.2.0005 | Add app_config public view Item ID; all three views configured |
 | 0.18.0.0001 | Deep-link support: handleDeepLink() reads ?project=P-NNN from URL, finds project by project_number (with objectId fallback), opens project detail; cleans URL via history.replaceState; works in both authenticated and read-only paths; used by Tucson DATA "Open in tracker" links |
 | **1.0.0.0001** | **Production milestone — first 1.x release.** Project Review tab (beta): recurring portfolio review by project, person-by-person within. New `Project_Reviews` feature service with `review_id`, `review_type_id`, `project_number`, `meeting_date`, `attendees`, `notes`, `decisions`, `action_items`, `created_by`, `created_at`. New `app_config.review_types` JSON config (auto-seeded with `data-intel` weekly + `data-team` biweekly defaults via `ensureReviewTypesSeeded()`). FEATURE_PROJECT_REVIEW beta flag + BETA_FEATURES.projectReview registry entry; tab gated by `applyBetaTabVisibility()`. Filter chips (All / Active / Due / Overdue / Has open action items); soft cadence badges (Fresh / Due / Overdue / Never); roster derived from `contact ∪ split(other_members)`; tasks block grouped by assignee; per-project log with edit/delete; everyone can log, only entry creator (or Team Lead) can edit/delete. Settings → Project config → Review types editor (Team Leads): name, id, description, ITD team filter, cadence, default attendees. Bumped version display in header pill, footer, and guide.html. |
+| 1.9.0.0001–0002 | Search on Project Review tab with match highlighting; per-status counts on Data Team Review quarter headers |
+| 1.9.1.0001 | **Phase 1 code-split refactor begins.** Extract CSS to `src/app.css`. New `src/` folder structure; `<link>` tag with cache-buster query string. |
+| 1.9.1.0002 | Extract 16 pure utilities to `src/util.js`: esc, escapeAttr, epochToDateStr, formatTimeShort, toDatetimeLocal, formatTimerChip, hoursLabel, prFmtDate*, prDateToEpoch, prEpochToInputDate, isProjectRef, csvEscape, buildCsv, downloadCsv |
+| 1.9.1.0003 | Extract 14 literal constants to `src/constants.js`: APP_VERSION, LIFECYCLE_PHASES + REQUIREMENT_LOOKUP, STRATEGIC_ALIGNMENT_EDITORS, PROJECT_COLORS, BETA_FEATURES, the seven FM_* form-option lists, WWC_CRITERIA_GROUPS |
+| 1.9.1.0004 | Extract AGOL REST layer to `src/agol.js`: ARCGIS_CONFIG, agolQuery, agolQueryPublic, resolveItemId, agolApplyEdits, handleAgolTokenError, PROJECT_FIELD_MAP, PROJECT_AGOL_TO_LOCAL, agolProjectToLocal, agolTaskToLocal, localToAgolProject, localToAgolTask |
+| 1.9.1.0005 | Extract auth/session to `src/auth.js`: Auth state, OAuth flow, token storage, session guard, auto-save (with the two periodic setInterval watchdogs), toggleAuth, applyAuthState, ensureAgolToken, fetchAgolUserInfo |
+| 1.9.1.0006 | Extract router/filters/nav to `src/render.js`: router state, status colors, init, sidebar filter machinery, setFilter / onSearch / clearAllFilters, tab grouping (TAB_GROUPS, switchTab, switchPrimaryGroup, applyPrimaryTabVisibility, applyBetaTabVisibility), view/sort, header counts, handleDeepLink, goBackFromDetail |
+| 1.9.1.0007 | Extract Issues tab to `src/tabs/issues.js` |
+| 1.9.1.0008 | Extract Project Review tab to `src/tabs/project-review.js` (~50 functions). Empties the second `<script>` block down to just CSV export |
+| 1.9.1.0009 | Extract Insights tab to `src/tabs/insights.js` |
+| 1.9.1.0010 | Extract Forecast tab to `src/tabs/forecast.js` (forecast view + capacity planner) |
+| 1.9.1.0011 | Extract Overview tab to `src/tabs/overview.js` (7-panel dashboard) |
+| 1.9.1.0012 | Extract Settings core to `src/tabs/settings.js` (Preferences panel + section switcher) |
+| 1.9.1.0013 | Extract Resources tab to `src/tabs/resources.js` |
+| 1.9.1.0014 | Extract My Work tab to `src/tabs/my-work.js` (~30 functions including gantt timeline, task dependencies feature, attention alerts) |
+| 1.9.1.0015 | Extract Projects/Tasks list views to `src/tabs/projects-tasks.js` (grids/lists + numbering helpers + projectNumChip + renderMd + calc-info popups + resolveProjectTitle) |
+| 1.9.1.0016 | Extract Project/Task detail pages to `src/tabs/projects-tasks-detail.js` (lifecycle phase helpers, detail builders, batch bar, timeline tooltips, detail task sort) |
+| 1.9.1.0017 | Extract CSV export to `src/modals/export.js`. Removes the second `<script>` block — index.html now has a single inline script |
+| 1.9.1.0018 | Extract Idea form + Idea review to `src/modals/idea.js` (simple + AI-guided 3-step intake) |
+| 1.9.1.0019 | Extract member form + absence editor to `src/modals/member-form.js` |
+| 1.9.1.0020 | Extract allocation editor to `src/modals/alloc-editor.js` |
+| 1.9.1.0021 | Extract settings sub-panel editors to `src/modals/settings-editors.js` (saveConfigKey + alloc defaults + list editors + status history editor) |
+| 1.9.1.0022 | Extract project/task forms + wizards to `src/modals/forms.js` (~50 functions, ~1,950 lines — largest single extraction). Includes wizard data trees, all fm* helpers, phase requirement selector, Strategic Alignment AI, buildProjectForm, buildTaskForm, openFormModal, handleFormSubmit, handleFormDelete |
+| 1.9.1.0023 | Extract AI features to `src/ai/ai-suggestions.js` (AI_PROXY_URL, task suggestion engine, AI phase assignment) |
+| 1.9.1.0024 | Add smoke-test harness at `?test=1` (`src/test-harness.js`). ~50 pure-function assertions with overlay panel + diffs. **Phase 1 refactor complete.** index.html down from 20,056 → 3,690 lines (82% reduction); 27 source files in `src/`. |
 
 ---
 
