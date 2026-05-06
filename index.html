@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.9.1.0001">
+<script src="src/util.js?v=1.9.1.0002"></script>
 </head>
 <body>
 
@@ -887,7 +888,7 @@
   }
 })();
 
-const APP_VERSION = '1.9.1.0001';
+const APP_VERSION = '1.9.1.0002';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
@@ -3097,11 +3098,6 @@ function handleDeepLink() {
 function closeModalDirect() { document.getElementById('modal-backdrop').classList.remove('open'); }
 
 // ─── UTILS ────────────────────────────────────────────────────────────
-function esc(s) {
-  if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
 // ── Project & Task Numbering ─────────────────────────────────────────
 function getNextProjectNumber() {
   var maxNum = 0;
@@ -3345,11 +3341,6 @@ function resolveProjectTitle(t) {
     if (p) return p.title;
   }
   return t.project || '';
-}
-
-function escapeAttr(s) {
-  if (!s) return '';
-  return String(s).replace(/'/g,"\'").replace(/"/g,'\"');
 }
 
 // ─── BOOT ──────────────────────────────────────────────────────────────
@@ -5272,17 +5263,6 @@ function localToAgolTask(fields) {
 
 // ── Convert ArcGIS date values to YYYY-MM-DD string ──
 // Handles both epoch milliseconds (Date fields) and "YYYY-MM-DD" strings (Date Only fields)
-function epochToDateStr(val) {
-  if (!val && val !== 0) return '';
-  // If it's already a YYYY-MM-DD string, return as-is
-  if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
-  const d = new Date(val);
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(d.getUTCDate()).padStart(2, '0');
-  return yyyy + '-' + mm + '-' + dd;
-}
-
 // ── Generate 52 Sunday week-start dates for a given year ──
 function generateWeeks(year) {
   const weeks = [];
@@ -12110,15 +12090,6 @@ function getProjectHoursByPerson(projectTitle) {
 }
 
 // Build a compact hours label like "12.5h · me: 4.5h"
-function hoursLabel(teamHrs, myHrs, label) {
-  if (!teamHrs && !myHrs) return '';
-  const tag = label || 'me';
-  const parts = [];
-  if (teamHrs) parts.push(teamHrs + 'h');
-  if (myHrs && myHrs !== teamHrs) parts.push(tag + ': ' + myHrs + 'h');
-  else if (myHrs && myHrs === teamHrs) return myHrs + 'h';
-  return parts.join(' · ');
-}
 
 async function loadTimeEntries() {
   if (!Auth.fullName || !isTimeTrackingEnabled()) { TIME_ENTRIES = []; return; }
@@ -12370,34 +12341,6 @@ async function saveTimeEntryEdit(oid) {
     console.error('[TimeTracking] Edit failed:', err);
     showToast('Failed to save: ' + err.message, 'error');
   }
-}
-
-function formatTimeShort(epochMs) {
-  if (!epochMs) return '—';
-  const d = new Date(epochMs);
-  let h = d.getHours(); const m = d.getMinutes();
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12 || 12;
-  return h + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
-}
-
-function toDatetimeLocal(epochMs) {
-  if (!epochMs) return '';
-  const d = new Date(epochMs);
-  const pad = function(n) { return n < 10 ? '0' + n : n; };
-  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) +
-    'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-}
-
-// Stopwatch-style HH:MM:SS formatter for the live header chip.
-function formatTimerChip(ms) {
-  if (ms < 0) ms = 0;
-  var s = Math.floor(ms / 1000);
-  var h = Math.floor(s / 3600);
-  var m = Math.floor((s % 3600) / 60);
-  var sec = s % 60;
-  function pad(n) { return n < 10 ? '0' + n : '' + n; }
-  return pad(h) + ':' + pad(m) + ':' + pad(sec);
 }
 
 // Build (or rebuild) the header timer chip based on current active timers.
@@ -13166,11 +13109,6 @@ function findTaskByNumber(taskNum) {
 
 function findProjectByNumber(projNum) {
   return PROJECTS.find(function(p) { return p.project_number === projNum; });
-}
-
-// Determine if a dependency reference is a project (P-001) or task (P-001-001)
-function isProjectRef(ref) {
-  return /^P-\d+$/.test(ref);
 }
 
 // Resolve a dependency reference to either a task or project object
@@ -15723,25 +15661,6 @@ var _prShowAllLog = {};          // map of project_number -> bool (show all log 
 var _prSectionOpen = {};         // map of bucket key -> bool (quarter section expanded). undefined = use bucket default.
 var _prModalState = null;        // { projectNumber, reviewTypeId, editObjectId }
 
-function prFmtDate(v) {
-  if (v == null) return '';
-  var d = (typeof v === 'number') ? new Date(v) : new Date(String(v));
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-}
-function prFmtDateShort(v) {
-  if (v == null) return '—';
-  var d = (typeof v === 'number') ? new Date(v) : new Date(String(v));
-  if (isNaN(d.getTime())) return '—';
-  return (d.getMonth()+1) + '/' + d.getDate();
-}
-function prDaysSince(epoch) {
-  if (epoch == null) return null;
-  var ms = (typeof epoch === 'number') ? epoch : Date.parse(epoch);
-  if (isNaN(ms)) return null;
-  return Math.floor((Date.now() - ms) / 86400000);
-}
-
 // Tucson fiscal-year convention: FY runs Jul 1 → Jun 30.
 // FY-name = the calendar year the FY ends in. So Jul 2025–Jun 2026 = FY26.
 // Q1=Jul-Sep, Q2=Oct-Dec, Q3=Jan-Mar, Q4=Apr-Jun.
@@ -15804,22 +15723,6 @@ function prGroupByFiscalQuarter(projects) {
   if (noDateBucket.projects.length) buckets.push(noDateBucket);
   return buckets;
 }
-function prDateToEpoch(yyyymmdd) {
-  if (!yyyymmdd) return null;
-  // Treat as a UTC date (DateOnly) at noon to avoid timezone shifts
-  var parts = yyyymmdd.split('-');
-  if (parts.length !== 3) return null;
-  return Date.UTC(parseInt(parts[0],10), parseInt(parts[1],10) - 1, parseInt(parts[2],10), 12, 0, 0);
-}
-function prEpochToInputDate(epoch) {
-  if (epoch == null) return '';
-  var d = new Date(epoch);
-  if (isNaN(d.getTime())) return '';
-  return d.getUTCFullYear() + '-' +
-    String(d.getUTCMonth()+1).padStart(2,'0') + '-' +
-    String(d.getUTCDate()).padStart(2,'0');
-}
-
 function prCycleBadge(lastEpoch, cadenceDays) {
   if (lastEpoch == null) return { cls: 'pr-cycle-never', label: 'Not yet reviewed' };
   var days = prDaysSince(lastEpoch);
@@ -16951,32 +16854,6 @@ async function prRtDelete(index) {
 // ══════════════════════════════════════════════════════════════════════
 //  CSV EXPORT — projects & tasks with employee + date filters
 // ══════════════════════════════════════════════════════════════════════
-
-function csvEscape(v) {
-  if (v == null) return '';
-  var s = String(v);
-  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-  return s;
-}
-
-function buildCsv(headers, rows) {
-  var out = headers.map(csvEscape).join(',') + '\r\n';
-  rows.forEach(function(r) {
-    out += headers.map(function(h) { return csvEscape(r[h]); }).join(',') + '\r\n';
-  });
-  return out;
-}
-
-// Trigger a CSV download. UTF-8 BOM so Excel reads umlauts correctly.
-function downloadCsv(filename, content) {
-  var blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url; a.download = filename; a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
-}
 
 // "Active during": item's interval [start, end-effective] overlaps [windowStart, windowEnd].
 // Missing start → treat as far-past; missing end → treat as still-running today.
