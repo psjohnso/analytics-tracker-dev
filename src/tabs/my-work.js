@@ -1,0 +1,1337 @@
+// ─────────────────────────────────────────────────────────────────────
+// tabs/my-work.js — My Work tab (personal view)
+//
+// Owns: per-user filtering of projects/tasks (getMyProjects/Tasks),
+// the My Work column toggles, the New Task quick-add helper, the
+// gantt timeline (build, navigation, collapse state), the task
+// dependency feature helpers (find by number, resolve refs, blocker
+// queries, dependency picker), the attention-alert calculators
+// (getProjectAlerts, getTaskAlerts, renderAttBadges, attBorderClass),
+// effectiveDue / effectiveEnd, and the main renderMyWork dispatcher.
+//
+// Several of these helpers (effectiveDue, findTaskByNumber,
+// findProjectByNumber, dependency helpers, alert calculators) are
+// also called from project/task detail pages — they're forward refs
+// from inline at runtime.
+//
+// Forward references: PROJECTS, TASKS, Auth, esc, render, showToast,
+// switchTab, openTask, openProject, isFeatureOn, isAdmin,
+// getTaskHours, getProjectHours, getMyTaskHours, getMyProjectHours,
+// hoursLabel, STATUS_COLOR, STATUS_TEXT_COLOR, ARCGIS_CONFIG,
+// agolApplyEdits, DataStore, RESOURCES_DATA, getActiveTimers,
+// formatTimerChip, mwNewTask, openFormModal, openIdeaForm.
+// ─────────────────────────────────────────────────────────────────────
+
+let _ganttCollapsed = {};  // { projectTitle: true/false } — which projects have tasks hidden
+
+function getMyProjects(viewName) {
+  const name = viewName || Auth.fullName;
+  if (!name) return [];
+  return PROJECTS.filter(function(p) {
+    if (p.contact === name) return true;
+    if (p.other_members && p.other_members.split(',').map(function(s) { return s.trim(); }).includes(name)) return true;
+    return false;
+  });
+}
+
+function getMyTasks(viewName) {
+  const name = viewName || Auth.fullName;
+  if (!name) return [];
+  return TASKS.filter(function(t) { return t.assignee === name; });
+}
+
+function switchMyWorkUser(selectEl) {
+  const val = selectEl.value;
+  _myWorkViewUser = (val === Auth.fullName) ? null : val;
+  _ganttFilter = {}; // reset so new user's projects default to all visible
+  _ganttCollapsed = {}; // reset collapse state
+  renderMyWork(document.getElementById('content-area'));
+}
+
+function toggleMyWorkTasks() {
+  const panel = document.getElementById('mywork-tasks-expand');
+  const btn = document.getElementById('mywork-tasks-toggle');
+  if (!panel || !btn) return;
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? '' : 'none';
+  if (isHidden) {
+    btn.dataset.origLabel = btn.textContent;
+    btn.textContent = 'Show fewer tasks';
+  } else {
+    btn.textContent = btn.dataset.origLabel || 'Show more';
+  }
+}
+
+function toggleMyWorkProjects() {
+  const panel = document.getElementById('mywork-proj-expand');
+  const btn = document.getElementById('mywork-proj-toggle');
+  if (!panel || !btn) return;
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? '' : 'none';
+  if (isHidden) {
+    btn.dataset.origLabel = btn.textContent;
+    btn.textContent = 'Show fewer projects';
+  } else {
+    btn.textContent = btn.dataset.origLabel || 'Show more';
+  }
+}
+
+function mwNewTask() {
+  openFormModal('add-task');
+  // Pre-fill assignee with the logged-in user
+  var sel = document.getElementById('fm-assignee');
+  if (sel && Auth.fullName) {
+    sel.value = Auth.fullName;
+  }
+}
+
+async function mwQuickStatus(selectEl) {
+  var type = selectEl.dataset.type;
+  var id = parseInt(selectEl.dataset.id);
+  var newStatus = selectEl.value;
+  if (!Auth.loggedIn || !isTokenValid()) {
+    showToast('Your session has expired. Please sign in again.', 'warn');
+    var oldItem = type === 'task' ? TASKS.find(function(t) { return t.objectId == id; }) : PROJECTS.find(function(p) { return p.objectId == id; });
+    if (oldItem) selectEl.value = oldItem.status;
+    showSessionExpiredModal();
+    return;
+  }
+
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+
+  if (type === 'task') {
+    // Block setting Active without a due date
+    if (newStatus === 'Active') {
+      var task = TASKS.find(function(t) { return t.objectId == id; });
+      if (task && !task.due && !task.working_due) {
+        showToast('A due date is required before setting a task to Active. Please edit the task to add a due date first.', 'warn');
+        selectEl.value = task.status;
+        return;
+      }
+      if (task && !task.start) {
+        showToast('A start date is required before setting a task to Active. Please edit the task to add a start date first.', 'warn');
+        selectEl.value = task.status;
+        return;
+      }
+    }
+    var task = task || TASKS.find(function(t) { return t.objectId == id; });
+    var oldStatus = task ? task.status : null;
+    var reason = null;
+    if (needsStatusReason(newStatus)) {
+      var result = await promptStatusReason(oldStatus, newStatus);
+      if (!result.confirmed) { selectEl.value = oldStatus; return; }
+      reason = result.reason;
+    }
+    var fields = { status: newStatus };
+    if (newStatus === 'Complete') fields.actual_end = todayStr;
+    if (isFeatureOn('taskHistory') && task) {
+      fields.task_status_history = appendTaskHistory(task, oldStatus, newStatus, reason);
+    }
+    try {
+      await DataStore.updateTask(id, fields);
+      showToast('Task status updated to ' + newStatus + '.', 'success');
+    } catch (err) {
+      showToast('Failed to update: ' + err.message, 'error');
+      return;
+    }
+  } else if (type === 'project') {
+    var pFields = { status: newStatus };
+    if (newStatus === 'Complete') pFields.actual_end = todayStr;
+    try {
+      await DataStore.updateProject(id, pFields);
+      showToast('Project status updated to ' + newStatus + '.', 'success');
+    } catch (err) {
+      showToast('Failed to update: ' + err.message, 'error');
+      return;
+    }
+  }
+  markDataDirty();
+  render();
+}
+
+async function inlineTaskAssignee(selectEl) {
+  if (!Auth.loggedIn) { showToast('You must be signed in.', 'warn'); return; }
+  var taskId = parseInt(selectEl.dataset.taskId);
+  var newAssignee = selectEl.value || null;
+  try {
+    await DataStore.updateTask(taskId, { assignee: newAssignee });
+    // Auto-add assignee as project contributor
+    if (newAssignee) {
+      var task = TASKS.find(function(t) { return t.objectId == taskId; });
+      if (task && task.project) await ensureProjectContributor(task.project, newAssignee);
+    }
+    showToast('Assignee updated.', 'success');
+    markDataDirty();
+    render();
+  } catch (err) {
+    showToast('Failed to update: ' + err.message, 'error');
+  }
+}
+
+async function inlineTaskDueDate(inputEl) {
+  if (!Auth.loggedIn) { showToast('You must be signed in.', 'warn'); return; }
+  var taskId = parseInt(inputEl.dataset.taskId);
+  var hasDue = inputEl.dataset.hasDue === '1';
+  var newDate = inputEl.value || null;
+  var fields = {};
+  if (hasDue) {
+    // Task already has an original due date — update the working due date
+    fields.working_due = newDate;
+  } else {
+    // No original due date — set it as the initial due date
+    fields.due = newDate;
+  }
+  try {
+    await DataStore.updateTask(taskId, fields);
+    showToast(hasDue ? 'Working due date updated.' : 'Due date set.', 'success');
+    markDataDirty();
+    render();
+  } catch (err) {
+    showToast('Failed to update: ' + err.message, 'error');
+  }
+}
+
+function expandGantt() {
+  var gp = document.getElementById('mywork-gantt');
+  var ga = document.getElementById('gantt-arrow');
+  if (gp && gp.style.display === 'none') {
+    gp.style.display = '';
+    if (ga) ga.textContent = '▼';
+  }
+}
+
+function toggleTaskView(mode) {
+  _taskViewMode = mode;
+  // Re-render the detail page in place without scrolling to top
+  var area = document.getElementById('content-area');
+  if (currentDetail && currentDetail.type === 'project' && area) {
+    area.innerHTML = renderProjectDetail(currentDetail.id);
+    initSearchableSelect('batch-project');
+  }
+}
+
+function toggleGantt() {
+  const panel = document.getElementById('mywork-gantt');
+  const arrow = document.getElementById('gantt-arrow');
+  if (!panel) return;
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? '' : 'none';
+  if (arrow) arrow.textContent = isHidden ? '▼' : '▶';
+}
+
+function toggleGanttProject(title) {
+  _ganttFilter[title] = !_ganttFilter[title];
+  rebuildGanttChart();
+}
+
+function ganttSelectAll(show) {
+  const checks = document.querySelectorAll('.gantt-proj-check');
+  checks.forEach(function(cb) {
+    _ganttFilter[cb.value] = show;
+    cb.checked = show;
+  });
+  rebuildGanttChart();
+}
+
+function toggleGanttDropdown() {
+  const dd = document.getElementById('gantt-filter-dropdown');
+  if (!dd) return;
+  const isOpen = dd.style.display !== 'none';
+  dd.style.display = isOpen ? 'none' : '';
+  // Close on outside click
+  if (!isOpen) {
+    setTimeout(function() {
+      function closeHandler(e) {
+        const wrap = document.getElementById('gantt-filter-wrap');
+        if (wrap && !wrap.contains(e.target)) {
+          dd.style.display = 'none';
+          document.removeEventListener('click', closeHandler);
+        }
+      }
+      document.addEventListener('click', closeHandler);
+    }, 0);
+  }
+}
+
+function toggleGanttCollapse(title) {
+  _ganttCollapsed[title] = !_ganttCollapsed[title];
+  rebuildGanttChart();
+}
+
+function rebuildGanttChart() {
+  const container = document.getElementById('gantt-chart-body');
+  if (!container) return;
+  container.innerHTML = buildGanttBars();
+  // Update header and dropdown button counts
+  if (window._ganttItemsAll) {
+    const vis = window._ganttItemsAll.filter(function(g) { return _ganttFilter[g.title]; }).length;
+    const total = window._ganttItemsAll.length;
+    const headerSpan = document.querySelector('#mywork-gantt') && document.querySelector('#mywork-gantt').closest('.mywork-section') ? document.querySelector('#mywork-gantt').closest('.mywork-section').querySelector('.mywork-section-header span:last-child') : null;
+    if (headerSpan) headerSpan.textContent = '(' + vis + ' of ' + total + ' projects)';
+    const ddBtn = document.querySelector('#gantt-filter-wrap > button');
+    if (ddBtn) ddBtn.innerHTML = '📁 Projects (' + vis + '/' + total + ') <span style="font-size:9px;">▼</span>';
+  }
+}
+
+function buildGanttBars() {
+  if (!window._ganttItemsAll) return '';
+  const ganttItems = window._ganttItemsAll.filter(function(g) { return _ganttFilter[g.title]; });
+  const todayStr = window._ganttTodayStr;
+  const ganttStartMs = window._ganttStartMs;
+  const ganttTotalDays = window._ganttTotalDays;
+  const monthLabels = window._ganttMonthLabels || [];
+
+  function ganttPct(dateStr) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr + 'T00:00:00');
+    const dayOffset = (d.getTime() - ganttStartMs) / (1000 * 60 * 60 * 24);
+    return Math.max(0, Math.min(100, (dayOffset / ganttTotalDays) * 100));
+  }
+  const todayPct = ganttPct(todayStr);
+
+  let html = '<div style="overflow-x:auto;"><div style="min-width:800px;position:relative;">';
+
+  // Month header — offset to align with timeline track (past label column)
+  html += '<div style="position:relative;height:32px;margin-bottom:4px;border-bottom:1px solid var(--border);margin-left:280px;">';
+  monthLabels.forEach(function(m) {
+    html += '<span style="position:absolute;left:' + m.pct + '%;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;transform:translateX(-50%);white-space:nowrap;">' + m.label + '</span>';
+  });
+  html += '</div>';
+
+  if (ganttItems.length === 0) {
+    html += '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:12px;">No projects selected. Use the checkboxes above to show projects.</div>';
+  }
+
+  // Group by role: Leading first, then Contributing, then Reviewing
+  var roleOrder = ['Leading', 'Contributing', 'Reviewing'];
+  var roleStyles = {
+    'Leading': { color: '#0C447C', bg: '#E6F1FB', border: '#185FA5' },
+    'Contributing': { color: '#444441', bg: '#F1EFE8', border: '#888780' },
+    'Reviewing': { color: '#3C3489', bg: '#EEEDFE', border: '#534AB7' }
+  };
+  var hasMultipleRoles = roleOrder.filter(function(r) { return ganttItems.some(function(g) { return g.role === r; }); }).length > 1;
+
+  // Rows
+  // Project accent colors for visual distinction
+  var GANTT_ACCENT_COLORS = ['#002669', '#9E0059', '#C24200', '#0088FF', '#83AC16', '#140233', '#E5D086', '#0F6E56'];
+  var ganttProjIdx = 0;
+
+  roleOrder.forEach(function(role) {
+    var roleItems = ganttItems.filter(function(g) { return g.role === role; });
+    if (roleItems.length === 0) return;
+    var rs = roleStyles[role];
+    if (hasMultipleRoles) {
+      html += '<div style="border-left:4px solid ' + rs.border + ';padding:4px 10px;margin:8px 0 4px;background:' + rs.bg + ';font-size:12px;font-weight:700;color:' + rs.color + ';">' + role + ' (' + roleItems.length + ')</div>';
+    }
+    roleItems.forEach(function(g) {
+    const accentColor = GANTT_ACCENT_COLORS[ganttProjIdx % GANTT_ACCENT_COLORS.length];
+    const bandBg = ganttProjIdx % 2 === 0 ? 'var(--white)' : '#FDFCF8';
+    ganttProjIdx++;
+    const sc = STATUS_COLOR(g.status) || '#3B82F6';
+    const leftPct = ganttPct(g.start || todayStr);
+    const rightPct = ganttPct(g.end || todayStr);
+    const barWidth = Math.max(1, rightPct - leftPct);
+    const isOverdue = g.end && g.end < todayStr;
+    const isCollapsed = !_ganttCollapsed[g.title];
+    const hasTasks = g.tasks && g.tasks.length > 0;
+    const arrow = hasTasks ? (isCollapsed ? '▶' : '▼') : '•';
+    const arrowClick = hasTasks ? ' onclick="event.stopPropagation();toggleGanttCollapse(\'' + esc(g.title).replace(/'/g, "\\'") + '\')" style="cursor:pointer;margin-right:4px;font-size:9px;opacity:0.6;user-select:none;"' : ' style="margin-right:4px;font-size:7px;opacity:0.4;"';
+
+    // Open project band container
+    html += '<div style="background:' + bandBg + ';border-left:3px solid ' + accentColor + ';border-radius:0;">';
+
+    html += '<div style="display:flex;align-items:flex-start;margin-bottom:0;min-height:28px;border-bottom:0.5px solid #E8E6DF;">';
+    html += '<div style="width:280px;flex-shrink:0;display:flex;align-items:flex-start;gap:2px;padding:4px 0;padding-left:8px;">';
+    html += '<span' + arrowClick + ' style="flex-shrink:0;margin-top:1px;">' + arrow + '</span>';
+    html += '<span style="font-size:13px;font-weight:700;color:' + accentColor + ';cursor:pointer;line-height:1.3;" onclick="openProject(' + g.id + ')" title="' + esc(g.title) + '">' + esc(g.title) + '</span>';
+    if (hasTasks) html += '<span style="font-size:10px;color:var(--text-muted);margin-left:4px;flex-shrink:0;margin-top:2px;">(' + g.tasks.length + ')</span>';
+    html += '</div>';
+    html += '<div style="flex:1;position:relative;height:20px;">';
+    html += '<div style="position:absolute;left:' + leftPct + '%;width:' + barWidth + '%;height:100%;background:' + sc + ';border-radius:4px;opacity:0.85;' + (isOverdue ? 'outline:2px solid #EF4444;outline-offset:1px;' : '') + '" title="' + (g.start || '?') + ' → ' + (g.end || '?') + '"></div>';
+    html += '</div></div>';
+
+    if (!isCollapsed) {
+      var viewUser = g._viewUser || '';
+      // Sort: user's tasks first, then others; within each group sort by due date
+      var sortedTasks = g.tasks.slice().sort(function(a, b) {
+        var aIsMine = a.assignee === viewUser ? 0 : 1;
+        var bIsMine = b.assignee === viewUser ? 0 : 1;
+        if (aIsMine !== bIsMine) return aIsMine - bIsMine;
+        var aEnd = a.working_due || a.due || '9999';
+        var bEnd = b.working_due || b.due || '9999';
+        return aEnd.localeCompare(bEnd);
+      });
+      sortedTasks.forEach(function(t, tIdx) {
+      const tStart = t.start || g.start || todayStr;
+      const tEnd = t.working_due || t.due || g.end || todayStr;
+      const tLeftPct = ganttPct(tStart);
+      const tRightPct = ganttPct(tEnd);
+      const tWidth = Math.max(0.5, tRightPct - tLeftPct);
+      const tOverdue = tEnd < todayStr;
+      const tsc = STATUS_COLOR(t.status) || '#93C5FD';
+      const isMine = t.assignee === viewUser;
+      const isBlocked = isFeatureOn('dependencies') && hasIncompleteBlockers(t);
+      const barOpacity = isMine ? '0.85' : '0.3';
+      const labelStyle = isMine ? 'color:var(--text-body);font-weight:600;' : 'color:var(--text-muted);font-weight:400;opacity:0.7;';
+      const blockedIcon = isBlocked ? '🔒 ' : '› ';
+      const blockedBarStyle = isBlocked ? 'background:repeating-linear-gradient(45deg,' + tsc + ',' + tsc + ' 3px,transparent 3px,transparent 6px);' : 'background:' + tsc + ';';
+      const isLastTask = tIdx === sortedTasks.length - 1;
+      const taskBorder = isLastTask ? 'border-bottom:0.5px solid #E8E6DF;' : 'border-bottom:0.5px solid #F3F1EB;';
+
+      html += '<div style="display:flex;align-items:flex-start;min-height:22px;' + taskBorder + '">';
+      html += '<div style="width:280px;flex-shrink:0;font-size:12px;padding-left:24px;padding-right:8px;padding-top:3px;padding-bottom:3px;cursor:pointer;line-height:1.3;' + labelStyle + '" onclick="openTask(' + t.objectId + ')" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + (isBlocked ? ' [DEPS PENDING]' : '') + '">' + blockedIcon + esc(t.title) + '</div>';
+      html += '<div style="flex:1;position:relative;height:14px;">';
+      html += '<div style="position:absolute;left:' + tLeftPct + '%;width:' + tWidth + '%;height:100%;' + blockedBarStyle + 'border-radius:3px;opacity:' + barOpacity + ';' + (tOverdue && isMine ? 'outline:2px solid #EF4444;outline-offset:1px;' : '') + '" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + ' ' + tStart + ' → ' + tEnd + (isBlocked ? ' [DEPS PENDING]' : '') + '"></div>';
+      html += '</div></div>';
+    });
+    } // end if (!isCollapsed)
+
+    html += '</div>'; // close project band container
+    html += '<div style="height:6px;"></div>';
+  });
+  }); // end roleOrder.forEach
+
+  // Today marker
+  if (todayPct > 0 && todayPct < 100) {
+    // Vertical line starts at the gray border (32px) and extends to bottom
+    html += '<div style="position:absolute;top:32px;bottom:0;left:calc(280px + (100% - 280px) * ' + (todayPct / 100) + ');width:2px;background:#EF4444;opacity:0.6;pointer-events:none;z-index:5;"></div>';
+    // Label sits between month text and the gray border line
+    html += '<div style="position:absolute;top:15px;left:calc(280px + (100% - 280px) * ' + (todayPct / 100) + ');transform:translateX(-50%);font-size:9px;font-weight:800;color:#EF4444;pointer-events:none;z-index:6;">TODAY</div>';
+  }
+
+  html += '</div></div>'; // min-width + overflow wrappers
+  // Legend
+  html += '<div style="display:flex;gap:16px;margin-top:8px;padding-top:8px;border-top:1px solid #E8E6DF;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">';
+  html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.85;display:inline-block;"></span> Your tasks</span>';
+  html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.3;display:inline-block;"></span> Other members\' tasks</span>';
+  if (isFeatureOn('dependencies')) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:repeating-linear-gradient(45deg,#83AC16,#83AC16 2px,transparent 2px,transparent 4px);display:inline-block;"></span> 🔒 Deps pending</span>';
+  html += '</div>';
+  return html;
+}
+
+function effectiveDue(t) { return t.working_due || t.due || null; }
+function effectiveEnd(p) { return p.working_due || p.end || null; }
+
+// ── Dependency helpers (behind isFeatureOn('dependencies') flag) ──────────
+function parseBlockedBy(t) {
+  if (!isFeatureOn('dependencies') || !t.blocked_by) return [];
+  return t.blocked_by.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+}
+
+function findTaskByNumber(taskNum) {
+  return TASKS.find(function(t) { return t.task_number === taskNum; });
+}
+
+function findProjectByNumber(projNum) {
+  return PROJECTS.find(function(p) { return p.project_number === projNum; });
+}
+
+// Resolve a dependency reference to either a task or project object
+function resolveDependency(ref) {
+  if (isProjectRef(ref)) {
+    var proj = findProjectByNumber(ref);
+    return proj ? { type: 'project', obj: proj, num: ref } : null;
+  } else {
+    var task = findTaskByNumber(ref);
+    return task ? { type: 'task', obj: task, num: ref } : null;
+  }
+}
+
+function getBlockingTasks(taskNumber) {
+  if (!isFeatureOn('dependencies') || !taskNumber) return [];
+  return TASKS.filter(function(t) {
+    var blockers = parseBlockedBy(t);
+    return blockers.indexOf(taskNumber) >= 0;
+  });
+}
+
+// Also find tasks that depend on a project number
+function getBlockingByProject(projectNumber) {
+  if (!isFeatureOn('dependencies') || !projectNumber) return [];
+  return TASKS.filter(function(t) {
+    var blockers = parseBlockedBy(t);
+    return blockers.indexOf(projectNumber) >= 0;
+  });
+}
+
+function hasIncompleteBlockers(t) {
+  var blockers = parseBlockedBy(t);
+  if (!blockers.length) return false;
+  return blockers.some(function(ref) {
+    var dep = resolveDependency(ref);
+    if (!dep) return false;
+    if (dep.type === 'project') return dep.obj.status !== 'Complete' && dep.obj.status !== 'Canceled';
+    return dep.obj.status !== 'Complete' && dep.obj.status !== 'Canceled';
+  });
+}
+
+function getDependencyIcon(t) {
+  if (!isFeatureOn('dependencies')) return '';
+  var blockedBy = parseBlockedBy(t);
+  var blocking = getBlockingTasks(t.task_number);
+  if (!blockedBy.length && !blocking.length) return '';
+  var hasIncomplete = hasIncompleteBlockers(t);
+  if (hasIncomplete) return '<span title="Has unresolved dependencies" style="cursor:help;font-size:12px;">🔒</span>';
+  if (blockedBy.length && !hasIncomplete) return '<span title="All dependencies resolved" style="cursor:help;font-size:12px;">🔓</span>';
+  if (blocking.length) return '<span title="Required by ' + blocking.length + ' task(s)" style="cursor:help;font-size:12px;">⛓</span>';
+  return '';
+}
+
+// ── Dependency search picker for the task form ──────────────────
+function refreshBlockerList(projectTitle, currentTaskNumber, currentBlockedBy) {
+  if (!isFeatureOn('dependencies')) return;
+  var container = document.getElementById('fm-blocked-by-list');
+  if (!container) return;
+  var selectedRefs = currentBlockedBy ? currentBlockedBy.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
+
+  // Store selected refs in a data attribute for retrieval
+  container.setAttribute('data-selected', selectedRefs.join(','));
+
+  var html = '';
+
+  // Search/filter input
+  html += '<div style="position:relative;margin-bottom:8px;">';
+  html += '<span style="position:absolute;left:8px;top:7px;font-size:13px;color:var(--text-muted);pointer-events:none;">🔍</span>';
+  html += '<input type="text" id="dep-search-input" placeholder="Filter by number or name..." oninput="depFilterList()" style="width:100%;box-sizing:border-box;font-size:12px;padding:6px 8px 6px 28px;border:1px solid #E8E6DF;border-radius:6px;font-family:Lato,sans-serif;">';
+  html += '</div>';
+
+  // Full list of available projects and tasks (excluding Complete/Canceled)
+  html += '<div id="dep-choices-list" style="max-height:280px;overflow-y:auto;border:1px solid #E8E6DF;border-radius:6px;">';
+
+  // Projects section
+  var availProjects = PROJECTS.filter(function(p) {
+    return p.project_number && ['Complete', 'Canceled'].indexOf(p.status) < 0;
+  }).sort(function(a, b) { return (a.project_number || '').localeCompare(b.project_number || ''); });
+
+  if (availProjects.length > 0) {
+    html += '<div class="dep-group-hdr" style="font-size:10px;font-weight:700;color:var(--text-muted);padding:5px 8px;background:var(--bg-surface,#F3F1EB);border-bottom:0.5px solid #E8E6DF;letter-spacing:0.04em;position:sticky;top:0;z-index:1;">PROJECTS</div>';
+    availProjects.forEach(function(p) {
+      var checked = selectedRefs.indexOf(p.project_number) >= 0 ? ' checked' : '';
+      var sc = STATUS_COLOR(p.status);
+      html += '<label data-ref="' + esc(p.project_number) + '" data-search="' + esc((p.project_number + ' ' + p.title).toLowerCase()) + '" style="display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;font-size:12px;border-bottom:0.5px solid #F3F1EB;" onmouseenter="this.style.background=\'#F0F4FF\'" onmouseleave="this.style.background=\'transparent\'">';
+      html += '<input type="checkbox" value="' + esc(p.project_number) + '"' + checked + ' onchange="depToggleChoice(this)" style="width:14px;height:14px;flex-shrink:0;">';
+      html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#E6F1FB;color:#0C447C;flex-shrink:0;font-weight:700;">P</span>';
+      html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);min-width:45px;">' + esc(p.project_number) + '</span>';
+      html += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(p.title) + '</span>';
+      html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:' + sc + '18;color:' + sc + ';flex-shrink:0;">' + esc(p.status) + '</span>';
+      html += '</label>';
+    });
+  }
+
+  // Tasks section — grouped by project
+  var availTasks = TASKS.filter(function(t) {
+    return t.task_number && t.task_number !== currentTaskNumber && ['Complete', 'Canceled'].indexOf(t.status) < 0;
+  }).sort(function(a, b) { return (a.task_number || '').localeCompare(b.task_number || ''); });
+
+  var tasksByProject = {};
+  availTasks.forEach(function(t) {
+    var proj = t.project || '(no project)';
+    if (!tasksByProject[proj]) tasksByProject[proj] = [];
+    tasksByProject[proj].push(t);
+  });
+
+  Object.keys(tasksByProject).sort().forEach(function(projName) {
+    var projObj = PROJECTS.find(function(p) { return p.title === projName; });
+    var projNum = projObj ? projObj.project_number : '';
+    html += '<div class="dep-group-hdr" data-search-group="' + esc(projName.toLowerCase()) + '" style="font-size:10px;font-weight:700;color:var(--text-muted);padding:5px 8px;background:var(--bg-surface,#F3F1EB);border-bottom:0.5px solid #E8E6DF;letter-spacing:0.04em;position:sticky;top:0;z-index:1;">TASKS — ' + esc(projName) + (projNum ? ' (' + projNum + ')' : '') + '</div>';
+    tasksByProject[projName].forEach(function(t) {
+      var checked = selectedRefs.indexOf(t.task_number) >= 0 ? ' checked' : '';
+      var sc = STATUS_COLOR(t.status);
+      html += '<label data-ref="' + esc(t.task_number) + '" data-search="' + esc((t.task_number + ' ' + t.title + ' ' + projName).toLowerCase()) + '" style="display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;font-size:12px;border-bottom:0.5px solid #F3F1EB;" onmouseenter="this.style.background=\'#F0F4FF\'" onmouseleave="this.style.background=\'transparent\'">';
+      html += '<input type="checkbox" value="' + esc(t.task_number) + '"' + checked + ' onchange="depToggleChoice(this)" style="width:14px;height:14px;flex-shrink:0;">';
+      html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#FAEEDA;color:#633806;flex-shrink:0;font-weight:700;">T</span>';
+      html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);min-width:70px;">' + esc(t.task_number) + '</span>';
+      html += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(t.title) + '</span>';
+      html += '<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:' + sc + '18;color:' + sc + ';flex-shrink:0;">' + esc(t.status) + '</span>';
+      html += '</label>';
+    });
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function depFilterList() {
+  var input = document.getElementById('dep-search-input');
+  var q = input ? input.value.toLowerCase() : '';
+  var items = document.querySelectorAll('#dep-choices-list label[data-search]');
+  var groupHeaders = document.querySelectorAll('#dep-choices-list .dep-group-hdr');
+
+  // Track which groups have visible items
+  var visibleGroups = {};
+
+  items.forEach(function(el) {
+    var match = !q || el.getAttribute('data-search').indexOf(q) >= 0;
+    el.style.display = match ? 'flex' : 'none';
+    // Find the preceding group header
+    var prev = el.previousElementSibling;
+    while (prev && !prev.classList.contains('dep-group-hdr')) prev = prev.previousElementSibling;
+    if (prev && match) visibleGroups[prev.textContent] = true;
+  });
+
+  // Show/hide group headers based on whether they have visible items
+  groupHeaders.forEach(function(hdr) {
+    hdr.style.display = visibleGroups[hdr.textContent] ? 'block' : 'none';
+  });
+}
+
+function depToggleChoice(checkbox) {
+  // No need to rebuild — checkboxes manage their own state
+  // Just update the data-selected attribute for retrieval
+}
+
+function depGetCurrentRefs() {
+  var refs = [];
+  document.querySelectorAll('#dep-choices-list input[type="checkbox"]:checked').forEach(function(cb) {
+    refs.push(cb.value);
+  });
+  return refs;
+}
+
+// ── Inline attention badge helpers ─────────────────────────────────
+function getProjectAlerts(p, todayStr, userName) {
+  var alerts = [];
+  var today = new Date();
+  var d = effectiveEnd(p);
+  if (d && d < todayStr && ['Active', 'Scheduled'].indexOf(p.status) >= 0) {
+    var daysOver = Math.ceil((today - new Date(d + 'T00:00:00')) / 86400000);
+    alerts.push({ text: daysOver + 'd overdue', cls: 'mw-att-red', severity: 0 });
+  } else if (d && ['Active', 'Scheduled'].indexOf(p.status) >= 0) {
+    var daysLeft = Math.ceil((new Date(d + 'T00:00:00') - today) / 86400000);
+    if (daysLeft >= 0 && daysLeft <= 7) {
+      alerts.push({ text: daysLeft === 0 ? 'Due today' : 'Due in ' + daysLeft + 'd', cls: 'mw-att-yellow', severity: 1 });
+    }
+  }
+  // Ready to activate — Future/Scheduled projects past their start date
+  if ((p.status === 'Future' || p.status === 'Scheduled') && p.start) {
+    var startDate = new Date(p.start + 'T00:00:00');
+    if (startDate <= today) {
+      var daysPast = Math.floor((today - startDate) / 86400000);
+      alerts.push({ text: daysPast === 0 ? 'Ready to activate' : 'Start was ' + daysPast + 'd ago', cls: 'mw-att-yellow', severity: 1 });
+    }
+  }
+  if (['Active', 'Scheduled', 'On Hold'].indexOf(p.status) >= 0) {
+    var missing = [];
+    if (!p.description) missing.push('description');
+    if (!p.end) missing.push('end date');
+    if (!p.category) missing.push('category');
+    if (!p.problem_statement) missing.push('problem statement');
+    if (missing.length > 0) alerts.push({ text: 'Missing: ' + missing.join(', '), cls: 'mw-att-gray', severity: 2 });
+    // Strategic alignment alerts (only for editors viewing their own lead projects)
+    if (isStrategicAlignmentEditor() && p.contact === userName) {
+      var sMissing = [];
+      if (!p.it_initiative) sMissing.push('IT Initiative');
+      if (!p.city_initiative) sMissing.push('City Initiative');
+      if (!p.wwc_practice) sMissing.push('WWC Practice');
+      if (sMissing.length > 0) alerts.push({ text: 'Alignment: ' + sMissing.join(', '), cls: 'mw-att-gray', severity: 3 });
+    }
+  }
+  return alerts;
+}
+
+function getTaskAlerts(t, todayStr) {
+  var alerts = [];
+  var d = effectiveDue(t);
+  if (d && d < todayStr && ['Active', 'Waiting for Response'].indexOf(t.status) >= 0) {
+    var daysOver = Math.ceil((new Date() - new Date(d + 'T00:00:00')) / 86400000);
+    alerts.push({ text: daysOver + 'd overdue', cls: 'mw-att-red', severity: 0 });
+  } else if (d && ['Active', 'Waiting for Response'].indexOf(t.status) >= 0) {
+    var daysLeft = Math.ceil((new Date(d + 'T00:00:00') - new Date()) / 86400000);
+    if (daysLeft >= 0 && daysLeft <= 7) {
+      alerts.push({ text: daysLeft === 0 ? 'Due today' : 'Due in ' + daysLeft + 'd', cls: 'mw-att-yellow', severity: 1 });
+    }
+  }
+  // Active task with unresolved dependencies
+  if (isFeatureOn('dependencies') && t.status === 'Active' && hasIncompleteBlockers(t)) {
+    alerts.push({ text: 'Deps pending', cls: 'mw-att-red', severity: 0 });
+  }
+  if (['Active', 'Pending', 'Waiting for Response'].indexOf(t.status) >= 0) {
+    var missing = [];
+    if (!t.description) missing.push('description');
+    if (!t.due && t.status === 'Active') missing.push('due date');
+    if (!t.start && t.status === 'Active') missing.push('start date');
+    if (!t.category) missing.push('category');
+    if (missing.length > 0) alerts.push({ text: 'Missing: ' + missing.join(', '), cls: 'mw-att-gray', severity: 2 });
+  }
+  return alerts;
+}
+
+function renderAttBadges(alerts) {
+  if (!alerts.length) return '';
+  return '<div class="mw-att-row">' + alerts.map(function(a) { return '<span class="mw-att-badge ' + a.cls + '">' + esc(a.text) + '</span>'; }).join('') + '</div>';
+}
+
+function attBorderClass(alerts) {
+  if (!alerts.length) return '';
+  var minSev = alerts.reduce(function(m, a) { return Math.min(m, a.severity); }, 99);
+  if (minSev === 0) return ' mw-att-border-red';
+  if (minSev === 1) return ' mw-att-border-yellow';
+  return ' mw-att-border-gray';
+}
+
+function buildMyWorkTaskRow(t, statusColor, status, todayStr, hrsLabelFn) {
+  const eDue = effectiveDue(t);
+  const isOverdue = eDue && eDue < todayStr;
+  const tHrs = getTaskHours(t.idx);
+  const mHrs = hrsLabelFn ? hrsLabelFn(t.idx) : getMyTaskHours(t.idx);
+  const taskAlerts = getTaskAlerts(t, todayStr);
+  let out = '<div class="mywork-compact-row' + attBorderClass(taskAlerts) + '">';
+  out += '<select class="mw-status-select" data-type="task" data-id="' + t.objectId + '" onchange="mwQuickStatus(this)" onclick="event.stopPropagation()" style="background:' + statusColor + '18;color:' + statusColor + ';border-color:' + statusColor + '44;">';
+  ['Active', 'Pending', 'On Hold', 'Waiting for Response', 'Complete', 'Canceled'].forEach(function(s) {
+    out += '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + s + '</option>';
+  });
+  out += '</select>';
+  out += '<span class="mywork-compact-title" onclick="openTask(' + t.objectId + ')" style="cursor:pointer;">' + projectNumChip(t.task_number) + esc(t.title);
+  if (t.project) out += '<span style="display:block;font-size:11px;font-weight:400;color:var(--text-muted);margin-top:1px;">' + esc(t.project) + '</span>';
+  out += renderAttBadges(taskAlerts);
+  out += '</span>';
+  if (tHrs > 0) {
+    out += '<span class="mywork-hrs-badge">\u23f1 ' + hoursLabel(tHrs, mHrs) + '</span>';
+  }
+  if (eDue) {
+    out += '<span style="font-size:11px;font-weight:600;white-space:nowrap;color:' + (isOverdue ? '#EF4444' : 'var(--text-muted)') + ';">' + (isOverdue ? '\u26a0 ' : '') + eDue + '</span>';
+  }
+  out += '</div>';
+  return out;
+}
+
+function buildMyWorkTasksSection(myTasks, todayStr, viewUserTaskHrsFn) {
+  let html = '<div>';
+  html += '<div class="mywork-section" id="mw-tasks">';
+
+  const tasksByStatus = {};
+  myTasks.forEach(function(t) {
+    const s = t.status || 'Unknown';
+    if (!tasksByStatus[s]) tasksByStatus[s] = [];
+    tasksByStatus[s].push(t);
+  });
+  const pendingCount = (tasksByStatus['Pending'] || []).length;
+  const onHoldCount = (tasksByStatus['On Hold'] || []).length;
+  const completeCount = (tasksByStatus['Complete'] || []).length;
+  const canceledCount = (tasksByStatus['Canceled'] || []).length;
+  const hiddenCount = pendingCount + onHoldCount + completeCount + canceledCount;
+
+  html += '<div class="mywork-section-header" style="justify-content:space-between;flex-wrap:wrap;">'+
+    '<div style="display:flex;align-items:center;gap:6px;">✅ My Tasks <span class="badge-count">' + myTasks.length + '</span>' +
+    '<button onclick="mwNewTask()" style="padding:3px 8px;border-radius:4px;border:1px solid #C24200;background:transparent;cursor:pointer;font-family:Lato,sans-serif;font-size:10px;font-weight:700;color:#C24200;line-height:1;">＋ New</button>' +
+    '</div>';
+
+  // Task-specific alert counts
+  var taskOverdue = myTasks.filter(function(t) {
+    var d = t.working_due || t.due;
+    return d && d < todayStr && ['Active', 'Waiting for Response', 'On Hold'].indexOf(t.status) >= 0;
+  }).length;
+  var taskDueSoon = myTasks.filter(function(t) {
+    var d = t.working_due || t.due;
+    if (!d || d < todayStr) return false;
+    var daysLeft = Math.ceil((new Date(d + 'T00:00:00') - new Date()) / 86400000);
+    return daysLeft >= 0 && daysLeft <= 7 && ['Active', 'Waiting for Response'].indexOf(t.status) >= 0;
+  }).length;
+  var taskMissing = myTasks.filter(function(t) {
+    return ['Active', 'Pending', 'Waiting for Response'].indexOf(t.status) >= 0 && getTaskAlerts(t, todayStr).some(function(a) { return a.cls === 'mw-att-gray'; });
+  }).length;
+  if (taskOverdue + taskDueSoon + taskMissing > 0) {
+    html += '<div style="display:flex;gap:10px;font-size:10px;font-weight:700;">';
+    if (taskOverdue > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#E24B4A;display:inline-block;"></span><span style="color:#791F1F;">' + taskOverdue + ' overdue</span></span>';
+    if (taskDueSoon > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#EF9F27;display:inline-block;"></span><span style="color:#92400E;">' + taskDueSoon + ' due soon</span></span>';
+    if (taskMissing > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span><span style="color:#5F5E5A;">' + taskMissing + ' missing</span></span>';
+    html += '</div>';
+  }
+  html += '</div>';
+
+  const defaultStatuses = ['Active', 'Waiting for Response'];
+  let hasTasks = false;
+  defaultStatuses.forEach(function(status) {
+    const list = tasksByStatus[status];
+    if (!list || !list.length) return;
+    hasTasks = true;
+    list.sort(function(a, b) {
+      var aAlerts = getTaskAlerts(a, todayStr);
+      var bAlerts = getTaskAlerts(b, todayStr);
+      var aMin = aAlerts.length ? aAlerts.reduce(function(m, x) { return Math.min(m, x.severity); }, 99) : 99;
+      var bMin = bAlerts.length ? bAlerts.reduce(function(m, x) { return Math.min(m, x.severity); }, 99) : 99;
+      if (aMin !== bMin) return aMin - bMin;
+      return (a.due || '9999').localeCompare(b.due || '9999');
+    });
+    const statusColor = STATUS_COLOR(status);
+    html += '<div class="mywork-status-header" style="color:' + statusColor + ';">' + esc(status) + ' (' + list.length + ')</div>';
+    list.forEach(function(t) { html += buildMyWorkTaskRow(t, statusColor, status, todayStr, viewUserTaskHrsFn); });
+  });
+
+  if (!hasTasks && hiddenCount === 0) {
+    html += '<div class="mywork-empty">No tasks assigned to you.</div>';
+  }
+
+  const expandStatuses = ['Pending', 'On Hold'];
+  const expandItems = expandStatuses.filter(function(s) { return tasksByStatus[s] && tasksByStatus[s].length > 0; });
+  if (expandItems.length > 0) {
+    const expandLabel = expandItems.map(function(s) { return s + ' (' + tasksByStatus[s].length + ')'; }).join(', ');
+    html += '<div id="mywork-tasks-expand" style="display:none;">';
+    expandItems.forEach(function(status) {
+      const list = tasksByStatus[status];
+      if (!list || !list.length) return;
+      list.sort(function(a, b) {
+        var aAlerts = getTaskAlerts(a, todayStr);
+        var bAlerts = getTaskAlerts(b, todayStr);
+        var aMin = aAlerts.length ? aAlerts.reduce(function(m, x) { return Math.min(m, x.severity); }, 99) : 99;
+        var bMin = bAlerts.length ? bAlerts.reduce(function(m, x) { return Math.min(m, x.severity); }, 99) : 99;
+        if (aMin !== bMin) return aMin - bMin;
+        return (a.due || '9999').localeCompare(b.due || '9999');
+      });
+      const statusColor = STATUS_COLOR(status);
+      html += '<div class="mywork-status-header" style="color:' + statusColor + ';">' + esc(status) + ' (' + list.length + ')</div>';
+      list.forEach(function(t) { html += buildMyWorkTaskRow(t, statusColor, status, todayStr, null); });
+    });
+    html += '</div>';
+    html += '<button class="mywork-expand-btn" id="mywork-tasks-toggle" onclick="toggleMyWorkTasks()">' +
+      'Show more (' + expandLabel + ')' +
+    '</button>';
+  }
+
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+function renderMyWork(area) {
+  if (!Auth.fullName) {
+    area.innerHTML = '<div class="empty-state">Sign in to see your personalized work view.</div>';
+    return;
+  }
+
+  const viewUser = _myWorkViewUser || Auth.fullName;
+  const isViewingSelf = viewUser === Auth.fullName;
+  const name = viewUser;
+  const firstName = name.split(' ')[0];
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+
+  // ── Gather data ─────────────────────────────────────────────
+  const myProjects = getMyProjects(name);
+  const myTasks = getMyTasks(name);
+  // Helper: effective due date uses working_due when available, falls back to original due
+  // (effectiveDue and effectiveEnd are now top-level functions)
+  // Hours helpers scoped to viewed user
+  const hrsLabel = isViewingSelf ? 'me' : firstName;
+  function viewUserTaskHrs(idx) { return getMyTaskHours(idx, name); }
+  function viewUserProjHrs(title) { return getMyProjectHours(title, name); }
+
+  const activeProjects = myProjects.filter(function(p) { return p.status === 'Active' || p.status === 'Scheduled'; });
+  const openTasks = myTasks.filter(function(t) { return ['Active', 'On Hold', 'Waiting for Response'].includes(t.status); });
+  const attentionTasks = myTasks.filter(function(t) { return ['Active', 'Scheduled'].includes(t.status); });
+  const overdueTasks = attentionTasks.filter(function(t) { var d = effectiveDue(t); return d && d < todayStr; });
+  const overdueProjects = myProjects.filter(function(p) {
+    if (['Active', 'Scheduled'].indexOf(p.status) < 0) return false;
+    const d = effectiveEnd(p);
+    return d && d < todayStr;
+  });
+  const dueThisWeek = attentionTasks.filter(function(t) {
+    const d = effectiveDue(t);
+    if (!d || d < todayStr) return false;
+    const dueDate = new Date(d + 'T00:00:00');
+    const daysOut = (dueDate - today) / (1000 * 60 * 60 * 24);
+    return daysOut <= 7;
+  });
+
+  // ── Resources data for utilization ──────────────────────────
+  let weekUtil = 0;
+  let weekAllocHours = 0;
+  let weekCapHours = 0;
+  let weekAllocations = [];
+  let myScheduleType = '5/8';
+  let myRdoDay = null;
+  let myPayWeek = '';
+  let myScheduledHours = 40;
+  if (RESOURCES_DATA && RESOURCES_DATA.people[name]) {
+    const p = RESOURCES_DATA.people[name];
+    const cwIdx = typeof currentWeekIdx !== 'undefined' ? currentWeekIdx : 0;
+    weekCapHours = p.proj_cap[cwIdx] || 0;
+    weekAllocHours = p.weekly_allocated[cwIdx] || 0;
+    weekUtil = weekCapHours > 0 ? Math.round(weekAllocHours / weekCapHours * 100) : 0;
+    myScheduleType = p.schedule_type || '5/8';
+    myRdoDay = p.rdo_day || null;
+    // Determine pay period week for current week
+    if (RESOURCES_DATA.weeks && RESOURCES_DATA.weeks[cwIdx]) {
+      const PAY_PERIOD_REF_MW = new Date('2025-12-28T00:00:00');
+      const cwDate = new Date(RESOURCES_DATA.weeks[cwIdx] + 'T00:00:00');
+      const diffDays = Math.round((cwDate - PAY_PERIOD_REF_MW) / (1000 * 60 * 60 * 24));
+      myPayWeek = (Math.floor(diffDays / 7) % 2 === 0) ? 'A' : 'B';
+    }
+    myScheduledHours = (myPayWeek === 'A') ? (p.week1_hours || 40) : (p.week2_hours || 40);
+    // Daily schedule for current week
+    const prefix = (myPayWeek === 'A') ? 'wk1_' : 'wk2_';
+    const myDailyHours = {
+      Mon: p[prefix + 'mon'] || 0,
+      Tue: p[prefix + 'tue'] || 0,
+      Wed: p[prefix + 'wed'] || 0,
+      Thu: p[prefix + 'thu'] || 0,
+      Fri: p[prefix + 'fri'] || 0,
+    };
+    const myDailyTimes = {};
+    ['Mon','Tue','Wed','Thu','Fri'].forEach(function(day) {
+      const d = day.toLowerCase().slice(0, 3);
+      const s = p.schedule ? p.schedule[prefix + d + '_start'] : null;
+      const e = p.schedule ? p.schedule[prefix + d + '_end'] : null;
+      myDailyTimes[day] = { start: s, end: e };
+    });
+    weekAllocations = (p.allocations || []).filter(function(a) {
+      return a.fracs && a.fracs[cwIdx] > 0;
+    }).map(function(a) {
+      const hours = (a.fracs[cwIdx] || 0) * (p.proj_cap[cwIdx] || 0);
+      return { project: a.project, hours: Math.round(hours * 10) / 10, frac: a.fracs[cwIdx] };
+    }).sort(function(a, b) { return b.hours - a.hours; });
+  }
+
+  // ── Build HTML ──────────────────────────────────────────────
+  // Sticky header sits outside mywork-page so it spans full content-area width
+  let html = '';
+
+  // ── Sticky header: greeting + date/picker + jump links ──────
+  html += '<div class="mywork-sticky-header">';
+  html += '<div class="mywork-sticky-inner">';
+
+  // Greeting
+  if (isViewingSelf) {
+    html += '<div class="mywork-greeting">Good ' + (today.getHours() < 12 ? 'morning' : today.getHours() < 17 ? 'afternoon' : 'evening') + ', ' + esc(firstName) + '</div>';
+  } else {
+    html += '<div class="mywork-greeting">Viewing ' + esc(name) + '\'s Work</div>';
+  }
+
+  // Admin user selector
+  if (isAdmin() && RESOURCES_DATA && RESOURCES_DATA.people) {
+    const memberNames = Object.keys(RESOURCES_DATA.people).filter(function(n) { return isFullMember(n); }).sort();
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:0;">';
+    html += '<div class="mywork-subtitle" style="margin-bottom:0;">' + today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) + '</div>';
+    html += '<select onchange="switchMyWorkUser(this)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--navy);font-weight:600;cursor:pointer;">';
+    memberNames.forEach(function(n) {
+      const selected = (n === name) ? ' selected' : '';
+      const label = (n === Auth.fullName) ? n + ' (me)' : n;
+      html += '<option value="' + esc(n) + '"' + selected + '>' + esc(label) + '</option>';
+    });
+    html += '</select>';
+    if (!isViewingSelf) {
+      html += '<button onclick="switchMyWorkUser({value:\'' + esc(Auth.fullName).replace(/'/g, "\\'") + '\'})" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:#F3F1EB;cursor:pointer;font-weight:600;">← Back to My Work</button>';
+    }
+    html += '</div>';
+  } else {
+    html += '<div class="mywork-subtitle" style="margin-bottom:0;">' + today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) + '</div>';
+  }
+
+  // Quick preview: count gantt-eligible projects for nav link visibility
+  const ganttItems_preview = myProjects.filter(function(p) {
+    if (['Active', 'On Hold', 'Scheduled'].indexOf(p.status) < 0) return false;
+    return p.start || p.actual_end || p.working_due || p.end;
+  });
+
+  // ── Jump links nav bar ───────────────────────────────────────
+  const jumpLinks = [];
+  if (isViewingSelf && isTimeTrackingEnabled()) jumpLinks.push({ id: 'mw-time-tracking', label: '⏱️ Time' });
+  jumpLinks.push({ id: 'mw-my-week', label: '📅 Week' });
+  if (ganttItems_preview.length > 0) jumpLinks.push({ id: 'mw-timeline', label: '📊 Timeline' });
+  jumpLinks.push({ id: 'mw-projects', label: '📁 Projects & Tasks' });
+  html += '<div class="mywork-jump-nav">';
+  html += '<a href="#" class="mywork-jump-link" onclick="event.preventDefault();window.scrollTo({top:0,behavior:\'smooth\'});">↑ Top</a>';
+  jumpLinks.forEach(function(link) {
+    var extraAction = link.id === 'mw-timeline' ? 'expandGantt();' : '';
+    html += '<a href="#' + link.id + '" class="mywork-jump-link" onclick="event.preventDefault();' + extraAction + 'var el=document.getElementById(\'' + link.id + '\');if(el){var sh=document.querySelector(\'.mywork-sticky-header\');var offset=64+49+(sh?sh.offsetHeight:0)+10;var y=el.getBoundingClientRect().top+window.pageYOffset-offset;window.scrollTo({top:y,behavior:\'smooth\'});}">' + link.label + '</a>';
+  });
+  html += '</div>';
+
+  html += '</div>'; // close mywork-sticky-inner
+  html += '</div>'; // close mywork-sticky-header
+
+  // ── All sections in constrained page ────────────────────────
+  html += '<div class="mywork-page">';
+  html += '<div class="mywork-columns">';
+
+  // ── KPIs — spans both columns ──────────────────────────────
+  const utilClass = weekUtil > 100 ? 'alert' : weekUtil > 85 ? 'warn' : 'good';
+  html += '<div class="mywork-kpis mywork-full-width">';
+  html += '<div class="mywork-kpi"><div class="mywork-kpi-value">' + activeProjects.length + '</div><div class="mywork-kpi-label">Active Projects</div></div>';
+  html += '<div class="mywork-kpi"><div class="mywork-kpi-value">' + openTasks.length + '</div><div class="mywork-kpi-label">Open Tasks</div></div>';
+  const totalOverdue = overdueTasks.length + overdueProjects.length;
+  html += '<div class="mywork-kpi"><div class="mywork-kpi-value' + (totalOverdue > 0 ? ' alert' : '') + '">' + totalOverdue + '</div><div class="mywork-kpi-label">Overdue' + calcInfoIcon('overdue') + '</div></div>';
+  html += '<div class="mywork-kpi"><div class="mywork-kpi-value' + (dueThisWeek.length > 0 ? ' warn' : '') + '">' + dueThisWeek.length + '</div><div class="mywork-kpi-label">Due This Week</div></div>';
+  html += '<div class="mywork-kpi"><div class="mywork-kpi-value ' + utilClass + '">' + weekUtil + '%</div><div class="mywork-kpi-label">Utilization' + calcInfoIcon('utilization') + '</div></div>';
+  html += '</div>';
+
+  // ── Time tracking reminder (gentle nudge if no time logged today) ──
+  if (isViewingSelf && isTimeTrackingEnabled()) {
+    var todayEntries = getTodayEntries();
+    var activeTimers = getActiveTimers();
+    if (todayEntries.length === 0 && activeTimers.length === 0) {
+      html += '<div class="mywork-full-width" style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">';
+      html += '<span style="font-size:16px;flex-shrink:0;">&#9201;</span>';
+      html += '<div style="flex:1;"><span style="font-size:12px;font-weight:700;color:#92400E;">No time logged today</span>';
+      html += '<span style="font-size:12px;color:#92400E;opacity:0.8;"> — Start a timer on one of your tasks to keep your records current.</span></div>';
+      html += '</div>';
+    }
+  }
+
+  // ── Time Tracking panel (only shown when viewing own work) ─────────
+  if (isViewingSelf && isTimeTrackingEnabled()) {
+    html += buildTimeTrackingPanel();
+    startTimerTick();
+  }
+
+  // ── My Week — spans both columns ───────────────────────────
+  html += '<div class="mywork-section mywork-full-width" id="mw-my-week">';
+  html += '<div class="mywork-section-header">📅 My Week</div>';
+  if (!RESOURCES_DATA || !RESOURCES_DATA.people[name]) {
+    html += '<div class="mywork-empty">Resource data not available. Sign in and ensure your name matches the team roster.</div>';
+  } else {
+    // Schedule summary line
+    html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">';
+    html += '<strong>' + esc(myScheduleType) + '</strong> schedule';
+    if (myPayWeek) html += ' · Week ' + myPayWeek + ' (' + myScheduledHours + 'h)';
+    if (myRdoDay) {
+      const rdoThisWeek = myScheduleType === '9/80' ? (myPayWeek === 'B') : true;
+      html += ' · RDO: ' + esc(myRdoDay) + (rdoThisWeek ? ' (this week)' : ' (next week)');
+    }
+    html += '</div>';
+
+    // Daily hours bar
+    if (typeof myDailyHours !== 'undefined') {
+      function formatTimeCompact(t) {
+        if (!t) return '';
+        const parts = t.split(':');
+        let h = parseInt(parts[0]);
+        const m = parseInt(parts[1]);
+        const ampm = h >= 12 ? 'p' : 'a';
+        h = h % 12 || 12;
+        return m > 0 ? h + ':' + (m < 10 ? '0' : '') + m + ampm : h + ampm;
+      }
+      html += '<div style="display:flex;gap:6px;margin-bottom:12px;">';
+      ['Mon','Tue','Wed','Thu','Fri'].forEach(function(day) {
+        const hrs = myDailyHours[day] || 0;
+        const times = myDailyTimes ? myDailyTimes[day] : null;
+        const isOff = hrs === 0;
+        const bg = isOff ? '#F3F1EB' : 'var(--navy)';
+        const color = isOff ? 'var(--text-muted)' : '#fff';
+        let timeLabel = '';
+        if (!isOff && times && times.start && times.end) {
+          timeLabel = formatTimeCompact(times.start) + '–' + formatTimeCompact(times.end);
+        }
+        const hrsLabel = isOff ? 'OFF' : hrs + 'h';
+        html += '<div style="flex:1;text-align:center;padding:6px 4px;background:' + bg + ';color:' + color + ';border-radius:6px;font-size:11px;font-weight:700;">';
+        html += '<div style="font-size:10px;font-weight:600;opacity:0.7;margin-bottom:2px;">' + day + '</div>';
+        html += hrsLabel;
+        if (timeLabel) html += '<div style="font-size:9px;font-weight:500;opacity:0.7;margin-top:1px;">' + timeLabel + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    if (weekAllocations.length === 0) {
+      html += '<div class="mywork-empty">No allocations recorded for this week.</div>';
+    } else {
+      const availableHours = Math.max(0, weekCapHours - weekAllocHours);
+      html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">';
+      html += '<strong>' + Math.round(weekAllocHours * 10) / 10 + 'h</strong> allocated of <strong>' + Math.round(weekCapHours * 10) / 10 + 'h</strong> capacity' + calcInfoIcon('projCapacity');
+      html += ' · <strong style="color:' + (availableHours > 0 ? '#22C55E' : '#EF4444') + ';">' + Math.round(availableHours * 10) / 10 + 'h</strong> available' + calcInfoIcon('availableHours');
+      html += '</div>';
+    weekAllocations.forEach(function(a) {
+      const pct = weekCapHours > 0 ? (a.hours / weekCapHours * 100) : 0;
+      const barColor = pct > 40 ? 'var(--navy)' : pct > 20 ? '#3B82F6' : '#93C5FD';
+      const proj = PROJECTS.find(function(p) { return p.title === a.project; });
+      const onclick = proj ? ' onclick="openProject(' + proj.objectId + ')"' : '';
+      const cursor = proj ? 'pointer' : 'default';
+      html += '<div class="mywork-compact-row" style="cursor:' + cursor + ';"' + onclick + '>';
+      html += '<span class="mywork-compact-title"><span style="font-size:10px;font-weight:700;color:var(--text-muted);margin-right:4px;">Project:</span>' + esc(a.project) + '</span>';
+      html += '<span style="font-size:12px;font-weight:700;color:var(--navy);white-space:nowrap;min-width:50px;text-align:right;">' + a.hours + 'h</span>';
+      html += '<span style="font-size:11px;color:var(--text-muted);white-space:nowrap;min-width:35px;text-align:right;">' + Math.round(a.frac * 100) + '%</span>';
+      html += '<div class="mywork-alloc-bar"><div class="mywork-alloc-fill" style="width:' + Math.min(100, pct) + '%;background:' + barColor + ';"></div></div>';
+      html += '</div>';
+
+      // Show user's active/on hold/waiting tasks for this project
+      var weekTaskStatuses = ['Active', 'On Hold', 'Waiting for Response'];
+      var weekTasks = TASKS.filter(function(t) {
+        return t.project === a.project && t.assignee === name && weekTaskStatuses.indexOf(t.status) >= 0;
+      }).sort(function(ta, tb) {
+        var pa = { High: 0, Medium: 1, Low: 2 }; return (pa[ta.priority] || 3) - (pa[tb.priority] || 3);
+      });
+      if (weekTasks.length > 0) {
+        weekTasks.forEach(function(t) {
+          var sc = STATUS_COLOR(t.status);
+          var dueStr = t.working_due || t.due || '';
+          var todayStr = new Date().toISOString().slice(0, 10);
+          var isOverdue = dueStr && dueStr < todayStr;
+          html += '<div style="display:flex;align-items:center;gap:8px;padding:4px 8px 4px 24px;cursor:pointer;font-size:11px;border-bottom:0.5px solid #F3F1EB;" onclick="event.stopPropagation();openTask(' + t.objectId + ')">';
+          html += '<span style="width:6px;height:6px;border-radius:50%;background:' + sc + ';flex-shrink:0;"></span>';
+          html += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-body);">' + esc(t.title) + '</span>';
+          if (t.priority) {
+            var priBg = t.priority === 'High' ? '#FCEBEB' : t.priority === 'Medium' ? '#FAEEDA' : '#EAF3DE';
+            var priColor = t.priority === 'High' ? '#791F1F' : t.priority === 'Medium' ? '#633806' : '#27500A';
+            html += '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:' + priBg + ';color:' + priColor + ';flex-shrink:0;">' + t.priority + '</span>';
+          }
+          if (dueStr) {
+            html += '<span style="font-size:10px;color:' + (isOverdue ? '#EF4444' : 'var(--text-muted)') + ';white-space:nowrap;flex-shrink:0;">' + (isOverdue ? '⚠ ' : '') + dueStr + '</span>';
+          }
+          html += '</div>';
+        });
+      }
+    });
+    } // close else (has allocations)
+  } // close else (has RESOURCES_DATA)
+  html += '</div>';
+
+  // ── LEFT COLUMN: My Projects ────────────────────────────────
+  html += '<div>';
+  html += '<div class="mywork-section" id="mw-projects">';
+
+  // Project-specific alert counts
+  var projOverdue = overdueProjects.length;
+  var projDueSoon = myProjects.filter(function(p) {
+    var d = p.working_due || p.end;
+    if (!d || d < todayStr) return false;
+    var daysLeft = Math.ceil((new Date(d + 'T00:00:00') - new Date()) / 86400000);
+    return daysLeft >= 0 && daysLeft <= 7 && ['Active', 'On Hold', 'Waiting for Response'].indexOf(p.status) >= 0;
+  }).length;
+  var projMissing = myProjects.filter(function(p) {
+    return ['Active', 'Scheduled', 'On Hold'].indexOf(p.status) >= 0 && getProjectAlerts(p, todayStr, name).some(function(a) { return a.cls === 'mw-att-gray'; });
+  }).length;
+
+  html += '<div class="mywork-section-header" style="justify-content:space-between;flex-wrap:wrap;">';
+  html += '<div>📁 My Projects <span class="badge-count">' + myProjects.length + '</span></div>';
+  if (projOverdue + projDueSoon + projMissing > 0) {
+    html += '<div style="display:flex;gap:10px;font-size:10px;font-weight:700;">';
+    if (projOverdue > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#E24B4A;display:inline-block;"></span><span style="color:#791F1F;">' + projOverdue + ' overdue</span></span>';
+    if (projDueSoon > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#EF9F27;display:inline-block;"></span><span style="color:#92400E;">' + projDueSoon + ' due soon</span></span>';
+    if (projMissing > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span><span style="color:#5F5E5A;">' + projMissing + ' missing</span></span>';
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // Split projects by role
+  var leadProjects = [];
+  var contribProjects = [];
+  var reviewerProjects = [];
+  myProjects.forEach(function(p) {
+    if (p.contact === name) {
+      leadProjects.push(p);
+    } else {
+      // Check allocation records for role
+      var role = 'Contributor';
+      if (RESOURCES_DATA && RESOURCES_DATA.people[name] && RESOURCES_DATA.people[name].allocations) {
+        var alloc = RESOURCES_DATA.people[name].allocations.find(function(a) { return a.project === p.title; });
+        if (alloc && alloc.role === 'Reviewer') role = 'Reviewer';
+      }
+      if (role === 'Reviewer') reviewerProjects.push(p);
+      else contribProjects.push(p);
+    }
+  });
+
+  // Helper to render a group of projects by status
+  function renderProjGroup(status, list) {
+    var filtered = list.filter(function(p) { return p.status === status; });
+    if (!filtered.length) return '';
+    // Sort: items with alerts first (by severity), then alphabetically
+    filtered.sort(function(a, b) {
+      var aAlerts = getProjectAlerts(a, todayStr, name);
+      var bAlerts = getProjectAlerts(b, todayStr, name);
+      var aMin = aAlerts.length ? aAlerts.reduce(function(m, x) { return Math.min(m, x.severity); }, 99) : 99;
+      var bMin = bAlerts.length ? bAlerts.reduce(function(m, x) { return Math.min(m, x.severity); }, 99) : 99;
+      if (aMin !== bMin) return aMin - bMin;
+      return (a.title || '').localeCompare(b.title || '');
+    });
+    const statusColor = STATUS_COLOR(status);
+    let out = '<div class="mywork-status-header" style="color:' + statusColor + ';">' + esc(status) + ' (' + filtered.length + ')</div>';
+    filtered.forEach(function(p) {
+      const taskCount = TASKS.filter(function(t) { return t.project === p.title || (!t.project && t.project_id == p.id); });
+      const doneCount = taskCount.filter(function(t) { return t.status === 'Complete'; }).length;
+      const totalCount = taskCount.length;
+      const taskLabel = totalCount > 0 ? doneCount + '/' + totalCount + ' tasks done' : 'No tasks';
+      const projAlerts = getProjectAlerts(p, todayStr, name);
+      out += '<div class="mywork-compact-row' + attBorderClass(projAlerts) + '">';
+      out += '<select class="mw-status-select" data-type="project" data-id="' + p.objectId + '" onchange="mwQuickStatus(this)" onclick="event.stopPropagation()" style="background:' + statusColor + '18;color:' + statusColor + ';border-color:' + statusColor + '44;">';
+      ['Active', 'Scheduled', 'On Hold', 'Future', 'Complete', 'Canceled'].forEach(function(s) {
+        out += '<option value="' + s + '"' + (p.status === s ? ' selected' : '') + '>' + s + '</option>';
+      });
+      out += '</select>';
+      out += '<span class="mywork-compact-title" onclick="openProject(' + p.objectId + ')" style="cursor:pointer;">' + projectNumChip(p.project_number) + esc(p.title);
+      out += renderAttBadges(projAlerts);
+      out += '</span>';
+      out += '<span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">' + taskLabel + '</span>';
+      out += '</div>';
+    });
+    return out;
+  }
+
+  // Render a role section with status sub-groups
+  function renderRoleSection(roleLabel, roleClass, projects, defaultStatuses, expandStatuses) {
+    if (!projects.length) return '';
+    var out = '<div class="mw-role-group ' + roleClass + '">';
+    out += '<div class="mw-role-hdr">' + roleLabel + ' <span class="mw-role-count">(' + projects.length + ')</span></div>';
+    out += '<div class="mw-role-body">';
+    var hasDefault = false;
+    defaultStatuses.forEach(function(status) {
+      var chunk = renderProjGroup(status, projects);
+      if (chunk) { hasDefault = true; out += chunk; }
+    });
+    if (!hasDefault) {
+      out += '<div class="mywork-empty" style="padding:8px 0;">No ' + roleLabel.toLowerCase() + ' projects in active statuses.</div>';
+    }
+    // Expandable statuses
+    var expandItems = expandStatuses.filter(function(s) { return projects.some(function(p) { return p.status === s; }); });
+    if (expandItems.length > 0) {
+      var expandId = 'mw-proj-expand-' + roleLabel.toLowerCase().replace(/\s/g, '-');
+      var expandLabel = expandItems.map(function(s) { return s + ' (' + projects.filter(function(p) { return p.status === s; }).length + ')'; }).join(', ');
+      out += '<div id="' + expandId + '" style="display:none;">';
+      expandItems.forEach(function(status) { out += renderProjGroup(status, projects); });
+      out += '</div>';
+      out += '<button class="mywork-expand-btn" onclick="var el=document.getElementById(\'' + expandId + '\');var v=el.style.display===\'none\';el.style.display=v?\'\':\'none\';this.textContent=v?\'Show fewer\':\'Show more (' + expandLabel + ')\';">' +
+        'Show more (' + expandLabel + ')' +
+      '</button>';
+    }
+    out += '</div></div>';
+    return out;
+  }
+
+  var defaultProjStatuses = ['Active', 'Scheduled', 'Idea'];
+  var expandProjStatuses = ['On Hold', 'Future'];
+
+  if (myProjects.length === 0) {
+    html += '<div class="mywork-empty">No projects assigned to you.</div>';
+  } else {
+    html += renderRoleSection('Leading', 'mw-role-lead', leadProjects, defaultProjStatuses, expandProjStatuses);
+    html += renderRoleSection('Contributing', 'mw-role-contrib', contribProjects, defaultProjStatuses, expandProjStatuses);
+    if (reviewerProjects.length > 0) {
+      html += renderRoleSection('Reviewing', 'mw-role-review', reviewerProjects, defaultProjStatuses, expandProjStatuses);
+    }
+  }
+
+  html += '</div>';
+  html += '</div>'; // close left column
+
+  // ── RIGHT COLUMN: My Tasks ──────────────────────────────────
+  html += buildMyWorkTasksSection(myTasks, todayStr, viewUserTaskHrs);
+
+  // ── GANTT CHART — spans both columns ──────────────────────────
+  const ganttItems = [];
+  myProjects.filter(function(p) {
+    return ['Active', 'On Hold', 'Scheduled'].indexOf(p.status) >= 0;
+  }).forEach(function(p) {
+    const pStart = p.start || null;
+    const pEnd = p.actual_end || p.working_due || p.end || null;
+    if (!pStart && !pEnd) return;
+    // Include tasks based on preference: all project tasks or just the signed-in user's
+    const projTasks = TASKS.filter(function(t) {
+      if (!((t.project === p.title || (!t.project && t.project_id == p.id)) && t.status !== 'Complete' && t.status !== 'Canceled')) return false;
+      if (!UserPrefs.timelineShowAll) return t.assignee === name;
+      return true;
+    });
+    // Determine role
+    var role = 'Contributing';
+    if (p.contact === name) {
+      role = 'Leading';
+    } else if (RESOURCES_DATA && RESOURCES_DATA.people[name] && RESOURCES_DATA.people[name].allocations) {
+      var alloc = RESOURCES_DATA.people[name].allocations.find(function(a) { return a.project === p.title; });
+      if (alloc && alloc.role === 'Reviewer') role = 'Reviewing';
+    }
+    ganttItems.push({
+      type: 'project', id: p.objectId, title: p.title, status: p.status,
+      start: pStart, end: pEnd, tasks: projTasks, role: role, _viewUser: name
+    });
+  });
+
+  if (ganttItems.length > 0) {
+    const hasAnyFilter = Object.keys(_ganttFilter).length > 0;
+    ganttItems.forEach(function(g) {
+      if (!hasAnyFilter || _ganttFilter[g.title] === undefined) _ganttFilter[g.title] = true;
+    });
+
+    window._ganttItemsAll = ganttItems;
+    window._ganttTodayStr = todayStr;
+
+    const allDates = [];
+    ganttItems.forEach(function(g) {
+      if (g.start) allDates.push(g.start);
+      if (g.end) allDates.push(g.end);
+      g.tasks.forEach(function(t) {
+        if (t.start) allDates.push(t.start);
+        const tEnd = t.working_due || t.due;
+        if (tEnd) allDates.push(tEnd);
+      });
+    });
+    allDates.push(todayStr);
+    allDates.sort();
+    const ganttStart = new Date(allDates[0] + 'T00:00:00');
+    const ganttEnd = new Date(allDates[allDates.length - 1] + 'T00:00:00');
+    ganttStart.setDate(ganttStart.getDate() - 7);
+    ganttEnd.setDate(ganttEnd.getDate() + 14);
+    // Apply timeline range preference: ensure end extends at least N months from today
+    var prefRangeEnd = new Date();
+    prefRangeEnd.setMonth(prefRangeEnd.getMonth() + (UserPrefs.timelineRange || 6));
+    if (prefRangeEnd > ganttEnd) ganttEnd.setTime(prefRangeEnd.getTime());
+    window._ganttStartMs = ganttStart.getTime();
+    window._ganttTotalDays = Math.max(1, Math.ceil((ganttEnd - ganttStart) / (1000 * 60 * 60 * 24)));
+
+    const monthLabels = [];
+    const cursor = new Date(ganttStart);
+    cursor.setDate(1);
+    if (cursor < ganttStart) cursor.setMonth(cursor.getMonth() + 1);
+    while (cursor <= ganttEnd) {
+      const dayOff = (cursor - ganttStart) / (1000 * 60 * 60 * 24);
+      const mPct = Math.max(0, Math.min(100, (dayOff / window._ganttTotalDays) * 100));
+      if (mPct >= 0 && mPct <= 98) {
+        monthLabels.push({ label: cursor.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }), pct: mPct });
+      }
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+    window._ganttMonthLabels = monthLabels;
+
+    const visibleCount = ganttItems.filter(function(g) { return _ganttFilter[g.title]; }).length;
+
+    html += '<div class="mywork-section mywork-full-width" id="mw-timeline">';
+    html += '<div class="mywork-section-header" style="cursor:pointer;user-select:none;" onclick="toggleGantt()"><span id="gantt-arrow">▶</span> 📊 Timeline <span style="font-size:11px;font-weight:400;color:var(--text-muted);">(' + visibleCount + ' of ' + ganttItems.length + ' projects)</span></div>';
+    html += '<div id="mywork-gantt" style="display:none;">';
+
+    html += '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:10px;padding:8px 0;border-bottom:1px solid var(--border);">';
+
+    html += '<div style="position:relative;display:inline-block;" id="gantt-filter-wrap">';
+    html += '<button onclick="toggleGanttDropdown()" style="font-size:11px;padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-weight:600;color:var(--navy);display:flex;align-items:center;gap:6px;">';
+    html += '📁 Projects (' + visibleCount + '/' + ganttItems.length + ') <span style="font-size:9px;">▼</span></button>';
+    html += '<div id="gantt-filter-dropdown" style="display:none;position:absolute;top:100%;left:0;z-index:100;background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:8px 0;min-width:260px;max-height:300px;overflow-y:auto;margin-top:4px;">';
+    html += '<div style="display:flex;gap:6px;padding:4px 12px 8px;border-bottom:1px solid var(--border);">';
+    html += '<button onclick="ganttSelectAll(true)" style="font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:#F3F1EB;cursor:pointer;font-weight:700;">All</button>';
+    html += '<button onclick="ganttSelectAll(false)" style="font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:#F3F1EB;cursor:pointer;font-weight:700;">None</button>';
+    html += '</div>';
+    ganttItems.forEach(function(g) {
+      const sc = STATUS_COLOR(g.status) || '#3B82F6';
+      const checked = _ganttFilter[g.title] ? ' checked' : '';
+      html += '<label style="display:flex;align-items:center;gap:8px;padding:5px 12px;font-size:11px;cursor:pointer;white-space:nowrap;" onmouseenter="this.style.background=\'#F3F1EB\'" onmouseleave="this.style.background=\'#fff\'">';
+      html += '<input type="checkbox" class="gantt-proj-check" value="' + esc(g.title) + '"' + checked + ' onchange="toggleGanttProject(\'' + esc(g.title).replace(/'/g, "\\'") + '\')">';
+      html += '<span style="width:10px;height:10px;border-radius:2px;background:' + sc + ';flex-shrink:0;"></span>';
+      html += '<span style="overflow:hidden;text-overflow:ellipsis;">' + esc(g.title) + '</span>';
+      html += '<span style="font-size:9px;color:var(--text-muted);margin-left:auto;">' + esc(g.status) + '</span>';
+      html += '</label>';
+    });
+    html += '</div></div>';
+
+    html += '<span style="width:1px;height:16px;background:var(--border);"></span>';
+    const legendStatuses = ['Active', 'On Hold', 'Scheduled', 'Waiting for Response'];
+    legendStatuses.forEach(function(s) {
+      const c = STATUS_COLOR(s);
+      if (!c) return;
+      html += '<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);white-space:nowrap;">';
+      html += '<span style="width:10px;height:6px;border-radius:2px;background:' + c + ';opacity:0.85;"></span>' + s + '</span>';
+    });
+    html += '<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);white-space:nowrap;">';
+    html += '<span style="width:10px;height:6px;border-radius:2px;background:#ccc;outline:2px solid #EF4444;outline-offset:1px;"></span>Overdue</span>';
+
+    html += '</div>';
+
+    html += '<div id="gantt-chart-body">';
+    html += buildGanttBars();
+    html += '</div>';
+
+    html += '</div>'; // #mywork-gantt
+    html += '</div>'; // section
+  }
+
+  html += '</div>'; // close mywork-columns
+
+  html += '</div>'; // close mywork-page
+  area.innerHTML = html;
+}
