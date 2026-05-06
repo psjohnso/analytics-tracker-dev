@@ -20,7 +20,7 @@ var _editingIssueId = null;
 
 async function loadIssues() {
   try {
-    var features = await agolQuery(ARCGIS_CONFIG.issuesUrl);
+    var features = await agolQuery(ARCGIS_CONFIG.issuesUrl, 'deleted_at IS NULL');
     ISSUES = features.map(function(f) {
       var a = f.attributes;
       return {
@@ -303,10 +303,13 @@ async function changeIssueStatus(issueId, newStatus) {
 }
 
 async function deleteIssue(issueId) {
-  if (!confirm('Delete this issue? This cannot be undone.')) return;
+  if (!confirm('Move this issue to trash? Restore from Settings → Trash if needed.')) return;
   try {
-    await agolApplyEdits(ARCGIS_CONFIG.issuesUrl, { deletes: [issueId] });
-    showToast('Issue deleted.', 'success');
+    var stamp = { deleted_at: Date.now(), deleted_by: (Auth && Auth.fullName) || 'Unknown' };
+    await agolApplyEdits(ARCGIS_CONFIG.issuesUrl, {
+      updates: [{ attributes: { OBJECTID: issueId, deleted_at: stamp.deleted_at, deleted_by: stamp.deleted_by } }]
+    });
+    showToast('Issue moved to trash.', 'success');
     await loadIssues();
     if (currentTab === 'issues') {
       document.getElementById('content-area').innerHTML = buildIssuesPage();

@@ -8,11 +8,11 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.9.1.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.9.1.0026"></script>
+<script src="src/constants.js?v=1.10.0.0001"></script>
 <script src="src/agol.js?v=1.9.1.0004"></script>
 <script src="src/auth.js?v=1.9.1.0005"></script>
 <script src="src/render.js?v=1.9.1.0006"></script>
-<script src="src/tabs/issues.js?v=1.9.1.0007"></script>
+<script src="src/tabs/issues.js?v=1.10.0.0001"></script>
 <script src="src/tabs/project-review.js?v=1.9.1.0008"></script>
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.9.1.0010"></script>
@@ -25,7 +25,7 @@
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
 <script src="src/modals/idea.js?v=1.9.1.0018"></script>
 <script src="src/modals/member-form.js?v=1.9.1.0019"></script>
-<script src="src/modals/alloc-editor.js?v=1.9.1.0020"></script>
+<script src="src/modals/alloc-editor.js?v=1.10.0.0001"></script>
 <script src="src/modals/settings-editors.js?v=1.9.1.0021"></script>
 <script src="src/modals/forms.js?v=1.9.1.0022"></script>
 <script src="src/ai/ai-suggestions.js?v=1.9.1.0023"></script>
@@ -1265,14 +1265,15 @@ async function loadPublicData() {
 
     if (projUrl) {
       updateLoadingOverlay('Loading projects...');
-      var projectFeatures = await agolQueryPublic(projUrl);
+      // Filter out soft-deleted; view layers inherit fields from source layers
+      var projectFeatures = await agolQueryPublic(projUrl, 'deleted_at IS NULL');
       PROJECTS.length = 0;
       projectFeatures.forEach(function(f) { PROJECTS.push(agolProjectToLocal(f)); });
     }
 
     if (taskUrl) {
       updateLoadingOverlay('Loaded ' + PROJECTS.length + ' projects. Loading tasks...');
-      var taskFeatures = await agolQueryPublic(taskUrl);
+      var taskFeatures = await agolQueryPublic(taskUrl, 'deleted_at IS NULL');
       TASKS.length = 0;
       taskFeatures.forEach(function(f) { TASKS.push(agolTaskToLocal(f)); });
     }
@@ -1570,9 +1571,9 @@ async function loadArcGISData() {
   showLoadingOverlay('Connecting to ArcGIS Online...');
   try {
     updateLoadingOverlay('Loading projects and configuration...');
-    // Load projects and app config in parallel
+    // Load projects and app config in parallel — filter out soft-deleted records
     const [projectFeatures, configFeatures] = await Promise.all([
-      agolQuery(ARCGIS_CONFIG.projectsUrl),
+      agolQuery(ARCGIS_CONFIG.projectsUrl, 'deleted_at IS NULL'),
       agolQuery(ARCGIS_CONFIG.appConfigUrl).catch(function(e) {
         console.warn('app_config load failed, using defaults:', e);
         return [];
@@ -1585,7 +1586,7 @@ async function loadArcGISData() {
     applyAppConfig(configFeatures);
 
     updateLoadingOverlay('Loaded ' + PROJECTS.length + ' projects. Loading tasks...');
-    const taskFeatures = await agolQuery(ARCGIS_CONFIG.tasksUrl);
+    const taskFeatures = await agolQuery(ARCGIS_CONFIG.tasksUrl, 'deleted_at IS NULL');
     TASKS.length = 0;
     taskFeatures.forEach(function(f) { TASKS.push(agolTaskToLocal(f)); });
 
@@ -1861,32 +1862,32 @@ const DataStore = {
     const project = PROJECTS[i];
     const objectId = project.objectId;
     const projectTitle = project.title;
+    const stamp = { deleted_at: Date.now(), deleted_by: (Auth && Auth.fullName) || 'Unknown' };
 
-    // ── Cascade: delete associated tasks ──────────────────
-    var taskDeletes = [];
+    // ── Cascade: soft-delete associated tasks ────────────
+    var taskUpdates = [];
     TASKS.forEach(function(t) {
       if ((t.project === projectTitle || (!t.project && t.project_id == project.id)) && t.objectId) {
-        taskDeletes.push(t.objectId);
+        taskUpdates.push({ attributes: { ObjectId: t.objectId, deleted_at: stamp.deleted_at, deleted_by: stamp.deleted_by } });
       }
     });
-    // Remove from local array
+    // Remove from local TASKS array
     TASKS = TASKS.filter(function(t) {
       return !(t.project === projectTitle || (!t.project && t.project_id == project.id));
     });
-    // Delete from ArcGIS in batches of 100
-    if (taskDeletes.length > 0) {
+    if (taskUpdates.length > 0) {
       try {
-        for (var ti = 0; ti < taskDeletes.length; ti += 100) {
-          var batch = taskDeletes.slice(ti, ti + 100);
-          await agolApplyEdits(ARCGIS_CONFIG.tasksUrl, { deletes: batch });
+        for (var ti = 0; ti < taskUpdates.length; ti += 100) {
+          var batch = taskUpdates.slice(ti, ti + 100);
+          await agolApplyEdits(ARCGIS_CONFIG.tasksUrl, { updates: batch });
         }
-        console.log('[Cascade] Deleted', taskDeletes.length, 'tasks for project:', projectTitle);
+        console.log('[Cascade] Soft-deleted', taskUpdates.length, 'tasks for project:', projectTitle);
       } catch (err) {
-        console.error('[Cascade] Failed to delete tasks:', err);
+        console.error('[Cascade] Failed to soft-delete tasks:', err);
       }
     }
 
-    // ── Cascade: delete associated allocations ────────────
+    // ── Cascade: hard-delete allocations (allocations are not soft-deletable) ───
     try {
       var allocFeatures = await agolQuery(ARCGIS_CONFIG.allocationsUrl,
         "project='" + projectTitle.replace(/'/g, "''") + "'");
@@ -1904,15 +1905,17 @@ const DataStore = {
       console.error('[Cascade] Failed to delete allocations:', err);
     }
 
-    // ── Delete the project itself ─────────────────────────
+    // ── Soft-delete the project itself ───────────────────
     PROJECTS.splice(i, 1);
     if (objectId) {
       try {
-        await agolApplyEdits(ARCGIS_CONFIG.projectsUrl, { deletes: [objectId] });
-        markSynced('Project and ' + taskDeletes.length + ' task(s) deleted');
-        showToast('Deleted project "' + projectTitle + '" and ' + taskDeletes.length + ' associated task(s).', 'success');
+        await agolApplyEdits(ARCGIS_CONFIG.projectsUrl, {
+          updates: [{ attributes: { ObjectId: objectId, deleted_at: stamp.deleted_at, deleted_by: stamp.deleted_by } }]
+        });
+        markSynced('Project moved to trash');
+        showToast('Moved project "' + projectTitle + '" and ' + taskUpdates.length + ' task(s) to trash. Restore from Settings → Trash.', 'success');
       } catch (err) {
-        console.error('ArcGIS deleteProject failed:', err);
+        console.error('ArcGIS soft-deleteProject failed:', err);
         markDirty();
       }
     }
@@ -2014,10 +2017,13 @@ const DataStore = {
     TASKS.splice(i, 1);
     if (objectId) {
       try {
-        await agolApplyEdits(ARCGIS_CONFIG.tasksUrl, { deletes: [objectId] });
-        markSynced('Task deleted');
+        const stamp = { deleted_at: Date.now(), deleted_by: (Auth && Auth.fullName) || 'Unknown' };
+        await agolApplyEdits(ARCGIS_CONFIG.tasksUrl, {
+          updates: [{ attributes: { ObjectId: objectId, deleted_at: stamp.deleted_at, deleted_by: stamp.deleted_by } }]
+        });
+        markSynced('Task moved to trash');
       } catch (err) {
-        console.error('ArcGIS deleteTask failed:', err);
+        console.error('ArcGIS soft-deleteTask failed:', err);
         markDirty();
       }
     }

@@ -686,11 +686,11 @@ async function saveAllData() {
   // Re-fetch all data from ArcGIS Online to sync local state
   showLoadingOverlay('Refreshing data from ArcGIS Online...');
   try {
-    const projectFeatures = await agolQuery(ARCGIS_CONFIG.projectsUrl);
+    const projectFeatures = await agolQuery(ARCGIS_CONFIG.projectsUrl, 'deleted_at IS NULL');
     PROJECTS.length = 0;
     projectFeatures.forEach(function(f) { PROJECTS.push(agolProjectToLocal(f)); });
 
-    const taskFeatures = await agolQuery(ARCGIS_CONFIG.tasksUrl);
+    const taskFeatures = await agolQuery(ARCGIS_CONFIG.tasksUrl, 'deleted_at IS NULL');
     TASKS.length = 0;
     taskFeatures.forEach(function(f) { TASKS.push(agolTaskToLocal(f)); });
 
