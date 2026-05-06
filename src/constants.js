@@ -10,7 +10,7 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.9.1.0007';
+const APP_VERSION = '1.9.1.0008';
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES
