@@ -85,7 +85,11 @@ function prDateToEpoch(yyyymmdd) {
   // Treat as a UTC date (DateOnly) at noon to avoid timezone shifts
   var parts = yyyymmdd.split('-');
   if (parts.length !== 3) return null;
-  return Date.UTC(parseInt(parts[0],10), parseInt(parts[1],10) - 1, parseInt(parts[2],10), 12, 0, 0);
+  var y = parseInt(parts[0], 10);
+  var m = parseInt(parts[1], 10);
+  var d = parseInt(parts[2], 10);
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+  return Date.UTC(y, m - 1, d, 12, 0, 0);
 }
 function prEpochToInputDate(epoch) {
   if (epoch == null) return '';

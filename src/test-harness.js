@@ -31,6 +31,8 @@
 
   function deepEqual(a, b) {
     if (a === b) return true;
+    // NaN handling: NaN !== NaN by spec, but they should be "equal" for our purposes
+    if (typeof a === 'number' && typeof b === 'number' && isNaN(a) && isNaN(b)) return true;
     if (a == null || b == null) return false;
     if (typeof a !== typeof b) return false;
     if (typeof a !== 'object') return false;
@@ -40,6 +42,21 @@
       if (!deepEqual(a[ka[i]], b[ka[i]])) return false;
     }
     return true;
+  }
+
+  // JSON.stringify renders NaN/Infinity/undefined as "null" — misleading in diffs.
+  // Use this for human-readable display instead.
+  function fmt(v) {
+    if (v === undefined) return 'undefined';
+    if (v === null) return 'null';
+    if (typeof v === 'number' && isNaN(v)) return 'NaN';
+    if (v === Infinity) return 'Infinity';
+    if (v === -Infinity) return '-Infinity';
+    if (typeof v === 'string') return JSON.stringify(v);
+    if (typeof v === 'object') {
+      try { return JSON.stringify(v); } catch (e) { return String(v); }
+    }
+    return String(v);
   }
 
   // ── HTML / attribute escaping ──────────────────────────────
@@ -207,8 +224,8 @@
       if (!r.ok) {
         html +=
           '<div style="margin-top:6px;margin-left:24px;font-size:11px;opacity:0.85;">' +
-          'expected: <code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:3px;">' + esc(JSON.stringify(r.expected)) + '</code><br>' +
-          'actual: <code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:3px;">' + esc(JSON.stringify(r.actual)) + '</code>' +
+          'expected: <code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:3px;">' + esc(fmt(r.expected)) + '</code><br>' +
+          'actual: <code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:3px;">' + esc(fmt(r.actual)) + '</code>' +
           '</div>';
       }
       html += '</div>';
