@@ -2986,4 +2986,98 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 
   /* Generic content wrappers: tighten padding */
   .content-area { padding: 12px; }
+
+  /* List-view "tables" use CSS grid with 6–8 columns. Below 768px there's
+     no good way to fit them — wrap in horizontal scroll and lock min-width
+     so columns stay readable. */
+  .task-table--projects,
+  .task-table--projects-contrib,
+  .task-table--tasks {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .task-table--projects .task-table-header,
+  .task-table--projects .task-row,
+  .task-table--projects-contrib .task-table-header,
+  .task-table--projects-contrib .task-row,
+  .task-table--tasks .task-table-header,
+  .task-table--tasks .task-row {
+    min-width: 760px;
+  }
+
+  /* Form modal: full-screen on phones */
+  #form-modal-backdrop { padding: 0; }
+  #form-modal {
+    max-width: none;
+    width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  .fm-grid { grid-template-columns: 1fr; gap: 10px; }
+  .fm-field.span2 { grid-column: span 1; }
+  .fm-body { padding: 16px; }
+  .fm-header { padding: 14px 16px 12px; }
+  .fm-section-label { margin: 18px 0 10px; }
+  .fm-sec-body { padding: 0 12px 12px; }
+  .fm-sec-hd { padding: 10px 12px; }
+
+  /* iOS auto-zooms text inputs below 16px font. Force 16px on mobile to
+     keep the layout stable when an input is focused. */
+  .fm-input, .fm-select, .fm-textarea, .mf-input {
+    font-size: 16px;
+    min-height: 40px;
+  }
+
+  /* Batch action bar (project detail Tasks section): wraps + full-width
+     children. Inline styles in projects-tasks-detail.js use flex-wrap:nowrap
+     and small fonts — override with !important to win over inline. */
+  #batch-action-bar {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+  }
+  #batch-action-bar select,
+  #batch-action-bar #batch-project-wrap {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    font-size: 14px !important;
+    padding: 8px 10px !important;
+    min-height: 40px !important;
+  }
+  #batch-action-bar > button { flex: 1 1 auto; min-height: 40px; }
+
+  /* Inline-edit selects on My Work / project detail — bump tap target */
+  .mw-task-row select,
+  .detail-task-row select { min-height: 36px; font-size: 13px; padding: 4px 8px; }
+
+  /* Member form modal: tighter padding, full-bleed on phones */
+  #member-form-backdrop { padding: 0 !important; }
+  #member-form-modal {
+    max-width: none !important;
+    width: 100% !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    padding: 16px !important;
+    overflow-y: auto !important;
+  }
+
+  /* Idea modal: same full-bleed treatment */
+  .idea-modal-backdrop { padding: 0 !important; }
+  .idea-modal {
+    max-width: none !important;
+    width: 100% !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+  }
+
+  /* Allocation editor / Absence editor: keep desktop-only layout — these
+     grids do not work on a phone. Show a guidance banner via JS later, or
+     just let the user scroll horizontally for now. */
+  #alloc-editor-backdrop, #absence-editor-backdrop {
+    overflow: auto;
+  }
 }
