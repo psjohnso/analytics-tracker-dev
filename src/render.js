@@ -505,9 +505,14 @@ function switchTab(tab, preserveFilters) {
   if (filterTabs.includes(tab)) {
     if (sidebar) {
       sidebar.classList.remove('tab-hidden');
-      // Restore user's collapsed preference (session override, then UserPrefs default)
+      // Restore user's collapsed preference (session override, then UserPrefs default).
+      // On phone-sized viewports, default to collapsed so the sidebar starts as an
+      // off-screen overlay rather than covering content.
       var sessionSidebar = sessionStorage.getItem('sidebar_collapsed');
-      const wasCollapsed = sessionSidebar !== null ? sessionSidebar === '1' : !!(typeof UserPrefs !== 'undefined' && UserPrefs && UserPrefs.sidebarCollapsed);
+      var isMobile = window.innerWidth <= 768;
+      const wasCollapsed = sessionSidebar !== null
+        ? sessionSidebar === '1'
+        : (isMobile ? true : !!(typeof UserPrefs !== 'undefined' && UserPrefs && UserPrefs.sidebarCollapsed));
       sidebar.classList.toggle('collapsed', wasCollapsed);
       updateFilterToggleIcon(!wasCollapsed);
     }
