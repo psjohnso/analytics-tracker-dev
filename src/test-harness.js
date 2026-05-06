@@ -181,7 +181,14 @@
   // resolveReqInfo against an actual requirement
   var info = resolveReqInfo('P0_SPONSOR');
   assert('resolveReqInfo finds known req', info && info.phaseId === 0, true);
-  assert('resolveReqInfo unknown → fallback', resolveReqInfo('UNKNOWN_ID') != null, true);
+  assert('resolveReqInfo unknown id → null', resolveReqInfo('UNKNOWN_ID'), null);
+  // P{N}_TASK ids match a fallback for optional phase work
+  var taskInfo = resolveReqInfo('P3_TASK');
+  assert(
+    'resolveReqInfo P3_TASK → optional phase fallback',
+    taskInfo && taskInfo.phaseId === 3 && taskInfo.isOptional === true,
+    true
+  );
 
   // ── PRIORITY_ORDER spot check ──────────────────────────────
   assert('PRIORITY_ORDER High → 0', PRIORITY_ORDER.High, 0);
