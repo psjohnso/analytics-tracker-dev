@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.14.0.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.14.0.0001"></script>
+<script src="src/constants.js?v=1.14.0.0002"></script>
 <script src="src/agol.js?v=1.9.1.0004"></script>
 <script src="src/auth.js?v=1.14.0.0001"></script>
 <script src="src/render.js?v=1.14.0.0001"></script>
@@ -17,12 +17,12 @@
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.9.1.0010"></script>
 <script src="src/tabs/overview.js?v=1.14.0.0001"></script>
-<script src="src/tabs/settings.js?v=1.14.0.0001"></script>
+<script src="src/tabs/settings.js?v=1.14.0.0002"></script>
 <script src="src/tabs/resources.js?v=1.9.1.0013"></script>
 <script src="src/tabs/my-work.js?v=1.9.1.0014"></script>
 <script src="src/tabs/projects-tasks.js?v=1.9.1.0015"></script>
 <script src="src/tabs/projects-tasks-detail.js?v=1.9.1.0016"></script>
-<script src="src/tabs/slideshow.js?v=1.14.0.0001"></script>
+<script src="src/tabs/slideshow.js?v=1.14.0.0002"></script>
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
 <script src="src/modals/idea.js?v=1.12.0.0001"></script>
 <script src="src/modals/member-form.js?v=1.9.1.0019"></script>
@@ -2330,7 +2330,12 @@ const _defaultItdTeams = [
 ];
 
 // ObjectIds for the two config records (populated on load from ArcGIS)
-const _configOids = { partner_depts: null, itd_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null };
+const _configOids = { partner_depts: null, itd_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null, display_config: null };
+
+// Slideshow / lobby-display configuration. Team-wide; admin-edited via
+// Settings → System → Slideshow. Loaded by applyAppConfig() from
+// app_config.display_config; falls back to hardcoded default in slideshow.js.
+var _displayConfig = null;
 
 // Productivity factor applied to per-week project capacity. Admin-tunable via Settings → Allocations.
 // Default 0.75 accounts for non-project overhead (meetings, email, breaks, context-switching).
@@ -2492,6 +2497,14 @@ function applyAppConfig(features) {
           _productivityRatio = n;
           _configOids.productivity_ratio = oid;
           console.log('[Config] Loaded productivity_ratio:', _productivityRatio);
+        }
+        return;
+      }
+      if (key === 'display_config') {
+        if (parsed && typeof parsed === 'object' && Array.isArray(parsed.slides)) {
+          _displayConfig = parsed;
+          _configOids.display_config = oid;
+          console.log('[Config] Loaded display_config:', parsed.slides.length, 'slides');
         }
         return;
       }

@@ -285,6 +285,7 @@ function renderSettingsPage(area) {
     '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">System</div>' +
       navItem('ai', 'AI features') +
+      navItem('slideshow', 'Slideshow') +
       navItem('trash', 'Trash') +
       navItem('developer', 'Developer') +
     '</div>';
@@ -475,6 +476,10 @@ function renderSettingsPage(area) {
         '</label>' +
         '<span class="text-muted-sm" style="margin-left:28px;">When enabled, the system will suggest lifecycle phase requirements for newly created tasks using AI. Suggestions appear on the task detail page after creation with Accept/Dismiss options.</span>' +
       '</div>';
+  }
+
+  else if (_settingsSection === 'slideshow') {
+    panelHtml = buildSlideshowConfigPanel();
   }
 
   else if (_settingsSection === 'trash') {
