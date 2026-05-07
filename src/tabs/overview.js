@@ -59,21 +59,36 @@ function _buildOverviewSlides() {
     if (pipelineCounts.hasOwnProperty(p.status)) { pipelineCounts[p.status]++; pipelineTotal++; }
   });
   var maxPipeline = Math.max.apply(null, pipelineStatuses.map(function(s) { return pipelineCounts[s]; })) || 1;
+  var completedCount = PROJECTS.filter(function(p) { return p.status === 'Complete'; }).length;
   var pipelineHtml = '';
+  pipelineHtml += '<div class="slideshow-pipeline-card">';
+  pipelineHtml += '<div class="slideshow-pipeline-visual">';
+  pipelineHtml += '<div class="slideshow-pipeline-head">Pipeline momentum</div>';
+  pipelineHtml += '<div class="slideshow-pipeline-main">';
+  pipelineHtml += '<div class="slideshow-pipeline-hero">';
+  pipelineHtml += '<div class="slideshow-pipeline-hero-value">' + pipelineTotal + '</div>';
+  pipelineHtml += '<div class="slideshow-pipeline-hero-caption">Open projects</div>';
+  pipelineHtml += '</div>';
+  pipelineHtml += '<div class="slideshow-pipeline-stages">';
   pipelineStatuses.forEach(function(s) {
     var cnt = pipelineCounts[s];
     if (cnt === 0) return;
     var sc = STATUS_COLOR(s) || '#9CA3AF';
-    var pct = Math.round(cnt / maxPipeline * 100);
-    pipelineHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:13px;">';
-    pipelineHtml += '<div style="width:95px;text-align:right;color:var(--text-muted);flex-shrink:0;">' + esc(s) + '</div>';
-    pipelineHtml += '<div style="flex:1;height:22px;background:var(--bg-surface, #F3F1EB);border-radius:3px;overflow:hidden;">';
-    pipelineHtml += '<div style="height:100%;width:' + pct + '%;background:' + sc + ';border-radius:3px;opacity:0.85;"></div>';
-    pipelineHtml += '</div>';
-    pipelineHtml += '<div style="width:30px;font-size:14px;font-weight:700;color:var(--text-body);flex-shrink:0;text-align:right;">' + cnt + '</div>';
+    var title = s === 'Waiting for Response' ? 'Waiting' : s;
+    pipelineHtml += '<div class="slideshow-pipeline-node" style="background:' + sc + ';">';
+    pipelineHtml += '<div class="slideshow-pipeline-node-label">' + esc(title) + '</div>';
+    pipelineHtml += '<div class="slideshow-pipeline-node-value">' + cnt + '</div>';
     pipelineHtml += '</div>';
   });
-  pipelineHtml += '<div style="font-size:12px;color:var(--text-muted);margin-top:8px;">' + pipelineTotal + ' open projects · ' + PROJECTS.filter(function(p) { return p.status === 'Complete'; }).length + ' completed · ' + PROJECTS.length + ' total</div>';
+  pipelineHtml += '</div>';
+  pipelineHtml += '</div>';
+  pipelineHtml += '<div class="slideshow-pipeline-metrics">';
+  pipelineHtml += '<div class="slideshow-pipeline-chip"><strong>' + pipelineTotal + '</strong><span>Open pipeline</span></div>';
+  pipelineHtml += '<div class="slideshow-pipeline-chip"><strong>' + completedCount + '</strong><span>Completed projects</span></div>';
+  pipelineHtml += '<div class="slideshow-pipeline-chip"><strong>' + PROJECTS.length + '</strong><span>Total tracked</span></div>';
+  pipelineHtml += '</div>';
+  pipelineHtml += '<div class="slideshow-pipeline-footer">' + pipelineTotal + ' open · ' + completedCount + ' completed · ' + PROJECTS.length + ' total</div>';
+  pipelineHtml += '</div>';
 
   // ── Upcoming deadlines ────────────────────────────────────
   var deadlineItems = [];
