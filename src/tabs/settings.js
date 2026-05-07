@@ -34,16 +34,13 @@ function togglePreviewMode() {
       btn.style.color = 'rgba(255,255,255,0.7)';
     }
   }
-  // Show/hide admin tabs
-  var adminTabIds = ['tab-resources', 'tab-forecast', 'tab-insights'];
-  adminTabIds.forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.style.display = Auth.previewMode ? 'none' : '';
-  });
-  // If currently on an admin-only tab (but not settings), switch to overview
-  var adminOnlyTabs = ['resources', 'forecast', 'insights'];
-  if (Auth.previewMode && adminOnlyTabs.indexOf(currentTab) !== -1) {
-    switchTab('overview');
+  // Capacity tabs: when entering preview mode, treat the admin as a non-admin
+  // so their tab visibility follows their UserPrefs (just like a regular member).
+  if (typeof applyOptionalTabVisibility === 'function') applyOptionalTabVisibility();
+  // If currently on a now-hidden tab, applyOptionalTabVisibility already
+  // switched to overview — bail out so we don't double-render.
+  var hiddenTabs = ['resources', 'forecast', 'insights'];
+  if (Auth.previewMode && hiddenTabs.indexOf(currentTab) !== -1) {
     return;
   }
   // If on settings in preview mode, switch to preferences section
@@ -143,6 +140,19 @@ function buildPreferencesPanel() {
 
   html += '</div>';
 
+  // Optional Capacity tabs — admins always see them; members opt in here.
+  // Hidden for admins (they have no choice to make) unless previewing as a member.
+  if (!Auth.isTeamLead || Auth.previewMode) {
+    html += '<div style="margin-top:8px;margin-bottom:20px;">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
+    html += '<span style="font-size:15px;font-weight:700;color:var(--navy);">Optional tabs</span>';
+    html += '</div>';
+    html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Show team-wide capacity views in your top navigation. Off by default for non-admins.</div>';
+    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px 20px;">';
+    html += prefToggle('showCapacity', 'Show Capacity tabs', 'Reveals Resources (capacity chart + allocation table), Forecast (utilization grid + capacity planner), and Insights (retrospective charts on completed projects).', UserPrefs.showCapacity);
+    html += '</div></div>';
+  }
+
   // Beta Features section — only show features with flag === 'beta'
   var betaKeys = Object.keys(BETA_FEATURES).filter(function(key) {
     var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY, aiIntake: FEATURE_AI_INTAKE, projectReview: FEATURE_PROJECT_REVIEW };
@@ -185,7 +195,8 @@ function buildPreferencesPanel() {
 function updatePref(key, value) {
   // Type conversion
   if (key === 'timelineRange') value = parseInt(value) || 6;
-  if (key === 'sidebarCollapsed' || key === 'completedCollapsed' || key === 'timelineShowAll' || key === 'compactRows') {
+  if (key === 'sidebarCollapsed' || key === 'completedCollapsed' || key === 'timelineShowAll' || key === 'compactRows' ||
+      key === 'showCapacity') {
     value = value === true || value === 'true';
   }
   UserPrefs[key] = value;
@@ -195,6 +206,9 @@ function updatePref(key, value) {
   if (key === 'sidebarCollapsed') {
     var sidebar = document.querySelector('.sidebar');
     if (sidebar) sidebar.classList.toggle('collapsed', value);
+  }
+  if (key === 'showCapacity') {
+    if (typeof applyOptionalTabVisibility === 'function') applyOptionalTabVisibility();
   }
   // Re-render the preferences panel to update toggle visuals
   render();

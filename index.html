@@ -8,16 +8,16 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.11.0.0004">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.12.0.0001"></script>
+<script src="src/constants.js?v=1.13.0.0001"></script>
 <script src="src/agol.js?v=1.9.1.0004"></script>
-<script src="src/auth.js?v=1.9.1.0005"></script>
+<script src="src/auth.js?v=1.13.0.0001"></script>
 <script src="src/render.js?v=1.11.0.0001"></script>
 <script src="src/tabs/issues.js?v=1.10.0.0001"></script>
 <script src="src/tabs/project-review.js?v=1.9.1.0008"></script>
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.9.1.0010"></script>
 <script src="src/tabs/overview.js?v=1.9.1.0011"></script>
-<script src="src/tabs/settings.js?v=1.10.0.0002"></script>
+<script src="src/tabs/settings.js?v=1.13.0.0001"></script>
 <script src="src/tabs/resources.js?v=1.9.1.0013"></script>
 <script src="src/tabs/my-work.js?v=1.9.1.0014"></script>
 <script src="src/tabs/projects-tasks.js?v=1.9.1.0015"></script>
@@ -1195,8 +1195,28 @@ var UserPrefs = {
   completedCollapsed: false,
   timelineShowAll: true,
   compactRows: false,
+  // Capacity tabs — admins always see them; non-admins opt in via a single
+  // "Show Capacity tabs" preference that toggles Resources + Forecast + Insights together.
+  showCapacity: false,
   betaFeatures: {}
 };
+
+// Show or hide the optional Capacity sub-tabs (Resources, Forecast, Insights)
+// based on UserPrefs.showCapacity and admin status. Admins always see all
+// three; non-admins see them only if they've opted in.
+function applyOptionalTabVisibility() {
+  if (!Auth.loggedIn) return; // logged-out state is handled by toggleAuth/applyAuthState
+  var visible = isAdmin() || !!UserPrefs.showCapacity;
+  ['tab-resources', 'tab-forecast', 'tab-insights'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = visible ? '' : 'none';
+  });
+  // If currently on a now-hidden tab, fall back to overview
+  if (!visible && ['resources', 'forecast', 'insights'].indexOf(currentTab) >= 0) {
+    switchTab('overview');
+  }
+  if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();
+}
 
 function loadUserPrefs() {
   // Try team_members record first, fall back to localStorage
@@ -1596,6 +1616,7 @@ async function loadArcGISData() {
     initResourcesWeekIndices();
     loadUserPrefs();
     applyBetaTabVisibility();
+    applyOptionalTabVisibility();
     // Apply default view preference
     currentView = UserPrefs.projectView || 'list';
 

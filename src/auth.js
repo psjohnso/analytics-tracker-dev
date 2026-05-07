@@ -394,18 +394,16 @@ async function fetchAgolUserInfo(token) {
             var previewBtn = document.getElementById('preview-mode-btn');
             if (previewBtn) previewBtn.style.display = '';
           }
-          if (Auth.isTeamLead) {
-            const settingsTab = document.getElementById('tab-settings');
-            if (settingsTab) settingsTab.style.display = '';
-            var adminTabs = ['tab-resources', 'tab-forecast', 'tab-insights'];
-            adminTabs.forEach(function(id) { var el = document.getElementById(id); if (el) el.style.display = ''; });
-          } else {
-            // Non-admin: show Settings (for Preferences), hide admin-only tabs
-            const settingsTab = document.getElementById('tab-settings');
-            if (settingsTab) settingsTab.style.display = '';
+          // Settings is visible to everyone (admins for full settings, members for Preferences only)
+          const settingsTab = document.getElementById('tab-settings');
+          if (settingsTab) settingsTab.style.display = '';
+          if (!Auth.isTeamLead) {
             Auth.devMode = false;
             sessionStorage.removeItem('dev_mode');
           }
+          // Capacity tabs (Resources, Forecast, Insights): admins always see them,
+          // members opt in via Preferences. applyOptionalTabVisibility handles both.
+          if (typeof applyOptionalTabVisibility === 'function') applyOptionalTabVisibility();
         }
       } catch (gErr) {
         console.warn('Could not check group membership:', gErr);
