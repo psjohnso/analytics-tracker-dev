@@ -172,29 +172,33 @@ function _buildOverviewSlides() {
   });
   var catEntries = Object.entries(categories).sort(function(a, b) { return b[1].total - a[1].total; });
   var maxCat = catEntries.length > 0 ? catEntries[0][1].total : 1;
-  var catHtml = '<div style="display:flex;gap:12px;font-size:12px;color:var(--text-muted);margin-bottom:10px;flex-wrap:wrap;">';
-  catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#83AC16;display:inline-block;margin-right:3px;vertical-align:middle;"></span>Active</span>';
-  catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#FFDB22;display:inline-block;margin-right:3px;vertical-align:middle;"></span>On hold</span>';
-  catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#002669;display:inline-block;margin-right:3px;vertical-align:middle;"></span>Waiting</span>';
-  catHtml += '<span><span style="width:8px;height:8px;border-radius:2px;background:#9E0059;display:inline-block;margin-right:3px;vertical-align:middle;"></span>Future / Scheduled</span>';
+  var catHtml = '<div class="slideshow-categories-wrapper">';
+  catHtml += '<div class="slideshow-categories-legend">';
+  catHtml += '<span><span class="slideshow-cat-key active"></span>Active</span>';
+  catHtml += '<span><span class="slideshow-cat-key hold"></span>On hold</span>';
+  catHtml += '<span><span class="slideshow-cat-key waiting"></span>Waiting</span>';
+  catHtml += '<span><span class="slideshow-cat-key future"></span>Future / Scheduled</span>';
   catHtml += '</div>';
+  catHtml += '<div class="slideshow-categories-list">';
   catEntries.forEach(function(e) {
     var cat = e[0], d = e[1];
     var aPct = Math.round(d.active / maxCat * 100);
     var hPct = Math.round(d.onHold / maxCat * 100);
     var wPct = Math.round(d.waiting / maxCat * 100);
     var fPct = Math.round(d.futureScheduled / maxCat * 100);
-    catHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:13px;">';
-    catHtml += '<div style="width:200px;text-align:right;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;">' + esc(cat) + '</div>';
-    catHtml += '<div style="flex:1;height:18px;background:var(--bg-surface, #F3F1EB);border-radius:2px;overflow:hidden;display:flex;">';
-    if (d.active) catHtml += '<span style="width:' + aPct + '%;height:100%;background:#83AC16;"></span>';
-    if (d.onHold) catHtml += '<span style="width:' + hPct + '%;height:100%;background:#FFDB22;"></span>';
-    if (d.waiting) catHtml += '<span style="width:' + wPct + '%;height:100%;background:#002669;"></span>';
-    if (d.futureScheduled) catHtml += '<span style="width:' + fPct + '%;height:100%;background:#9E0059;"></span>';
+    catHtml += '<div class="slideshow-category-row">';
+    catHtml += '<div class="slideshow-category-name">' + esc(cat) + '</div>';
+    catHtml += '<div class="slideshow-category-bar">';
+    if (d.active) catHtml += '<span class="slideshow-category-segment active" style="width:' + aPct + '%;"></span>';
+    if (d.onHold) catHtml += '<span class="slideshow-category-segment hold" style="width:' + hPct + '%;"></span>';
+    if (d.waiting) catHtml += '<span class="slideshow-category-segment waiting" style="width:' + wPct + '%;"></span>';
+    if (d.futureScheduled) catHtml += '<span class="slideshow-category-segment future" style="width:' + fPct + '%;"></span>';
     catHtml += '</div>';
-    catHtml += '<div style="width:22px;font-size:13px;font-weight:700;color:var(--text-muted);flex-shrink:0;text-align:right;">' + d.total + '</div>';
+    catHtml += '<div class="slideshow-category-count">' + d.total + '</div>';
     catHtml += '</div>';
   });
+  catHtml += '</div>';
+  catHtml += '</div>';
 
   // ── Created vs completed (9 weeks) ────────────────────────
   var cvcWeeks = [];
