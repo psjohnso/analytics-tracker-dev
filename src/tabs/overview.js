@@ -50,44 +50,95 @@ function _buildOverviewSlides() {
   snapshotHtml += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:12px 14px;"><div class="slideshow-kpi-label" style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Completed this quarter</div><div class="slideshow-kpi-value" style="font-size:28px;font-weight:900;color:var(--text-body);">' + (completedProjects + completedTasks) + '</div><div class="slideshow-kpi-meta" style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + completedProjects + ' projects · ' + completedTasks + ' tasks</div></div>';
   snapshotHtml += '</div>';
 
-  // ── Project pipeline data ───────────────────────────────────
-  var pipelineStatuses = ['Active', 'On Hold', 'Waiting for Response', 'Scheduled', 'Future', 'Idea'];
-  var pipelineCounts = {};
-  var pipelineTotal = 0;
-  pipelineStatuses.forEach(function(s) { pipelineCounts[s] = 0; });
+  // ── Project throughput: weekly completions over the last 16 weeks ─
+  // Bars = projects completed that week (by p.actual_end). Overlaid line
+  // is the trailing 4-week rolling average, which gives the chart a
+  // readable shape on small samples (e.g. 0–3 completions/week).
+  var WEEKS_BACK = 16;
+  // Find the Monday that starts the current week, in local time.
+  var nowLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  var dow = nowLocal.getDay(); // 0=Sun ... 6=Sat
+  var daysFromMonday = (dow + 6) % 7;
+  var thisMonday = new Date(nowLocal); thisMonday.setDate(nowLocal.getDate() - daysFromMonday);
+  // Build weekly buckets [start, end) — earliest first.
+  var weekBuckets = [];
+  for (var w = WEEKS_BACK - 1; w >= 0; w--) {
+    var ws = new Date(thisMonday); ws.setDate(thisMonday.getDate() - w * 7);
+    var we = new Date(ws); we.setDate(ws.getDate() + 7);
+    weekBuckets.push({ start: ws, end: we, count: 0 });
+  }
+  var firstStart = weekBuckets[0].start;
+  var msPerWeek = msPerDay * 7;
   PROJECTS.forEach(function(p) {
-    if (pipelineCounts.hasOwnProperty(p.status)) { pipelineCounts[p.status]++; pipelineTotal++; }
+    if (p.status !== 'Complete' || !p.actual_end) return;
+    var d = new Date(p.actual_end + 'T12:00:00');
+    var idx = Math.floor((d - firstStart) / msPerWeek);
+    if (idx >= 0 && idx < weekBuckets.length) weekBuckets[idx].count++;
   });
-  var maxPipeline = Math.max.apply(null, pipelineStatuses.map(function(s) { return pipelineCounts[s]; })) || 1;
+  var rollingAvg = weekBuckets.map(function(_, i) {
+    var sum = 0, n = 0;
+    for (var j = Math.max(0, i - 3); j <= i; j++) { sum += weekBuckets[j].count; n++; }
+    return sum / n;
+  });
+  var last4 = weekBuckets.slice(-4).reduce(function(s, b) { return s + b.count; }, 0);
+  var totalWindow = weekBuckets.reduce(function(s, b) { return s + b.count; }, 0);
   var completedCount = PROJECTS.filter(function(p) { return p.status === 'Complete'; }).length;
-  var pipelineHtml = '';
-  pipelineHtml += '<div class="slideshow-pipeline-card">';
-  pipelineHtml += '<div class="slideshow-pipeline-visual">';
-  pipelineHtml += '<div class="slideshow-pipeline-head">Pipeline momentum</div>';
-  pipelineHtml += '<div class="slideshow-pipeline-main">';
-  pipelineHtml += '<div class="slideshow-pipeline-hero">';
-  pipelineHtml += '<div class="slideshow-pipeline-hero-value">' + pipelineTotal + '</div>';
-  pipelineHtml += '<div class="slideshow-pipeline-hero-caption">Open projects</div>';
-  pipelineHtml += '</div>';
-  pipelineHtml += '<div class="slideshow-pipeline-stages">';
-  pipelineStatuses.forEach(function(s) {
-    var cnt = pipelineCounts[s];
-    if (cnt === 0) return;
-    var sc = STATUS_COLOR(s) || '#9CA3AF';
-    var title = s === 'Waiting for Response' ? 'Waiting' : s;
-    pipelineHtml += '<div class="slideshow-pipeline-node" style="background:' + sc + ';">';
-    pipelineHtml += '<div class="slideshow-pipeline-node-label">' + esc(title) + '</div>';
-    pipelineHtml += '<div class="slideshow-pipeline-node-value">' + cnt + '</div>';
-    pipelineHtml += '</div>';
+
+  // SVG geometry — designed to fit the 1600px slide auto-fit container.
+  var svgW = 1400, svgH = 360;
+  var padL = 50, padR = 30, padT = 30, padB = 40;
+  var chartW = svgW - padL - padR;
+  var chartH = svgH - padT - padB;
+  var maxVal = Math.max.apply(null, weekBuckets.map(function(b) { return b.count; }).concat(rollingAvg));
+  if (maxVal < 3) maxVal = 3;
+  maxVal = Math.ceil(maxVal);
+  var barSlot = chartW / weekBuckets.length;
+  var barInner = barSlot * 0.6;
+  var barOff = (barSlot - barInner) / 2;
+  var bars = weekBuckets.map(function(b, i) {
+    var h = (b.count / maxVal) * chartH;
+    var x = padL + i * barSlot + barOff;
+    var y = padT + chartH - h;
+    return '<rect x="' + x + '" y="' + y + '" width="' + barInner + '" height="' + h + '" rx="4" fill="#0F2366" opacity="0.85"></rect>';
+  }).join('');
+  var linePts = rollingAvg.map(function(v, i) {
+    var x = padL + i * barSlot + barSlot / 2;
+    var y = padT + chartH - (v / maxVal) * chartH;
+    return x + ',' + y;
+  }).join(' ');
+  var yTicks = '';
+  [0, Math.round(maxVal / 2), maxVal].forEach(function(t) {
+    var y = padT + chartH - (t / maxVal) * chartH;
+    yTicks += '<line x1="' + padL + '" y1="' + y + '" x2="' + (padL + chartW) + '" y2="' + y + '" stroke="#E5E1D6" stroke-width="1"></line>';
+    yTicks += '<text x="' + (padL - 8) + '" y="' + (y + 5) + '" text-anchor="end" font-size="14" fill="#6B6B6B">' + t + '</text>';
   });
+  var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var prevMonth = -1, xLabels = '';
+  weekBuckets.forEach(function(b, i) {
+    var m = b.start.getMonth();
+    if (m !== prevMonth) {
+      var x = padL + i * barSlot + barSlot / 2;
+      xLabels += '<text x="' + x + '" y="' + (padT + chartH + 22) + '" text-anchor="middle" font-size="14" fill="#6B6B6B">' + monthNames[m] + '</text>';
+      prevMonth = m;
+    }
+  });
+
+  var pipelineHtml = '';
+  pipelineHtml += '<div class="slideshow-throughput-card">';
+  pipelineHtml += '<div class="slideshow-throughput-hero">';
+  pipelineHtml +=   '<div class="slideshow-throughput-hero-value">' + last4 + '</div>';
+  pipelineHtml +=   '<div class="slideshow-throughput-hero-caption">Projects completed in the last 4 weeks</div>';
   pipelineHtml += '</div>';
+  pipelineHtml += '<svg viewBox="0 0 ' + svgW + ' ' + svgH + '" preserveAspectRatio="xMidYMid meet" class="slideshow-throughput-svg" role="img" aria-label="Weekly project completions over the last ' + WEEKS_BACK + ' weeks">';
+  pipelineHtml +=   yTicks + bars;
+  pipelineHtml +=   '<polyline points="' + linePts + '" fill="none" stroke="#83AC16" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>';
+  pipelineHtml +=   xLabels;
+  pipelineHtml += '</svg>';
+  pipelineHtml += '<div class="slideshow-throughput-legend">';
+  pipelineHtml +=   '<span><span class="slideshow-throughput-key bars"></span>Projects completed per week</span>';
+  pipelineHtml +=   '<span><span class="slideshow-throughput-key line"></span>4-week rolling average</span>';
   pipelineHtml += '</div>';
-  pipelineHtml += '<div class="slideshow-pipeline-metrics">';
-  pipelineHtml += '<div class="slideshow-pipeline-chip"><strong>' + pipelineTotal + '</strong><span>Open pipeline</span></div>';
-  pipelineHtml += '<div class="slideshow-pipeline-chip"><strong>' + completedCount + '</strong><span>Completed projects</span></div>';
-  pipelineHtml += '<div class="slideshow-pipeline-chip"><strong>' + PROJECTS.length + '</strong><span>Total tracked</span></div>';
-  pipelineHtml += '</div>';
-  pipelineHtml += '<div class="slideshow-pipeline-footer">' + pipelineTotal + ' open · ' + completedCount + ' completed · ' + PROJECTS.length + ' total</div>';
+  pipelineHtml += '<div class="slideshow-throughput-footer">' + totalWindow + ' completed in the last ' + WEEKS_BACK + ' weeks · ' + completedCount + ' completed all-time</div>';
   pipelineHtml += '</div>';
 
   // ── Upcoming deadlines ────────────────────────────────────
@@ -290,7 +341,7 @@ function _buildOverviewSlides() {
 
   return [
     { id: 'snapshot',  title: 'Portfolio snapshot',                              html: snapshotHtml },
-    { id: 'pipeline',  title: 'Project pipeline',                                html: pipelineHtml },
+    { id: 'pipeline',  title: 'Project throughput — last 16 weeks',              html: pipelineHtml },
     { id: 'deadlines', title: 'Upcoming project and task deadlines',             html: deadlineHtml },
     { id: 'priority',  title: 'Open task priority breakdown',                    html: priHtml },
     { id: 'category',  title: 'Projects by category',                            html: catHtml },
