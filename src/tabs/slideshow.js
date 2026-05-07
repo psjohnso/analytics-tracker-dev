@@ -17,6 +17,8 @@
 
 var _slideshowTimer = null;
 var _slideshowIdx = 0;
+var _slideshowResizeObserver = null;
+var _slideshowFullscreenListenerAttached = false;
 
 // Default config used until the admin-managed app_config.display_config
 // is loaded. All overview slides on, 15s each.
@@ -94,6 +96,44 @@ function renderSlideshow(area) {
 
   _slideshowRenderCurrent();
   _slideshowStartTimer();
+  _slideshowAttachFitObserver();
+}
+
+// Measure the fit-inner's natural (unscaled) size at width=1600 and apply
+// a uniform scale so it fits the stage's slide area. transform-origin is
+// center center, combined with translate(-50%, -50%) for absolute centering.
+function _slideshowFit() {
+  var slideEl = document.getElementById('slideshow-slide');
+  if (!slideEl) return;
+  var inner = slideEl.querySelector('.slideshow-fit-inner');
+  if (!inner) return;
+  var availW = slideEl.clientWidth;
+  var availH = slideEl.clientHeight;
+  var naturalW = inner.offsetWidth;
+  var naturalH = inner.scrollHeight;
+  if (!naturalW || !naturalH || !availW || !availH) {
+    inner.style.transform = 'translate(-50%, -50%)';
+    return;
+  }
+  var scale = Math.min(availW / naturalW, availH / naturalH);
+  inner.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+}
+
+function _slideshowAttachFitObserver() {
+  if (_slideshowResizeObserver) {
+    try { _slideshowResizeObserver.disconnect(); } catch (e) {}
+    _slideshowResizeObserver = null;
+  }
+  var stage = document.getElementById('slideshow-stage');
+  if (!stage || typeof ResizeObserver === 'undefined') return;
+  _slideshowResizeObserver = new ResizeObserver(function() { _slideshowFit(); });
+  _slideshowResizeObserver.observe(stage);
+  if (!_slideshowFullscreenListenerAttached) {
+    document.addEventListener('fullscreenchange', function() {
+      requestAnimationFrame(_slideshowFit);
+    });
+    _slideshowFullscreenListenerAttached = true;
+  }
 }
 
 function _slideshowRenderCurrent() {
@@ -105,8 +145,12 @@ function _slideshowRenderCurrent() {
   var descEl = document.getElementById('slideshow-description');
   if (!slideEl) return;
   slideEl.innerHTML =
-    '<div class="slideshow-slide-title">' + esc(slide.title) + '</div>' +
-    '<div class="slideshow-slide-body">' + slide.html + '</div>';
+    '<div class="slideshow-fit-inner">' +
+      '<div class="slideshow-slide-title">' + esc(slide.title) + '</div>' +
+      '<div class="slideshow-slide-body">' + slide.html + '</div>' +
+    '</div>';
+  // Fit the freshly-rendered slide on the next frame, once layout has settled
+  requestAnimationFrame(_slideshowFit);
   if (descEl) {
     descEl.textContent = 'Viewing: ' + slide.title + ' · Slide ' + (_slideshowIdx + 1) + ' of ' + slides.length;
   }

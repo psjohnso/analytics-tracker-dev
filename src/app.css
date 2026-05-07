@@ -2901,7 +2901,8 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   border-radius: 12px;
   margin: 12px;
   padding: 24px 28px 24px;
-  min-height: calc(100vh - 180px);
+  height: calc(100vh - 180px);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -2909,7 +2910,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   border-radius: 0;
   margin: 0;
   border: none;
-  min-height: 100vh;
+  height: 100vh;
   padding: 4vh 5vw 3vh;
   background: var(--white);
 }
@@ -2976,10 +2977,21 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .slideshow-ctrl-btn:hover { background: var(--bg-surface, #F3F1EB); border-color: var(--navy); }
 .slideshow-slide {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  position: relative;
+  overflow: hidden;
   min-height: 0;
+}
+/* Fit-to-viewport wrapper: rendered at a fixed 1600px design width and
+   absolutely centered. JS measures its natural height and applies a
+   uniform transform: scale() so the slide always fills the stage
+   without horizontal scroll or vertical clipping, on any monitor. */
+.slideshow-fit-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1600px;
+  transform-origin: center center;
+  box-sizing: border-box;
 }
 .slideshow-slide-title {
   font-family: 'Lato', sans-serif;
@@ -3026,8 +3038,6 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .slideshow-categories-list {
   display: grid;
   gap: 12px;
-  max-height: calc(100vh - 340px);
-  overflow-y: auto;
   padding-right: 6px;
 }
 .slideshow-category-row {
