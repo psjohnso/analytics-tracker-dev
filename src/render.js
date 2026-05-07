@@ -461,6 +461,19 @@ function switchTab(tab, preserveFilters) {
     showToast('Sign in to access ' + tab + '.', 'warn');
     return;
   }
+  // Slideshow while signed in: confirm sign-out before switching. Running
+  // the slideshow with an active session keeps the TV bound to a user's
+  // identity and means their token expires mid-display. Force a clean
+  // public-mode reload instead.
+  if (tab === 'slideshow' && Auth.loggedIn) {
+    if (!confirm('Switch to Slideshow?\n\nThis will sign you out of the application so the display can run as a public lobby view. You can sign back in any time.')) {
+      return;
+    }
+    if (typeof clearAgolToken === 'function') clearAgolToken();
+    var base = window.location.origin + window.location.pathname;
+    window.location.replace(base + '?slideshow=1');
+    return;
+  }
   currentDetail = null;
   currentTab = tab;
   currentPage = 1;
