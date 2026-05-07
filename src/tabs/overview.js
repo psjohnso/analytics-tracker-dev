@@ -1,16 +1,19 @@
 // ─────────────────────────────────────────────────────────────────────
 // tabs/overview.js — Overview / dashboard tab
 //
-// Single function — renderOverview — builds the 7-panel dashboard:
-// portfolio snapshot, pipeline bars, deadlines, open task priority,
-// work by category, intake balance, overdue trend.
+// _buildOverviewSlides() — computes data + builds 7 panel HTML chunks,
+// returns them as { id, title, html } objects. Both the regular
+// dashboard view AND the Slideshow tab consume this single function so
+// the data and rendering stay in sync.
+//
+// renderOverview(area) — assembles the slides into the 4-row dashboard.
+// getOverviewSlides() — public alias used by the Slideshow tab.
 //
 // Forward references: PROJECTS, TASKS, RESOURCES_DATA, isAdmin,
 // resolveProjectTitle. Backward references: STATUS_COLOR, esc.
 // ─────────────────────────────────────────────────────────────────────
 
-// ─── OVERVIEW ─────────────────────────────────────────────────────────
-function renderOverview(area) {
+function _buildOverviewSlides() {
   var today = new Date();
   var todayStr = today.toISOString().slice(0, 10);
   var msPerDay = 86400000;
@@ -39,6 +42,13 @@ function renderOverview(area) {
   var qStart = new Date(today.getFullYear(), qMonth, 1).toISOString().slice(0, 10);
   var completedProjects = PROJECTS.filter(function(p) { return p.status === 'Complete' && p.actual_end && p.actual_end >= qStart; }).length;
   var completedTasks = TASKS.filter(function(t) { return t.status === 'Complete' && t.actual_end && t.actual_end >= qStart; }).length;
+
+  var snapshotHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">';
+  snapshotHtml += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:12px 14px;"><div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Active projects</div><div style="font-size:28px;font-weight:900;color:var(--text-body);">' + activeProjects + '</div><div style="font-size:12px;color:#0F6E56;margin-top:2px;">of ' + PROJECTS.length + ' total</div></div>';
+  snapshotHtml += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:12px 14px;"><div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Open tasks</div><div style="font-size:28px;font-weight:900;color:var(--text-body);">' + openTasks + '</div><div style="font-size:12px;color:#854F0B;margin-top:2px;">' + dueThisWeek + ' due this week</div></div>';
+  snapshotHtml += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:12px 14px;"><div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Overdue items</div><div style="font-size:28px;font-weight:900;color:' + (overdueCount > 0 ? '#A32D2D' : 'var(--text-body)') + ';">' + overdueCount + '</div><div style="font-size:12px;color:#A32D2D;margin-top:2px;">' + overdueProjects.length + ' projects · ' + overdueTasks.length + ' tasks</div></div>';
+  snapshotHtml += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:12px 14px;"><div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Completed this quarter</div><div style="font-size:28px;font-weight:900;color:var(--text-body);">' + (completedProjects + completedTasks) + '</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + completedProjects + ' projects · ' + completedTasks + ' tasks</div></div>';
+  snapshotHtml += '</div>';
 
   // ── Project pipeline data ───────────────────────────────────
   var pipelineStatuses = ['Active', 'On Hold', 'Waiting for Response', 'Scheduled', 'Future', 'Idea'];
@@ -74,7 +84,6 @@ function renderOverview(area) {
     deadlineItems.push({ title: t.title, date: t.working_due || t.due, type: 'Task', objectId: t.objectId, isProject: false });
   });
   deadlineItems.sort(function(a, b) { return a.date.localeCompare(b.date); });
-  // Pin overdue first
   var overdueItems = deadlineItems.filter(function(d) { return d.date < todayStr; });
   var futureItems = deadlineItems.filter(function(d) { return d.date >= todayStr; });
   var sortedDeadlines = overdueItems.concat(futureItems).slice(0, 8);
@@ -113,7 +122,6 @@ function renderOverview(area) {
   });
 
   var priHtml = '';
-  // Stacked bar
   if (priTotal > 0) {
     var hPct = Math.round(priCounts.High / priTotal * 100);
     var mPct = Math.round(priCounts.Medium / priTotal * 100);
@@ -126,7 +134,6 @@ function renderOverview(area) {
     if (priCounts.None) priHtml += '<div style="width:' + nPct + '%;background:#B4B2A9;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:500;">—</div>';
     priHtml += '</div>';
   }
-  // Count cards
   priHtml += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;">';
   priHtml += '<div style="text-align:center;padding:10px;background:var(--bg-surface, #F3F1EB);border-radius:8px;"><div style="font-size:22px;font-weight:900;color:#A32D2D;">' + priCounts.High + '</div><div style="font-size:12px;color:var(--text-muted);">High (' + (priTotal > 0 ? Math.round(priCounts.High / priTotal * 100) : 0) + '%)</div></div>';
   priHtml += '<div style="text-align:center;padding:10px;background:var(--bg-surface, #F3F1EB);border-radius:8px;"><div style="font-size:22px;font-weight:900;color:#854F0B;">' + priCounts.Medium + '</div><div style="font-size:12px;color:var(--text-muted);">Medium (' + (priTotal > 0 ? Math.round(priCounts.Medium / priTotal * 100) : 0) + '%)</div></div>';
@@ -139,7 +146,7 @@ function renderOverview(area) {
   var categories = {};
   PROJECTS.forEach(function(p) {
     if (!p.category) return;
-    if (p.status === 'Complete' || p.status === 'Canceled') return; // exclude completed
+    if (p.status === 'Complete' || p.status === 'Canceled') return;
     if (!categories[p.category]) categories[p.category] = { active: 0, onHold: 0, waiting: 0, futureScheduled: 0, total: 0 };
     var c = categories[p.category];
     c.total++;
@@ -189,7 +196,6 @@ function renderOverview(area) {
   var totalCreated = cvcWeeks.reduce(function(s, w) { return s + w.created; }, 0);
   var totalCompleted = cvcWeeks.reduce(function(s, w) { return s + w.completed; }, 0);
 
-  // Build SVG line chart
   var cvcSvg = '<svg viewBox="0 0 100 26" preserveAspectRatio="none" style="width:100%;height:140px;display:block;">';
   cvcSvg += '<line x1="5" y1="22" x2="99" y2="22" stroke="#E8E6DF" stroke-width="0.1"/>';
   cvcSvg += '<line x1="5" y1="14" x2="99" y2="14" stroke="#E8E6DF" stroke-width="0.1" stroke-dasharray="0.4,0.4"/>';
@@ -210,6 +216,12 @@ function renderOverview(area) {
     if (i % 2 === 0) cvcSvg += '<text x="' + cvcX(i) + '" y="24.5" text-anchor="middle" font-size="1.6" fill="#888">' + w.label + '</text>';
   });
   cvcSvg += '</svg>';
+  var intakeHtml =
+    '<div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted);margin-bottom:8px;">' +
+    '<span><span style="width:16px;height:2px;background:#E24B4A;display:inline-block;margin-right:4px;vertical-align:middle;border-radius:1px;"></span>Created</span>' +
+    '<span><span style="width:16px;height:2px;background:#185FA5;display:inline-block;margin-right:4px;vertical-align:middle;border-radius:1px;"></span>Completed</span>' +
+    '</div>' + cvcSvg +
+    '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Net: +' + totalCreated + ' created, -' + totalCompleted + ' completed = ' + (totalCreated > totalCompleted ? '+' : '') + (totalCreated - totalCompleted) + ' backlog change</div>';
 
   // ── Overdue trend (10 weeks) ──────────────────────────────
   var odWeeks = [];
@@ -250,51 +262,61 @@ function renderOverview(area) {
 
   var trendDir = currentOd < peakOd ? 'improving' : currentOd === peakOd ? 'flat' : 'worsening';
 
-  // ── Assemble dashboard ────────────────────────────────────
-  var html = '';
-
-  // Section header helper
-  function secHdr(label) { return '<div style="font-size:15px;font-weight:700;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--border);">' + label + '</div>'; }
-  function card(title, content) { return '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px 18px;"><div style="font-size:15px;font-weight:700;color:var(--text-body);margin-bottom:12px;">' + title + '</div>' + content + '</div>'; }
-
-  // Row 1: Metric cards
-  html += '<div style="margin-bottom:16px;">';
-  html += secHdr('Portfolio snapshot');
-  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">';
-  html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:12px 14px;"><div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Active projects</div><div style="font-size:28px;font-weight:900;color:var(--text-body);">' + activeProjects + '</div><div style="font-size:12px;color:#0F6E56;margin-top:2px;">of ' + PROJECTS.length + ' total</div></div>';
-  html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:12px 14px;"><div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Open tasks</div><div style="font-size:28px;font-weight:900;color:var(--text-body);">' + openTasks + '</div><div style="font-size:12px;color:#854F0B;margin-top:2px;">' + dueThisWeek + ' due this week</div></div>';
-  html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:12px 14px;"><div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Overdue items</div><div style="font-size:28px;font-weight:900;color:' + (overdueCount > 0 ? '#A32D2D' : 'var(--text-body)') + ';">' + overdueCount + '</div><div style="font-size:12px;color:#A32D2D;margin-top:2px;">' + overdueProjects.length + ' projects · ' + overdueTasks.length + ' tasks</div></div>';
-  html += '<div style="background:var(--bg-surface, #F3F1EB);border-radius:8px;padding:12px 14px;"><div style="font-size:13px;color:var(--text-muted);margin-bottom:2px;">Completed this quarter</div><div style="font-size:28px;font-weight:900;color:var(--text-body);">' + (completedProjects + completedTasks) + '</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + completedProjects + ' projects · ' + completedTasks + ' tasks</div></div>';
-  html += '</div></div>';
-
-  // Row 2: Project pipeline + Upcoming deadlines
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
-  html += card('Project pipeline', pipelineHtml);
-  html += card('Upcoming project and task deadlines', deadlineHtml);
-  html += '</div>';
-
-  // Row 3: Velocity + Category
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
-  html += card('Open task priority breakdown', priHtml);
-  html += card('Projects by category', catHtml);
-  html += '</div>';
-
-  // Row 4: Created vs Completed + Overdue trend
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
-  html += card('Tasks created vs. completed — intake balance',
-    '<div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted);margin-bottom:8px;">' +
-    '<span><span style="width:16px;height:2px;background:#E24B4A;display:inline-block;margin-right:4px;vertical-align:middle;border-radius:1px;"></span>Created</span>' +
-    '<span><span style="width:16px;height:2px;background:#185FA5;display:inline-block;margin-right:4px;vertical-align:middle;border-radius:1px;"></span>Completed</span>' +
-    '</div>' + cvcSvg +
-    '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Net: +' + totalCreated + ' created, -' + totalCompleted + ' completed = ' + (totalCreated > totalCompleted ? '+' : '') + (totalCreated - totalCompleted) + ' backlog change</div>'
-  );
-  html += card('Overdue projects and tasks — last 10 weeks',
+  var overdueTrendHtml =
     '<div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted);margin-bottom:8px;">' +
     '<span><span style="width:16px;height:2px;background:#E24B4A;display:inline-block;margin-right:4px;vertical-align:middle;border-radius:1px;"></span>Overdue count</span>' +
     '<span style="color:#0F6E56;">- - - Target (zero)</span>' +
     '</div>' + odSvg +
-    '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Current: ' + currentOd + ' overdue · Peak: ' + peakOd + ' · Trend: ' + trendDir + '</div>'
-  );
+    '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Current: ' + currentOd + ' overdue · Peak: ' + peakOd + ' · Trend: ' + trendDir + '</div>';
+
+  return [
+    { id: 'snapshot',  title: 'Portfolio snapshot',                              html: snapshotHtml },
+    { id: 'pipeline',  title: 'Project pipeline',                                html: pipelineHtml },
+    { id: 'deadlines', title: 'Upcoming project and task deadlines',             html: deadlineHtml },
+    { id: 'priority',  title: 'Open task priority breakdown',                    html: priHtml },
+    { id: 'category',  title: 'Projects by category',                            html: catHtml },
+    { id: 'intake',    title: 'Tasks created vs. completed — intake balance',   html: intakeHtml },
+    { id: 'overdue',   title: 'Overdue projects and tasks — last 10 weeks',     html: overdueTrendHtml },
+  ];
+}
+
+// Public alias used by the Slideshow tab.
+function getOverviewSlides() {
+  return _buildOverviewSlides();
+}
+
+// ─── OVERVIEW ─────────────────────────────────────────────────────────
+function renderOverview(area) {
+  var slides = _buildOverviewSlides();
+  var byId = {};
+  slides.forEach(function(s) { byId[s.id] = s; });
+
+  function secHdr(label) { return '<div style="font-size:15px;font-weight:700;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--border);">' + label + '</div>'; }
+  function card(title, content) { return '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px 18px;"><div style="font-size:15px;font-weight:700;color:var(--text-body);margin-bottom:12px;">' + title + '</div>' + content + '</div>'; }
+
+  var html = '';
+  // Row 1: Portfolio snapshot — 4 KPI cards in a row, full-width
+  html += '<div style="margin-bottom:16px;">';
+  html += secHdr(byId.snapshot.title);
+  html += byId.snapshot.html;
+  html += '</div>';
+
+  // Row 2: pipeline + deadlines
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
+  html += card(byId.pipeline.title, byId.pipeline.html);
+  html += card(byId.deadlines.title, byId.deadlines.html);
+  html += '</div>';
+
+  // Row 3: priority + category
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
+  html += card(byId.priority.title, byId.priority.html);
+  html += card(byId.category.title, byId.category.html);
+  html += '</div>';
+
+  // Row 4: intake balance + overdue trend
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
+  html += card(byId.intake.title, byId.intake.html);
+  html += card(byId.overdue.title, byId.overdue.html);
   html += '</div>';
 
   area.innerHTML = html;

@@ -6,22 +6,23 @@
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;family=Cardo:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <!-- ArcGIS REST API integration (no external auth library needed) -->
-<link rel="stylesheet" href="src/app.css?v=1.11.0.0004">
+<link rel="stylesheet" href="src/app.css?v=1.14.0.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.13.0.0001"></script>
+<script src="src/constants.js?v=1.14.0.0001"></script>
 <script src="src/agol.js?v=1.9.1.0004"></script>
-<script src="src/auth.js?v=1.13.0.0001"></script>
-<script src="src/render.js?v=1.11.0.0001"></script>
+<script src="src/auth.js?v=1.14.0.0001"></script>
+<script src="src/render.js?v=1.14.0.0001"></script>
 <script src="src/tabs/issues.js?v=1.10.0.0001"></script>
 <script src="src/tabs/project-review.js?v=1.9.1.0008"></script>
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.9.1.0010"></script>
-<script src="src/tabs/overview.js?v=1.9.1.0011"></script>
-<script src="src/tabs/settings.js?v=1.13.0.0001"></script>
+<script src="src/tabs/overview.js?v=1.14.0.0001"></script>
+<script src="src/tabs/settings.js?v=1.14.0.0001"></script>
 <script src="src/tabs/resources.js?v=1.9.1.0013"></script>
 <script src="src/tabs/my-work.js?v=1.9.1.0014"></script>
 <script src="src/tabs/projects-tasks.js?v=1.9.1.0015"></script>
 <script src="src/tabs/projects-tasks-detail.js?v=1.9.1.0016"></script>
+<script src="src/tabs/slideshow.js?v=1.14.0.0001"></script>
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
 <script src="src/modals/idea.js?v=1.12.0.0001"></script>
 <script src="src/modals/member-form.js?v=1.9.1.0019"></script>
@@ -94,6 +95,7 @@
     <button class="primary-tab" data-group="mywork" id="tab-mywork" onclick="switchPrimaryGroup('mywork')" style="display:none;">👤 My Work</button>
     <button class="primary-tab" data-group="portfolio" onclick="switchPrimaryGroup('portfolio')">Portfolio</button>
     <button class="primary-tab" data-group="capacity" onclick="switchPrimaryGroup('capacity')" style="display:none;">Capacity</button>
+    <button class="primary-tab" data-group="slideshow" id="tab-slideshow" onclick="switchPrimaryGroup('slideshow')" style="display:none;">📺 Slideshow</button>
     <button class="primary-tab" data-group="issues" id="tab-issues" onclick="switchPrimaryGroup('issues')">🐛 Issues <span class="tab-count" id="issues-tab-count"></span></button>
     <button class="primary-tab" data-group="settings" id="tab-settings" onclick="switchPrimaryGroup('settings')" style="display:none;">⚙️ Settings</button>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 4px 0 0;align-self:center;">
@@ -1070,6 +1072,15 @@ function render() {
     return;
   }
 
+  if (currentTab === 'slideshow') {
+    document.querySelector('.app-body').classList.remove('detail-mode');
+    renderSlideshow(area);
+    const pg = document.getElementById('pagination');
+    if (pg) pg.remove();
+    document.getElementById('result-count').textContent = '';
+    return;
+  }
+
   if (currentTab === 'projectReview') {
     document.querySelector('.app-body').classList.remove('detail-mode');
     renderProjectReview(area);
@@ -1198,21 +1209,30 @@ var UserPrefs = {
   // Capacity tabs — admins always see them; non-admins opt in via a single
   // "Show Capacity tabs" preference that toggles Resources + Forecast + Insights together.
   showCapacity: false,
+  // Slideshow tab — opt-in for everyone (lobby-display use case).
+  showSlideshow: false,
   betaFeatures: {}
 };
 
-// Show or hide the optional Capacity sub-tabs (Resources, Forecast, Insights)
-// based on UserPrefs.showCapacity and admin status. Admins always see all
-// three; non-admins see them only if they've opted in.
+// Show or hide the optional Capacity + Slideshow tabs based on UserPrefs.
+// - Capacity (Resources, Forecast, Insights): admins always see; members opt in.
+// - Slideshow: opt-in for everyone (admins included — it's a niche lobby tool).
 function applyOptionalTabVisibility() {
   if (!Auth.loggedIn) return; // logged-out state is handled by toggleAuth/applyAuthState
-  var visible = isAdmin() || !!UserPrefs.showCapacity;
+  var capVisible = isAdmin() || !!UserPrefs.showCapacity;
   ['tab-resources', 'tab-forecast', 'tab-insights'].forEach(function(id) {
     var el = document.getElementById(id);
-    if (el) el.style.display = visible ? '' : 'none';
+    if (el) el.style.display = capVisible ? '' : 'none';
   });
+  var slideVisible = !!UserPrefs.showSlideshow;
+  var slideEl = document.getElementById('tab-slideshow');
+  if (slideEl) slideEl.style.display = slideVisible ? '' : 'none';
+
   // If currently on a now-hidden tab, fall back to overview
-  if (!visible && ['resources', 'forecast', 'insights'].indexOf(currentTab) >= 0) {
+  if (!capVisible && ['resources', 'forecast', 'insights'].indexOf(currentTab) >= 0) {
+    switchTab('overview');
+  }
+  if (!slideVisible && currentTab === 'slideshow') {
     switchTab('overview');
   }
   if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();

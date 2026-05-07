@@ -388,6 +388,7 @@ const TAB_GROUPS = {
   mywork:    { label: '👤 My Work', subs: ['mywork'] },                                    // single-destination, auth-only
   portfolio: { label: 'Portfolio',  subs: ['projects', 'tasks', 'projectReview'] },
   capacity:  { label: 'Capacity',   subs: ['resources', 'forecast', 'insights'] },
+  slideshow: { label: '📺 Slideshow', subs: ['slideshow'] },                                // single-destination, opt-in
   issues:    { label: '🐛 Issues',  subs: ['issues'] },                                    // single-destination
   settings:  { label: '⚙️ Settings', subs: ['settings'] }                                  // single-destination, auth-only
 };
@@ -453,7 +454,7 @@ function switchPrimaryGroup(groupId) {
 
 function switchTab(tab, preserveFilters) {
   // Guard: auth-only tabs require sign-in
-  var authOnlyTabs = ['mywork', 'resources', 'forecast', 'insights', 'issues', 'settings', 'projectReview'];
+  var authOnlyTabs = ['mywork', 'resources', 'forecast', 'insights', 'issues', 'settings', 'projectReview', 'slideshow'];
   if (!Auth.loggedIn && authOnlyTabs.indexOf(tab) >= 0) {
     showToast('Sign in to access ' + tab + '.', 'warn');
     return;

@@ -268,8 +268,8 @@ function toggleAuth() {
     if (settingsTab) settingsTab.style.display = 'none';
     const myWorkTab = document.getElementById('tab-mywork');
     if (myWorkTab) myWorkTab.style.display = 'none';
-    ['tab-resources', 'tab-forecast', 'tab-insights', 'tab-projectreview'].forEach(function(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; });
-    if (currentTab === 'settings' || currentTab === 'mywork' || currentTab === 'resources' || currentTab === 'forecast' || currentTab === 'insights' || currentTab === 'projectReview') switchTab('overview');
+    ['tab-resources', 'tab-forecast', 'tab-insights', 'tab-projectreview', 'tab-slideshow'].forEach(function(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    if (currentTab === 'settings' || currentTab === 'mywork' || currentTab === 'resources' || currentTab === 'forecast' || currentTab === 'insights' || currentTab === 'projectReview' || currentTab === 'slideshow') switchTab('overview');
     if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();
     applyAuthState();
   } else {
