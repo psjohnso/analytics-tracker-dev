@@ -3141,4 +3141,83 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
     width: auto !important;
     max-width: none !important;
   }
+
+  /* ── Issues page ───────────────────────────────────────── */
+  .issues-page { padding: 16px 12px; }
+  .issues-title { font-size: 18px; }
+  .issues-header { gap: 8px; }
+  .issues-submit-btn { margin-left: 0; flex: 1 1 100%; min-height: 40px; }
+  .issue-card { padding: 12px 14px; }
+  .issue-card-actions { margin-left: 0; flex-wrap: wrap; }
+  .issue-action-btn { min-height: 36px; padding: 6px 12px; }
+  /* Issue form modal: full-bleed */
+  .issue-form-backdrop { padding: 0; }
+  .issue-form-modal {
+    width: 100% !important;
+    max-width: none !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    padding: 16px !important;
+    overflow-y: auto !important;
+  }
+
+  /* ── Settings page ─────────────────────────────────────── */
+  /* The desktop layout is a 200px sidebar + content panel. On phones,
+     stack: nav becomes a horizontal scroll strip at the top, panel below. */
+  .settings-page {
+    flex-direction: column;
+    min-height: 0;
+  }
+  .settings-nav {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 8px;
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+  }
+  .settings-nav::-webkit-scrollbar { display: none; }
+  .settings-nav-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+  }
+  .settings-nav-label { display: none; }  /* hide group labels on horizontal nav */
+  .settings-nav-item {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .settings-nav-count { margin-left: 4px; }
+  .settings-panel { padding: 14px 12px; }
+  .settings-panel-title { font-size: 17px; }
+  .settings-section-header { font-size: 16px; }
+  /* Member table rows are wide — give them horizontal scroll like project list */
+  .member-table-wrap, .member-table {
+    /* if not already wrapped, the table itself becomes horizontally scrollable */
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .member-table { min-width: 640px; }
+
+  /* ── Project Review page ───────────────────────────────── */
+  .pr-page { padding: 12px 12px 60px; }
+  .pr-card-header { padding: 12px 14px 10px; gap: 10px; }
+  .pr-card-title { font-size: 15px; }
+  .pr-card-body { padding: 12px 14px; }
+  .pr-cycle-strip { padding: 10px 12px; gap: 14px; }
+  .pr-rt-pill { padding: 7px 12px; font-size: 11px; }
+  .pr-controls-bar { gap: 8px; }
+  .pr-controls-bar > div { flex-wrap: wrap; gap: 8px; }
+  .pr-search-input { min-width: 0; flex: 1 1 100%; }
+  .pr-assignee-select { flex: 1 1 100%; min-height: 38px; font-size: 14px; }
+  .pr-view-toggle { flex: 1 1 100%; }
 }
