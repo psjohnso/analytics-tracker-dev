@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.14.0.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.14.1.0002"></script>
+<script src="src/constants.js?v=1.14.1.0003"></script>
 <script src="src/agol.js?v=1.9.1.0004"></script>
 <script src="src/auth.js?v=1.14.1.0001"></script>
 <script src="src/render.js?v=1.14.1.0002"></script>
@@ -1329,17 +1329,26 @@ async function loadPublicData() {
 
     if (projUrl) {
       updateLoadingOverlay('Loading projects...');
-      // Filter out soft-deleted; view layers inherit fields from source layers
-      var projectFeatures = await agolQueryPublic(projUrl, 'deleted_at IS NULL');
+      // Don't filter deleted_at in the WHERE clause — public view layers may
+      // not have the field yet (it was added only to source layers in the
+      // soft-delete commit). Filter client-side instead so this works
+      // regardless of view-layer schema.
+      var projectFeatures = await agolQueryPublic(projUrl);
       PROJECTS.length = 0;
-      projectFeatures.forEach(function(f) { PROJECTS.push(agolProjectToLocal(f)); });
+      projectFeatures.forEach(function(f) {
+        var p = agolProjectToLocal(f);
+        if (!p.deleted_at) PROJECTS.push(p);
+      });
     }
 
     if (taskUrl) {
       updateLoadingOverlay('Loaded ' + PROJECTS.length + ' projects. Loading tasks...');
-      var taskFeatures = await agolQueryPublic(taskUrl, 'deleted_at IS NULL');
+      var taskFeatures = await agolQueryPublic(taskUrl);
       TASKS.length = 0;
-      taskFeatures.forEach(function(f) { TASKS.push(agolTaskToLocal(f)); });
+      taskFeatures.forEach(function(f) {
+        var t = agolTaskToLocal(f);
+        if (!t.deleted_at) TASKS.push(t);
+      });
     }
 
     // Try to load app config publicly too
@@ -2280,14 +2289,27 @@ let TASK_CATEGORY_DESCRIPTIONS = {};
       handleSlideshowDeepLink();
       window.scrollTo(0, 0);
     } else {
-      // Public load failed — services require auth, show login prompt
-      document.getElementById('content-area').innerHTML =
-        '<div style="text-align:center;padding:60px 20px;">' +
-        '<div style="font-size:40px;margin-bottom:16px;">🔒</div>' +
-        '<div style="font-size:20px;font-weight:700;color:var(--navy);margin-bottom:8px;">Sign in to access the Analytics Project Tracker</div>' +
-        '<div style="font-size:14px;color:var(--text-muted);margin-bottom:24px;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.6;">This application requires an ArcGIS Online account with access to the City of Tucson organization.</div>' +
-        '<button onclick="toggleAuth()" style="padding:10px 28px;font-size:14px;font-weight:700;background:var(--navy);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:Lato,sans-serif;">Sign In with ArcGIS Online</button>' +
-        '</div>';
+      // Public load failed. Special-case the lobby-display deep link: don't
+      // bounce the user to a sign-in screen on a TV — render the slideshow
+      // anyway (empty panels + a hint) so the display stays in slideshow mode.
+      var wantsSlideshow = new URLSearchParams(window.location.search).has('slideshow');
+      if (wantsSlideshow) {
+        markDataDirty();
+        render();
+        switchTab('slideshow');
+        var clean = window.location.pathname + window.location.hash;
+        history.replaceState(history.state, '', clean);
+        window.scrollTo(0, 0);
+      } else {
+        // Public load failed — services require auth, show login prompt
+        document.getElementById('content-area').innerHTML =
+          '<div style="text-align:center;padding:60px 20px;">' +
+          '<div style="font-size:40px;margin-bottom:16px;">🔒</div>' +
+          '<div style="font-size:20px;font-weight:700;color:var(--navy);margin-bottom:8px;">Sign in to access the Analytics Project Tracker</div>' +
+          '<div style="font-size:14px;color:var(--text-muted);margin-bottom:24px;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.6;">This application requires an ArcGIS Online account with access to the City of Tucson organization.</div>' +
+          '<button onclick="toggleAuth()" style="padding:10px 28px;font-size:14px;font-weight:700;background:var(--navy);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:Lato,sans-serif;">Sign In with ArcGIS Online</button>' +
+          '</div>';
+      }
     }
   }
 })();
