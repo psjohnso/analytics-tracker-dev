@@ -77,6 +77,11 @@ function renderSlideshow(area) {
 
   area.innerHTML =
     '<div id="slideshow-stage" class="slideshow-stage">' +
+      '<div class="slideshow-header">' +
+        '<div class="slideshow-mode">LOBBY DISPLAY</div>' +
+        '<div class="slideshow-team">City of Tucson GIS/Data Analytics team</div>' +
+        '<div id="slideshow-description" class="slideshow-description"></div>' +
+      '</div>' +
       '<div class="slideshow-controls">' +
         '<button onclick="slideshowPrev()" title="Previous slide" class="slideshow-ctrl-btn">◀</button>' +
         '<button onclick="slideshowTogglePause()" id="slideshow-pause-btn" title="Pause / play" class="slideshow-ctrl-btn">⏸</button>' +
@@ -97,10 +102,14 @@ function _slideshowRenderCurrent() {
   var slide = slides[_slideshowIdx % slides.length];
   var slideEl = document.getElementById('slideshow-slide');
   var progressEl = document.getElementById('slideshow-progress');
+  var descEl = document.getElementById('slideshow-description');
   if (!slideEl) return;
   slideEl.innerHTML =
     '<div class="slideshow-slide-title">' + esc(slide.title) + '</div>' +
     '<div class="slideshow-slide-body">' + slide.html + '</div>';
+  if (descEl) {
+    descEl.textContent = 'Viewing: ' + slide.title + ' · Slide ' + (_slideshowIdx + 1) + ' of ' + slides.length;
+  }
   if (progressEl) {
     var dots = slides.map(function(s, i) {
       var cls = 'slideshow-dot' + (i === _slideshowIdx ? ' active' : '');
