@@ -1362,18 +1362,7 @@ async function suggestAlignment() {
     'Every "value" must EXACTLY match one of the available options listed above (including "None"). Do not mix "None" with other values in the same field — if any specific option applies, do not also include "None".';
 
   try {
-    if (AI_PROXY_URL.includes('YOUR_SUBDOMAIN')) {
-      throw new Error('AI proxy not configured.');
-    }
-    var response = await fetch(AI_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4000, messages: [{ role: 'user', content: prompt }] })
-    });
-    var data = await response.json();
-    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-
-    var text = (data.content || []).map(function(c) { return c.text || ''; }).join('');
+    var text = await callAiProxy('alignmentSuggest', prompt);
     var clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
     var objStart = clean.indexOf('{');
     var objEnd = clean.lastIndexOf('}');

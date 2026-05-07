@@ -6,11 +6,8 @@
 // project form in modals/forms.js.
 // ─────────────────────────────────────────────────────────────────────
 
-// ── AI proxy URL ─────────────────────────────────────────
-// ── AI TASK SUGGESTION PROXY ─────────────────────────────────────────
-// Replace this URL with your Cloudflare Worker URL after deploying.
-// See WORKER_SETUP_GUIDE.md for instructions.
-const AI_PROXY_URL = 'https://analytics-tracker-proxy.psjohnso.workers.dev';
+// AI_PROXY_URL, AI_MODEL, and callAiProxy() live in src/ai/prompts.js
+// (loaded earlier in the page). Each call site here uses callAiProxy().
 
 // ── AI settings ──────────────────────────────────────────
 // ── AI Settings ─────────────────────────────────────────────────
@@ -150,39 +147,19 @@ async function suggestTasksForProject(projectObjectId) {
   prompt += '\nRespond ONLY with a JSON array (no markdown, no backticks, no preamble). Each element should have: title, description, category, tool, priority, suggested_assignee, phase_requirements (array of requirement ID strings).';
 
   try {
-    if (AI_PROXY_URL.includes('YOUR_SUBDOMAIN')) {
-      throw new Error('AI proxy not configured. See WORKER_SETUP_GUIDE.md to set up the Cloudflare Worker, then update AI_PROXY_URL in index.html.');
-    }
+    var aiText = await callAiProxy('taskSuggest', prompt);
+    console.log('[TaskSuggest] Raw text length:', aiText.length);
 
-    var response = await fetch(AI_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 12000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-
-    var data = await response.json();
-    console.log('[TaskSuggest] Raw API response:', JSON.stringify(data).slice(0, 500));
-
-    // Handle API errors
-    if (data.error) {
-      throw new Error(data.error.message || JSON.stringify(data.error));
-    }
-
-    var text = (data.content || []).map(function(c) { return c.text || ''; }).join('');
-    console.log('[TaskSuggest] Response text:', text.slice(0, 300));
+    console.log('[TaskSuggest] Response text:', aiText.slice(0, 300));
 
     // Robust JSON extraction — find the JSON array in the response
-    var clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    var clean = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
     // Find the first [ and last ] to extract the JSON array
     var arrayStart = clean.indexOf('[');
     var arrayEnd = clean.lastIndexOf(']');
     var jsonStr;
     if (arrayStart === -1) {
-      throw new Error('Could not find task list in AI response. Raw: ' + text.slice(0, 200));
+      throw new Error('Could not find task list in AI response. Raw: ' + aiText.slice(0, 200));
     }
     if (arrayEnd === -1 || arrayEnd <= arrayStart) {
       // Response was truncated — try to repair
@@ -424,18 +401,7 @@ async function suggestPhaseRequirements(taskId) {
     '{"requirements": [{"id": "P1_GOALS", "reason": "brief reason why this task satisfies this requirement"}]}';
 
   try {
-    if (AI_PROXY_URL.includes('YOUR_SUBDOMAIN')) {
-      throw new Error('AI proxy not configured.');
-    }
-    var response = await fetch(AI_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 300, messages: [{ role: 'user', content: prompt }] })
-    });
-    var data = await response.json();
-    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-
-    var text = (data.content || []).map(function(c) { return c.text || ''; }).join('');
+    var text = await callAiProxy('phaseAssign', prompt);
     var clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
     var objStart = clean.indexOf('{');
     var objEnd = clean.lastIndexOf('}');

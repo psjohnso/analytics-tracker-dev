@@ -217,18 +217,7 @@ async function guidedStep1Next() {
       'Respond ONLY with a JSON array, no other text. Example format:\n' +
       '[{"id":"q1","question":"...","type":"text"},{"id":"q2","question":"...","type":"select","options":["Option A","Option B","Option C"]},{"id":"q3","question":"...","type":"yesno"}]';
 
-    var response = await fetch(AI_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    var data = await response.json();
-    var aiText = '';
-    if (data.content) data.content.forEach(function(c) { if (c.type === 'text') aiText += c.text; });
+    var aiText = await callAiProxy('intakeQuestions', prompt);
     // Parse JSON from response
     var jsonMatch = aiText.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
@@ -338,18 +327,7 @@ async function guidedStep2Next() {
       '5. **Risks & Open Questions** — Any concerns, unknowns, or things that need clarification.\n\n' +
       'Write in a professional but conversational tone. Keep each section to 2-3 sentences. Do not use markdown formatting — use plain text with section labels.';
 
-    var response = await fetch(AI_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
-        messages: [{ role: 'user', content: summaryPrompt }]
-      })
-    });
-    var data = await response.json();
-    var summaryText = '';
-    if (data.content) data.content.forEach(function(c) { if (c.type === 'text') summaryText += c.text; });
+    var summaryText = await callAiProxy('intakeSummary', summaryPrompt);
     _guidedIntakeState.aiSummary = summaryText.trim();
     renderGuidedStep3();
   } catch (err) {
