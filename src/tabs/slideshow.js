@@ -75,9 +75,17 @@ function renderSlideshow(area) {
   // Clamp the current index in case the slide list shrank since last render
   if (_slideshowIdx >= slides.length) _slideshowIdx = 0;
 
+  // Show "Lobby mode" button only when signed in — it converts the
+  // browser into an unattended display by signing out and reloading
+  // with ?slideshow=1, so the TV doesn't sit on someone's session.
+  var lobbyBtn = (typeof Auth !== 'undefined' && Auth.loggedIn)
+    ? '<button onclick="slideshowEnterLobbyMode()" title="Sign out and reload as a public lobby display — for setting up a TV" class="slideshow-ctrl-btn" style="width:auto;padding:0 12px;font-size:11px;font-weight:700;letter-spacing:0.04em;">📺 Lobby mode</button>'
+    : '';
+
   area.innerHTML =
     '<div id="slideshow-stage" class="slideshow-stage">' +
       '<div class="slideshow-controls">' +
+        lobbyBtn +
         '<button onclick="slideshowPrev()" title="Previous slide" class="slideshow-ctrl-btn">◀</button>' +
         '<button onclick="slideshowTogglePause()" id="slideshow-pause-btn" title="Pause / play" class="slideshow-ctrl-btn">⏸</button>' +
         '<button onclick="slideshowNext()" title="Next slide" class="slideshow-ctrl-btn">▶</button>' +
@@ -166,6 +174,20 @@ function slideshowTogglePause() {
     btn.title = 'Pause';
     _slideshowStartTimer();
   }
+}
+
+// "Lobby mode": clears the active session and reloads with ?slideshow=1 so
+// the page comes back as an anonymous public display. Use case: an admin
+// sets up a TV, signs in to get to the slideshow tab, clicks this button,
+// and the TV is now decoupled from any user session for unattended display.
+function slideshowEnterLobbyMode() {
+  if (!confirm('Switch to lobby mode? This signs you out and reloads the page as a public display — useful for setting up an unattended TV. You can sign back in any time.')) return;
+  // Clear token from session
+  if (typeof clearAgolToken === 'function') clearAgolToken();
+  // Reload with the slideshow deep-link so we land on the slideshow tab
+  // immediately as an anonymous user.
+  var base = window.location.origin + window.location.pathname;
+  window.location.replace(base + '?slideshow=1');
 }
 
 function slideshowToggleFullscreen() {

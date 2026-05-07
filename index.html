@@ -8,10 +8,10 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.14.0.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.14.0.0002"></script>
+<script src="src/constants.js?v=1.14.1.0001"></script>
 <script src="src/agol.js?v=1.9.1.0004"></script>
-<script src="src/auth.js?v=1.14.0.0001"></script>
-<script src="src/render.js?v=1.14.0.0001"></script>
+<script src="src/auth.js?v=1.14.1.0001"></script>
+<script src="src/render.js?v=1.14.1.0001"></script>
 <script src="src/tabs/issues.js?v=1.10.0.0001"></script>
 <script src="src/tabs/project-review.js?v=1.9.1.0008"></script>
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
@@ -22,7 +22,7 @@
 <script src="src/tabs/my-work.js?v=1.9.1.0014"></script>
 <script src="src/tabs/projects-tasks.js?v=1.9.1.0015"></script>
 <script src="src/tabs/projects-tasks-detail.js?v=1.9.1.0016"></script>
-<script src="src/tabs/slideshow.js?v=1.14.0.0002"></script>
+<script src="src/tabs/slideshow.js?v=1.14.1.0001"></script>
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
 <script src="src/modals/idea.js?v=1.12.0.0001"></script>
 <script src="src/modals/member-form.js?v=1.9.1.0019"></script>
@@ -1216,9 +1216,17 @@ var UserPrefs = {
 
 // Show or hide the optional Capacity + Slideshow tabs based on UserPrefs.
 // - Capacity (Resources, Forecast, Insights): admins always see; members opt in.
-// - Slideshow: opt-in for everyone (admins included — it's a niche lobby tool).
+// - Slideshow: opt-in for signed-in users; always visible for anonymous (the
+//   tab is designed for unattended lobby displays without an active session).
 function applyOptionalTabVisibility() {
-  if (!Auth.loggedIn) return; // logged-out state is handled by toggleAuth/applyAuthState
+  // For signed-out users, only the Slideshow tab is relevant — and it's
+  // always visible (handled by applyAuthState too, this is belt-and-suspenders).
+  if (!Auth.loggedIn) {
+    var slideElAnon = document.getElementById('tab-slideshow');
+    if (slideElAnon) slideElAnon.style.display = '';
+    if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();
+    return;
+  }
   var capVisible = isAdmin() || !!UserPrefs.showCapacity;
   ['tab-resources', 'tab-forecast', 'tab-insights'].forEach(function(id) {
     var el = document.getElementById(id);
@@ -1236,6 +1244,21 @@ function applyOptionalTabVisibility() {
     switchTab('overview');
   }
   if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();
+}
+
+// Deep-link handler for the lobby-display use case: a TV bookmarked to
+// ?slideshow=1 lands directly on the Slideshow tab. Works in both auth and
+// read-only modes. Called after data load completes.
+function handleSlideshowDeepLink() {
+  var params = new URLSearchParams(window.location.search);
+  if (!params.has('slideshow')) return;
+  // Ensure the tab is visible (in case of belt-and-suspenders ordering)
+  var slideEl = document.getElementById('tab-slideshow');
+  if (slideEl) slideEl.style.display = '';
+  switchTab('slideshow');
+  // Clean the URL so a refresh doesn't keep forcing it
+  var clean = window.location.pathname + window.location.hash;
+  history.replaceState(history.state, '', clean);
 }
 
 function loadUserPrefs() {
@@ -2237,6 +2260,7 @@ let TASK_CATEGORY_DESCRIPTIONS = {};
     markDataDirty();
     render();
     handleDeepLink();
+    handleSlideshowDeepLink();
     window.scrollTo(0, 0);
 
   } else {
@@ -2253,6 +2277,7 @@ let TASK_CATEGORY_DESCRIPTIONS = {};
       markDataDirty();
       render();
       handleDeepLink();
+      handleSlideshowDeepLink();
       window.scrollTo(0, 0);
     } else {
       // Public load failed — services require auth, show login prompt

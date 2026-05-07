@@ -312,6 +312,11 @@ function applyAuthState() {
     var chipWrap = document.getElementById('timer-chip-wrap');
     if (chipWrap) chipWrap.style.display = 'none';
     if (exportBtn) exportBtn.style.display = 'none';
+    // Slideshow is the one optional tab anonymous users can use — it's
+    // designed for unattended lobby displays. Show it when signed out so
+    // a TV bookmarked to ?slideshow=1 stays functional with no session.
+    var slideEl = document.getElementById('tab-slideshow');
+    if (slideEl) slideEl.style.display = '';
   }
   if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();
 }

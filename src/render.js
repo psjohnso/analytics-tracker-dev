@@ -454,7 +454,9 @@ function switchPrimaryGroup(groupId) {
 
 function switchTab(tab, preserveFilters) {
   // Guard: auth-only tabs require sign-in
-  var authOnlyTabs = ['mywork', 'resources', 'forecast', 'insights', 'issues', 'settings', 'projectReview', 'slideshow'];
+  // Slideshow is intentionally NOT in this list — it's designed to run on
+  // unattended lobby displays without an authenticated session.
+  var authOnlyTabs = ['mywork', 'resources', 'forecast', 'insights', 'issues', 'settings', 'projectReview'];
   if (!Auth.loggedIn && authOnlyTabs.indexOf(tab) >= 0) {
     showToast('Sign in to access ' + tab + '.', 'warn');
     return;
