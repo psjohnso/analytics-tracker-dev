@@ -3080,4 +3080,65 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   #alloc-editor-backdrop, #absence-editor-backdrop {
     overflow: auto;
   }
+
+  /* ── My Work tab tweaks ─────────────────────────────────── */
+  .mywork-page { padding: 12px; }
+  .mywork-greeting { font-size: 17px; }
+  .mywork-subtitle { font-size: 12px; }
+
+  /* Jump-link nav (Projects / Tasks / Timeline shortcuts): horizontal scroll */
+  .mywork-jump-nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap !important;
+    white-space: nowrap;
+  }
+  .mywork-jump-nav::-webkit-scrollbar { display: none; }
+  .mywork-jump-link { flex-shrink: 0; }
+
+  /* Hide the gantt timeline section on phones — the chart is unreadable
+     at this width. Show a small placeholder pointing to desktop. */
+  #mw-timeline {
+    display: none;
+  }
+  /* Inject a placeholder via the parent's :before so the section "exists"
+     in the layout but communicates the desktop-only constraint. */
+  .mywork-page::before {
+    content: 'Timeline view is desktop-only — open on a larger screen to see the gantt chart.';
+    display: block;
+    margin: 12px 0 4px;
+    padding: 10px 12px;
+    background: #FDFCF8;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Sticky My Work jump header: shrink padding */
+  .mywork-sticky-header { padding: 8px 12px; }
+
+  /* ── Timer chip in header: compact on mobile ───────────── */
+  .timer-chip {
+    padding: 4px 8px !important;
+    gap: 6px !important;
+    font-size: 11px !important;
+  }
+  .timer-chip-task,
+  .timer-chip-badge,
+  .timer-chip-caret { display: none !important; }
+  /* Keep elapsed time + stop button visible — that's the essential UI */
+  .timer-chip-elapsed { font-size: 12px !important; }
+
+  /* Timer chip dropdown: position relative to viewport instead of chip,
+     since chip moves around in the cramped header. */
+  .timer-chip-dropdown {
+    position: fixed !important;
+    top: calc(var(--header-h) + 6px) !important;
+    right: 8px !important;
+    left: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+  }
 }
