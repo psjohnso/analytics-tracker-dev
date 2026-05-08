@@ -355,40 +355,182 @@ function getOverviewSlides() {
   return _buildOverviewSlides();
 }
 
-// ─── OVERVIEW ─────────────────────────────────────────────────────────
+// ─── OVERVIEW — team introduction page ───────────────────────────────
+// The Overview tab introduces the Data Intelligence team: mission,
+// services, current-year goals, roster, partner departments, and a
+// short "about this app" section. The dashboard-style panel grid
+// previously rendered here is now exclusive to the Slideshow tab,
+// which serves the public-facing summary view.
+//
+// Live data (computed on each render): team headcount from
+// RESOURCES_DATA, project / task counts, completions in the last 16
+// weeks, and active-project counts per top partner department.
+// Roster, services, goals, and the partner list are hardcoded — they
+// don't drift fast enough to need config-driven storage.
+
 function renderOverview(area) {
-  var slides = _buildOverviewSlides();
-  var byId = {};
-  slides.forEach(function(s) { byId[s.id] = s; });
+  // ── Live counts ─────────────────────────────────────────────────
+  var totalProjects = PROJECTS.length;
+  var totalTasks = TASKS.length;
 
-  function secHdr(label) { return '<div style="font-size:15px;font-weight:700;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--border);">' + label + '</div>'; }
-  function card(title, content) { return '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px 18px;"><div style="font-size:15px;font-weight:700;color:var(--text-body);margin-bottom:12px;">' + title + '</div>' + content + '</div>'; }
+  // Core team headcount: active members, excluding "Affiliated" group.
+  var teamCount = 0;
+  if (typeof RESOURCES_DATA !== 'undefined' && RESOURCES_DATA && RESOURCES_DATA.people) {
+    Object.keys(RESOURCES_DATA.people).forEach(function(n) {
+      var pp = RESOURCES_DATA.people[n];
+      if (pp && pp.active !== false && pp.member_group !== 'Affiliated') teamCount++;
+    });
+  }
+  if (!teamCount) teamCount = 10; // fallback when RESOURCES_DATA hasn't loaded
 
-  var html = '';
-  // Row 1: Portfolio snapshot — 4 KPI cards in a row, full-width
-  html += '<div style="margin-bottom:16px;">';
-  html += secHdr(byId.snapshot.title);
-  html += byId.snapshot.html;
-  html += '</div>';
+  // Completions in the last 16 weeks (matches the Slideshow throughput slide window).
+  var todayMs = Date.now();
+  var sixteenStr = new Date(todayMs - 16 * 7 * 86400000).toISOString().slice(0, 10);
+  var completed16w = PROJECTS.filter(function(p) {
+    return p.status === 'Complete' && p.actual_end && p.actual_end >= sixteenStr;
+  }).length;
 
-  // Row 2: pipeline + deadlines
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
-  html += card(byId.pipeline.title, byId.pipeline.html);
-  html += card(byId.deadlines.title, byId.deadlines.html);
-  html += '</div>';
+  // Top partner departments — substring-match on partner_dept (lowercased)
+  // so variations like "Tucson Water" / "Water Department" all collapse.
+  var partners = [
+    { name: 'Water',                            icon: '💧', match: ['water'] },
+    { name: 'Transportation',                   icon: '🛣️', match: ['transportation'] },
+    { name: 'Police',                           icon: '🛡️', match: ['police'] },
+    { name: 'Housing',                          icon: '🏠', match: ['housing'] },
+    { name: 'Planning & Development Services',  icon: '📐', match: ['planning'] },
+  ];
+  partners.forEach(function(pt) {
+    pt.count = PROJECTS.filter(function(p) {
+      if (p.status !== 'Active') return false;
+      var dept = (p.partner_dept || '').toLowerCase();
+      return pt.match.some(function(m) { return dept.indexOf(m) >= 0; });
+    }).length;
+  });
 
-  // Row 3: priority + category
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
-  html += card(byId.priority.title, byId.priority.html);
-  html += card(byId.category.title, byId.category.html);
-  html += '</div>';
+  // ── Static content ──────────────────────────────────────────────
+  var services = [
+    { icon: '📊', title: 'Analytics & Dashboards',    desc: 'We turn city data into reports, dashboards, and analyses leaders and managers can act on.' },
+    { icon: '🗺️', title: 'GIS & Mapping',             desc: 'We provide mapping and spatial analysis for departments that work with location data.' },
+    { icon: '⚖️', title: 'Data Governance',           desc: 'We set the policies and standards for how the city manages, shares, and protects its data.' },
+    { icon: '🛠️', title: 'Data Tools & Applications', desc: 'We build the custom applications and integrations that move data where it needs to go.' },
+    { icon: '✅', title: 'Data Quality & Trust',       desc: 'We build the methodology that helps departments measure and improve the quality of their data.' },
+    { icon: '🎓', title: 'Data Literacy & Training',   desc: 'We help city staff find, understand, and use data confidently.' }
+  ];
 
-  // Row 4: intake balance + overdue trend
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
-  html += card(byId.intake.title, byId.intake.html);
-  html += card(byId.overdue.title, byId.overdue.html);
+  var goals = [
+    { num: '1', title: 'The Data Trust Scorecard moves from methodology to practice.',
+      body: 'We finalize the framework (<code>DP109</code>) and apply it to the Safe City datasets (<code>DP175</code>), giving the program a defensible measure of data quality the rest of the city can adopt.' },
+    { num: '2', title: 'Safe City data is in active use across departments.',
+      body: 'Department leaders are using the datasets we&rsquo;ve prepared with them to drive program and operational decisions.' },
+    { num: '3', title: 'We advance on at least one foundational maturity area.',
+      body: 'The city moves from <strong>Gap</strong> to <strong>In Progress</strong> in data strategy, open data, or program performance measurement, and the WWC criteria reflect it.' },
+    { num: '4', title: 'The roadmap operates in the open.',
+      body: 'Any department can see where their work fits, what&rsquo;s coming next, and how the pieces connect.' }
+  ];
+
+  var roster = [
+    { initials: 'PJ', name: 'Peter Johnson',           role: 'Data Intelligence Manager',          lead: true },
+    { initials: 'JF', name: 'Jessica Fraver',          role: 'Lead GIS Analyst',                   lead: true },
+    { initials: 'JM', name: 'James McGinnis',          role: 'Lead Data Analyst',                  lead: true },
+    { initials: 'KC', name: 'Kate Carter',             role: 'AI Program Manager',                 lead: true },
+    { initials: 'LW', name: 'Liz Wilshin',             role: 'GIS Enterprise Analyst',             lead: false },
+    { initials: 'AS', name: 'Andrew Sutton',           role: 'Data Analyst II<br>IT Data Officer', lead: false },
+    { initials: 'DJ', name: 'Daniel Jackson-Reeves',   role: 'Data Analyst II',                    lead: false },
+    { initials: 'JP', name: 'Jean Paul Nduwayo Ntore', role: 'Data Analyst II',                    lead: false },
+    { initials: 'VB', name: 'Vladimir Berg',           role: 'GIS Analyst II',                     lead: false },
+    { initials: 'JA', name: 'Joey Ahumada',            role: 'IT Analyst',                         lead: false }
+  ];
+
+  // ── HTML build ──────────────────────────────────────────────────
+  var html = '<div class="ov-page">';
+
+  // Hero
+  html += '<section class="ov-hero">';
+  html +=   '<div class="ov-hero-eyebrow"><span class="ov-accent">CITY OF TUCSON</span> &middot; DATA INTELLIGENCE TEAM &middot; INFORMATION TECHNOLOGY</div>';
+  html +=   '<h1 class="ov-hero-mission">We build the foundation that lets the city run on data its leaders and departments can act on.</h1>';
+  html +=   '<div class="ov-hero-stats">';
+  html +=     '<div class="ov-stat"><span class="ov-stat-num">' + teamCount + '</span><span class="ov-stat-lbl">team members</span></div>';
+  html +=     '<div class="ov-stat"><span class="ov-stat-num">' + partners.length + '</span><span class="ov-stat-lbl">top partner departments</span></div>';
+  html +=     '<div class="ov-stat"><span class="ov-stat-num">' + totalProjects.toLocaleString() + '</span><span class="ov-stat-lbl">projects tracked</span></div>';
+  html +=     '<div class="ov-stat"><span class="ov-stat-num">' + totalTasks.toLocaleString() + '</span><span class="ov-stat-lbl">tasks tracked</span></div>';
+  html +=     '<div class="ov-stat"><span class="ov-stat-num">' + completed16w + '</span><span class="ov-stat-lbl">completed in last 16 weeks</span></div>';
+  html +=   '</div>';
+  html += '</section>';
+
+  // Services
+  html += '<section class="ov-section">';
+  html +=   '<h2>What we do</h2>';
+  html +=   '<p class="ov-lede">Six service areas spanning the data lifecycle &mdash; from policy and standards to the products partner departments use every day.</p>';
+  html +=   '<div class="ov-services">';
+  services.forEach(function(s) {
+    html += '<div class="ov-service">';
+    html +=   '<span class="ov-service-icon">' + s.icon + '</span>';
+    html +=   '<div class="ov-service-title">' + esc(s.title) + '</div>';
+    html +=   '<div class="ov-service-desc">' + esc(s.desc) + '</div>';
+    html += '</div>';
+  });
+  html +=   '</div>';
+  html += '</section>';
+
+  // Goals
+  html += '<section class="ov-section">';
+  html +=   '<h2>Where we&rsquo;re going &middot; 2026</h2>';
+  html +=   '<p class="ov-lede">Four bets that define a successful year.</p>';
+  html +=   '<div class="ov-goals">';
+  goals.forEach(function(g) {
+    html += '<div class="ov-goal">';
+    html +=   '<div class="ov-goal-num">' + g.num + '</div>';
+    html +=   '<div>';
+    html +=     '<div class="ov-goal-title">' + esc(g.title) + '</div>';
+    html +=     '<div class="ov-goal-body">' + g.body + '</div>'; // intentional HTML
+    html +=   '</div>';
+    html += '</div>';
+  });
+  html +=   '</div>';
+  html += '</section>';
+
+  // Team
+  html += '<section class="ov-section">';
+  html +=   '<h2>The team</h2>';
+  html +=   '<p class="ov-lede">Ten people doing analytics, GIS, governance, and AI work for the city.</p>';
+  html +=   '<div class="ov-team">';
+  roster.forEach(function(p) {
+    html += '<div class="ov-person' + (p.lead ? ' lead' : '') + '">';
+    html +=   '<div class="ov-avatar">' + esc(p.initials) + '</div>';
+    html +=   '<div class="ov-person-name">' + esc(p.name) + '</div>';
+    html +=   '<div class="ov-person-role">' + p.role + '</div>'; // role contains <br> for one row
+    html += '</div>';
+  });
+  html +=   '</div>';
+  html += '</section>';
+
+  // Partners
+  html += '<section class="ov-section">';
+  html +=   '<h2>Departments we partner with</h2>';
+  html +=   '<p class="ov-lede">Where most of our active work happens &mdash; though we serve every department in the city.</p>';
+  html +=   '<div class="ov-partners">';
+  partners.forEach(function(pt) {
+    html += '<div class="ov-partner">';
+    html +=   '<span class="ov-partner-icon">' + pt.icon + '</span>';
+    html +=   '<div class="ov-partner-name">' + esc(pt.name) + '</div>';
+    html +=   '<div class="ov-partner-meta">' + pt.count + ' active project' + (pt.count === 1 ? '' : 's') + '</div>';
+    html += '</div>';
+  });
+  html +=   '</div>';
+  html += '</section>';
+
+  // About this app
+  html += '<section class="ov-about">';
+  html +=   '<div>';
+  html +=     '<div class="ov-about-title">About this app</div>';
+  html +=     '<p class="ov-about-body">The <strong>Analytics Project Tracker</strong> is how we run the team&rsquo;s portfolio. Every active project, task, time entry, capacity allocation, and submitted idea lives here. The public <strong>Slideshow</strong> tab makes a slice of it visible to the rest of the city in real time. The <strong>User Guide</strong> covers how each tab works for team members, leads, and admins.</p>';
+  html +=   '</div>';
+  html +=   '<a href="javascript:void(0)" onclick="window.open(\'guide.html\',\'_blank\')" class="ov-about-cta">Open the User Guide &rarr;</a>';
+  html += '</section>';
+
   html += '</div>';
 
   area.innerHTML = html;
-  document.getElementById('result-count').textContent = PROJECTS.length + ' projects · ' + TASKS.length + ' tasks';
+  var rc = document.getElementById('result-count');
+  if (rc) rc.textContent = PROJECTS.length + ' projects · ' + TASKS.length + ' tasks';
 }
