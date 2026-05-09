@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics Project Tracker — Walkthroughs — Tucson Data Team</title>
+<link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #002669;
+  --gold: #FFDB22;
+  --text: #002855;
+  --text-muted: #6B7280;
+  --border: #E1E2DD;
+  --bg: #F7F5EF;
+  --card-bg: #FFFFFF;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Cardo', Georgia, serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+
+/* Header */
+.guide-header {
+  background: var(--navy); color: #fff; padding: 20px 32px;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.guide-header h1 { font-size: 20px; font-weight: 900; letter-spacing: 0.02em; }
+.guide-header .subtitle { font-size: 13px; opacity: 0.75; font-weight: 400; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.header-link {
+  padding: 8px 14px; background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 6px; font-size: 12px; font-weight: 700; text-decoration: none; font-family: 'Lato', sans-serif;
+  transition: background 0.15s;
+}
+.header-link:hover { background: rgba(255,255,255,0.2); }
+.back-btn {
+  padding: 8px 16px; background: var(--gold); color: #92400E; border: none; border-radius: 6px;
+  font-size: 13px; font-weight: 800; cursor: pointer; text-decoration: none; font-family: 'Lato', sans-serif;
+}
+.back-btn:hover { background: #F0CC00; }
+
+/* Layout */
+.guide-layout { display: flex; max-width: 1200px; margin: 0 auto; min-height: calc(100vh - 64px); }
+
+/* Sidebar TOC */
+.guide-nav {
+  width: 260px; flex-shrink: 0; background: var(--card-bg); border-right: 1px solid var(--border);
+  padding: 24px 0; position: sticky; top: 64px; height: calc(100vh - 64px); overflow-y: auto;
+}
+.guide-nav a {
+  display: block; padding: 8px 24px; font-size: 13px; color: var(--text-muted); text-decoration: none;
+  border-left: 3px solid transparent; transition: all 0.15s;
+}
+.guide-nav a:hover { color: var(--navy); background: #F0F4FF; }
+.guide-nav a.active { color: var(--navy); font-weight: 700; border-left-color: var(--gold); background: rgba(255,219,34,0.15); }
+.guide-nav .nav-section { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #C24200; padding: 16px 24px 6px; }
+.guide-nav a.external { color: var(--navy); font-weight: 700; }
+.guide-nav a.external::after { content: ' →'; opacity: 0.7; }
+
+/* Content */
+.guide-content { flex: 1; padding: 32px 48px 80px; max-width: 820px; }
+
+h2 { font-size: 26px; font-weight: 900; color: var(--navy); margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+h2:first-child { margin-top: 0; }
+h3 { font-size: 18px; font-weight: 800; color: var(--navy); margin: 32px 0 10px; }
+h4 { font-size: 15px; font-weight: 700; color: #374151; margin: 24px 0 8px; }
+p { margin-bottom: 14px; font-size: 15px; }
+ul, ol { margin: 0 0 16px 24px; }
+li { margin-bottom: 6px; font-size: 15px; }
+li strong { color: var(--navy); }
+
+/* Tables */
+.guide-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 14px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+.guide-table th { background: var(--navy); color: #fff; padding: 10px 14px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; }
+.guide-table td { padding: 10px 14px; border-bottom: 1px solid #F3F1EB; }
+.guide-table tr:nth-child(even) td { background: #F9FAFB; }
+.guide-table tr:last-child td { border-bottom: none; }
+
+/* Tip / Note boxes */
+.tip-box { background: #FFFBEB; border-left: 4px solid #F59E0B; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 16px 0; font-size: 14px; }
+.tip-box strong { color: #92400E; }
+.note-box { background: #EEF2FF; border-left: 4px solid var(--navy); border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 16px 0; font-size: 14px; }
+.note-box strong { color: var(--navy); }
+.note-box a { color: var(--navy); font-weight: 700; }
+
+/* ── Walkthroughs ──────────────────────────────────────────────── */
+.wt-card {
+  background: #fff; border: 1px solid var(--border); border-radius: 12px;
+  padding: 0; margin: 24px 0 32px; overflow: hidden;
+}
+.wt-head {
+  padding: 18px 24px; background: linear-gradient(180deg, #FDFCF6 0%, #fff 100%);
+  border-bottom: 1px solid var(--border);
+}
+.wt-head h3 {
+  margin: 0; font-size: 20px; font-weight: 900; color: var(--navy); letter-spacing: -0.01em;
+  font-family: 'Lato', sans-serif;
+}
+.wt-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+.wt-badge {
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  font-family: 'Lato', sans-serif;
+}
+.wt-badge.everyone { background: #EEF2FF; color: var(--navy); }
+.wt-badge.lead { background: #FEF3C7; color: #92400E; }
+.wt-badge.admin { background: #FEE2E2; color: #B91C1C; }
+.wt-time { font-size: 12px; color: var(--text-muted); font-family: 'Lato', sans-serif; }
+.wt-summary { padding: 14px 24px 0; font-size: 14px; color: var(--text-muted); }
+.wt-summary p { margin: 0; }
+.wt-steps { list-style: none; counter-reset: step; padding: 8px 24px 24px; margin: 0; }
+.wt-steps > li {
+  counter-increment: step;
+  position: relative;
+  padding: 14px 0 18px 56px;
+  border-bottom: 1px dashed #E5E7EB;
+  font-size: 15px;
+}
+.wt-steps > li:last-child { border-bottom: none; }
+.wt-steps > li::before {
+  content: counter(step);
+  position: absolute; left: 0; top: 14px;
+  width: 36px; height: 36px;
+  background: var(--navy); color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Lato', sans-serif; font-weight: 900; font-size: 15px;
+}
+.wt-step-title { font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.wt-step-body { color: var(--text); line-height: 1.6; }
+.wt-step-body code {
+  font-family: 'Lato', monospace; background: #F3F1EB; padding: 1px 6px;
+  border-radius: 4px; font-size: 13px; color: var(--navy);
+}
+
+/* Inline screenshot (mock or real) */
+.gh-shot { margin: 12px 0 4px; padding: 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #FAFAF7; }
+.gh-shot-mock { background: #FFFFFF; padding: 14px 16px; font-family: 'Lato', sans-serif; font-size: 13px; color: #1F2937; position: relative; }
+.gh-shot-mock::before { content: 'mockup'; position: absolute; top: 6px; right: 8px; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 800; color: #C24200; background: #FFF7ED; border: 1px solid #FED7AA; padding: 2px 6px; border-radius: 4px; }
+.gh-shot img.gh-shot-img { display: block; width: 100%; height: auto; }
+.gh-shot figcaption { font-size: 12px; color: var(--text-muted); padding: 8px 14px; background: #FAFAF7; font-family: 'Lato', sans-serif; border-top: 1px solid var(--border); }
+.gh-shot figcaption strong { color: var(--navy); }
+.gh-shot-todo { display: block; margin-top: 4px; font-style: normal; color: #92400E; font-size: 11px; }
+.gh-shot-todo code { background: #FFFBEB; color: #92400E; padding: 1px 5px; border-radius: 3px; }
+
+/* Mock UI primitives */
+.gh-tabbar { display: flex; gap: 0; background: var(--navy); border-radius: 6px 6px 0 0; padding: 0; overflow: hidden; }
+.gh-tab { padding: 10px 14px; font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.65); border-bottom: 2px solid transparent; }
+.gh-tab.active { color: #fff; background: rgba(255,255,255,0.08); border-bottom-color: #FFDB22; }
+.gh-toolbar { display: flex; gap: 8px; padding: 8px 12px; background: #F3F1EB; border-radius: 0 0 6px 6px; align-items: center; flex-wrap: wrap; }
+.gh-btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border-radius: 5px; border: 1px solid var(--border); background: #fff; font-size: 12px; font-weight: 700; color: var(--navy); font-family: 'Lato', sans-serif; }
+.gh-btn.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+.gh-btn.gold { background: #FFDB22; color: #92400E; border-color: #FFDB22; }
+.gh-btn.green { background: #83AC16; color: #fff; border-color: #83AC16; }
+.gh-btn.point { box-shadow: 0 0 0 2px #FFDB22, 0 0 0 4px rgba(255,219,34,0.35); }
+.gh-form-row { display: grid; grid-template-columns: 140px 1fr; gap: 8px 14px; margin-bottom: 8px; align-items: center; }
+.gh-form-row label { font-size: 12px; font-weight: 700; color: var(--navy); font-family: 'Lato', sans-serif; }
+.gh-input { padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; background: #fff; font-family: 'Lato', sans-serif; }
+.gh-input.point { border-color: #FFDB22; box-shadow: 0 0 0 2px rgba(255,219,34,0.35); }
+.gh-row { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-bottom: 1px solid #F3F1EB; font-size: 13px; }
+.gh-row:last-child { border-bottom: none; }
+.gh-pid { font-weight: 800; color: var(--navy); }
+.gh-status { font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; font-family: 'Lato', sans-serif; }
+.gh-status.active { background: #DCFCE7; color: #166534; }
+.gh-status.complete { background: #E0E7FF; color: #3730A3; }
+.gh-status.waiting { background: #FEF3C7; color: #92400E; }
+.gh-callout { margin: 8px 0; padding: 8px 12px; background: #FFFBEB; border-left: 3px solid #FFDB22; font-size: 12px; color: #92400E; font-family: 'Lato', sans-serif; border-radius: 0 4px 4px 0; }
+.gh-arrow { display: inline-block; padding: 2px 6px; margin-right: 6px; background: #FFDB22; color: #92400E; border-radius: 3px; font-weight: 800; font-size: 11px; font-family: 'Lato', sans-serif; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .guide-nav { display: none; }
+  .guide-content { padding: 24px 20px 60px; }
+  .guide-header { padding: 16px 20px; }
+  .gh-form-row { grid-template-columns: 1fr; }
+  .wt-steps > li { padding-left: 48px; }
+  .wt-steps > li::before { width: 30px; height: 30px; font-size: 13px; top: 16px; }
+}
+</style>
+</head>
+<body>
+
+<header class="guide-header">
+  <div>
+    <h1>Analytics Project Tracker <span class="subtitle">Walkthroughs</span></h1>
+    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">Updated for v1.15.0.0003</div>
+  </div>
+  <div class="header-actions">
+    <a href="guide.html" class="header-link">📖 Reference Guide</a>
+    <a href="javascript:void(0)" onclick="window.close();" class="back-btn">← Back to Tracker</a>
+  </div>
+</header>
+
+<div class="guide-layout">
+
+<nav class="guide-nav" id="guide-nav">
+  <div class="nav-section">Walkthroughs</div>
+  <a href="#wt-getting-started">1. Your first day on the app</a>
+  <a href="#wt-time-tracking">2. Tracking your time</a>
+  <a href="#wt-update-task">3. Updating your tasks</a>
+  <a href="#wt-submit-idea">4. Submitting an idea</a>
+  <a href="#wt-run-project">5. Running a project (lead)</a>
+  <a href="#wt-promote-idea">6. Reviewing &amp; promoting an idea (lead)</a>
+  <a href="#wt-capacity">7. Capacity planning (admin)</a>
+  <a href="#wt-slideshow-config">8. Configuring the slideshow (admin)</a>
+  <div class="nav-section">Maintenance</div>
+  <a href="#maintaining-walkthroughs">Updating walkthroughs</a>
+  <a href="#screenshot-shot-list">Screenshot shot list</a>
+  <div class="nav-section">Reference</div>
+  <a href="guide.html" class="external">Full Reference Guide</a>
+</nav>
+
+<main class="guide-content">
+
+<h2 id="walkthroughs">Walkthroughs</h2>
+<p>Eight task-oriented walkthroughs covering the most common ways the team uses the app. Each is short (3&ndash;7 steps), labeled with the audience it&rsquo;s aimed at (everyone / lead / admin).</p>
+<div class="note-box">
+  <strong>Need feature-level reference instead?</strong> The <a href="guide.html">Reference Guide</a> documents every tab, formula, and field in the app. These walkthroughs link to the relevant reference sections where extra context helps.
+</div>
+<div class="note-box">
+  <strong>About the screenshots:</strong> Most walkthroughs include inline UI mockups labeled <em>mockup</em>. They approximate what you&rsquo;ll see in the app and will be replaced with real screenshots as we capture them. If something looks slightly different in the live app, the live app is the truth &mdash; <a href="#maintaining-walkthroughs">how we update these</a> is documented in the appendix.
+</div>
+
+<!-- ── Walkthrough 1: Getting started ────────────────── -->
+<section class="wt-card" id="wt-getting-started">
+  <div class="wt-head">
+    <h3>1. Your first day on the app</h3>
+    <div class="wt-meta">
+      <span class="wt-badge everyone">Everyone</span>
+      <span class="wt-time">~5 minutes</span>
+    </div>
+  </div>
+  <div class="wt-summary"><p>Sign in, get oriented, and find the things you&rsquo;ll touch every day.</p></div>
+  <ol class="wt-steps">
+    <li>
+      <div class="wt-step-title">Open the app and sign in.</div>
+      <div class="wt-step-body">Go to the app URL your manager shared. Click <strong>Sign In</strong> in the top-right and authenticate with your City of Tucson ArcGIS Online account. Your name will appear next to the sign-out button when you&rsquo;re in.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Get oriented to the primary tabs.</div>
+      <div class="wt-step-body">The top bar has the main sections of the app. <strong>Overview</strong> is the team intro page, <strong>My Work</strong> is your personal dashboard, <strong>Portfolio</strong> opens to Projects/Tasks lists, and <strong>Slideshow</strong> is the public lobby display. Admins also see Capacity, Issues, and Settings.
+        <figure class="gh-shot">
+          <div class="gh-shot-mock" data-img="primary-tab-bar">
+            <div class="gh-tabbar">
+              <div class="gh-tab">Overview</div>
+              <div class="gh-tab active">👤 My Work</div>
+              <div class="gh-tab">Portfolio</div>
+              <div class="gh-tab">📺 Slideshow</div>
+              <div class="gh-tab">🐛 Issues</div>
+            </div>
+          </div>
+          <figcaption><strong>Figure 1.1.</strong> Primary tab bar after sign-in. <em class="gh-shot-todo">Replace with screenshot saved as <code>guide-images/primary-tab-bar.png</code>.</em></figcaption>
+        </figure>
+      </div>
+    </li>
+    <li>
+      <div class="wt-step-title">Click <strong>My Work</strong>.</div>
+      <div class="wt-step-body">This is where you&rsquo;ll spend most of your time. The KPI strip shows your active projects, open tasks, overdue items, and weekly utilization. Below that you&rsquo;ll see your week&rsquo;s allocation, your projects, and your tasks. If your projects don&rsquo;t appear, see the <strong>Name matching</strong> note in the <a href="guide.html#mywork-tab">My Work Tab reference</a>.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Set your preferences.</div>
+      <div class="wt-step-body">Open <strong>⚙️ Settings &rarr; Preferences</strong>. You can opt into the Slideshow tab, change your default landing tab, and turn on optional UI features. Changes save automatically.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Bookmark the app and the User Guide.</div>
+      <div class="wt-step-body">The Guide is reachable from any page via <strong>About / Help</strong> in the top-right. Bookmark both so you can return without retyping the URL.</div>
+    </li>
+  </ol>
+</section>
+
+<!-- ── Walkthrough 2: Time tracking ──────────────────── -->
+<section class="wt-card" id="wt-time-tracking">
+  <div class="wt-head">
+    <h3>2. Tracking your time on a task</h3>
+    <div class="wt-meta">
+      <span class="wt-badge everyone">Everyone</span>
+      <span class="wt-time">~3 minutes</span>
+    </div>
+  </div>
+  <div class="wt-summary"><p>Log time on tasks using the start/stop timer. Time tracking has to be enabled for you first by a team lead in Settings.</p></div>
+  <ol class="wt-steps">
+    <li>
+      <div class="wt-step-title">Open <strong>My Work</strong>.</div>
+      <div class="wt-step-body">If a <strong>⏱️ Time Tracking</strong> panel appears between the KPI cards and the My Week section, you&rsquo;re enabled. If you don&rsquo;t see it, ask a team lead to turn it on for you in Settings.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Pick a task from the dropdown.</div>
+      <div class="wt-step-body">The dropdown lists your <strong>In Progress</strong>, <strong>Waiting for Response</strong>, and <strong>On Hold</strong> tasks. Pick the one you&rsquo;re about to work on.
+        <figure class="gh-shot">
+          <div class="gh-shot-mock" data-img="time-tracking-panel">
+            <div style="font-weight:800;color:var(--navy);font-size:14px;margin-bottom:8px;">⏱️ Time Tracking</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <select class="gh-input point" style="flex:1;"><option>T-220 ArcGIS portal review &mdash; P-101 Maps Update</option></select>
+              <span class="gh-btn green">▶ Start</span>
+            </div>
+            <div class="gh-callout" style="margin-top:10px;"><span class="gh-arrow">→</span>Pick the task here, then click <strong>Start</strong>.</div>
+          </div>
+          <figcaption><strong>Figure 2.1.</strong> Time-tracking panel with task dropdown and Start button. <em class="gh-shot-todo">Replace with screenshot saved as <code>guide-images/time-tracking-panel.png</code>.</em></figcaption>
+        </figure>
+      </div>
+    </li>
+    <li>
+      <div class="wt-step-title">Click <strong>▶ Start</strong>.</div>
+      <div class="wt-step-body">The elapsed time begins counting up. A green pulsing indicator confirms the timer is active. You can start timers on multiple tasks at once if you&rsquo;re context-switching.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">When you take a break, click <strong>⏸ Pause</strong>.</div>
+      <div class="wt-step-body">The entry saves and a green <strong>▶</strong> Resume button appears in today&rsquo;s log so you can pick the same task back up later. You can pause and resume as many times as you want; the entries sum to the right total.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">When you&rsquo;re done with the work session, click <strong>⏹ Stop</strong>.</div>
+      <div class="wt-step-body">Hours are calculated from start and end times and your work schedule (overnight and weekend time is automatically excluded). The entry appears in <strong>Today&rsquo;s Log</strong> below. Use the <strong>✏️ Edit</strong> button if you need to adjust times or add notes.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Forgot to start a timer?</div>
+      <div class="wt-step-body">No problem &mdash; you can edit any entry retroactively, or use the manual entry form. See the <a href="guide.html#mywork-tab">Time Tracking reference</a> for retroactive logging.</div>
+    </li>
+  </ol>
+</section>
+
+<!-- ── Walkthrough 3: Update a task ──────────────────── -->
+<section class="wt-card" id="wt-update-task">
+  <div class="wt-head">
+    <h3>3. Updating one of your tasks</h3>
+    <div class="wt-meta">
+      <span class="wt-badge everyone">Everyone</span>
+      <span class="wt-time">~3 minutes</span>
+    </div>
+  </div>
+  <div class="wt-summary"><p>Change a task&rsquo;s status, reassign it, or mark it complete.</p></div>
+  <ol class="wt-steps">
+    <li>
+      <div class="wt-step-title">Find the task.</div>
+      <div class="wt-step-body">The fastest way is from <strong>My Work &rarr; My Tasks</strong>. If it&rsquo;s not there (e.g. it&rsquo;s assigned to someone else but you need to update it), use the <strong>Portfolio &rarr; Tasks</strong> tab and search by name or task ID (e.g. <code>T-220</code>).</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Click the task to open its detail page.</div>
+      <div class="wt-step-body">You&rsquo;ll see the parent project, status, dates, assignees, description, and dependencies.
+        <figure class="gh-shot">
+          <div class="gh-shot-mock" data-img="task-detail">
+            <div style="display:flex;gap:8px;align-items:baseline;margin-bottom:6px;">
+              <span class="gh-pid">T-220</span>
+              <span class="gh-status active">Active</span>
+              <span style="margin-left:auto;font-size:11px;color:var(--text-muted);">P-101 Maps Update</span>
+            </div>
+            <div style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:10px;">ArcGIS portal review</div>
+            <div class="gh-form-row"><label>Status</label><select class="gh-input point"><option>Active</option><option>Waiting for Response</option><option>Complete</option></select></div>
+            <div class="gh-form-row"><label>Assignee</label><input class="gh-input" value="Peter Johnson"></div>
+            <div class="gh-form-row"><label>Due date</label><input class="gh-input" value="2026-05-14"></div>
+            <div style="margin-top:12px;display:flex;gap:8px;"><span class="gh-btn primary">Save</span><span class="gh-btn">Cancel</span></div>
+          </div>
+          <figcaption><strong>Figure 3.1.</strong> Task detail page with editable status, assignee, and dates. <em class="gh-shot-todo">Replace with screenshot saved as <code>guide-images/task-detail.png</code>.</em></figcaption>
+        </figure>
+      </div>
+    </li>
+    <li>
+      <div class="wt-step-title">Edit the fields you need.</div>
+      <div class="wt-step-body">Change <strong>Status</strong> (e.g. <code>Active</code> &rarr; <code>Waiting for Response</code>), update <strong>Assignee</strong>, adjust <strong>Due date</strong>, or add notes in the description. Use <strong>working_due</strong> to track an internal target separate from the externally-committed <strong>due</strong> date.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Mark complete when done.</div>
+      <div class="wt-step-body">Set <strong>Status</strong> to <code>Complete</code>. The system records today as <strong>actual_end</strong>, which feeds the team&rsquo;s throughput metrics (visible on the Slideshow tab).</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Click <strong>Save</strong>.</div>
+      <div class="wt-step-body">Changes write to ArcGIS Online immediately. Other team members will see the update on their next refresh (the <strong>🔄 Refresh</strong> toolbar button).</div>
+    </li>
+  </ol>
+</section>
+
+<!-- ── Walkthrough 4: Submit an idea ─────────────────── -->
+<section class="wt-card" id="wt-submit-idea">
+  <div class="wt-head">
+    <h3>4. Submitting an idea</h3>
+    <div class="wt-meta">
+      <span class="wt-badge everyone">Everyone</span>
+      <span class="wt-time">~2 minutes</span>
+    </div>
+  </div>
+  <div class="wt-summary"><p>When you have an idea for a new project that doesn&rsquo;t fit into existing work, submit it. A lead reviews it and either promotes it to Active or schedules it for later.</p></div>
+  <ol class="wt-steps">
+    <li>
+      <div class="wt-step-title">Click <strong>💡 Submit Idea</strong> in the toolbar.</div>
+      <div class="wt-step-body">It&rsquo;s in the top-right toolbar on every tab.
+        <figure class="gh-shot">
+          <div class="gh-shot-mock" data-img="submit-idea-button">
+            <div class="gh-toolbar">
+              <span class="gh-btn gold point">💡 Submit Idea</span>
+              <span class="gh-btn">🔄 Refresh</span>
+              <span class="gh-btn">⬇</span>
+              <span style="margin-left:auto;font-size:11px;color:var(--text-muted);">About / Help</span>
+            </div>
+          </div>
+          <figcaption><strong>Figure 4.1.</strong> The Submit Idea button in the global toolbar. <em class="gh-shot-todo">Replace with screenshot saved as <code>guide-images/submit-idea-button.png</code>.</em></figcaption>
+        </figure>
+      </div>
+    </li>
+    <li>
+      <div class="wt-step-title">Fill in the form.</div>
+      <div class="wt-step-body">A short form opens. Required: <strong>Title</strong>, <strong>Description</strong>, <strong>Sponsor</strong> (whose decision it serves), <strong>Category</strong>. Optional but valuable: target partner department, anticipated effort, links to context.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Click <strong>Submit</strong>.</div>
+      <div class="wt-step-body">The idea is saved with status <code>Idea</code> and shows up in the <strong>Idea Review</strong> queue for leads.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">What happens next.</div>
+      <div class="wt-step-body">A team lead reviews ideas regularly. They&rsquo;ll either <strong>promote</strong> it to an Active project (assigning a contact and target dates), <strong>schedule</strong> it for a future quarter, or <strong>defer</strong> it with a comment explaining why. You&rsquo;ll be able to see the status change when you next look at it.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Tip &mdash; quality of intake.</div>
+      <div class="wt-step-body">A short, specific description (one paragraph, three sentences) gets a faster review than a one-line stub. Include the <em>decision</em> the work will inform, not just the artifact.</div>
+    </li>
+  </ol>
+</section>
+
+<!-- ── Walkthrough 5: Run a project ──────────────────── -->
+<section class="wt-card" id="wt-run-project">
+  <div class="wt-head">
+    <h3>5. Running a project from kickoff to close</h3>
+    <div class="wt-meta">
+      <span class="wt-badge lead">Lead</span>
+      <span class="wt-time">~7 minutes (one-time setup; then ongoing)</span>
+    </div>
+  </div>
+  <div class="wt-summary"><p>The end-to-end flow for project leads: create the project, add tasks, work through phases, and close it out cleanly.</p></div>
+  <ol class="wt-steps">
+    <li>
+      <div class="wt-step-title">Create the project.</div>
+      <div class="wt-step-body">Either promote an existing idea (see Walkthrough 6) or click <strong>＋ New Project</strong> from the Portfolio &rarr; Projects tab. Required: <strong>Title</strong>, <strong>Status</strong> (typically start at <code>Scheduled</code> or <code>Active</code>), <strong>Phase</strong>, <strong>Primary Contact</strong>, <strong>Partner Department</strong>, <strong>Category</strong>, target <strong>start</strong> and <strong>end</strong> dates.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Add the team.</div>
+      <div class="wt-step-body">In the project detail page, list contributors in the <strong>Team Members</strong> field. They&rsquo;ll see the project on their My Work tab.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Break work into tasks.</div>
+      <div class="wt-step-body">Use <strong>＋ New Task</strong> from inside the project. Each task gets an <strong>Assignee</strong>, a <strong>Status</strong>, and a <strong>Due date</strong>. Add <strong>Dependencies</strong> if a task must wait for another. Tasks with unresolved dependencies show a 🔒 in the Gantt view.
+        <figure class="gh-shot">
+          <div class="gh-shot-mock" data-img="project-detail-tasks">
+            <div style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:8px;">P-101 Maps Update <span class="gh-status active" style="margin-left:8px;">Active</span></div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Phase 2 (Build) &middot; Partner: Transportation &middot; Lead: Peter Johnson</div>
+            <div style="font-weight:700;color:var(--navy);font-size:12px;margin-bottom:6px;letter-spacing:0.04em;text-transform:uppercase;">Tasks</div>
+            <div style="border:1px solid var(--border);border-radius:6px;">
+              <div class="gh-row"><span class="gh-pid">T-220</span><span style="flex:1;">ArcGIS portal review</span><span class="gh-status active">Active</span><span style="font-size:11px;color:var(--text-muted);">Due May 14</span></div>
+              <div class="gh-row"><span class="gh-pid">T-221</span><span style="flex:1;">Sprint planning notes</span><span class="gh-status waiting">Waiting</span><span style="font-size:11px;color:var(--text-muted);">Due May 14</span></div>
+              <div class="gh-row"><span class="gh-pid">T-222</span><span style="flex:1;">Layer schema validation</span><span class="gh-status complete">Complete</span><span style="font-size:11px;color:var(--text-muted);">May 5</span></div>
+            </div>
+            <div style="margin-top:10px;"><span class="gh-btn primary">＋ New Task</span></div>
+          </div>
+          <figcaption><strong>Figure 5.1.</strong> Project detail with task list and the New Task button. <em class="gh-shot-todo">Replace with screenshot saved as <code>guide-images/project-detail-tasks.png</code>.</em></figcaption>
+        </figure>
+      </div>
+    </li>
+    <li>
+      <div class="wt-step-title">Move through phases.</div>
+      <div class="wt-step-body">Update the <strong>Phase</strong> field as the project progresses (Not started &rarr; Kickoff &rarr; Build &rarr; ...). Each phase has its own checklist of requirements; satisfy them in the project detail before advancing. Phase changes are visible on the team Slideshow throughput slide.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Run a weekly check.</div>
+      <div class="wt-step-body">Once a week, open your project, scan task statuses, look for tasks <strong>Waiting for Response</strong> for too long (those become &ldquo;blockers&rdquo; that show up on the team&rsquo;s Health view), and update <strong>working_due</strong> if the schedule has slipped.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Close the project.</div>
+      <div class="wt-step-body">When done, set the project <strong>Status</strong> to <code>Complete</code> and fill in <strong>actual_end</strong>. Then go to <strong>Portfolio &rarr; 🔁 Project Review</strong> and complete a Project Review entry (what shipped, what we learned, links to artifacts).</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Verify it shows up in the throughput chart.</div>
+      <div class="wt-step-body">The completion appears on the Slideshow&rsquo;s 16-week throughput chart on the next data refresh. If your team&rsquo;s 4-week rolling average ticks up, your project just helped move the needle.</div>
+    </li>
+  </ol>
+</section>
+
+<!-- ── Walkthrough 6: Promote an idea ────────────────── -->
+<section class="wt-card" id="wt-promote-idea">
+  <div class="wt-head">
+    <h3>6. Reviewing and promoting an idea</h3>
+    <div class="wt-meta">
+      <span class="wt-badge lead">Lead</span>
+      <span class="wt-time">~3 minutes</span>
+    </div>
+  </div>
+  <div class="wt-summary"><p>Triage submitted ideas and turn the ones you accept into proper projects.</p></div>
+  <ol class="wt-steps">
+    <li>
+      <div class="wt-step-title">Open <strong>💡 Review Ideas</strong>.</div>
+      <div class="wt-step-body">From the toolbar (visible to leads when there are pending ideas). The badge count shows how many are waiting.
+        <figure class="gh-shot">
+          <div class="gh-shot-mock" data-img="review-ideas-button">
+            <div class="gh-toolbar">
+              <span class="gh-btn gold">💡 Submit Idea</span>
+              <span class="gh-btn point" style="border-color:#FFDB22;color:#92400E;">💡 Review Ideas <span style="background:#FFDB22;color:#92400E;border-radius:8px;padding:1px 6px;font-size:10px;margin-left:4px;">4</span></span>
+              <span class="gh-btn">🔄 Refresh</span>
+            </div>
+          </div>
+          <figcaption><strong>Figure 6.1.</strong> The Review Ideas button with pending count badge. <em class="gh-shot-todo">Replace with screenshot saved as <code>guide-images/review-ideas-button.png</code>.</em></figcaption>
+        </figure>
+      </div>
+    </li>
+    <li>
+      <div class="wt-step-title">Read the idea and check the basics.</div>
+      <div class="wt-step-body">Does it serve a real decision? Is the sponsor named? Is it a fit for one of our six service areas? If anything is missing, comment back to the submitter rather than promoting prematurely.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Click <strong>Promote to Project</strong>.</div>
+      <div class="wt-step-body">A pre-filled form opens. Set <strong>Status</strong> to <code>Active</code> or <code>Scheduled</code> (depending on whether it starts now or later), assign a <strong>Primary Contact</strong>, set <strong>Phase</strong> to <code>Not started</code> or <code>Kickoff</code>, and confirm the partner department and category.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Save.</div>
+      <div class="wt-step-body">The idea record is converted to a project. The submitter sees the status change when they next refresh.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Hand off to the contact.</div>
+      <div class="wt-step-body">Let the new project lead know they&rsquo;re on the hook &mdash; from here, walkthrough 5 is the next step.</div>
+    </li>
+  </ol>
+</section>
+
+<!-- ── Walkthrough 7: Capacity planning ──────────────── -->
+<section class="wt-card" id="wt-capacity">
+  <div class="wt-head">
+    <h3>7. Capacity planning for the next quarter</h3>
+    <div class="wt-meta">
+      <span class="wt-badge admin">Admin</span>
+      <span class="wt-time">~5&ndash;10 minutes</span>
+    </div>
+  </div>
+  <div class="wt-summary"><p>Look at the team&rsquo;s allocation, find pinch points, and adjust before they bite.</p></div>
+  <ol class="wt-steps">
+    <li>
+      <div class="wt-step-title">Open <strong>Capacity &rarr; Resources</strong>.</div>
+      <div class="wt-step-body">You see one card per team member with their current-week utilization. Cards are color-coded: green for healthy (60&ndash;100%), amber for over (100&ndash;120%), red for very over (&gt; 120%). Sort by most-allocated to find pinch points first.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Open the allocation editor.</div>
+      <div class="wt-step-body">Below the cards is a per-person allocation table. Click any cell to edit the allocation percentage. The total row at the bottom shows combined load &mdash; cells over 100% are highlighted.
+        <figure class="gh-shot">
+          <div class="gh-shot-mock" data-img="resources-table">
+            <div style="font-size:11px;font-weight:800;color:var(--navy);margin-bottom:6px;letter-spacing:0.04em;text-transform:uppercase;">Current week project allocations</div>
+            <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;font-size:12px;">
+              <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 0.8fr;gap:0;background:#F3F1EB;font-weight:800;color:var(--navy);padding:8px 12px;">
+                <div>Member</div><div>P-101 Maps</div><div>P-145 Pavement</div><div>P-160 Briefing</div><div style="text-align:right;">Total</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 0.8fr;gap:0;padding:8px 12px;border-top:1px solid #F3F1EB;">
+                <div>Peter Johnson</div><div>40%</div><div>10%</div><div class="point" style="background:#FFFBEB;border-radius:3px;padding:0 4px;">30%</div><div style="text-align:right;font-weight:800;">80%</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 0.8fr;gap:0;padding:8px 12px;border-top:1px solid #F3F1EB;">
+                <div>Jessica Fraver</div><div>50%</div><div>0%</div><div>30%</div><div style="text-align:right;font-weight:800;">80%</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 0.8fr;gap:0;padding:8px 12px;border-top:1px solid #F3F1EB;background:#FEF2F2;">
+                <div style="color:#B91C1C;">Alex Doe</div><div>70%</div><div>40%</div><div>32%</div><div style="text-align:right;font-weight:900;color:#B91C1C;">142%</div>
+              </div>
+            </div>
+            <div class="gh-callout" style="margin-top:8px;"><span class="gh-arrow">→</span>Cell highlighted? Click to edit.</div>
+          </div>
+          <figcaption><strong>Figure 7.1.</strong> Resources allocation table with one over-allocated row. <em class="gh-shot-todo">Replace with screenshot saved as <code>guide-images/resources-table.png</code>.</em></figcaption>
+        </figure>
+      </div>
+    </li>
+    <li>
+      <div class="wt-step-title">Switch to <strong>📊 Forecast</strong> for the bigger picture.</div>
+      <div class="wt-step-body">The Forecast tab projects 13 weeks out. Look for the <strong>Team Load</strong> chart &mdash; if combined allocated hours regularly approach combined capacity, you&rsquo;re overcommitting. Per-person sparklines show whose load swings.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Adjust where you can.</div>
+      <div class="wt-step-body">Trade allocations between members, push <strong>Scheduled</strong> projects later, or flag specific projects to the requesting departments. The allocation editor saves changes immediately to ArcGIS Online.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Communicate the result.</div>
+      <div class="wt-step-body">If you re-scheduled or de-prioritized something, the project&rsquo;s working_due update is automatic, but the partner department won&rsquo;t know unless you tell them. A quick email beats a surprise.</div>
+    </li>
+  </ol>
+</section>
+
+<!-- ── Walkthrough 8: Configure slideshow ────────────── -->
+<section class="wt-card" id="wt-slideshow-config">
+  <div class="wt-head">
+    <h3>8. Configuring the lobby slideshow</h3>
+    <div class="wt-meta">
+      <span class="wt-badge admin">Admin</span>
+      <span class="wt-time">~3 minutes</span>
+    </div>
+  </div>
+  <div class="wt-summary"><p>Choose which slides display, in what order, for how long &mdash; and share the public URL.</p></div>
+  <ol class="wt-steps">
+    <li>
+      <div class="wt-step-title">Open <strong>⚙️ Settings &rarr; System &rarr; Slideshow</strong>.</div>
+      <div class="wt-step-body">Admin-only. The editor lists every available slide with controls for enable, order, and per-slide duration override.
+        <figure class="gh-shot">
+          <div class="gh-shot-mock" data-img="slideshow-editor">
+            <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:4px;">Slideshow</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Configure the lobby-display slideshow that cycles through Overview panels.</div>
+            <div style="background:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;font-size:12px;">
+              <span style="font-weight:700;">Default duration per slide</span>
+              <input class="gh-input" value="15" style="width:60px;text-align:right;">
+              <span style="color:var(--text-muted);font-size:11px;">seconds.</span>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:24px 30px 1fr 70px;gap:8px;align-items:center;padding:8px 12px;background:#F3F1EB;font-size:11px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">
+                <span></span><span>Order</span><span>Slide</span><span style="text-align:right;">Duration</span>
+              </div>
+              <div style="display:grid;grid-template-columns:24px 30px 1fr 70px;gap:8px;align-items:center;padding:8px 12px;border-top:1px solid var(--border);font-size:12px;">
+                <input type="checkbox" checked><span>▲▼</span><span>Portfolio snapshot</span><input class="gh-input" value="" placeholder="default" style="text-align:right;">
+              </div>
+              <div style="display:grid;grid-template-columns:24px 30px 1fr 70px;gap:8px;align-items:center;padding:8px 12px;border-top:1px solid var(--border);font-size:12px;">
+                <input type="checkbox" checked><span>▲▼</span><span>Project throughput &mdash; last 16 weeks</span><input class="gh-input" value="20" style="text-align:right;">
+              </div>
+              <div style="display:grid;grid-template-columns:24px 30px 1fr 70px;gap:8px;align-items:center;padding:8px 12px;border-top:1px solid var(--border);font-size:12px;">
+                <input type="checkbox"><span>▲▼</span><span>Overdue projects and tasks</span><input class="gh-input" value="" placeholder="default" style="text-align:right;">
+              </div>
+            </div>
+            <div style="margin-top:10px;display:flex;gap:8px;"><span class="gh-btn primary">Save changes</span><span class="gh-btn">Discard</span></div>
+          </div>
+          <figcaption><strong>Figure 8.1.</strong> Slideshow editor in Settings. <em class="gh-shot-todo">Replace with screenshot saved as <code>guide-images/slideshow-editor.png</code>.</em></figcaption>
+        </figure>
+      </div>
+    </li>
+    <li>
+      <div class="wt-step-title">Toggle slides on or off.</div>
+      <div class="wt-step-body">Uncheck slides that aren&rsquo;t telling a useful story right now (e.g. an empty Priority slide while the team rebuilds the priority taxonomy). Disabled slides simply don&rsquo;t appear in the rotation.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Reorder with the ▲▼ arrows.</div>
+      <div class="wt-step-body">Lead with whatever you most want lobby visitors to see first. The throughput chart is a good opener for a &ldquo;team is shipping&rdquo; feel; the team intro is a strong opener for &ldquo;who is this team?&rdquo;</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Tune durations.</div>
+      <div class="wt-step-body">Default is 15 seconds. Slides with more text or smaller numbers (categories, deadlines) read better at 20&ndash;25; slides with one big number (snapshot, throughput) read fine at 10&ndash;12. Override per-slide in the right column; leave blank to use the default.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Click <strong>Save changes</strong>.</div>
+      <div class="wt-step-body">Saves to <code>app_config.display_config</code> &mdash; the next time anyone opens the Slideshow tab they get the new config. No restart needed.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Share the public URL.</div>
+      <div class="wt-step-body">The Slideshow tab works without sign-in. Bookmark the deep link (the URL with <code>#slideshow</code> appended) on the lobby display computer; it&rsquo;ll auto-load and start cycling.</div>
+    </li>
+  </ol>
+</section>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2 id="maintaining-walkthroughs">Updating walkthroughs</h2>
+<p>For whoever maintains this page (currently the team lead). The walkthroughs above are designed to be edited in place as the app changes.</p>
+
+<h3>Where walkthroughs live</h3>
+<p>Everything on this page lives in <code>walkthroughs.html</code> in the repo root. The sidebar TOC is at the top of the file inside <code>&lt;nav class="guide-nav"&gt;</code>; the walkthrough content is inside <code>&lt;main class="guide-content"&gt;</code>; the styling is in the page&rsquo;s <code>&lt;style&gt;</code> block.</p>
+<p>The deeper feature reference lives in a separate file, <code>guide.html</code>. If a walkthrough needs to send the reader for more context, link to a section in <code>guide.html</code> using its anchor (e.g. <code>guide.html#mywork-tab</code>).</p>
+
+<h3>Pattern for a single walkthrough</h3>
+<p>Each walkthrough is a <code>&lt;section class="wt-card" id="wt-..."&gt;</code> with three parts: head (title + audience badge + time), summary (one line), and an ordered list of steps.</p>
+<pre style="background:#0F172A;color:#E5E7EB;padding:14px 18px;border-radius:8px;font-size:12px;line-height:1.55;overflow-x:auto;font-family:'Lato',monospace;">&lt;section class="wt-card" id="wt-your-id"&gt;
+  &lt;div class="wt-head"&gt;
+    &lt;h3&gt;N. Title goes here&lt;/h3&gt;
+    &lt;div class="wt-meta"&gt;
+      &lt;span class="wt-badge everyone"&gt;Everyone&lt;/span&gt;  &lt;!-- or .lead / .admin --&gt;
+      &lt;span class="wt-time"&gt;~3 minutes&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="wt-summary"&gt;&lt;p&gt;One-line "what you&rsquo;ll do."&lt;/p&gt;&lt;/div&gt;
+  &lt;ol class="wt-steps"&gt;
+    &lt;li&gt;
+      &lt;div class="wt-step-title"&gt;Click the X button.&lt;/div&gt;
+      &lt;div class="wt-step-body"&gt;Why and what happens next.&lt;/div&gt;
+    &lt;/li&gt;
+    &lt;!-- more steps --&gt;
+  &lt;/ol&gt;
+&lt;/section&gt;</pre>
+
+<p>To add a new walkthrough: copy the pattern above, give it a unique <code>id="wt-something"</code>, and add a matching link in the sidebar nav at the top of the file.</p>
+
+<h3>When the app changes — text updates</h3>
+<p>If you change a button label, rename a tab, or alter a workflow, update the matching walkthrough text. A useful rule of thumb: when you ship a code change that touches the UI, search <code>walkthroughs.html</code> for the old label and update it.</p>
+<div class="tip-box"><strong>Quick check:</strong> If you renamed something globally, <code>git grep</code> for the old name across <code>walkthroughs.html</code> AND <code>guide.html</code> in addition to the source. Stale guide text confuses new team members faster than no guide at all.</div>
+
+<h3>Replacing a mockup with a real screenshot</h3>
+<p>Each illustration is currently an inline HTML/CSS mockup. When you have a real screenshot, swap it in:</p>
+<ol>
+  <li><strong>Capture the screenshot.</strong> Use the description in the figure&rsquo;s caption as your shot list. Capture at full window width on a desktop browser; the content area is ~820px wide so 1200&ndash;1500px screenshots read cleanly.</li>
+  <li><strong>Save the image.</strong> Put it in a folder called <code>guide-images/</code> at the repo root (create it if it doesn&rsquo;t exist). Name the file using the <code>data-img</code> value on the mock div &mdash; e.g. <code>data-img="primary-tab-bar"</code> &rarr; <code>guide-images/primary-tab-bar.png</code>.</li>
+  <li><strong>Crop and compress.</strong> Crop tightly to the relevant UI region. PNG (or JPEG if no transparency / large screenshot). Aim for &lt; 200KB per image.</li>
+  <li><strong>Swap the HTML.</strong> Replace the entire <code>&lt;div class="gh-shot-mock" data-img="..."&gt;...&lt;/div&gt;</code> with:
+    <pre style="background:#0F172A;color:#E5E7EB;padding:14px 18px;border-radius:8px;font-size:12px;line-height:1.55;overflow-x:auto;font-family:'Lato',monospace;">&lt;img class="gh-shot-img" src="guide-images/primary-tab-bar.png"
+     alt="Primary tab bar after sign-in"&gt;</pre>
+  </li>
+  <li><strong>Clean up the caption.</strong> Remove the <code>&lt;em class="gh-shot-todo"&gt;...&lt;/em&gt;</code> "Replace this mock" text. Keep the <strong>Figure N.M.</strong> label and the descriptive sentence.</li>
+</ol>
+<div class="note-box"><strong>Tip &mdash; one at a time:</strong> Replace screenshots gradually. Eight walkthroughs spread across one workday is comfortable.</div>
+
+<h3>When a screenshot goes stale</h3>
+<p>UI changed and the screenshot no longer matches?</p>
+<ul>
+  <li><strong>Recapture.</strong> Same filename overwrites the old file. Bump <code>APP_VERSION</code> for cache-busting (see below). Done.</li>
+  <li><strong>Revert to a mockup.</strong> If the UI is mid-redesign, replace the <code>&lt;img&gt;</code> tag back to a <code>&lt;div class="gh-shot-mock" data-img="..."&gt;</code> with a fresh inline mock. The <em>mockup</em> badge in the corner makes the not-final-yet status obvious to readers.</li>
+</ul>
+
+<h3>Cache-busting</h3>
+<p><code>walkthroughs.html</code> and <code>guide.html</code> are opened directly via <code>window.open()</code> without a <code>?v=</code> query string, so browsers cache them aggressively. After updating either:</p>
+<ul>
+  <li>Bump <code>APP_VERSION</code> in <code>src/constants.js</code> per the project versioning convention (BUILD bump for guide-only updates; PATCH if you also fixed a related app bug).</li>
+  <li>Update the <code>"Updated for v..."</code> line in this page&rsquo;s header to match.</li>
+  <li>Tell readers to hard-refresh (Ctrl+F5 / Cmd+Shift+R) when you announce changes.</li>
+</ul>
+
+<h3>Commit conventions</h3>
+<p>Walkthrough edits live in the same commit as the version bump:</p>
+<pre style="background:#0F172A;color:#E5E7EB;padding:14px 18px;border-radius:8px;font-size:12px;line-height:1.55;overflow-x:auto;font-family:'Lato',monospace;">v1.X.Y.NNNN — Walkthroughs: &lt;what changed&gt;
+
+&lt;Short paragraph: which walkthrough(s), what changed, why.
+e.g. "Walkthrough 2 step 4 — Pause button now resumes
+in the same task slot, not opens a new entry."&gt;</pre>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2 id="screenshot-shot-list">Screenshot shot list</h2>
+<p>Eight screenshots to capture, one per inline mockup. Capture at full desktop width (1200&ndash;1500px) and save in <code>guide-images/</code>.</p>
+<table class="guide-table">
+  <thead>
+    <tr><th style="width:30%;">File</th><th style="width:35%;">What to capture</th><th>Window state</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>primary-tab-bar.png</code></td>
+      <td>The top primary tab bar, with My Work selected.</td>
+      <td>Signed-in, all tabs visible. Crop to just the bar.</td>
+    </tr>
+    <tr>
+      <td><code>time-tracking-panel.png</code></td>
+      <td>The Time Tracking panel on My Work, with the task dropdown open or showing the selected task and the Start button visible.</td>
+      <td>Signed-in as someone with time tracking enabled. No active timer (so you see Start, not Pause).</td>
+    </tr>
+    <tr>
+      <td><code>task-detail.png</code></td>
+      <td>A task detail page with editable Status, Assignee, Due date fields and the Save / Cancel button row.</td>
+      <td>Open any task you&rsquo;ve assigned to yourself, scroll to the top, capture the meta + form area.</td>
+    </tr>
+    <tr>
+      <td><code>submit-idea-button.png</code></td>
+      <td>The right side of the global toolbar showing the gold Submit Idea button.</td>
+      <td>Any tab. Crop tightly to the toolbar buttons.</td>
+    </tr>
+    <tr>
+      <td><code>project-detail-tasks.png</code></td>
+      <td>A project detail page showing the project header (status, phase, partner) and the list of child tasks with the New Task button.</td>
+      <td>Open any active project that has 3&ndash;6 tasks. Scroll so both the header and the tasks list are visible.</td>
+    </tr>
+    <tr>
+      <td><code>review-ideas-button.png</code></td>
+      <td>The toolbar with the Review Ideas button visible and showing a non-zero pending count badge.</td>
+      <td>Sign in as an admin. Wait until at least one idea is pending, or seed a test idea. Crop to toolbar.</td>
+    </tr>
+    <tr>
+      <td><code>resources-table.png</code></td>
+      <td>The Capacity &rarr; Resources allocation table with at least one over-allocated row showing the red highlight.</td>
+      <td>Admin view. Easiest if you can capture during a normally-busy week. Otherwise stage a test allocation.</td>
+    </tr>
+    <tr>
+      <td><code>slideshow-editor.png</code></td>
+      <td>Settings &rarr; System &rarr; Slideshow editor: default-duration row, the slide list with a couple slides toggled on, and the Save / Discard button row.</td>
+      <td>Admin. Make sure 3&ndash;5 slides are visible in the list (scroll if needed) so the structure reads.</td>
+    </tr>
+  </tbody>
+</table>
+<p style="font-size:13px;color:var(--text-muted);margin-top:18px;"><strong>Once a row is captured and swapped in,</strong> remove it from this list (or keep the table for future maintainers and add a "captured" column instead).</p>
+
+</main>
+</div>
+
+<script>
+// Highlight active nav link on scroll
+const sections = document.querySelectorAll('h2[id], section[id]');
+const navLinks = document.querySelectorAll('.guide-nav a:not(.external)');
+window.addEventListener('scroll', function() {
+  let current = '';
+  sections.forEach(function(section) {
+    if (window.scrollY >= section.offsetTop - 100) current = section.id;
+  });
+  navLinks.forEach(function(link) {
+    link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+  });
+});
+</script>
+</body>
+</html>
