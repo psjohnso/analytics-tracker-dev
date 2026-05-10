@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.16.0.0009">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.16.0.0010"></script>
+<script src="src/constants.js?v=1.16.0.0011"></script>
 <script src="src/agol.js?v=1.16.0.0001"></script>
 <script src="src/auth.js?v=1.16.0.0001"></script>
 <script src="src/render.js?v=1.16.0.0010"></script>
@@ -1302,10 +1302,9 @@ async function saveUserPrefs() {
 //  ARCGIS ONLINE REST API INTEGRATION
 // ══════════════════════════════════════════════════════════════════════
 // ── ACCESS CONTROL ────────────────────────────────────────────────────
-// ArcGIS Online group whose members are authorized to change a project's
-// status from "Idea" to any other status. All other status changes are
-// allowed for everyone. Manage membership via ArcGIS Online.
-const IDEA_PROMOTE_GROUP_ID = '2bd32af20dd745d6bdf3807446761973';
+// IDEA_PROMOTE_GROUP_ID is defined in src/constants.js so it's available
+// to both this page and dataprogram.html (lite app) — both call
+// fetchAgolUserInfo which references it for the admin/lead group check.
 
 // Load just projects and tasks without authentication (read-only mode)
 // Resolves Item IDs to REST URLs, then queries without a token.

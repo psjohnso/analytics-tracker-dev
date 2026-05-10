@@ -25,6 +25,8 @@ var _lpEditingId = null;          // null = new; otherwise project's objectId
 var _lpPartnerDepts = [];
 var _lpStatuses = ['Active', 'Scheduled', 'On Hold', 'Complete', 'Canceled', 'Future'];
 var _lpActiveFilter = 'all';
+var _lpAdminView = false;         // true when an admin has access via isAdmin() rather than data_program_lead_team
+var _lpAllTeams = [];             // full Data Program team list (admin team-switcher uses this)
 
 document.addEventListener('DOMContentLoaded', function() {
   // Status-change handler: show/hide the Completion-date field
@@ -63,7 +65,20 @@ async function lpBootstrap() {
       return;
     }
 
-    // 3. Look up the user's member record + their data_program_lead_team
+    // 3. Load the Data Program team list (used by admin team-switcher
+    // and as a fallback validator). Falls back to the constant default.
+    try {
+      var dpFeats = await agolQuery(ARCGIS_CONFIG.appConfigUrl, "config_key='data_program'");
+      if (dpFeats && dpFeats.length) {
+        var dpParsed = JSON.parse(dpFeats[0].attributes.config_value);
+        if (dpParsed && Array.isArray(dpParsed.teams)) _lpAllTeams = dpParsed.teams;
+      }
+    } catch (e) { /* fall through to default */ }
+    if (!_lpAllTeams.length && typeof DATA_PROGRAM_DEFAULT_CONFIG !== 'undefined') {
+      _lpAllTeams = (DATA_PROGRAM_DEFAULT_CONFIG.teams || []);
+    }
+
+    // 4. Look up the user's member record + their data_program_lead_team
     var safeName = Auth.fullName.replace(/'/g, "''");
     var members = await agolQuery(ARCGIS_CONFIG.teamMembersUrl, "name='" + safeName + "'");
     var leadTeam = null;
@@ -77,18 +92,26 @@ async function lpBootstrap() {
         }
       });
     }
-    if (!leadTeam) {
+
+    // 5. Decide access mode: lead has data_program_lead_team set; admins
+    // (Team Leads group) get an admin view that defaults to the first
+    // configured team and gets a team-switcher in the header.
+    if (leadTeam) {
+      _lpLeadTeam = leadTeam;
+      _lpAdminView = false;
+    } else if (typeof isAdmin === 'function' && isAdmin()) {
+      _lpAdminView = true;
+      _lpLeadTeam = (_lpAllTeams.length > 0 ? _lpAllTeams[0].name : 'Data Intelligence');
+    } else {
       lpShowAccessDenied();
       return;
     }
-    _lpLeadTeam = leadTeam;
     _lpFullName = Auth.fullName;
 
-    // 4. Update header
-    var ctxEl = document.getElementById('lp-context');
-    if (ctxEl) ctxEl.textContent = leadTeam + ' — ' + Auth.fullName;
+    // 6. Update header
     var soEl = document.getElementById('lp-signout');
     if (soEl) soEl.style.display = '';
+    lpRenderHeaderContext();
 
     // 5. Load projects + partner_depts (parallel)
     await lpReload();
@@ -100,6 +123,33 @@ async function lpBootstrap() {
     console.error('[Lite] Bootstrap failed:', err);
     lpShowError('Could not load data. ' + (err && err.message ? err.message : ''));
   }
+}
+
+function lpRenderHeaderContext() {
+  var ctxEl = document.getElementById('lp-context');
+  if (!ctxEl) return;
+  if (_lpAdminView) {
+    // Admin team-switcher dropdown + admin badge
+    var opts = _lpAllTeams.map(function(t) {
+      return '<option value="' + esc(t.name) + '"' + (t.name === _lpLeadTeam ? ' selected' : '') + '>' + esc(t.name) + '</option>';
+    }).join('');
+    ctxEl.innerHTML =
+      '<select id="lp-admin-team" onchange="lpAdminSwitchTeam(this.value)" ' +
+        'style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.25);' +
+        'border-radius:6px;padding:4px 10px;font-size:18px;font-weight:900;font-family:Lato,sans-serif;cursor:pointer;">' +
+        opts +
+      '</select>' +
+      '<span style="font-size:13px;font-weight:600;opacity:0.85;margin-left:10px;">— ' + esc(Auth.fullName) + '</span>' +
+      '<span style="font-size:10px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;background:rgba(255,219,34,0.25);color:#FFDB22;padding:2px 8px;border-radius:4px;margin-left:10px;">Admin view</span>';
+  } else {
+    ctxEl.textContent = _lpLeadTeam + ' — ' + Auth.fullName;
+  }
+}
+
+async function lpAdminSwitchTeam(teamName) {
+  if (!_lpAdminView) return;
+  _lpLeadTeam = teamName;
+  await lpReload();
 }
 
 async function lpReload() {

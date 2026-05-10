@@ -10,7 +10,13 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.16.0.0010';
+const APP_VERSION = '1.16.0.0011';
+
+// ArcGIS Online group whose members are authorized to change a project's
+// status from "Idea" to any other status (also gates admin / Team Lead UI
+// across the app). Manage membership via ArcGIS Online. Used by both
+// index.html and dataprogram.html via auth.js's fetchAgolUserInfo.
+const IDEA_PROMOTE_GROUP_ID = '2bd32af20dd745d6bdf3807446761973';
 
 // ══════════════════════════════════════════════════════════════════════
 //  DATA PROGRAM TEAMS — fallback default
