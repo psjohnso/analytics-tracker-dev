@@ -3048,6 +3048,32 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .ov-person-role { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
 .ov-person.lead .ov-person-role { color: #92400E; font-weight: 700; }
 
+/* Data Program section — peer-team cards on the Overview tab */
+.ov-dp-teams { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.ov-dp-team {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-top: 4px solid #6B7280;
+  border-radius: 10px;
+  padding: 16px 16px;
+}
+.ov-dp-team-name {
+  font-size: 14px; font-weight: 800; color: var(--navy);
+  letter-spacing: -0.01em; margin-bottom: 4px;
+}
+.ov-dp-team-blurb {
+  font-size: 12px; color: var(--text-muted); line-height: 1.4;
+  margin-bottom: 10px;
+}
+.ov-dp-team-count {
+  font-size: 22px; font-weight: 900; color: var(--navy);
+  letter-spacing: -0.02em; line-height: 1; display: inline-block;
+}
+.ov-dp-team-count-lbl {
+  font-size: 11px; color: var(--text-muted); font-weight: 700;
+  letter-spacing: 0.04em; margin-left: 6px;
+}
+
 .ov-partners { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
 .ov-partner {
   background: var(--white);
@@ -3108,6 +3134,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   .ov-services { grid-template-columns: repeat(2, 1fr); }
   .ov-team { grid-template-columns: repeat(4, 1fr); }
   .ov-partners { grid-template-columns: repeat(3, 1fr); }
+  .ov-dp-teams { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 768px) {
   .ov-page { margin: 8px; }
@@ -3116,7 +3143,7 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   .ov-about { padding: 20px 16px; grid-template-columns: 1fr; }
   .ov-hero-mission { font-size: 24px; }
   .ov-lede { font-size: 17px; }
-  .ov-services, .ov-team, .ov-partners { grid-template-columns: 1fr 1fr; }
+  .ov-services, .ov-team, .ov-partners, .ov-dp-teams { grid-template-columns: 1fr 1fr; }
   .ov-goal { grid-template-columns: 40px 1fr; gap: 12px; padding: 14px 16px; }
   .ov-goal-num { font-size: 28px; }
   .ov-hero-stats { gap: 18px; }
