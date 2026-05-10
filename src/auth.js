@@ -28,6 +28,31 @@ const Auth = {
 // Check admin status respecting preview mode
 function isAdmin() { return Auth.isTeamLead && !Auth.previewMode; }
 
+// ── Data Program Lead helpers ────────────────────────────────────────
+// A "Data Program Lead" is a non-DI team's lead (Data Architecture,
+// Data Librarian, or Emerging Data Infrastructure) whose member record
+// has data_program_lead_team set. They can create projects directly
+// (skipping the Idea review stage) and edit projects scoped to their
+// own team.
+function getDataProgramLeadTeam() {
+  if (!Auth.fullName) return null;
+  if (Auth.previewMode) return null;
+  if (typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.people) return null;
+  var p = RESOURCES_DATA.people[Auth.fullName];
+  if (!p) return null;
+  var t = p.data_program_lead_team;
+  return (t && typeof t === 'string' && t.trim()) ? t.trim() : null;
+}
+function isDataProgramLead() { return getDataProgramLeadTeam() !== null; }
+function canCreateProject() { return isAdmin() || isDataProgramLead(); }
+function canEditProject(p) {
+  if (isAdmin()) return true;
+  if (Auth.fullName && p && p.contact === Auth.fullName) return true;
+  var leadTeam = getDataProgramLeadTeam();
+  if (leadTeam && p && p.data_program_team === leadTeam) return true;
+  return false;
+}
+
 // ══════════════════════════════════════════════════════════════════════
 //  OAUTH 2.0 AUTHENTICATION (ArcGIS Online Implicit Grant)
 // ══════════════════════════════════════════════════════════════════════

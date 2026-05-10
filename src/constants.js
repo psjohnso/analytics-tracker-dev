@@ -10,7 +10,25 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.15.0.0005';
+const APP_VERSION = '1.16.0.0001';
+
+// ══════════════════════════════════════════════════════════════════════
+//  DATA PROGRAM TEAMS — fallback default
+//  ─────────────────────────────────────────────────────────────────
+//  The four cross-team groups that make up the City's Data Program.
+//  This is only the FALLBACK used until app_config.data_program loads.
+//  The live config is admin-edited via Settings → System → Data Program.
+//  Order, names, colors, and descriptions are all admin-tunable there;
+//  do not edit this list to change what end-users see.
+// ══════════════════════════════════════════════════════════════════════
+const DATA_PROGRAM_DEFAULT_CONFIG = {
+  teams: [
+    { id: 'DI',  name: 'Data Intelligence',           color: '#002669', description: 'Analytics, dashboards, GIS, AI program, data-quality methodology.', order: 1 },
+    { id: 'DA',  name: 'Data Architecture',           color: '#0E7490', description: 'Enterprise warehouse, schema standards, ETL frameworks.',            order: 2 },
+    { id: 'DL',  name: 'Data Librarian',              color: '#C2410C', description: 'Metadata catalog, data dictionary, open-data policy.',              order: 3 },
+    { id: 'EDI', name: 'Emerging Data Infrastructure', color: '#6D28D9', description: 'Snowflake, modern orchestration, infrastructure modernization.',    order: 4 }
+  ]
+};
 
 // ══════════════════════════════════════════════════════════════════════
 //  ACTIVE PROJECT LIFECYCLE PHASES

@@ -224,9 +224,14 @@ function agolProjectToLocal(feature) {
   if (!local.pid) {
     local.pid = (local.title || '').replace(/\s+/g, '').slice(0, 40) + local.id;
   }
-  // Normalize boolean fields from ArcGIS Short Integer (0/1) to JS truthy
-  // Data Program status is derived: true if any Data Program Goal is set
-  local.is_data_program = (local.dp_goal && local.dp_goal.trim().length > 0 && local.dp_goal.trim() !== 'None') ? 1 : 0;
+  // Normalize boolean fields from ArcGIS Short Integer (0/1) to JS truthy.
+  // Data Program status is derived: true if data_program_team is set
+  // (the explicit way), OR if any Data Program Goal is set on a DI
+  // project (the legacy way, preserved for projects created before the
+  // data_program_team field existed).
+  var hasTeam = local.data_program_team && local.data_program_team.trim().length > 0;
+  var hasGoal = local.dp_goal && local.dp_goal.trim().length > 0 && local.dp_goal.trim() !== 'None';
+  local.is_data_program = (hasTeam || hasGoal) ? 1 : 0;
   return local;
 }
 
