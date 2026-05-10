@@ -6,9 +6,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;family=Cardo:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <!-- ArcGIS REST API integration (no external auth library needed) -->
-<link rel="stylesheet" href="src/app.css?v=1.16.0.0021">
+<link rel="stylesheet" href="src/app.css?v=1.16.0.0022">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.16.0.0021"></script>
+<script src="src/constants.js?v=1.16.0.0022"></script>
 <script src="src/agol.js?v=1.16.0.0001"></script>
 <script src="src/auth.js?v=1.16.0.0012"></script>
 <script src="src/render.js?v=1.16.0.0010"></script>
@@ -43,7 +43,7 @@
   </div>
   <div class="header-title">
     <h1>Analytics Project Tracker</h1>
-    <p>GIS / Data Analytics — Information Technology <span id="app-version" style="opacity:0.85;font-size:10px;margin-left:10px;background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:4px;letter-spacing:0.04em;font-weight:600;"></span></p>
+    <p>GIS / Data Analytics — Information Technology <span id="app-version" style="opacity:0.85;font-size:11px;margin-left:10px;background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:4px;letter-spacing:0.04em;font-weight:600;"></span></p>
   </div>
   <div class="header-stats" id="header-stats">
     <div class="hstat">
@@ -63,21 +63,21 @@
       <div class="hstat-label">Total Projects</div>
     </div>
   </div>
-  <div id="user-info" style="display:flex;align-items:center;gap:10px;margin-left:auto;padding-right:16px;font-size:12px;color:rgba(255,255,255,0.8);">
+  <div id="user-info" style="display:flex;align-items:center;gap:10px;margin-left:auto;padding-right:16px;font-size:13px;color:rgba(255,255,255,0.8);">
     <!-- Live timer chip — visible when one or more time-tracking timers are running. -->
     <div id="timer-chip-wrap" style="position:relative;display:none;">
       <button id="timer-chip" class="timer-chip" onclick="onTimerChipClick(event)"></button>
       <div id="timer-chip-dropdown" class="timer-chip-dropdown" style="display:none;"></div>
     </div>
     <span id="user-display" style="display:none;align-items:center;gap:6px;">
-      <span id="user-avatar" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;letter-spacing:0.02em;overflow:hidden;"></span>
+      <span id="user-avatar" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;letter-spacing:0.02em;overflow:hidden;"></span>
       <span style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;">
         <span id="user-name" style="font-weight:600;white-space:nowrap;"></span>
-        <span id="user-role-badge" style="display:none;font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;background:rgba(131,172,22,0.85);color:#fff;padding:1px 6px;border-radius:3px;line-height:1.4;">Admin</span>
+        <span id="user-role-badge" style="display:none;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;background:rgba(131,172,22,0.85);color:#fff;padding:1px 6px;border-radius:3px;line-height:1.4;">Admin</span>
       </span>
     </span>
-    <button id="preview-mode-btn" onclick="togglePreviewMode()" style="display:none;padding:3px 10px;border-radius:4px;border:1px solid rgba(255,255,255,0.4);background:transparent;color:rgba(255,255,255,0.7);font-size:10px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;letter-spacing:0.03em;white-space:nowrap;" title="Preview the app as a regular team member">👁 Preview as member</button>
-    <button id="auth-toggle-btn" onclick="toggleAuth()" style="padding:5px 14px;border-radius:5px;border:1.5px solid rgba(255,255,255,0.5);background:transparent;color:rgba(255,255,255,0.9);font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;letter-spacing:0.03em;transition:background 0.15s,border-color 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.borderColor='rgba(255,255,255,0.8)'" onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,255,255,0.5)'">Sign In</button>
+    <button id="preview-mode-btn" onclick="togglePreviewMode()" style="display:none;padding:4px 10px;border-radius:4px;border:1px solid rgba(255,255,255,0.4);background:transparent;color:rgba(255,255,255,0.7);font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;letter-spacing:0.03em;white-space:nowrap;" title="Preview the app as a regular team member">👁 Preview as member</button>
+    <button id="auth-toggle-btn" onclick="toggleAuth()" style="padding:6px 14px;border-radius:5px;border:1.5px solid rgba(255,255,255,0.5);background:transparent;color:rgba(255,255,255,0.9);font-size:12px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;letter-spacing:0.03em;transition:background 0.15s,border-color 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.borderColor='rgba(255,255,255,0.8)'" onmouseout="this.style.background='transparent';this.style.borderColor='rgba(255,255,255,0.5)'">Sign In</button>
   </div>
 </header>
 
@@ -100,13 +100,13 @@
     <button class="primary-tab" data-group="settings" id="tab-settings" onclick="switchPrimaryGroup('settings')" style="display:none;">⚙️ Settings</button>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 4px 0 0;align-self:center;">
       <span id="unsaved-dot" title="Unsaved changes" class="show"></span>
-      <button id="btn-submit-idea" onclick="openIdeaForm()" style="display:flex;align-items:center;gap:5px;padding:7px 14px;background:#FFDB22;color:#92400E;border:none;border-radius:6px;font-size:12px;font-weight:800;font-family:Lato,sans-serif;cursor:pointer;letter-spacing:0.03em;transition:background 0.15s;" onmouseover="this.style.background='#F0CC00'" onmouseout="this.style.background='#FFDB22'">
+      <button id="btn-submit-idea" onclick="openIdeaForm()" style="display:flex;align-items:center;gap:5px;padding:8px 14px;background:#FFDB22;color:#92400E;border:none;border-radius:6px;font-size:13px;font-weight:800;font-family:Lato,sans-serif;cursor:pointer;letter-spacing:0.03em;transition:background 0.15s;" onmouseover="this.style.background='#F0CC00'" onmouseout="this.style.background='#FFDB22'">
         💡 Submit Idea
       </button>
       <button id="btn-save-file" onclick="saveAllData()" title="Refresh data from ArcGIS Online" class="">
         🔄 Refresh
       </button>
-      <button id="btn-export" onclick="openExportModal()" title="Export projects and tasks to CSV" style="display:none;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-family:Lato,sans-serif;font-size:14px;color:var(--navy);transition:background 0.15s;" onmouseover="this.style.background='#F3F1EB'" onmouseout="this.style.background='#fff'">⬇</button>
+      <button id="btn-export" onclick="openExportModal()" title="Export projects and tasks to CSV" style="display:none;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-family:Lato,sans-serif;font-size:15px;color:var(--navy);transition:background 0.15s;" onmouseover="this.style.background='#F3F1EB'" onmouseout="this.style.background='#fff'">⬇</button>
       <a href="javascript:void(0)" onclick="window.open('guide.html?v='+APP_VERSION,'_blank')" id="btn-help" title="User Guide & Help">About / Help</a>
     </div>
   </nav>
@@ -130,17 +130,17 @@
   <!-- TOOLBAR — full width below tab bar -->
   <div class="toolbar">
     <span class="result-count" id="result-count">1936 tasks</span>
-    <button id="btn-toggle-filters" onclick="toggleSidebar()" style="display:none;align-items:center;gap:5px;padding:7px 14px;border-radius:6px;border:1.5px solid var(--navy);background:transparent;cursor:pointer;font-family:Lato,sans-serif;font-size:12px;font-weight:700;color:var(--navy);letter-spacing:0.04em;transition:background 0.15s,color 0.15s;" onmouseover="this.style.background='#EEF2FF'" onmouseout="this.style.background='transparent'">
+    <button id="btn-toggle-filters" onclick="toggleSidebar()" style="display:none;align-items:center;gap:5px;padding:8px 14px;border-radius:6px;border:1.5px solid var(--navy);background:transparent;cursor:pointer;font-family:Lato,sans-serif;font-size:13px;font-weight:700;color:var(--navy);letter-spacing:0.04em;transition:background 0.15s,color 0.15s;" onmouseover="this.style.background='#EEF2FF'" onmouseout="this.style.background='transparent'">
       <span id="filter-toggle-icon">◀</span> Filters
     </button>
     <button id="btn-add-new" onclick="openFormModal('new-'+currentTab.slice(0,-1))" style="display: none;">＋ New Task</button>
-    <button id="btn-review-ideas" onclick="openIdeaReview()" style="display:none; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 6px; border: 1.5px solid #FFDB22; background: transparent; cursor: pointer; font-family: Lato, sans-serif; font-size: 12px; font-weight: 700; color: #92400E; letter-spacing: 0.04em; transition: background 0.15s, color 0.15s;" onmouseover="this.style.background='#FFFBEB'" onmouseout="this.style.background='transparent'">
-      💡 Review Ideas <span id="idea-count-badge" style="background:#FFDB22;color:#92400E;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:2px;"></span>
+    <button id="btn-review-ideas" onclick="openIdeaReview()" style="display:none; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 6px; border: 1.5px solid #FFDB22; background: transparent; cursor: pointer; font-family: Lato, sans-serif; font-size: 13px; font-weight: 700; color: #92400E; letter-spacing: 0.04em; transition: background 0.15s, color 0.15s;" onmouseover="this.style.background='#FFFBEB'" onmouseout="this.style.background='transparent'">
+      💡 Review Ideas <span id="idea-count-badge" style="background:#FFDB22;color:#92400E;border-radius:10px;padding:2px 8px;font-size:12px;margin-left:2px;"></span>
     </button>
-    <button id="open-projects-btn" onclick="toggleOpenProjectsFilter()" style="display: none; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 6px; border: 1.5px solid #83AC16; background: transparent; cursor: pointer; font-family: Lato, sans-serif; font-size: 12px; font-weight: 700; color: #83AC16; letter-spacing: 0.04em; transition: background 0.15s, color 0.15s;">
+    <button id="open-projects-btn" onclick="toggleOpenProjectsFilter()" style="display: none; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 6px; border: 1.5px solid #83AC16; background: transparent; cursor: pointer; font-family: Lato, sans-serif; font-size: 13px; font-weight: 700; color: #83AC16; letter-spacing: 0.04em; transition: background 0.15s, color 0.15s;">
       📂 Open Projects
     </button>
-    <button id="open-tasks-btn" onclick="toggleOpenTasksFilter()" style="display: none; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 6px; border: 1.5px solid #C24200; background: transparent; cursor: pointer; font-family: Lato, sans-serif; font-size: 12px; font-weight: 700; color: #C24200; letter-spacing: 0.04em; transition: background 0.15s, color 0.15s;">
+    <button id="open-tasks-btn" onclick="toggleOpenTasksFilter()" style="display: none; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 6px; border: 1.5px solid #C24200; background: transparent; cursor: pointer; font-family: Lato, sans-serif; font-size: 13px; font-weight: 700; color: #C24200; letter-spacing: 0.04em; transition: background 0.15s, color 0.15s;">
       ✅ Open Tasks
     </button>
     <div style="flex:1"></div>
@@ -175,11 +175,11 @@
       <div class="sidebar-label">Team Member</div>
       <div class="filter-group" id="member-filters"></div>
       <div id="member-filter-toggles" style="margin-top:6px;">
-        <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-muted);cursor:pointer;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);cursor:pointer;">
           <input type="checkbox" id="show-contributors" onchange="buildSidebarFilters();render();" style="width:13px;height:13px;cursor:pointer;">
           <span id="show-contributors-label">Show affiliated members</span>
         </label>
-        <label style="display:flex;align-items:center;gap:6px;margin-top:4px;font-size:10px;color:var(--text-muted);cursor:pointer;">
+        <label style="display:flex;align-items:center;gap:6px;margin-top:4px;font-size:11px;color:var(--text-muted);cursor:pointer;">
           <input type="checkbox" id="show-former-members" onchange="buildSidebarFilters();render();" style="width:13px;height:13px;cursor:pointer;">
           Show former members
         </label>
@@ -1124,7 +1124,7 @@ function render() {
         groupHtml += '<div style="margin-bottom:24px;">';
         groupHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 14px;background:#E6F1FB88;border-bottom:2px solid #B5D4F4;border-radius:6px 6px 0 0;">';
         groupHtml += '<span style="font-size:13px;font-weight:700;letter-spacing:0.06em;color:#0C447C;">Leading</span>';
-        groupHtml += '<span style="font-size:11px;font-weight:700;background:#0C447C;color:#fff;padding:1px 8px;border-radius:10px;">' + leadProjects.length + '</span>';
+        groupHtml += '<span style="font-size:12px;font-weight:700;background:#0C447C;color:#fff;padding:2px 9px;border-radius:10px;">' + leadProjects.length + '</span>';
         groupHtml += '</div>';
         groupHtml += currentView === 'grid' ? renderProjectGrid(leadProjects) : renderProjectList(leadProjects, false);
         groupHtml += '</div>';
@@ -1133,7 +1133,7 @@ function render() {
         groupHtml += '<div style="margin-bottom:24px;">';
         groupHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 14px;background:#F1EFE888;border-bottom:2px solid #D3D1C7;border-radius:6px 6px 0 0;">';
         groupHtml += '<span style="font-size:13px;font-weight:700;letter-spacing:0.06em;color:#5F5E5A;">Contributing</span>';
-        groupHtml += '<span style="font-size:11px;font-weight:700;background:#5F5E5A;color:#fff;padding:1px 8px;border-radius:10px;">' + contribProjects.length + '</span>';
+        groupHtml += '<span style="font-size:12px;font-weight:700;background:#5F5E5A;color:#fff;padding:2px 9px;border-radius:10px;">' + contribProjects.length + '</span>';
         groupHtml += '</div>';
         groupHtml += currentView === 'grid' ? renderProjectGrid(contribProjects) : renderProjectList(contribProjects, true);
         groupHtml += '</div>';
@@ -1142,7 +1142,7 @@ function render() {
         groupHtml += '<div style="margin-bottom:24px;">';
         groupHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 14px;background:#F1EFE888;border-bottom:2px solid #D3D1C7;border-radius:6px 6px 0 0;">';
         groupHtml += '<span style="font-size:13px;font-weight:700;letter-spacing:0.06em;color:#6B7280;">Reviewing</span>';
-        groupHtml += '<span style="font-size:11px;font-weight:700;background:#9CA3AF;color:#fff;padding:1px 8px;border-radius:10px;">' + reviewerProjects.length + '</span>';
+        groupHtml += '<span style="font-size:12px;font-weight:700;background:#9CA3AF;color:#fff;padding:2px 9px;border-radius:10px;">' + reviewerProjects.length + '</span>';
         groupHtml += '</div>';
         groupHtml += currentView === 'grid' ? renderProjectGrid(reviewerProjects) : renderProjectList(reviewerProjects, true);
         groupHtml += '</div>';
@@ -2878,10 +2878,10 @@ function renderTaskHistorySection(t) {
     return '<div class="detail-section">' +
       '<div class="detail-section-label">Notes & History</div>' +
       '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
-        '<input type="text" id="task-note-input-' + t.objectId + '" placeholder="Add a note..." style="flex:1;font-size:12px;padding:6px 10px;border:1px solid #E8E6DF;border-radius:6px;font-family:Lato,sans-serif;">' +
-        '<button onclick="var inp=document.getElementById(\'task-note-input-' + t.objectId + '\');addTaskNote(' + t.objectId + ',inp.value);inp.value=\'\';" style="font-size:11px;font-weight:700;padding:6px 14px;border-radius:6px;border:1px solid var(--navy);background:var(--navy);color:#fff;cursor:pointer;font-family:Lato,sans-serif;white-space:nowrap;">Add Note</button>' +
+        '<input type="text" id="task-note-input-' + t.objectId + '" placeholder="Add a note..." style="flex:1;font-size:13px;padding:7px 10px;border:1px solid #E8E6DF;border-radius:6px;font-family:Lato,sans-serif;">' +
+        '<button onclick="var inp=document.getElementById(\'task-note-input-' + t.objectId + '\');addTaskNote(' + t.objectId + ',inp.value);inp.value=\'\';" style="font-size:12px;font-weight:700;padding:7px 14px;border-radius:6px;border:1px solid var(--navy);background:var(--navy);color:#fff;cursor:pointer;font-family:Lato,sans-serif;white-space:nowrap;">Add Note</button>' +
       '</div>' +
-      '<div style="font-size:12px;color:var(--text-muted);font-style:italic;">No history yet.</div>' +
+      '<div style="font-size:13px;color:var(--text-muted);font-style:italic;">No history yet.</div>' +
     '</div>';
   }
 
@@ -2890,8 +2890,8 @@ function renderTaskHistorySection(t) {
 
   // Note input
   html += '<div style="display:flex;gap:8px;margin-bottom:16px;">';
-  html += '<input type="text" id="task-note-input-' + t.objectId + '" placeholder="Add a note..." style="flex:1;font-size:12px;padding:6px 10px;border:1px solid #E8E6DF;border-radius:6px;font-family:Lato,sans-serif;" onkeydown="if(event.key===\'Enter\'){var inp=this;addTaskNote(' + t.objectId + ',inp.value);inp.value=\'\';}">';
-  html += '<button onclick="var inp=document.getElementById(\'task-note-input-' + t.objectId + '\');addTaskNote(' + t.objectId + ',inp.value);inp.value=\'\';" style="font-size:11px;font-weight:700;padding:6px 14px;border-radius:6px;border:1px solid var(--navy);background:var(--navy);color:#fff;cursor:pointer;font-family:Lato,sans-serif;white-space:nowrap;">Add Note</button>';
+  html += '<input type="text" id="task-note-input-' + t.objectId + '" placeholder="Add a note..." style="flex:1;font-size:13px;padding:7px 10px;border:1px solid #E8E6DF;border-radius:6px;font-family:Lato,sans-serif;" onkeydown="if(event.key===\'Enter\'){var inp=this;addTaskNote(' + t.objectId + ',inp.value);inp.value=\'\';}">';
+  html += '<button onclick="var inp=document.getElementById(\'task-note-input-' + t.objectId + '\');addTaskNote(' + t.objectId + ',inp.value);inp.value=\'\';" style="font-size:12px;font-weight:700;padding:7px 14px;border-radius:6px;border:1px solid var(--navy);background:var(--navy);color:#fff;cursor:pointer;font-family:Lato,sans-serif;white-space:nowrap;">Add Note</button>';
   html += '</div>';
 
   // Merge notes and history into one timeline, sorted newest first
@@ -2914,7 +2914,7 @@ function renderTaskHistorySection(t) {
       var toColor = STATUS_COLOR(item.to) || '#9CA3AF';
       html += '<div style="margin-bottom:12px;position:relative;">';
       html += '<div style="position:absolute;left:-23px;top:2px;width:10px;height:10px;border-radius:50%;background:' + toColor + ';border:2px solid #fff;"></div>';
-      html += '<div style="font-size:11px;color:var(--text-muted);">' + item.date + ' · ' + esc(item.by) + '</div>';
+      html += '<div style="font-size:12px;color:var(--text-muted);">' + item.date + ' · ' + esc(item.by) + '</div>';
       html += '<div style="font-size:13px;margin-top:2px;">';
       if (item.from) {
         html += '<span style="color:var(--text-muted);">' + esc(item.from) + '</span>';
@@ -2929,7 +2929,7 @@ function renderTaskHistorySection(t) {
     } else {
       html += '<div style="margin-bottom:12px;position:relative;">';
       html += '<div style="position:absolute;left:-23px;top:2px;width:10px;height:10px;border-radius:50%;background:#0088FF;border:2px solid #fff;"></div>';
-      html += '<div style="font-size:11px;color:var(--text-muted);">' + item.date + ' · ' + esc(item.by) + '</div>';
+      html += '<div style="font-size:12px;color:var(--text-muted);">' + item.date + ' · ' + esc(item.by) + '</div>';
       html += '<div style="font-size:13px;margin-top:2px;color:var(--text-body);">' + esc(item.text) + '</div>';
       html += '</div>';
     }
@@ -3404,7 +3404,7 @@ function buildTimeEntryRowHTML(e, opts) {
     if (cumulHrs > 0) html += ' · Total: ' + cumulHrs + 'h';
   }
   html += '</div>';
-  if (e.notes) html += '<div style="font-size:10px;color:var(--text-muted);font-style:italic;">' + esc(e.notes) + '</div>';
+  if (e.notes) html += '<div style="font-size:11px;color:var(--text-muted);font-style:italic;">' + esc(e.notes) + '</div>';
   html += '</div>';
   html += '<div class="te-row-hours">' + hrs + '</div>';
   if (opts.canResume) {
@@ -3416,9 +3416,9 @@ function buildTimeEntryRowHTML(e, opts) {
   // Inline edit form
   html += '<div id="te-edit-' + e.oid + '" class="te-edit-form">';
   html += '<div class="te-edit-grid">';
-  html += '<div><label class="te-edit-label">START</label><input type="datetime-local" id="te-start-' + e.oid + '" class="mf-input" style="font-size:12px;margin-bottom:0;" value="' + toDatetimeLocal(e.start_time) + '"></div>';
-  html += '<div><label class="te-edit-label">END</label><input type="datetime-local" id="te-end-' + e.oid + '" class="mf-input" style="font-size:12px;margin-bottom:0;" value="' + toDatetimeLocal(e.end_time) + '"></div>';
-  html += '<div><label class="te-edit-label">NOTES</label><input type="text" id="te-notes-' + e.oid + '" class="mf-input" style="font-size:12px;margin-bottom:0;" value="' + esc(e.notes || '') + '" placeholder="Work description"></div>';
+  html += '<div><label class="te-edit-label">START</label><input type="datetime-local" id="te-start-' + e.oid + '" class="mf-input" style="font-size:13px;margin-bottom:0;" value="' + toDatetimeLocal(e.start_time) + '"></div>';
+  html += '<div><label class="te-edit-label">END</label><input type="datetime-local" id="te-end-' + e.oid + '" class="mf-input" style="font-size:13px;margin-bottom:0;" value="' + toDatetimeLocal(e.end_time) + '"></div>';
+  html += '<div><label class="te-edit-label">NOTES</label><input type="text" id="te-notes-' + e.oid + '" class="mf-input" style="font-size:13px;margin-bottom:0;" value="' + esc(e.notes || '') + '" placeholder="Work description"></div>';
   html += '</div>';
   html += '<div class="te-edit-actions">';
   html += '<button onclick="toggleEditTimeEntry(' + e.oid + ')" class="btn-te-cancel">Cancel</button>';
@@ -3494,7 +3494,7 @@ function buildTimeTrackingPanel() {
   html += '</div>';
 
   // Today's summary
-  html += '<div style="display:flex;gap:16px;margin-bottom:12px;font-size:12px;color:var(--text-muted);">';
+  html += '<div style="display:flex;gap:16px;margin-bottom:12px;font-size:13px;color:var(--text-muted);">';
   html += '<span><strong style="color:var(--navy);">' + Math.round(todayHours * 100) / 100 + 'h</strong> logged today</span>';
   html += '<span><strong style="color:var(--navy);">' + Math.round(weekHours * 100) / 100 + 'h</strong> this week</span>';
   html += '</div>';
@@ -3505,7 +3505,7 @@ function buildTimeTrackingPanel() {
     const activeTaskIds = {};
     activeTimers.forEach(function(e) { activeTaskIds[e.task_idx] = true; });
     const resumeShown = {};
-    html += '<div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Today\'s Log</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Today\'s Log</div>';
     todayEntries.forEach(function(e) {
       const canResume = !activeTaskIds[e.task_idx] && !resumeShown[e.task_idx];
       html += buildTimeEntryRowHTML(e, { showCumulative: true, canResume: canResume });
@@ -3532,13 +3532,13 @@ function buildTimeTrackingPanel() {
 
   if (recentEntries.length > 0) {
     html += '<div id="te-recent-section" style="display:none;">';
-    html += '<div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;margin-top:14px;">Recent (Past 7 Days)</div>';
+    html += '<div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;margin-top:14px;">Recent (Past 7 Days)</div>';
     let lastDate = '';
     recentEntries.forEach(function(e) {
       if (e.work_date !== lastDate) {
         const dateObj = new Date(e.work_date + 'T00:00:00');
         const dateLabel = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        html += '<div style="font-size:10px;font-weight:700;color:var(--text-muted);margin-top:10px;margin-bottom:4px;">' + dateLabel + '</div>';
+        html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-top:10px;margin-bottom:4px;">' + dateLabel + '</div>';
         lastDate = e.work_date;
       }
       html += buildTimeEntryRowHTML(e, { showCumulative: false, canResume: false });
@@ -3646,13 +3646,13 @@ let _ganttFilter = {};     // { projectTitle: true/false } — which projects sh
       <option value="">— Not a Data Program lead —</option>
       <!-- non-DI team options populated dynamically from app_config.data_program -->
     </select>
-    <div style="font-size:11px;color:var(--text-muted);margin:-8px 0 12px;padding:0 4px;">Set this for non-DI team leads (Data Architecture / Data Librarian / EDI) so they can create projects directly, skipping Idea review. Leave blank for DI core members.</div>
+    <div style="font-size:12px;color:var(--text-muted);margin:-8px 0 12px;padding:0 4px;">Set this for non-DI team leads (Data Architecture / Data Librarian / EDI) so they can create projects directly, skipping Idea review. Leave blank for DI core members.</div>
     <label class="mf-label">Tracking Level</label>
     <select class="mf-input" id="mf-tracking-level" onchange="onTrackingLevelChange()">
       <option value="full">Full — allocations, time tracking, capacity planning</option>
       <option value="light">Light — project collaborator only (no workload tracking)</option>
     </select>
-    <div id="mf-light-hint" style="display:none;font-size:11px;color:var(--text-muted);margin:-8px 0 12px;padding:0 4px;">Light-tracked members can be assigned as project leads or contributors but are excluded from allocations, forecasting, time tracking, and the My Work tab.</div>
+    <div id="mf-light-hint" style="display:none;font-size:12px;color:var(--text-muted);margin:-8px 0 12px;padding:0 4px;">Light-tracked members can be assigned as project leads or contributors but are excluded from allocations, forecasting, time tracking, and the My Work tab.</div>
     <label class="mf-label">Skill</label>
     <input class="mf-input" id="mf-skill" placeholder="e.g. Data Analysis, GIS Application Building">
     <div id="mf-full-fields">
@@ -3675,9 +3675,9 @@ let _ganttFilter = {};     // { projectTitle: true/false } — which projects sh
       </select>
     </div>
     <label class="mf-label">Daily Schedule</label>
-    <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Set start and end times for each work day. Leave both blank for a day off. Hours are computed automatically.</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Set start and end times for each work day. Leave both blank for a day off. Hours are computed automatically.</div>
     <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
-      <label style="font-size:11px;font-weight:700;color:var(--navy);white-space:nowrap;">Lunch break:</label>
+      <label style="font-size:12px;font-weight:700;color:var(--navy);white-space:nowrap;">Lunch break:</label>
       <select class="mf-input" id="mf-lunch" style="width:auto;margin-bottom:0;" onchange="updateWeekTotals()">
         <option value="30">30 min</option>
         <option value="60" selected>60 min</option>
@@ -3685,21 +3685,21 @@ let _ganttFilter = {};     // { projectTitle: true/false } — which projects sh
         <option value="0">No lunch</option>
       </select>
     </div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px;">
       <thead>
         <tr style="background:#FDFCF8;">
-          <th style="padding:6px 8px;text-align:left;font-weight:700;color:var(--navy);font-size:11px;"></th>
-          <th style="padding:6px 4px;text-align:center;font-weight:700;color:var(--navy);font-size:11px;">Mon</th>
-          <th style="padding:6px 4px;text-align:center;font-weight:700;color:var(--navy);font-size:11px;">Tue</th>
-          <th style="padding:6px 4px;text-align:center;font-weight:700;color:var(--navy);font-size:11px;">Wed</th>
-          <th style="padding:6px 4px;text-align:center;font-weight:700;color:var(--navy);font-size:11px;">Thu</th>
-          <th style="padding:6px 4px;text-align:center;font-weight:700;color:var(--navy);font-size:11px;">Fri</th>
-          <th style="padding:6px 8px;text-align:center;font-weight:800;color:var(--navy);font-size:11px;">Hours</th>
+          <th style="padding:7px 8px;text-align:left;font-weight:700;color:var(--navy);font-size:12px;"></th>
+          <th style="padding:7px 4px;text-align:center;font-weight:700;color:var(--navy);font-size:12px;">Mon</th>
+          <th style="padding:7px 4px;text-align:center;font-weight:700;color:var(--navy);font-size:12px;">Tue</th>
+          <th style="padding:7px 4px;text-align:center;font-weight:700;color:var(--navy);font-size:12px;">Wed</th>
+          <th style="padding:7px 4px;text-align:center;font-weight:700;color:var(--navy);font-size:12px;">Thu</th>
+          <th style="padding:7px 4px;text-align:center;font-weight:700;color:var(--navy);font-size:12px;">Fri</th>
+          <th style="padding:7px 8px;text-align:center;font-weight:800;color:var(--navy);font-size:12px;">Hours</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td style="padding:4px 8px;font-weight:700;color:var(--navy);font-size:10px;">Wk A Start</td>
+          <td style="padding:4px 8px;font-weight:700;color:var(--navy);font-size:11px;">Wk A Start</td>
           <td style="padding:2px;"><input class="mf-input mf-daily-hr" id="mf-wk1-mon-start" type="time" onchange="updateWeekTotals()"></td>
           <td style="padding:2px;"><input class="mf-input mf-daily-hr" id="mf-wk1-tue-start" type="time" onchange="updateWeekTotals()"></td>
           <td style="padding:2px;"><input class="mf-input mf-daily-hr" id="mf-wk1-wed-start" type="time" onchange="updateWeekTotals()"></td>
@@ -3708,7 +3708,7 @@ let _ganttFilter = {};     // { projectTitle: true/false } — which projects sh
           <td rowspan="2" style="padding:4px 8px;text-align:center;font-weight:800;color:var(--navy);vertical-align:middle;" id="mf-wk1-total">0</td>
         </tr>
         <tr>
-          <td style="padding:4px 8px;font-weight:700;color:var(--navy);font-size:10px;">Wk A End</td>
+          <td style="padding:4px 8px;font-weight:700;color:var(--navy);font-size:11px;">Wk A End</td>
           <td style="padding:2px;"><input class="mf-input mf-daily-hr" id="mf-wk1-mon-end" type="time" onchange="updateWeekTotals()"></td>
           <td style="padding:2px;"><input class="mf-input mf-daily-hr" id="mf-wk1-tue-end" type="time" onchange="updateWeekTotals()"></td>
           <td style="padding:2px;"><input class="mf-input mf-daily-hr" id="mf-wk1-wed-end" type="time" onchange="updateWeekTotals()"></td>
@@ -3717,7 +3717,7 @@ let _ganttFilter = {};     // { projectTitle: true/false } — which projects sh
         </tr>
         <tr><td colspan="7" style="height:6px;"></td></tr>
         <tr>
-          <td style="padding:4px 8px;font-weight:700;color:var(--navy);font-size:10px;">Wk B Start</td>
+          <td style="padding:4px 8px;font-weight:700;color:var(--navy);font-size:11px;">Wk B Start</td>
           <td style="padding:2px;"><input class="mf-input mf-daily-hr" id="mf-wk2-mon-start" type="time" onchange="updateWeekTotals()"></td>
           <td style="padding:2px;"><input class="mf-input mf-daily-hr" id="mf-wk2-tue-start" type="time" onchange="updateWeekTotals()"></td>
           <td style="padding:2px;"><input class="mf-input mf-daily-hr" id="mf-wk2-wed-start" type="time" onchange="updateWeekTotals()"></td>
@@ -3726,7 +3726,7 @@ let _ganttFilter = {};     // { projectTitle: true/false } — which projects sh
           <td rowspan="2" style="padding:4px 8px;text-align:center;font-weight:800;color:var(--navy);vertical-align:middle;" id="mf-wk2-total">0</td>
         </tr>
         <tr>
-          <td style="padding:4px 8px;font-weight:700;color:var(--navy);font-size:10px;">Wk B End</td>
+          <td style="padding:4px 8px;font-weight:700;color:var(--navy);font-size:11px;">Wk B End</td>
           <td style="padding:2px;"><input class="mf-input mf-daily-hr" id="mf-wk2-mon-end" type="time" onchange="updateWeekTotals()"></td>
           <td style="padding:2px;"><input class="mf-input mf-daily-hr" id="mf-wk2-tue-end" type="time" onchange="updateWeekTotals()"></td>
           <td style="padding:2px;"><input class="mf-input mf-daily-hr" id="mf-wk2-wed-end" type="time" onchange="updateWeekTotals()"></td>
@@ -3834,8 +3834,8 @@ let _ganttFilter = {};     // { projectTitle: true/false } — which projects sh
   </div>
   <div style="text-align:right;line-height:1.6;">
     <span>City of Tucson &middot; Tucson Data Team</span><br>
-    <span style="font-size:11px;opacity:0.6;">GIS / Data Analytics &mdash; Information Technology Department</span><br>
-    <span id="footer-version" style="font-size:10px;opacity:0.4;letter-spacing:0.05em;"></span>
+    <span style="font-size:12px;opacity:0.6;">GIS / Data Analytics &mdash; Information Technology Department</span><br>
+    <span id="footer-version" style="font-size:11px;opacity:0.4;letter-spacing:0.05em;"></span>
   </div>
 </footer>
 </body></html>
