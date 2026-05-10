@@ -19,14 +19,15 @@
 // ─────────────────────────────────────────────────────────────────────
 
 var _lpProjects = [];
-var _lpLeadTeam = null;
 var _lpFullName = null;
 var _lpEditingId = null;          // null = new; otherwise project's objectId
 var _lpPartnerDepts = [];
 var _lpStatuses = ['Active', 'Scheduled', 'On Hold', 'Complete', 'Canceled', 'Future'];
-var _lpActiveFilter = 'all';
-var _lpAdminView = false;         // true when an admin has access via isAdmin() rather than data_program_lead_team
-var _lpAllTeams = [];             // full Data Program team list (admin team-switcher uses this)
+var _lpActiveFilter = 'all';      // status filter chips
+var _lpRole = 'viewer';           // 'admin' | 'lead' | 'viewer' — drives create/edit UI
+var _lpMyTeam = null;             // Set only when _lpRole === 'lead' (the team they own)
+var _lpFilterTeam = 'all';        // 'all' or a specific team name — drives the project list query
+var _lpAllTeams = [];             // full Data Program team list (header dropdown options)
 
 document.addEventListener('DOMContentLoaded', function() {
   // Status-change handler: show/hide the Completion-date field
@@ -97,25 +98,26 @@ async function lpBootstrap() {
       });
     }
 
-    // 5. Decide access mode: lead has data_program_lead_team set; admins
-    // (Team Leads group) get an admin view that defaults to the first
-    // configured team and gets a team-switcher in the header.
+    // 5. Determine role. The page is open to any authenticated user;
+    // role just controls who can create / edit. Default view (filter)
+    // is "all teams" for everyone, including leads — they can scope
+    // down to their own team via the dropdown.
     if (leadTeam) {
-      _lpLeadTeam = leadTeam;
-      _lpAdminView = false;
+      _lpRole = 'lead';
+      _lpMyTeam = leadTeam;
     } else if (typeof isAdmin === 'function' && isAdmin()) {
-      _lpAdminView = true;
-      _lpLeadTeam = (_lpAllTeams.length > 0 ? _lpAllTeams[0].name : 'Data Intelligence');
+      _lpRole = 'admin';
     } else {
-      lpShowAccessDenied();
-      return;
+      _lpRole = 'viewer';
     }
     _lpFullName = Auth.fullName;
+    _lpFilterTeam = 'all';
 
-    // 6. Update header
+    // 6. Update header + toolbar visibility
     var soEl = document.getElementById('lp-signout');
     if (soEl) soEl.style.display = '';
     lpRenderHeaderContext();
+    lpUpdateNewButton();
 
     // 5. Load projects + partner_depts (parallel)
     await lpReload();
@@ -132,34 +134,75 @@ async function lpBootstrap() {
 function lpRenderHeaderContext() {
   var ctxEl = document.getElementById('lp-context');
   if (!ctxEl) return;
-  if (_lpAdminView) {
-    // Admin team-switcher dropdown + admin badge
-    var opts = _lpAllTeams.map(function(t) {
-      return '<option value="' + esc(t.name) + '"' + (t.name === _lpLeadTeam ? ' selected' : '') + '>' + esc(t.name) + '</option>';
-    }).join('');
-    ctxEl.innerHTML =
-      '<select id="lp-admin-team" onchange="lpAdminSwitchTeam(this.value)" ' +
-        'style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.25);' +
-        'border-radius:6px;padding:4px 10px;font-size:18px;font-weight:900;font-family:Lato,sans-serif;cursor:pointer;">' +
-        opts +
-      '</select>' +
-      '<span style="font-size:13px;font-weight:600;opacity:0.85;margin-left:10px;">— ' + esc(Auth.fullName) + '</span>' +
-      '<span style="font-size:10px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;background:rgba(255,219,34,0.25);color:#FFDB22;padding:2px 8px;border-radius:4px;margin-left:10px;">Admin view</span>';
-  } else {
-    ctxEl.textContent = _lpLeadTeam + ' — ' + Auth.fullName;
+  // Team filter dropdown — always shown, "All teams" option first.
+  var opts = '<option value="all"' + (_lpFilterTeam === 'all' ? ' selected' : '') + '>All teams</option>';
+  opts += _lpAllTeams.map(function(t) {
+    return '<option value="' + esc(t.name) + '"' + (t.name === _lpFilterTeam ? ' selected' : '') + '>' + esc(t.name) + '</option>';
+  }).join('');
+  var dropdown = '<select id="lp-filter-team" onchange="lpSwitchFilterTeam(this.value)" ' +
+    'style="background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.25);' +
+    'border-radius:6px;padding:4px 10px;font-size:18px;font-weight:900;font-family:Lato,sans-serif;cursor:pointer;">' +
+    opts + '</select>';
+  var nameLabel = '<span style="font-size:13px;font-weight:600;opacity:0.85;margin-left:10px;">— ' + esc(Auth.fullName) + '</span>';
+  // Role badge (admin / lead). Viewers get no badge.
+  var roleBadge = '';
+  if (_lpRole === 'admin') {
+    roleBadge = '<span style="font-size:10px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;background:rgba(255,219,34,0.25);color:#FFDB22;padding:2px 8px;border-radius:4px;margin-left:10px;">Admin</span>';
+  } else if (_lpRole === 'lead') {
+    roleBadge = '<span style="font-size:10px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;background:rgba(131,172,22,0.3);color:#83AC16;padding:2px 8px;border-radius:4px;margin-left:10px;">' + esc(_lpMyTeam) + ' Lead</span>';
   }
+  ctxEl.innerHTML = dropdown + nameLabel + roleBadge;
 }
 
-async function lpAdminSwitchTeam(teamName) {
-  if (!_lpAdminView) return;
-  _lpLeadTeam = teamName;
+async function lpSwitchFilterTeam(val) {
+  _lpFilterTeam = val;
+  lpUpdateNewButton();
   await lpReload();
 }
 
+function lpUpdateNewButton() {
+  var btn = document.getElementById('lp-btn-new');
+  if (!btn) return;
+  if (_lpRole === 'viewer') {
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = '';
+  // Admins viewing 'all teams' need to pick a specific team before
+  // creating, since each project must belong to one team. Leads always
+  // create for their own team regardless of filter.
+  if (_lpRole === 'admin' && _lpFilterTeam === 'all') {
+    btn.disabled = true;
+    btn.title = 'Pick a specific team in the dropdown above first.';
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+  } else {
+    btn.disabled = false;
+    btn.title = '';
+    btn.style.opacity = '';
+    btn.style.cursor = '';
+  }
+}
+
+function lpCanEditProject(p) {
+  if (_lpRole === 'admin') return true;
+  if (_lpRole === 'lead' && p && p.data_program_team === _lpMyTeam) return true;
+  return false;
+}
+
 async function lpReload() {
-  var safeTeam = _lpLeadTeam.replace(/'/g, "''");
+  // 'all' filter → fetch every Data Program project. Otherwise filter
+  // to the selected team. is_data_program is the derived flag set when
+  // data_program_team is non-empty (or legacy: dp_goal is set).
+  var query;
+  if (_lpFilterTeam === 'all') {
+    query = "is_data_program=1";
+  } else {
+    var safeTeam = _lpFilterTeam.replace(/'/g, "''");
+    query = "data_program_team='" + safeTeam + "'";
+  }
   var [projFeatures, configFeatures] = await Promise.all([
-    agolQuery(ARCGIS_CONFIG.projectsUrl, "data_program_team='" + safeTeam + "'"),
+    agolQuery(ARCGIS_CONFIG.projectsUrl, query),
     agolQuery(ARCGIS_CONFIG.appConfigUrl, "config_key='partner_depts'")
   ]);
   _lpProjects = (projFeatures || []).map(function(f) { return agolProjectToLocal(f); });
@@ -218,10 +261,18 @@ function lpRender() {
   // Empty states
   if (projects.length === 0) {
     if (_lpProjects.length === 0) {
+      var bodyMsg;
+      if (_lpRole === 'viewer') {
+        bodyMsg = 'No Data Program projects' + (_lpFilterTeam !== 'all' ? ' for ' + esc(_lpFilterTeam) : '') + ' yet.';
+      } else if (_lpRole === 'admin' && _lpFilterTeam === 'all') {
+        bodyMsg = 'Pick a specific team in the dropdown above, then click <strong>＋ New project</strong> to add the first.';
+      } else {
+        bodyMsg = 'Click <strong>＋ New project</strong> above to add the first.';
+      }
       listEl.innerHTML = '<div class="lp-empty">' +
         '<div class="lp-empty-icon">📋</div>' +
         '<div class="lp-empty-title">No projects yet</div>' +
-        '<div class="lp-empty-body">Click <strong>＋ New project</strong> above to add your team&rsquo;s first.</div>' +
+        '<div class="lp-empty-body">' + bodyMsg + '</div>' +
         '</div>';
     } else {
       listEl.innerHTML = '<div class="lp-empty">' +
@@ -272,12 +323,24 @@ function lpRender() {
         endLabel = '—';
       }
       var pid = p.project_number || ('#' + p.objectId);
+      // When viewing 'all teams', surface each project's team via a small
+      // chip (color from the configured team). Helps disambiguate at a glance.
+      var teamChip = '';
+      if (_lpFilterTeam === 'all' && p.data_program_team) {
+        var teamCfg = _lpAllTeams.find(function(t) { return t.name === p.data_program_team; });
+        var color = (teamCfg && teamCfg.color) || '#6B7280';
+        var shortId = (teamCfg && teamCfg.id) || p.data_program_team;
+        teamChip = ' <span style="font-size:10px;font-weight:800;letter-spacing:0.04em;background:' + color + ';color:white;padding:2px 8px;border-radius:999px;margin-right:6px;" title="' + esc(p.data_program_team) + '">' + esc(shortId) + '</span>';
+      }
+      // Edit affordance: viewers / leads-on-other-team can still click to view (read-only modal)
+      var canEdit = lpCanEditProject(p);
+      var actionLabel = canEdit ? 'Edit ›' : 'View ›';
       html += '<div class="lp-row" onclick="lpOpenEdit(' + p.objectId + ')">';
       html +=   '<span class="lp-row-pid">' + esc(pid) + '</span>';
       html +=   '<span class="lp-row-status ' + statusClass + '">' + esc(p.status || '—') + '</span>';
-      html +=   '<span class="lp-row-title">' + esc(p.title || '(untitled)') + '</span>';
+      html +=   '<span class="lp-row-title">' + teamChip + esc(p.title || '(untitled)') + '</span>';
       html +=   '<span class="lp-row-date">' + esc(endLabel) + '</span>';
-      html +=   '<span class="lp-row-edit">Edit ›</span>';
+      html +=   '<span class="lp-row-edit">' + actionLabel + '</span>';
       html += '</div>';
     });
     html += '</div>';
@@ -306,10 +369,33 @@ function lpPopulateSelects(currentStatus, currentDept) {
   deptSel.innerHTML = deptOptions;
 }
 
+// Toggle modal fields and Save/Delete visibility based on whether the
+// current user can edit the open record. Read-only mode (viewers, or
+// leads looking at another team's project) shows the same form but
+// with all inputs disabled and only Cancel available.
+function lpSetModalEditability(editable) {
+  ['lp-f-title','lp-f-status','lp-f-partner-dept','lp-f-start','lp-f-end','lp-f-working-due','lp-f-actual-end','lp-f-description'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.disabled = !editable;
+  });
+  var saveBtn = document.querySelector('.lp-btn-save');
+  if (saveBtn) saveBtn.style.display = editable ? '' : 'none';
+  var delBtn = document.getElementById('lp-btn-delete');
+  if (delBtn) delBtn.style.display = (editable && _lpEditingId) ? '' : 'none';
+  var cancelBtn = document.querySelector('.lp-btn-cancel');
+  if (cancelBtn) cancelBtn.textContent = editable ? 'Cancel' : 'Close';
+}
+
 function lpOpenNew() {
+  if (_lpRole === 'viewer') return;
+  if (_lpRole === 'admin' && _lpFilterTeam === 'all') {
+    lpToast('Pick a specific team in the dropdown above first.', 'info');
+    return;
+  }
   _lpEditingId = null;
-  document.getElementById('lp-modal-title').textContent = 'New ' + _lpLeadTeam + ' project';
-  document.getElementById('lp-btn-delete').style.display = 'none';
+  // Determine the team this new project will be created for
+  var targetTeam = (_lpRole === 'lead') ? _lpMyTeam : _lpFilterTeam;
+  document.getElementById('lp-modal-title').textContent = 'New ' + targetTeam + ' project';
   lpPopulateSelects('Active', '');
   document.getElementById('lp-f-title').value = '';
   document.getElementById('lp-f-start').value = '';
@@ -318,6 +404,7 @@ function lpOpenNew() {
   document.getElementById('lp-f-actual-end').value = '';
   document.getElementById('lp-f-description').value = '';
   document.getElementById('lp-f-actual-end-wrap').style.display = 'none';
+  lpSetModalEditability(true);
   document.getElementById('lp-modal-backdrop').classList.add('open');
   setTimeout(function() { document.getElementById('lp-f-title').focus(); }, 50);
 }
@@ -327,8 +414,11 @@ function lpOpenEdit(objectId) {
   if (!p) return;
   _lpEditingId = objectId;
   var pid = p.project_number || ('#' + p.objectId);
-  document.getElementById('lp-modal-title').textContent = pid + ' — Edit';
-  document.getElementById('lp-btn-delete').style.display = '';
+  var canEdit = lpCanEditProject(p);
+  var titleSuffix = canEdit ? ' — Edit' : ' — View';
+  // Show the team in the title when filter is 'all' so it's clear which team owns this
+  var teamPrefix = (_lpFilterTeam === 'all' && p.data_program_team) ? ' (' + p.data_program_team + ')' : '';
+  document.getElementById('lp-modal-title').textContent = pid + teamPrefix + titleSuffix;
   lpPopulateSelects(p.status, p.partner_dept);
   document.getElementById('lp-f-title').value = p.title || '';
   document.getElementById('lp-f-start').value = p.start || '';
@@ -337,6 +427,7 @@ function lpOpenEdit(objectId) {
   document.getElementById('lp-f-actual-end').value = p.actual_end || '';
   document.getElementById('lp-f-description').value = p.description || '';
   document.getElementById('lp-f-actual-end-wrap').style.display = (p.status === 'Complete') ? '' : 'none';
+  lpSetModalEditability(canEdit);
   document.getElementById('lp-modal-backdrop').classList.add('open');
 }
 
@@ -346,6 +437,7 @@ function lpCloseModal() {
 }
 
 async function lpSaveProject() {
+  if (_lpRole === 'viewer') return;
   if (typeof ensureValidSession === 'function' && !ensureValidSession(function() { lpSaveProject(); })) return;
   var title = document.getElementById('lp-f-title').value.trim();
   if (!title) { lpToast('Title is required.', 'error'); return; }
@@ -354,8 +446,6 @@ async function lpSaveProject() {
   var attrs = {
     title: title,
     status: status,
-    contact: _lpFullName,
-    data_program_team: _lpLeadTeam,
     start: document.getElementById('lp-f-start').value || null,
     end_: document.getElementById('lp-f-end').value || null,  // ArcGIS field is end_ (end is reserved)
     working_due: document.getElementById('lp-f-working-due').value || null,
@@ -363,10 +453,18 @@ async function lpSaveProject() {
     partner_dept: document.getElementById('lp-f-partner-dept').value || null,
     description: document.getElementById('lp-f-description').value.trim() || null,
   };
+  if (_lpEditingId) {
+    // Edit: don't change data_program_team (preserve project's owning team).
+    // Don't change contact (preserve original creator/lead).
+    attrs.OBJECTID = _lpEditingId;
+  } else {
+    // New: stamp data_program_team based on role/filter; contact = current user.
+    attrs.contact = _lpFullName;
+    attrs.data_program_team = (_lpRole === 'lead') ? _lpMyTeam : _lpFilterTeam;
+  }
   try {
     var result;
     if (_lpEditingId) {
-      attrs.OBJECTID = _lpEditingId;
       result = await agolApplyEdits(ARCGIS_CONFIG.projectsUrl, { updates: [{ attributes: attrs }] });
     } else {
       result = await agolApplyEdits(ARCGIS_CONFIG.projectsUrl, { adds: [{ attributes: attrs }] });

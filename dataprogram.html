@@ -309,7 +309,7 @@ body {
   <!-- Main view (hidden until lead status confirmed) -->
   <div id="lp-main" style="display:none;">
     <div class="lp-toolbar">
-      <button class="lp-btn-primary" onclick="lpOpenNew()">＋ New project</button>
+      <button id="lp-btn-new" class="lp-btn-primary" onclick="lpOpenNew()">＋ New project</button>
       <span style="width:1px;height:24px;background:var(--border);margin:0 4px;"></span>
       <span class="lp-chip active" data-filter="all" onclick="lpSetFilter('all')">All</span>
       <span class="lp-chip" data-filter="Active" onclick="lpSetFilter('Active')">Active</span>
@@ -394,10 +394,10 @@ body {
 </div>
 
 <!-- Shared libraries — cache-bust ?v= bumped on each deploy (mirrors index.html pattern) -->
-<script src="src/util.js?v=1.16.0.0012"></script>
-<script src="src/constants.js?v=1.16.0.0012"></script>
-<script src="src/agol.js?v=1.16.0.0012"></script>
-<script src="src/auth.js?v=1.16.0.0012"></script>
-<script src="src/dataprogram-lite.js?v=1.16.0.0012"></script>
+<script src="src/util.js?v=1.16.0.0013"></script>
+<script src="src/constants.js?v=1.16.0.0013"></script>
+<script src="src/agol.js?v=1.16.0.0013"></script>
+<script src="src/auth.js?v=1.16.0.0013"></script>
+<script src="src/dataprogram-lite.js?v=1.16.0.0013"></script>
 </body>
 </html>
