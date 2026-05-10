@@ -84,14 +84,14 @@ function renderProjectList(data, showLead) {
     const statusColor = STATUS_COLOR(p.status) || '#9CA3AF';
     var taskCount = TASKS.filter(function(t) { return t.project === p.title || (!t.project && t.project_id == p.id); }).length;
     var row = `<div class="task-row" onclick="openProject(${p.objectId})">
-      <div class="task-cell" style="font-family:monospace;font-size:11px;color:var(--text-muted);">${esc(p.project_number || '—')}</div>
+      <div class="task-cell" style="font-family:monospace;">${esc(p.project_number || '—')}</div>
       <div class="task-title-cell">${esc(p.title)}</div>
-      <div class="task-cell"><span class="status-pill" style="background:${statusColor}22;color:${statusColor};"><span style="width:5px;height:5px;border-radius:50%;background:${statusColor};display:inline-block;"></span>${p.status||'—'}</span></div>
+      <div class="task-cell"><span class="status-pill" style="background:${statusColor}22;color:${statusColor};"><span style="width:6px;height:6px;border-radius:50%;background:${statusColor};display:inline-block;"></span>${p.status||'—'}</span></div>
       <div class="task-cell"><span class="priority-badge priority-${p.priority||'null'}">${p.priority||'—'}</span></div>
-      <div class="task-cell" style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(p.category || '—')}</div>`;
-    if (showLead) row += `<div class="task-cell" style="font-size:11px;color:var(--text-muted);">${esc(p.contact || '—')}</div>`;
-    row += `<div class="task-cell" style="font-size:11px;color:var(--text-muted);">${p.working_due||p.end||'—'}</div>
-      <div class="task-cell" style="font-size:11px;color:var(--text-muted);text-align:center;">${taskCount}</div>
+      <div class="task-cell">${esc(p.category || '—')}</div>`;
+    if (showLead) row += `<div class="task-cell">${esc(p.contact || '—')}</div>`;
+    row += `<div class="task-cell">${p.working_due||p.end||'—'}</div>
+      <div class="task-cell" style="text-align:center;">${taskCount}</div>
     </div>`;
     return row;
   }
@@ -113,7 +113,7 @@ function renderProjectList(data, showLead) {
   html += '<div class="task-table-header">' + headerCols + '</div>';
 
   function groupHeader(label, count, colspan) {
-    return '<div class="task-row" style="cursor:default;background:var(--bg-surface,#F3F1EB);border-bottom:0.5px solid var(--border);"><div style="grid-column:1/-1;font-size:11px;font-weight:700;letter-spacing:0.03em;color:var(--text-muted);padding:4px 0;">' + label + ' (' + count + ')</div></div>';
+    return '<div class="task-row" style="cursor:default;background:var(--bg-surface,#F3F1EB);border-bottom:0.5px solid var(--border);padding:6px 16px;"><div style="grid-column:1/-1;font-size:13px;font-weight:700;letter-spacing:0.03em;color:var(--text-muted);">' + label + ' (' + count + ')</div></div>';
   }
 
   if (activeProjs.length > 0) {
