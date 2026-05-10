@@ -287,6 +287,7 @@ function renderSettingsPage(area) {
       navItem('ai', 'AI features') +
       navItem('slideshow', 'Slideshow') +
       navItem('dataprogram', 'Data Program teams') +
+      navItem('teamintro', 'Team Introduction') +
       navItem('trash', 'Trash') +
       navItem('developer', 'Developer') +
     '</div>';
@@ -495,6 +496,10 @@ function renderSettingsPage(area) {
 
   else if (_settingsSection === 'dataprogram') {
     panelHtml = buildDataProgramConfigPanel();
+  }
+
+  else if (_settingsSection === 'teamintro') {
+    panelHtml = buildTeamIntroConfigPanel();
   }
 
   else if (_settingsSection === 'trash') {

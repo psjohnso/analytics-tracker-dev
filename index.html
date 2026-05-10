@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.15.0.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.16.0.0006"></script>
+<script src="src/constants.js?v=1.16.0.0007"></script>
 <script src="src/agol.js?v=1.16.0.0001"></script>
 <script src="src/auth.js?v=1.16.0.0001"></script>
 <script src="src/render.js?v=1.16.0.0005"></script>
@@ -17,7 +17,7 @@
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.9.1.0010"></script>
 <script src="src/tabs/overview.js?v=1.15.0.0001"></script>
-<script src="src/tabs/settings.js?v=1.16.0.0006"></script>
+<script src="src/tabs/settings.js?v=1.16.0.0007"></script>
 <script src="src/tabs/resources.js?v=1.9.1.0013"></script>
 <script src="src/tabs/my-work.js?v=1.9.1.0014"></script>
 <script src="src/tabs/projects-tasks.js?v=1.9.1.0015"></script>
@@ -27,7 +27,7 @@
 <script src="src/modals/idea.js?v=1.12.0.0001"></script>
 <script src="src/modals/member-form.js?v=1.16.0.0002"></script>
 <script src="src/modals/alloc-editor.js?v=1.10.0.0001"></script>
-<script src="src/modals/settings-editors.js?v=1.16.0.0006"></script>
+<script src="src/modals/settings-editors.js?v=1.16.0.0007"></script>
 <script src="src/modals/forms.js?v=1.16.0.0005"></script>
 <script src="src/ai/prompts.js?v=1.12.0.0001"></script>
 <script src="src/ai/ai-suggestions.js?v=1.12.0.0001"></script>
@@ -2378,7 +2378,7 @@ const _defaultItdTeams = [
 ];
 
 // ObjectIds for the two config records (populated on load from ArcGIS)
-const _configOids = { partner_depts: null, itd_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null, display_config: null, data_program: null };
+const _configOids = { partner_depts: null, itd_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null, display_config: null, data_program: null, team_intro: null };
 
 // Slideshow / lobby-display configuration. Team-wide; admin-edited via
 // Settings → System → Slideshow. Loaded by applyAppConfig() from
@@ -2395,6 +2395,13 @@ function getDataProgramTeams() {
   var cfg = _dataProgramConfig || DATA_PROGRAM_DEFAULT_CONFIG;
   return (cfg && Array.isArray(cfg.teams)) ? cfg.teams : DATA_PROGRAM_DEFAULT_CONFIG.teams;
 }
+
+// Team Introduction content (mission / services / goals / partners /
+// about) for the Overview tab. Admin-edited via Settings → System →
+// Team Introduction. Falls back to TEAM_INTRO_DEFAULT_CONFIG until
+// app_config.team_intro loads.
+var _teamIntroConfig = null;
+function getTeamIntro() { return _teamIntroConfig || TEAM_INTRO_DEFAULT_CONFIG; }
 
 // Productivity factor applied to per-week project capacity. Admin-tunable via Settings → Allocations.
 // Default 0.75 accounts for non-project overhead (meetings, email, breaks, context-switching).
@@ -2572,6 +2579,14 @@ function applyAppConfig(features) {
           _dataProgramConfig = parsed;
           _configOids.data_program = oid;
           console.log('[Config] Loaded data_program:', parsed.teams.length, 'teams');
+        }
+        return;
+      }
+      if (key === 'team_intro') {
+        if (parsed && typeof parsed === 'object') {
+          _teamIntroConfig = parsed;
+          _configOids.team_intro = oid;
+          console.log('[Config] Loaded team_intro');
         }
         return;
       }

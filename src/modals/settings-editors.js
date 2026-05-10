@@ -931,3 +931,226 @@ function dpEditDiscard() {
   renderSettingsPage(document.getElementById('content-area'));
   showToast('Changes discarded.', 'info');
 }
+
+// ─── Settings → System → Team Introduction ────────────────────────────
+// Admin-only editor for app_config.team_intro. Drives the Overview tab
+// content: mission, six service areas, year-tagged goals, top partner
+// departments, and the about-this-app blurb. Goals especially drift
+// year-to-year — this editor lets a lead update them without a deploy.
+//
+// Sections in the panel: Mission, Services (rows), Goals (rows),
+// Partners (rows), About app.
+
+var _teamIntroEditDraft = null;
+
+function _tiEnsureDraft() {
+  if (_teamIntroEditDraft) return _teamIntroEditDraft;
+  var current = (typeof _teamIntroConfig !== 'undefined' && _teamIntroConfig)
+    ? _teamIntroConfig
+    : TEAM_INTRO_DEFAULT_CONFIG;
+  _teamIntroEditDraft = JSON.parse(JSON.stringify(current));
+  if (!Array.isArray(_teamIntroEditDraft.services)) _teamIntroEditDraft.services = [];
+  if (!Array.isArray(_teamIntroEditDraft.goals))    _teamIntroEditDraft.goals = [];
+  if (!Array.isArray(_teamIntroEditDraft.partners)) _teamIntroEditDraft.partners = [];
+  return _teamIntroEditDraft;
+}
+
+function _tiSectionHeader(label, hint) {
+  return '<div style="margin:22px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--border);">' +
+    '<div style="font-size:13px;font-weight:800;color:var(--navy);letter-spacing:0.04em;text-transform:uppercase;">' + esc(label) + '</div>' +
+    (hint ? '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + hint + '</div>' : '') +
+  '</div>';
+}
+
+function _tiInputRow(labelText, fieldKey, value, placeholder) {
+  return '<div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;margin-bottom:10px;">' +
+    '<label style="font-size:12px;font-weight:700;color:var(--navy);">' + esc(labelText) + '</label>' +
+    '<input type="text" value="' + esc(value || '') + '"' +
+      ' oninput="tiEditScalar(\'' + fieldKey + '\', this.value)"' +
+      ' placeholder="' + esc(placeholder || '') + '"' +
+      ' style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:Lato,sans-serif;">' +
+  '</div>';
+}
+
+function _tiTextareaRow(labelText, fieldKey, value, placeholder, rows) {
+  return '<div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:start;margin-bottom:10px;">' +
+    '<label style="font-size:12px;font-weight:700;color:var(--navy);padding-top:4px;">' + esc(labelText) + '</label>' +
+    '<textarea oninput="tiEditScalar(\'' + fieldKey + '\', this.value)"' +
+      ' placeholder="' + esc(placeholder || '') + '"' +
+      ' rows="' + (rows || 3) + '"' +
+      ' style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:Lato,sans-serif;line-height:1.5;resize:vertical;">' + esc(value || '') + '</textarea>' +
+  '</div>';
+}
+
+function _tiArrayRowControls(section, idx, total) {
+  var isFirst = idx === 0;
+  var isLast = idx === total - 1;
+  var html = '<div style="display:flex;flex-direction:column;gap:2px;">';
+  html += '<button onclick="tiEditMove(\'' + section + '\',' + idx + ',-1)"' + (isFirst ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:#fff;border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (isFirst ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▲</button>';
+  html += '<button onclick="tiEditMove(\'' + section + '\',' + idx + ',1)"' + (isLast ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:#fff;border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (isLast ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▼</button>';
+  html += '</div>';
+  return html;
+}
+
+function _tiRemoveBtn(section, idx) {
+  return '<button onclick="tiEditRemove(\'' + section + '\',' + idx + ')" style="padding:4px 8px;border:1px solid #FECACA;background:#FEF2F2;color:#B91C1C;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;font-family:Lato,sans-serif;">🗑</button>';
+}
+
+function buildTeamIntroConfigPanel() {
+  if (!isAdmin()) {
+    return '<div class="settings-panel-title">Team Introduction</div>' +
+      '<div class="settings-panel-desc">Admin-only — only Team Leads can edit the Overview tab content.</div>';
+  }
+  _teamIntroEditDraft = null;
+  var draft = _tiEnsureDraft();
+
+  var html = '<div class="settings-panel-title">Team Introduction</div>';
+  html += '<div class="settings-panel-desc">Edit the content of the Overview tab: mission, services, year-tagged goals, top partner departments, and the about-this-app blurb. Changes are visible to everyone the next time they refresh.</div>';
+
+  // Mission section
+  html += _tiSectionHeader('Mission &amp; framing', 'The big mission statement and the small eyebrow line above it.');
+  html += _tiInputRow('Eyebrow line', 'eyebrow', draft.eyebrow, 'CITY OF TUCSON · DATA INTELLIGENCE TEAM · INFORMATION TECHNOLOGY');
+  html += _tiTextareaRow('Mission statement', 'mission', draft.mission, 'One sentence about what the team exists to do.', 2);
+
+  // Services section
+  html += _tiSectionHeader('What we do · service areas', 'Each row is one service card on the Overview page.');
+  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
+  html += '<div style="display:grid;grid-template-columns:36px 50px minmax(0,1fr) minmax(0,2fr) 50px;gap:10px;align-items:center;padding:8px 12px;background:#FDFCF8;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
+  html += '<span>Order</span><span>Icon</span><span>Title</span><span>Description</span><span></span>';
+  html += '</div>';
+  draft.services.forEach(function(s, i) {
+    html += '<div style="display:grid;grid-template-columns:36px 50px minmax(0,1fr) minmax(0,2fr) 50px;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);">';
+    html += _tiArrayRowControls('services', i, draft.services.length);
+    html += '<input type="text" value="' + esc(s.icon || '') + '" oninput="tiEditField(\'services\',' + i + ',\'icon\',this.value)" maxlength="4" style="padding:5px;border:1px solid var(--border);border-radius:5px;font-size:16px;text-align:center;width:100%;min-width:0;">';
+    html += '<input type="text" value="' + esc(s.title || '') + '" oninput="tiEditField(\'services\',' + i + ',\'title\',this.value)" placeholder="Service title" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:Lato,sans-serif;font-weight:700;color:var(--navy);width:100%;min-width:0;">';
+    html += '<input type="text" value="' + esc(s.description || '') + '" oninput="tiEditField(\'services\',' + i + ',\'description\',this.value)" placeholder="One-line description" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:Lato,sans-serif;color:var(--text-body);width:100%;min-width:0;">';
+    html += '<div style="text-align:center;">' + _tiRemoveBtn('services', i) + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="margin-top:8px;"><button onclick="tiEditAdd(\'services\')" class="settings-btn" style="background:#fff;border:1px solid var(--border);color:var(--navy);">+ Add service</button></div>';
+
+  // Goals section
+  html += _tiSectionHeader('Goals · this year', 'Year-tagged objectives. Update annually. Goal body supports inline HTML (<code>&lt;code&gt;</code>, <code>&lt;strong&gt;</code>, etc.).');
+  html += _tiInputRow('Goals heading', 'goalsHeading', draft.goalsHeading, 'Where we’re going · 2026');
+  html += _tiInputRow('Goals lede', 'goalsLede', draft.goalsLede, 'Four bets that define a successful year.');
+  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:10px;">';
+  html += '<div style="display:grid;grid-template-columns:36px 50px minmax(0,1fr) minmax(0,2fr) 50px;gap:10px;align-items:center;padding:8px 12px;background:#FDFCF8;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
+  html += '<span>Order</span><span>#</span><span>Title</span><span>Body (HTML)</span><span></span>';
+  html += '</div>';
+  draft.goals.forEach(function(g, i) {
+    html += '<div style="display:grid;grid-template-columns:36px 50px minmax(0,1fr) minmax(0,2fr) 50px;gap:10px;align-items:start;padding:8px 12px;border-bottom:1px solid var(--border);">';
+    html += '<div style="padding-top:4px;">' + _tiArrayRowControls('goals', i, draft.goals.length) + '</div>';
+    html += '<input type="text" value="' + esc(g.num || '') + '" oninput="tiEditField(\'goals\',' + i + ',\'num\',this.value)" maxlength="3" style="padding:5px;border:1px solid var(--border);border-radius:5px;font-size:14px;text-align:center;font-weight:800;color:var(--navy);width:100%;min-width:0;">';
+    html += '<input type="text" value="' + esc(g.title || '') + '" oninput="tiEditField(\'goals\',' + i + ',\'title\',this.value)" placeholder="Goal title" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:Lato,sans-serif;font-weight:700;color:var(--navy);width:100%;min-width:0;">';
+    html += '<textarea oninput="tiEditField(\'goals\',' + i + ',\'body\',this.value)" rows="3" placeholder="Body (HTML allowed)" style="padding:6px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:Lato,sans-serif;line-height:1.5;color:var(--text-body);width:100%;min-width:0;resize:vertical;">' + esc(g.body || '') + '</textarea>';
+    html += '<div style="text-align:center;padding-top:4px;">' + _tiRemoveBtn('goals', i) + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="margin-top:8px;"><button onclick="tiEditAdd(\'goals\')" class="settings-btn" style="background:#fff;border:1px solid var(--border);color:var(--navy);">+ Add goal</button></div>';
+
+  // Partners section
+  html += _tiSectionHeader('Partner departments', '"Match" terms (comma-separated) are substring patterns used to count active projects per partner. Match is lowercased before comparison.');
+  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
+  html += '<div style="display:grid;grid-template-columns:36px 50px minmax(0,1.2fr) minmax(0,1.5fr) 50px;gap:10px;align-items:center;padding:8px 12px;background:#FDFCF8;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
+  html += '<span>Order</span><span>Icon</span><span>Display name</span><span>Match terms (comma-separated)</span><span></span>';
+  html += '</div>';
+  draft.partners.forEach(function(pt, i) {
+    var matchStr = Array.isArray(pt.match) ? pt.match.join(', ') : (pt.match || '');
+    html += '<div style="display:grid;grid-template-columns:36px 50px minmax(0,1.2fr) minmax(0,1.5fr) 50px;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);">';
+    html += _tiArrayRowControls('partners', i, draft.partners.length);
+    html += '<input type="text" value="' + esc(pt.icon || '') + '" oninput="tiEditField(\'partners\',' + i + ',\'icon\',this.value)" maxlength="4" style="padding:5px;border:1px solid var(--border);border-radius:5px;font-size:16px;text-align:center;width:100%;min-width:0;">';
+    html += '<input type="text" value="' + esc(pt.name || '') + '" oninput="tiEditField(\'partners\',' + i + ',\'name\',this.value)" placeholder="Department name" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:Lato,sans-serif;color:var(--navy);font-weight:700;width:100%;min-width:0;">';
+    html += '<input type="text" value="' + esc(matchStr) + '" oninput="tiEditField(\'partners\',' + i + ',\'match\',this.value)" placeholder="water, tucson water" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:Lato,sans-serif;color:var(--text-muted);width:100%;min-width:0;">';
+    html += '<div style="text-align:center;">' + _tiRemoveBtn('partners', i) + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="margin-top:8px;"><button onclick="tiEditAdd(\'partners\')" class="settings-btn" style="background:#fff;border:1px solid var(--border);color:var(--navy);">+ Add partner</button></div>';
+
+  // About app section
+  html += _tiSectionHeader('About this app', 'The blurb at the bottom of the Overview tab. HTML allowed.');
+  html += _tiTextareaRow('About text', 'about', draft.about, '', 4);
+
+  // Action buttons
+  html += '<div style="margin-top:24px;display:flex;gap:8px;align-items:center;padding-top:18px;border-top:1px solid var(--border);">';
+  html += '<button onclick="tiEditSave()" class="settings-btn settings-btn-primary">Save changes</button>';
+  html += '<button onclick="tiEditDiscard()" class="settings-btn" style="background:#fff;border:1px solid var(--border);color:var(--navy);">Discard</button>';
+  html += '<span style="font-size:11px;color:var(--text-muted);margin-left:auto;">Visible to everyone after their next page refresh.</span>';
+  html += '</div>';
+
+  return html;
+}
+
+function tiEditScalar(field, value) {
+  var draft = _tiEnsureDraft();
+  draft[field] = value;
+}
+
+function tiEditField(section, idx, field, value) {
+  var draft = _tiEnsureDraft();
+  if (Array.isArray(draft[section]) && draft[section][idx]) {
+    draft[section][idx][field] = value;
+  }
+}
+
+function tiEditMove(section, idx, delta) {
+  var draft = _tiEnsureDraft();
+  if (!Array.isArray(draft[section])) return;
+  var arr = draft[section];
+  var j = idx + delta;
+  if (j < 0 || j >= arr.length) return;
+  var tmp = arr[idx]; arr[idx] = arr[j]; arr[j] = tmp;
+  renderSettingsPage(document.getElementById('content-area'));
+}
+
+function tiEditRemove(section, idx) {
+  var draft = _tiEnsureDraft();
+  if (!Array.isArray(draft[section])) return;
+  if (!confirm('Remove this row?')) return;
+  draft[section].splice(idx, 1);
+  renderSettingsPage(document.getElementById('content-area'));
+}
+
+function tiEditAdd(section) {
+  var draft = _tiEnsureDraft();
+  if (!Array.isArray(draft[section])) draft[section] = [];
+  if (section === 'services') {
+    draft.services.push({ icon: '✨', title: 'New service', description: '' });
+  } else if (section === 'goals') {
+    draft.goals.push({ num: String(draft.goals.length + 1), title: '', body: '' });
+  } else if (section === 'partners') {
+    draft.partners.push({ name: 'New partner', icon: '🏛️', match: [] });
+  }
+  renderSettingsPage(document.getElementById('content-area'));
+}
+
+async function tiEditSave() {
+  if (!_teamIntroEditDraft) return;
+  // Normalize partners.match: convert comma-separated strings to arrays of trimmed lowercase terms
+  if (Array.isArray(_teamIntroEditDraft.partners)) {
+    _teamIntroEditDraft.partners.forEach(function(p) {
+      if (typeof p.match === 'string') {
+        p.match = p.match.split(',').map(function(s) { return s.trim().toLowerCase(); }).filter(Boolean);
+      }
+    });
+  }
+  try {
+    var ok = await saveConfigKey('team_intro', _teamIntroEditDraft);
+    if (!ok) throw new Error('Save returned false');
+    _teamIntroConfig = JSON.parse(JSON.stringify(_teamIntroEditDraft));
+    _teamIntroEditDraft = null;
+    showToast('Team Introduction saved.', 'success');
+    renderSettingsPage(document.getElementById('content-area'));
+  } catch (e) {
+    console.error('[TeamIntro] Save failed:', e);
+    showToast('Save failed: ' + e.message, 'error');
+  }
+}
+
+function tiEditDiscard() {
+  _teamIntroEditDraft = null;
+  renderSettingsPage(document.getElementById('content-area'));
+  showToast('Changes discarded.', 'info');
+}

@@ -10,7 +10,7 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.16.0.0006';
+const APP_VERSION = '1.16.0.0007';
 
 // ══════════════════════════════════════════════════════════════════════
 //  DATA PROGRAM TEAMS — fallback default
@@ -28,6 +28,48 @@ const DATA_PROGRAM_DEFAULT_CONFIG = {
     { id: 'DL',  name: 'Data Librarian',              color: '#C2410C', description: 'Metadata catalog, data dictionary, open-data policy.',              order: 3 },
     { id: 'EDI', name: 'Emerging Data Infrastructure', color: '#6D28D9', description: 'Snowflake, modern orchestration, infrastructure modernization.',    order: 4 }
   ]
+};
+
+// ══════════════════════════════════════════════════════════════════════
+//  TEAM INTRODUCTION — fallback default
+//  ─────────────────────────────────────────────────────────────────
+//  Drives the Overview tab content: mission, services, year-tagged
+//  goals, top partner departments, and the about-this-app blurb. Live
+//  values come from app_config.team_intro and are admin-edited via
+//  Settings → System → Team Introduction. Goals especially will drift
+//  year-to-year; this default exists only as a fallback.
+// ══════════════════════════════════════════════════════════════════════
+const TEAM_INTRO_DEFAULT_CONFIG = {
+  eyebrow: 'CITY OF TUCSON · DATA INTELLIGENCE TEAM · INFORMATION TECHNOLOGY',
+  mission: 'We build the foundation that lets the city run on data its leaders and departments can act on.',
+  services: [
+    { icon: '📊', title: 'Analytics & Dashboards',    description: 'We turn city data into reports, dashboards, and analyses leaders and managers can act on.' },
+    { icon: '🗺️', title: 'GIS & Mapping',             description: 'We provide mapping and spatial analysis for departments that work with location data.' },
+    { icon: '⚖️', title: 'Data Governance',           description: 'We set the policies and standards for how the city manages, shares, and protects its data.' },
+    { icon: '🛠️', title: 'Data Tools & Applications', description: 'We build the custom applications and integrations that move data where it needs to go.' },
+    { icon: '✅', title: 'Data Quality & Trust',       description: 'We build the methodology that helps departments measure and improve the quality of their data.' },
+    { icon: '🎓', title: 'Data Literacy & Training',   description: 'We help city staff find, understand, and use data confidently.' }
+  ],
+  goalsHeading: 'Where we’re going · 2026',
+  goalsLede: 'Four bets that define a successful year.',
+  goals: [
+    { num: '1', title: 'The Data Trust Scorecard moves from methodology to practice.',
+      body: 'We finalize the framework (<code>DP109</code>) and apply it to the Safe City datasets (<code>DP175</code>), giving the program a defensible measure of data quality the rest of the city can adopt.' },
+    { num: '2', title: 'Safe City data is in active use across departments.',
+      body: 'Department leaders are using the datasets we’ve prepared with them to drive program and operational decisions.' },
+    { num: '3', title: 'We advance on at least one foundational maturity area.',
+      body: 'The city moves from <strong>Gap</strong> to <strong>In Progress</strong> in data strategy, open data, or program performance measurement, and the WWC criteria reflect it.' },
+    { num: '4', title: 'The roadmap operates in the open.',
+      body: 'Any department can see where their work fits, what’s coming next, and how the pieces connect.' }
+  ],
+  partners: [
+    { name: 'Water',                            icon: '💧', match: ['water'] },
+    { name: 'Transportation',                   icon: '🛣️', match: ['transportation'] },
+    { name: 'Police',                           icon: '🛡️', match: ['police'] },
+    { name: 'Housing',                          icon: '🏠', match: ['housing'] },
+    { name: 'Planning & Development Services',  icon: '📐', match: ['planning'] }
+  ],
+  about: 'The <strong>Analytics Project Tracker</strong> is how we run the team’s portfolio. Every active project, task, time entry, capacity allocation, and submitted idea lives here. The public <strong>Slideshow</strong> tab makes a slice of it visible to the rest of the city in real time. The <strong>User Guide</strong> covers how each tab works for team members, leads, and admins.'
 };
 
 // ══════════════════════════════════════════════════════════════════════
