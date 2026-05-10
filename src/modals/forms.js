@@ -1221,6 +1221,14 @@ function buildProjectForm(p) {
       fmCategoryField(v('category'), true) +
       fmField('Partner Department', fmSelect('fm-partner-dept', FM_PARTNER_DEPTS, v('partner_dept'), 'Select department…')) +
       fmField('ITD Team', fmSelect('fm-itd-team', FM_ITD_TEAMS, v('itd_team'), 'Select team…')) +
+      fmField('Data Program Team',
+        fmSelect('fm-data-program-team',
+          ((typeof getDataProgramTeams === 'function') ? getDataProgramTeams() : []).map(function(t) { return t.name; }),
+          v('data_program_team') || ((!p && typeof getDataProgramLeadTeam === 'function' && getDataProgramLeadTeam()) || ''),
+          '— Not in Data Program —',
+          false),
+        false, false,
+        'Sets this project as part of the City Data Program portfolio. Auto-prefills for Data Program leads.') +
     '</div>') +
   fmSec('Details', '<div class="fm-grid">' +
       fmField('Problem Statement', fmMdTextarea('fm-problem', v('problem_statement'), 'Describe the problem this project solves…', 3, 4000), false, true) +
@@ -1665,6 +1673,7 @@ function collectProjectFields() {
     other_members:     otherMembers,
     partner_dept:      getVal('fm-partner-dept') || null,
     itd_team:          getVal('fm-itd-team')     || null,
+    data_program_team: getVal('fm-data-program-team') || null,
     category:          getVal('fm-category')     || null,
     project_size:      getVal('fm-project-size') || null,
     start:             getVal('fm-start')        || null,
@@ -1676,7 +1685,12 @@ function collectProjectFields() {
     data_sources:      getVal('fm-data-sources') || null,
     technical_requirements: getVal('fm-tech-reqs') || null,
     actual_end:        getVal('fm-actual-end')   || null,
-    is_data_program:   (function() { var dpg = collectCheckboxGroup('fm-dp-goal'); return dpg && dpg.trim().length > 0 && dpg.trim() !== 'None' ? 1 : 0; })(),
+    is_data_program:   (function() {
+      var dpt = getVal('fm-data-program-team');
+      if (dpt && dpt.trim().length > 0) return 1;
+      var dpg = collectCheckboxGroup('fm-dp-goal');
+      return dpg && dpg.trim().length > 0 && dpg.trim() !== 'None' ? 1 : 0;
+    })(),
     it_initiative:     collectCheckboxGroup('fm-it-initiative'),
     city_initiative:   collectCheckboxGroup('fm-city-initiative'),
     it_priority_project: collectCheckboxGroup('fm-it-priority'),
