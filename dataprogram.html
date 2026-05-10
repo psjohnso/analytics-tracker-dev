@@ -75,6 +75,16 @@ body {
   padding: 28px;
 }
 
+/* The header team-filter <select> is styled white-on-translucent so it
+   reads against the navy header. Explicit option styling so the
+   dropdown panel (drawn with the OS native white background) doesn't
+   get white-on-white labels — common on Windows Chrome/Edge. */
+#lp-filter-team option {
+  color: var(--text-body);
+  background: var(--white);
+  font-weight: 700;
+}
+
 /* ── Toolbar ──────────────────────────────────────────────────────── */
 .lp-toolbar {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -427,10 +437,10 @@ body {
 </div>
 
 <!-- Shared libraries — cache-bust ?v= bumped on each deploy (mirrors index.html pattern) -->
-<script src="src/util.js?v=1.16.0.0016"></script>
-<script src="src/constants.js?v=1.16.0.0016"></script>
-<script src="src/agol.js?v=1.16.0.0016"></script>
-<script src="src/auth.js?v=1.16.0.0016"></script>
-<script src="src/dataprogram-lite.js?v=1.16.0.0016"></script>
+<script src="src/util.js?v=1.16.0.0017"></script>
+<script src="src/constants.js?v=1.16.0.0017"></script>
+<script src="src/agol.js?v=1.16.0.0017"></script>
+<script src="src/auth.js?v=1.16.0.0017"></script>
+<script src="src/dataprogram-lite.js?v=1.16.0.0017"></script>
 </body>
 </html>
