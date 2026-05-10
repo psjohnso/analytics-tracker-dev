@@ -286,6 +286,7 @@ function renderSettingsPage(area) {
       '<div class="settings-nav-label">System</div>' +
       navItem('ai', 'AI features') +
       navItem('slideshow', 'Slideshow') +
+      navItem('dataprogram', 'Data Program teams') +
       navItem('trash', 'Trash') +
       navItem('developer', 'Developer') +
     '</div>';
@@ -490,6 +491,10 @@ function renderSettingsPage(area) {
 
   else if (_settingsSection === 'slideshow') {
     panelHtml = buildSlideshowConfigPanel();
+  }
+
+  else if (_settingsSection === 'dataprogram') {
+    panelHtml = buildDataProgramConfigPanel();
   }
 
   else if (_settingsSection === 'trash') {

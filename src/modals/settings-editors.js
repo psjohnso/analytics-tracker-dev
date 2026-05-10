@@ -786,3 +786,148 @@ async function hardDeleteFromTrash(type, oid, title) {
     showToast('Permanent delete failed: ' + err.message, 'error');
   }
 }
+
+// ─── Settings → System → Data Program teams ───────────────────────────
+// Admin-only editor for app_config.data_program. Drives every team
+// dropdown, badge, color, and label across the app — the Data Program
+// project field, the data_program_lead_team picker on members, the
+// "DA Lead" / "EDI Lead" chips in the team-members table, and the
+// upcoming Overview Data Program section + Slideshow slide.
+//
+// Each team row: order ▲▼, ID (short code, ~2-3 letters), color picker,
+// name, description, remove. + Add team button. Save persists to
+// app_config.data_program; Discard reverts to last-saved state.
+
+var _dataProgramEditDraft = null;
+
+function _dpEnsureDraft() {
+  if (_dataProgramEditDraft) return _dataProgramEditDraft;
+  var current = (typeof _dataProgramConfig !== 'undefined' && _dataProgramConfig)
+    ? _dataProgramConfig
+    : DATA_PROGRAM_DEFAULT_CONFIG;
+  _dataProgramEditDraft = JSON.parse(JSON.stringify(current));
+  if (!Array.isArray(_dataProgramEditDraft.teams)) _dataProgramEditDraft.teams = [];
+  _dataProgramEditDraft.teams.sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
+  _dataProgramEditDraft.teams.forEach(function(t, i) { t.order = i + 1; });
+  return _dataProgramEditDraft;
+}
+
+function buildDataProgramConfigPanel() {
+  if (!isAdmin()) {
+    return '<div class="settings-panel-title">Data Program teams</div>' +
+      '<div class="settings-panel-desc">Admin-only — only Team Leads can configure the Data Program team list.</div>';
+  }
+  // Reset draft each time the panel opens so it reflects current saved state
+  _dataProgramEditDraft = null;
+  var draft = _dpEnsureDraft();
+
+  var html = '<div class="settings-panel-title">Data Program teams</div>';
+  html += '<div class="settings-panel-desc">The four cross-team groups that make up the City Data Program. These names, colors, and descriptions appear everywhere the program is shown &mdash; project Classification fields, the "DA Lead" / "EDI Lead" badges in Team Members, the Overview Data Program section, and the lobby Slideshow.</div>';
+
+  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
+  html += '<div style="display:grid;grid-template-columns:36px 70px 60px minmax(0,1.2fr) minmax(0,2fr) 90px;gap:10px;align-items:center;padding:10px 14px;background:#FDFCF8;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
+  html += '<span title="Reorder">Order</span><span>ID</span><span>Color</span><span>Name</span><span>Description</span><span style="text-align:right;">Actions</span>';
+  html += '</div>';
+
+  draft.teams.forEach(function(t, i) {
+    var isFirst = (i === 0);
+    var isLast = (i === draft.teams.length - 1);
+    html += '<div style="display:grid;grid-template-columns:36px 70px 60px minmax(0,1.2fr) minmax(0,2fr) 90px;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);">';
+    html += '<div style="display:flex;flex-direction:column;gap:2px;">';
+    html += '<button onclick="dpEditMove(\'' + esc(t.id) + '\', -1)"' + (isFirst ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:#fff;border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (isFirst ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▲</button>';
+    html += '<button onclick="dpEditMove(\'' + esc(t.id) + '\', 1)"' + (isLast ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:#fff;border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (isLast ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▼</button>';
+    html += '</div>';
+    html += '<input type="text" value="' + esc(t.id) + '" oninput="dpEditField(\'' + esc(t.id) + '\', \'id\', this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:Lato,sans-serif;font-weight:700;color:var(--navy);min-width:0;width:100%;">';
+    html += '<input type="color" value="' + esc(t.color || '#002669') + '" oninput="dpEditField(\'' + esc(t.id) + '\', \'color\', this.value)" style="width:48px;height:30px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:#fff;padding:2px;">';
+    html += '<input type="text" value="' + esc(t.name) + '" oninput="dpEditField(\'' + esc(t.id) + '\', \'name\', this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:Lato,sans-serif;color:var(--text-body);min-width:0;width:100%;">';
+    html += '<input type="text" value="' + esc(t.description || '') + '" oninput="dpEditField(\'' + esc(t.id) + '\', \'description\', this.value)" placeholder="Brief description…" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:Lato,sans-serif;color:var(--text-muted);min-width:0;width:100%;">';
+    html += '<div style="text-align:right;"><button onclick="dpEditDelete(\'' + esc(t.id) + '\')" style="padding:4px 8px;border:1px solid #FECACA;background:#FEF2F2;color:#B91C1C;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;font-family:Lato,sans-serif;">🗑 Remove</button></div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<div style="margin-top:14px;display:flex;gap:8px;align-items:center;">';
+  html += '<button onclick="dpEditAdd()" class="settings-btn" style="background:#fff;border:1px solid var(--border);color:var(--navy);">+ Add team</button>';
+  html += '<button onclick="dpEditSave()" class="settings-btn settings-btn-primary" style="margin-left:auto;">Save changes</button>';
+  html += '<button onclick="dpEditDiscard()" class="settings-btn" style="background:#fff;border:1px solid var(--border);color:var(--navy);">Discard</button>';
+  html += '</div>';
+
+  html += '<div style="background:#FFFBEB;border-left:3px solid #FCD34D;border-radius:0 6px 6px 0;padding:10px 14px;margin-top:14px;font-size:12px;color:#92400E;">';
+  html += '<strong>About IDs:</strong> The team ID (DI / DA / DL / EDI by default) shows up in places like the "DA Lead" / "EDI Lead" chips. Keep them short (2&ndash;3 letters) and stable. Renaming an existing team\'s <em>name</em> is safe; changing its <em>ID</em> is fine but updates the abbreviation everywhere it shows.';
+  html += '</div>';
+
+  return html;
+}
+
+function dpEditField(id, field, value) {
+  var draft = _dpEnsureDraft();
+  var t = draft.teams.find(function(x) { return x.id === id; });
+  if (t) t[field] = value;
+}
+
+function dpEditMove(id, delta) {
+  var draft = _dpEnsureDraft();
+  var i = draft.teams.findIndex(function(x) { return x.id === id; });
+  if (i < 0) return;
+  var j = i + delta;
+  if (j < 0 || j >= draft.teams.length) return;
+  var tmp = draft.teams[i];
+  draft.teams[i] = draft.teams[j];
+  draft.teams[j] = tmp;
+  renderSettingsPage(document.getElementById('content-area'));
+}
+
+function dpEditDelete(id) {
+  var draft = _dpEnsureDraft();
+  if (!confirm('Remove this team from the Data Program list? Existing projects with this team are not affected.')) return;
+  draft.teams = draft.teams.filter(function(x) { return x.id !== id; });
+  renderSettingsPage(document.getElementById('content-area'));
+}
+
+function dpEditAdd() {
+  var draft = _dpEnsureDraft();
+  var n = draft.teams.length + 1;
+  var newId = 'NEW' + n;
+  while (draft.teams.find(function(x) { return x.id === newId; })) { n++; newId = 'NEW' + n; }
+  draft.teams.push({ id: newId, name: 'New team', color: '#9CA3AF', description: '', order: draft.teams.length + 1 });
+  renderSettingsPage(document.getElementById('content-area'));
+}
+
+async function dpEditSave() {
+  if (!_dataProgramEditDraft) return;
+  // Re-assign order based on current array position
+  _dataProgramEditDraft.teams.forEach(function(t, i) { t.order = i + 1; });
+  // Validate: each team needs an ID and name; IDs must be unique
+  var seen = {};
+  for (var i = 0; i < _dataProgramEditDraft.teams.length; i++) {
+    var t = _dataProgramEditDraft.teams[i];
+    t.id = (t.id || '').trim();
+    t.name = (t.name || '').trim();
+    if (!t.id || !t.name) {
+      showToast('Each team needs an ID and a name (row ' + (i + 1) + ').', 'warn');
+      return;
+    }
+    if (seen[t.id]) {
+      showToast('Team IDs must be unique. Duplicate: ' + t.id, 'warn');
+      return;
+    }
+    seen[t.id] = true;
+  }
+  try {
+    var ok = await saveConfigKey('data_program', _dataProgramEditDraft);
+    if (!ok) throw new Error('Save returned false');
+    _dataProgramConfig = JSON.parse(JSON.stringify(_dataProgramEditDraft));
+    _dataProgramEditDraft = null;
+    showToast('Data Program teams saved.', 'success');
+    renderSettingsPage(document.getElementById('content-area'));
+  } catch (e) {
+    console.error('[DataProgram] Save failed:', e);
+    showToast('Save failed: ' + e.message, 'error');
+  }
+}
+
+function dpEditDiscard() {
+  _dataProgramEditDraft = null;
+  renderSettingsPage(document.getElementById('content-area'));
+  showToast('Changes discarded.', 'info');
+}
