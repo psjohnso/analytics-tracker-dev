@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.15.0.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.16.0.0001"></script>
+<script src="src/constants.js?v=1.16.0.0002"></script>
 <script src="src/agol.js?v=1.16.0.0001"></script>
 <script src="src/auth.js?v=1.16.0.0001"></script>
 <script src="src/render.js?v=1.14.1.0002"></script>
@@ -17,7 +17,7 @@
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.9.1.0010"></script>
 <script src="src/tabs/overview.js?v=1.15.0.0001"></script>
-<script src="src/tabs/settings.js?v=1.14.0.0002"></script>
+<script src="src/tabs/settings.js?v=1.16.0.0002"></script>
 <script src="src/tabs/resources.js?v=1.9.1.0013"></script>
 <script src="src/tabs/my-work.js?v=1.9.1.0014"></script>
 <script src="src/tabs/projects-tasks.js?v=1.9.1.0015"></script>
@@ -25,7 +25,7 @@
 <script src="src/tabs/slideshow.js?v=1.14.1.0005"></script>
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
 <script src="src/modals/idea.js?v=1.12.0.0001"></script>
-<script src="src/modals/member-form.js?v=1.9.1.0019"></script>
+<script src="src/modals/member-form.js?v=1.16.0.0002"></script>
 <script src="src/modals/alloc-editor.js?v=1.10.0.0001"></script>
 <script src="src/modals/settings-editors.js?v=1.10.0.0002"></script>
 <script src="src/modals/forms.js?v=1.12.0.0001"></script>
@@ -3624,6 +3624,12 @@ let _ganttFilter = {};     // { projectTitle: true/false } — which projects sh
       <option value="Data Intelligence">Data Intelligence — Core team member</option>
       <option value="Affiliated">Affiliated — Collaborator from another team</option>
     </select>
+    <label class="mf-label">Data Program Lead</label>
+    <select class="mf-input" id="mf-data-program-lead-team">
+      <option value="">— Not a Data Program lead —</option>
+      <!-- non-DI team options populated dynamically from app_config.data_program -->
+    </select>
+    <div style="font-size:11px;color:var(--text-muted);margin:-8px 0 12px;padding:0 4px;">Set this for non-DI team leads (Data Architecture / Data Librarian / EDI) so they can create projects directly, skipping Idea review. Leave blank for DI core members.</div>
     <label class="mf-label">Tracking Level</label>
     <select class="mf-input" id="mf-tracking-level" onchange="onTrackingLevelChange()">
       <option value="full">Full — allocations, time tracking, capacity planning</option>

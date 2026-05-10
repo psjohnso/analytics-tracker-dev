@@ -318,6 +318,16 @@ function renderSettingsPage(area) {
       var trackingLabel = isLight
         ? '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF7ED;color:#9A3412;">Light</span>'
         : '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#EEF2FF;color:#002669;">Full</span>';
+      // Data Program Lead chip — appended after the tracking-level badge
+      // when the member is flagged as a non-DI team's lead.
+      if (p.data_program_lead_team) {
+        var dpltShort = (function() {
+          var teams = (typeof getDataProgramTeams === 'function') ? getDataProgramTeams() : [];
+          var t = teams.find(function(x) { return x.name === p.data_program_lead_team; });
+          return t && t.id ? t.id + ' Lead' : p.data_program_lead_team + ' Lead';
+        })();
+        trackingLabel += ' <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FEF3C7;color:#92400E;margin-left:4px;" title="Can create projects directly for ' + esc(p.data_program_lead_team) + '">' + esc(dpltShort) + '</span>';
+      }
       return '<tr' + rowStyle + '>' +
         '<td style="font-weight:700;color:var(--navy);">' + esc(name) + '</td>' +
         '<td>' + esc(p.role) + '</td>' +

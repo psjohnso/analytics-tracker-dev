@@ -14,6 +14,14 @@
 function openMemberForm(mode, name) {
   document.getElementById('mf-title').textContent = mode === 'edit' ? 'Edit Team Member' : 'Add Team Member';
   document.getElementById('mf-oid').value = '';
+  // Build the Data Program Lead Team dropdown options from the live config
+  // (excluding DI — DI leads use the existing AGO Team Leads group, not this field).
+  var dpltSel = document.getElementById('mf-data-program-lead-team');
+  if (dpltSel && typeof getDataProgramTeams === 'function') {
+    var teams = getDataProgramTeams().filter(function(t) { return t.id !== 'DI'; });
+    dpltSel.innerHTML = '<option value="">&mdash; Not a Data Program lead &mdash;</option>' +
+      teams.map(function(t) { return '<option value="' + esc(t.name) + '">' + esc(t.name) + '</option>'; }).join('');
+  }
   if (mode === 'edit' && RESOURCES_DATA && RESOURCES_DATA.people[name]) {
     const p = RESOURCES_DATA.people[name];
     document.getElementById('mf-name').value = name;
@@ -24,6 +32,7 @@ function openMemberForm(mode, name) {
     document.getElementById('mf-skill').value = p.skill;
     document.getElementById('mf-proj-pct').value = Math.round(p.proj_pct * 100);
     document.getElementById('mf-tracking-level').value = p.tracking_level || 'full';
+    if (dpltSel) dpltSel.value = p.data_program_lead_team || '';
     document.getElementById('mf-schedule-type').value = p.schedule_type || '5/8';
     document.getElementById('mf-rdo-day').value = p.rdo_day || '';
     document.getElementById('mf-lunch').value = String(p.lunch_minutes != null ? p.lunch_minutes : 60);
@@ -50,6 +59,7 @@ function openMemberForm(mode, name) {
     document.getElementById('mf-skill').value = '';
     document.getElementById('mf-proj-pct').value = '';
     document.getElementById('mf-tracking-level').value = 'full';
+    if (dpltSel) dpltSel.value = '';
     document.getElementById('mf-schedule-type').value = '5/8';
     document.getElementById('mf-rdo-day').value = '';
     document.getElementById('mf-lunch').value = '60';
@@ -310,6 +320,7 @@ async function saveMemberForm() {
   const skill = document.getElementById('mf-skill').value.trim();
   const projPct = parseFloat(document.getElementById('mf-proj-pct').value) || 0;
   const trackingLevel = document.getElementById('mf-tracking-level').value || 'full';
+  const dpLeadTeam = document.getElementById('mf-data-program-lead-team').value || null;
   const scheduleType = document.getElementById('mf-schedule-type').value || '5/8';
   const rdoDay = document.getElementById('mf-rdo-day').value || null;
   const lunchMinutes = parseInt(document.getElementById('mf-lunch').value) || 60;
@@ -362,6 +373,9 @@ async function saveMemberForm() {
     } else {
       console.warn('[Settings] Schedule fields not found on team_members service.');
     }
+    // Data Program Lead Team — only included if the field exists on the service
+    const dpltField = fn('data_program_lead_team');
+    if (dpltField) memberAttrs[dpltField] = dpLeadTeam;
   }
 
   const isEdit = origName !== '';
