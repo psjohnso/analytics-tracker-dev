@@ -221,6 +221,20 @@ body {
   line-height: 1.5;
 }
 .lp-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.lp-dp-goals {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px;
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--white);
+}
+.lp-dp-goals label {
+  display: flex; align-items: center; gap: 8px; font-size: 12px;
+  cursor: pointer; padding: 3px 0;
+}
+.lp-dp-goals input[type="checkbox"] {
+  width: 14px; height: 14px; cursor: pointer; accent-color: var(--navy);
+}
+.lp-dp-goals input[type="checkbox"]:disabled { cursor: not-allowed; opacity: 0.6; }
+.lp-dp-goals input[type="checkbox"]:disabled + span { opacity: 0.7; }
 .lp-modal-foot {
   padding: 14px 24px;
   background: var(--surface-2);
@@ -387,6 +401,13 @@ body {
         <label class="lp-field-label" for="lp-f-key-results">Key results</label>
         <textarea id="lp-f-key-results" class="lp-field-textarea" placeholder="Measurable indicators that this project succeeded."></textarea>
       </div>
+      <div class="lp-field">
+        <label class="lp-field-label">Data Program goals advanced</label>
+        <div id="lp-f-dp-goals" class="lp-dp-goals">
+          <!-- checkboxes populated dynamically from FM_DP_GOALS (excluding 'None') -->
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Tick any goals this project materially advances. Optional.</div>
+      </div>
     </div>
     <div class="lp-modal-foot">
       <button class="lp-btn-save" onclick="lpSaveProject()">Save</button>
@@ -406,10 +427,10 @@ body {
 </div>
 
 <!-- Shared libraries — cache-bust ?v= bumped on each deploy (mirrors index.html pattern) -->
-<script src="src/util.js?v=1.16.0.0014"></script>
-<script src="src/constants.js?v=1.16.0.0014"></script>
-<script src="src/agol.js?v=1.16.0.0014"></script>
-<script src="src/auth.js?v=1.16.0.0014"></script>
-<script src="src/dataprogram-lite.js?v=1.16.0.0014"></script>
+<script src="src/util.js?v=1.16.0.0016"></script>
+<script src="src/constants.js?v=1.16.0.0016"></script>
+<script src="src/agol.js?v=1.16.0.0016"></script>
+<script src="src/auth.js?v=1.16.0.0016"></script>
+<script src="src/dataprogram-lite.js?v=1.16.0.0016"></script>
 </body>
 </html>

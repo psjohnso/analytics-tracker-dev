@@ -366,6 +366,29 @@ function lpRender() {
 }
 
 // ─── Modal: New / Edit / Save / Delete ────────────────────────────────
+// Build the dp_goal checkbox group. currentVal is the comma-separated
+// string from the project record (e.g. "Establish Data Governance,
+// Build Data Literacy and Culture") or null.
+function lpPopulateDpGoals(currentVal) {
+  var container = document.getElementById('lp-f-dp-goals');
+  if (!container) return;
+  var goals = (typeof FM_DP_GOALS !== 'undefined') ? FM_DP_GOALS : [];
+  // Drop the 'None' sentinel — empty checkbox group already means "none"
+  goals = goals.filter(function(g) { return g && g.trim() !== 'None'; });
+  var selected = (currentVal || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+  container.innerHTML = goals.map(function(g) {
+    var checked = selected.indexOf(g) >= 0 ? ' checked' : '';
+    return '<label><input type="checkbox" value="' + esc(g) + '"' + checked + '><span>' + esc(g) + '</span></label>';
+  }).join('');
+}
+
+function lpCollectDpGoals() {
+  var boxes = document.querySelectorAll('#lp-f-dp-goals input[type="checkbox"]:checked');
+  var values = [];
+  boxes.forEach(function(cb) { values.push(cb.value); });
+  return values.length > 0 ? values.join(', ') : null;
+}
+
 function lpPopulateSelects(currentStatus, currentDept, currentContact) {
   var statusSel = document.getElementById('lp-f-status');
   statusSel.innerHTML = _lpStatuses.map(function(s) {
@@ -405,6 +428,10 @@ function lpSetModalEditability(editable) {
     var el = document.getElementById(id);
     if (el) el.disabled = !editable;
   });
+  // Disable / enable the dp_goal checkbox group too
+  document.querySelectorAll('#lp-f-dp-goals input[type="checkbox"]').forEach(function(cb) {
+    cb.disabled = !editable;
+  });
   var saveBtn = document.querySelector('.lp-btn-save');
   if (saveBtn) saveBtn.style.display = editable ? '' : 'none';
   var delBtn = document.getElementById('lp-btn-delete');
@@ -433,6 +460,7 @@ function lpOpenNew() {
   document.getElementById('lp-f-description').value = '';
   document.getElementById('lp-f-definition-of-done').value = '';
   document.getElementById('lp-f-key-results').value = '';
+  lpPopulateDpGoals(null);
   document.getElementById('lp-f-actual-end-wrap').style.display = 'none';
   lpSetModalEditability(true);
   document.getElementById('lp-modal-backdrop').classList.add('open');
@@ -458,6 +486,7 @@ function lpOpenEdit(objectId) {
   document.getElementById('lp-f-description').value = p.description || '';
   document.getElementById('lp-f-definition-of-done').value = p.definition_of_done || '';
   document.getElementById('lp-f-key-results').value = p.key_results || '';
+  lpPopulateDpGoals(p.dp_goal);
   document.getElementById('lp-f-actual-end-wrap').style.display = (p.status === 'Complete') ? '' : 'none';
   lpSetModalEditability(canEdit);
   document.getElementById('lp-modal-backdrop').classList.add('open');
@@ -487,6 +516,7 @@ async function lpSaveProject() {
     description: document.getElementById('lp-f-description').value.trim() || null,
     definition_of_done: document.getElementById('lp-f-definition-of-done').value.trim() || null,
     key_results: document.getElementById('lp-f-key-results').value.trim() || null,
+    dp_goal: lpCollectDpGoals(),
   };
   if (_lpEditingId) {
     // Edit: don't change data_program_team (preserve project's owning team).

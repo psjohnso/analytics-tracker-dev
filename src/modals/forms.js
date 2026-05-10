@@ -1204,7 +1204,9 @@ function buildProjectForm(p) {
   fmSec('Classification', '<div class="fm-grid">' +
       fmCategoryField(v('category'), true) +
       fmField('Partner Department', fmSelect('fm-partner-dept', FM_PARTNER_DEPTS, v('partner_dept'), 'Select department…')) +
-      fmField('ITD Team', fmSelect('fm-itd-team', FM_ITD_TEAMS, v('itd_team'), 'Select team…')) +
+      fmField('ITD Team', fmSelect('fm-itd-team', FM_ITD_TEAMS, v('itd_team'), 'Select team…'),
+        false, false,
+        'Which IT sub-team is implementing this project. Used by the Project Review tab to scope reviews and by the Portfolio sidebar filter.') +
       fmField('Data Program Team',
         fmSelect('fm-data-program-team',
           ((typeof getDataProgramTeams === 'function') ? getDataProgramTeams() : []).map(function(t) { return t.name; }),
@@ -1212,7 +1214,7 @@ function buildProjectForm(p) {
           '— Not in Data Program —',
           false),
         false, false,
-        'Sets this project as part of the City Data Program portfolio. Auto-prefills for Data Program leads.') +
+        'Which Data Program parent team owns this project. Drives the cross-team Data Program portfolio view, the Slideshow team tile, and edit permissions for non-DI leads. Often the same as ITD Team but can differ when one team does the work for another.') +
     '</div>') +
   fmSec('Details', '<div class="fm-grid">' +
       fmField('Problem Statement', fmMdTextarea('fm-problem', v('problem_statement'), 'Describe the problem this project solves…', 3, 4000), false, true) +
@@ -1659,7 +1661,17 @@ function collectProjectFields() {
     other_members:     otherMembers,
     partner_dept:      getVal('fm-partner-dept') || null,
     itd_team:          getVal('fm-itd-team')     || null,
-    data_program_team: getVal('fm-data-program-team') || null,
+    // Auto-default: if a DP goal is set but no team is picked, default
+    // to "Data Intelligence" — the legacy assumption since dp_goal
+    // predates the data_program_team field. Strategic-alignment editors
+    // typically only see dp_goal, so this saves them an extra click.
+    data_program_team: (function() {
+      var picked = getVal('fm-data-program-team');
+      if (picked) return picked;
+      var dpg = collectCheckboxGroup('fm-dp-goal');
+      var hasGoal = dpg && dpg.trim().length > 0 && dpg.trim() !== 'None';
+      return hasGoal ? 'Data Intelligence' : null;
+    })(),
     category:          getVal('fm-category')     || null,
     project_size:      getVal('fm-project-size') || null,
     start:             getVal('fm-start')        || null,
