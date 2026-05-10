@@ -135,7 +135,8 @@ async function suggestTasksForProject(projectObjectId) {
     'Partner Department: ' + (p.partner_dept || 'Not set') + '\n' +
     'Problem Statement: ' + (p.problem_statement || 'Not provided') + '\n' +
     'Description: ' + (p.description || 'Not provided') + '\n' +
-    'Deliverables: ' + (p.deliverables || 'Not specified') + '\n' +
+    'Definition of Done: ' + (p.definition_of_done || 'Not specified') + '\n' +
+    'Key Results: ' + (p.key_results || 'Not specified') + '\n' +
     'Data Sources: ' + (p.data_sources || 'Not specified') + '\n' +
     'Technical Requirements: ' + (p.technical_requirements || 'Not specified') + '\n' +
     'Team Members: ' + (members.length > 0 ? members.join(', ') : 'Not assigned') + '\n';

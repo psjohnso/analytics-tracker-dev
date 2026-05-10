@@ -559,22 +559,6 @@ function collectCheckboxGroup(name) {
   return [...boxes].map(function(cb) { return cb.value; }).join(', ') || null;
 }
 
-function fmDeliverables(id, currentVal) {
-  // Map legacy deliverable names to current names
-  var legacyMap = { 'Training': 'Training / Curriculum', 'Mobile App': 'Other' };
-  var selected = (currentVal || '').split(',').map(function(s) {
-    var v = s.trim();
-    return legacyMap[v] || v;
-  }).filter(Boolean);
-  var html = '<div class="fm-deliverables-grid" id="' + id + '-wrap">';
-  FM_DELIVERABLE_OPTIONS.forEach(function(opt) {
-    var checked = selected.includes(opt) ? ' checked' : '';
-    html += '<label class="fm-deliv-check"><input type="checkbox" name="' + id + '" value="' + esc(opt) + '"' + checked + '>' + esc(opt) + '</label>';
-  });
-  html += '</div>';
-  return html;
-}
-
 function fmField(label, inputHtml, required, span2, hint) {
   const cls = 'fm-field' + (span2 ? ' span2' : '');
   const req  = required ? '<span class="req">*</span>' : '';
@@ -1233,8 +1217,10 @@ function buildProjectForm(p) {
   fmSec('Details', '<div class="fm-grid">' +
       fmField('Problem Statement', fmMdTextarea('fm-problem', v('problem_statement'), 'Describe the problem this project solves…', 3, 4000), false, true) +
       fmField('Description', fmMdTextarea('fm-description', v('description'), 'Project description…', 3, 4000), false, true) +
-      fmField('Deliverables', fmDeliverables('fm-deliverables', v('deliverables')), false, true,
-        'What will this project produce?') +
+      fmField('Definition of Done', fmMdTextarea('fm-definition-of-done', v('definition_of_done'), 'What does it mean for this project to be complete? Concrete, observable outcomes.', 3, 4000), false, true,
+        'When will we know this project is finished?') +
+      fmField('Key Results', fmMdTextarea('fm-key-results', v('key_results'), 'Measurable indicators that this project succeeded.', 3, 4000), false, true,
+        'How will we measure success?') +
       fmField('Data Sources', fmMdTextarea('fm-data-sources', v('data_sources'), 'e.g. Hansen, Accela, ArcGIS Enterprise, CSV from partner dept…', 2, 2000), false, true) +
       fmField('Technical Requirements', fmMdTextarea('fm-tech-reqs', v('technical_requirements'), 'e.g. Must integrate with existing system, ADA compliant, real-time updates…', 2, 4000), false, true) +
     '</div>', isEdit) +
@@ -1305,8 +1291,8 @@ async function suggestAlignment() {
   var problem = (document.getElementById('fm-problem') || {}).value || '';
   var category = (document.getElementById('fm-category') || {}).value || '';
   var partnerDept = (document.getElementById('fm-partner-dept') || {}).value || '';
-  var delivBoxes = document.querySelectorAll('input[name="fm-deliverables"]:checked');
-  var deliverables = [...delivBoxes].map(function(cb) { return cb.value; }).join(', ');
+  var definitionOfDone = (document.getElementById('fm-definition-of-done') || {}).value || '';
+  var keyResults = (document.getElementById('fm-key-results') || {}).value || '';
   var dataSources = (document.getElementById('fm-data-sources') || {}).value || '';
   var techReqs = (document.getElementById('fm-tech-reqs') || {}).value || '';
 
@@ -1327,7 +1313,8 @@ async function suggestAlignment() {
     'Partner Department: ' + (partnerDept || 'Not set') + '\n' +
     'Problem Statement: ' + (problem || 'Not provided') + '\n' +
     'Description: ' + (desc || 'Not provided') + '\n' +
-    'Deliverables: ' + (deliverables || 'Not specified') + '\n' +
+    'Definition of Done: ' + (definitionOfDone || 'Not specified') + '\n' +
+    'Key Results: ' + (keyResults || 'Not specified') + '\n' +
     'Data Sources: ' + (dataSources || 'Not specified') + '\n' +
     'Technical Requirements: ' + (techReqs || 'Not specified') + '\n\n' +
     'AVAILABLE ALIGNMENT OPTIONS:\n\n' +
@@ -1350,13 +1337,13 @@ async function suggestAlignment() {
     'IMPORTANT RULES:\n' +
     '- Be HIGHLY SELECTIVE. Only recommend options where there is a clear, direct, and obvious connection to this specific project\'s work. If you have to stretch to make a connection, do not recommend it.\n' +
     '- USING "None": Each field includes a "None" option. If you evaluate a field and determine that none of the specific options apply, recommend [{"value": "None", "reason": "brief explanation of why nothing applies"}]. Use "None" confidently — most projects will only match a few fields, and "None" is the correct answer for the rest.\n' +
-    '- For IT Initiative, only recommend if the project\'s primary deliverable directly advances that specific sub-objective. Otherwise recommend None.\n' +
+    '- For IT Initiative, only recommend if the project\'s primary outcome directly advances that specific sub-objective. Otherwise recommend None.\n' +
     '- For City Initiative, only recommend if the project is explicitly part of or directly supports that named initiative. Otherwise recommend None.\n' +
     '- For IT Priority Project, only recommend if the project is part of or directly contributes to that named priority effort. Otherwise recommend None.\n' +
     '- For Data Program Goal, ONLY recommend a goal if the project builds the capabilities, processes, or infrastructure of the data team itself (e.g., establishing governance policies, building shared data platforms, creating training programs, improving data quality practices, deploying new analytics tools) AND the project\'s outcomes materially advance that specific goal. Do NOT recommend Data Program Goals for routine operational work, one-off departmental data requests, individual app builds for a partner department, or projects that merely use data without building the team\'s underlying capabilities. The Data Program is about building organizational data maturity — only projects that advance that mission should be tagged. Otherwise recommend None.\n' +
     '- For WWC Foundational Practice, recommend None if the project does not clearly advance any practice area.\n' +
     '- WWC PAIRING RULE (MANDATORY): If you recommend any WWC Foundational Practice (other than None), you MUST also recommend at least one corresponding WWC Criteria from that same practice area. If you recommend any WWC Criteria, the parent practice area MUST appear in wwc_practice. They must always be paired. If you cannot identify a specific criterion, do not recommend the practice area either.\n' +
-    '- For WWC Criteria, only recommend criteria where the project\'s deliverables or outcomes directly and specifically contribute to meeting that criterion — not just broadly related.\n' +
+    '- For WWC Criteria, only recommend criteria where the project\'s outcomes directly and specifically contribute to meeting that criterion — not just broadly related.\n' +
     '- Provide a brief, specific reason for each recommendation explaining HOW this project advances that item (or why None applies).\n\n' +
     'Respond ONLY with a JSON object (no markdown, no backticks). Format:\n' +
     '{\n' +
@@ -1664,9 +1651,6 @@ function collectProjectFields() {
   // Collect checked team members from the checkbox grid
   const memberBoxes = document.querySelectorAll('input[name="fm-other-members"]:checked');
   const otherMembers = [...memberBoxes].map(cb => cb.value).join(', ') || null;
-  // Collect checked deliverables
-  const delivBoxes = document.querySelectorAll('input[name="fm-deliverables"]:checked');
-  const deliverables = [...delivBoxes].map(cb => cb.value).join(', ') || null;
   return {
     title:             title,
     status:            getVal('fm-status')       || null,
@@ -1683,7 +1667,8 @@ function collectProjectFields() {
     working_due:       getVal('fm-working-due')  || null,
     problem_statement: getVal('fm-problem')      || null,
     description:       getVal('fm-description')  || null,
-    deliverables:      deliverables,
+    definition_of_done: getVal('fm-definition-of-done') || null,
+    key_results:       getVal('fm-key-results')  || null,
     data_sources:      getVal('fm-data-sources') || null,
     technical_requirements: getVal('fm-tech-reqs') || null,
     actual_end:        getVal('fm-actual-end')   || null,

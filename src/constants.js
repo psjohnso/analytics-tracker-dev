@@ -10,7 +10,7 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.16.0.0014';
+const APP_VERSION = '1.16.0.0015';
 
 // ArcGIS Online group whose members are authorized to change a project's
 // status from "Idea" to any other status (also gates admin / Team Lead UI
@@ -168,15 +168,6 @@ var BETA_FEATURES = {
   aiIntake:      { flag: 'FEATURE_AI_INTAKE',      label: 'AI-Guided Project Intake', desc: 'Replace the standard idea form with a guided intake that asks starter questions, generates smart follow-up questions based on your responses, and produces an AI-written project summary for reviewers.' },
   projectReview: { flag: 'FEATURE_PROJECT_REVIEW', label: 'Project Review', desc: 'Recurring portfolio review tab — walk through projects with the people assigned, log notes/decisions/action items per cycle. Configurable review types (e.g., Data Intelligence weekly, Data Team biweekly).' },
 };
-
-// ── Project / task form option lists ─────────────────────────────────
-const FM_DELIVERABLE_OPTIONS = [
-  'Dashboard', 'Dataset', 'Web Application', 'Report', 'Map / Web Map',
-  'ETL Pipeline', 'API / Service', 'Documentation', 'Training / Curriculum',
-  'Analysis / Study', 'Script / Automation', 'Data Model', 'Integration',
-  'Policy / Framework', 'Template / Theme', 'Catalog / Inventory',
-  'Server / Infrastructure', 'Other'
-];
 
 // ── Strategic Alignment Options ──────────────────────────────────────
 const FM_IT_INITIATIVES = [

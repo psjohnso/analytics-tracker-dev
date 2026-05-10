@@ -429,8 +429,11 @@ function copyProjectSummary(objectId) {
   // Description
   if (p.description) md += '\n## Description\n' + p.description + '\n';
 
-  // Deliverables
-  if (p.deliverables) md += '\n## Deliverables\n' + p.deliverables.split(',').map(function(d) { return '- ' + d.trim(); }).join('\n') + '\n';
+  // Definition of Done
+  if (p.definition_of_done) md += '\n## Definition of Done\n' + p.definition_of_done + '\n';
+
+  // Key Results
+  if (p.key_results) md += '\n## Key Results\n' + p.key_results + '\n';
 
   // Data sources
   if (p.data_sources) md += '\n## Data Sources\n' + p.data_sources + '\n';
@@ -936,11 +939,14 @@ function renderProjectDetail(id) {
         <div class="detail-prose">${renderMd(p.description)}</div>
       </div>` : ''}
 
-      ${p.deliverables ? `<div class="detail-section">
-        <div class="detail-section-label">Deliverables</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;">
-          ${p.deliverables.split(',').map(function(d) { return '<span style="display:inline-block;background:#EEF2FF;color:#002669;font-size:12px;font-weight:700;padding:3px 10px;border-radius:6px;">' + esc(d.trim()) + '</span>'; }).join('')}
-        </div>
+      ${p.definition_of_done ? `<div class="detail-section">
+        <div class="detail-section-label">Definition of Done</div>
+        <div class="detail-prose">${renderMd(p.definition_of_done)}</div>
+      </div>` : ''}
+
+      ${p.key_results ? `<div class="detail-section">
+        <div class="detail-section-label">Key Results</div>
+        <div class="detail-prose">${renderMd(p.key_results)}</div>
       </div>` : ''}
 
       ${p.data_sources ? `<div class="detail-section">
