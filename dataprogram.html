@@ -51,6 +51,10 @@ body {
   text-transform: uppercase; opacity: 0.7;
   margin-bottom: 8px;
 }
+.lp-header-version {
+  font-weight: 400; opacity: 0.7;
+  margin-left: 6px; letter-spacing: 0.02em;
+}
 .lp-header-context {
   font-size: 18px; font-weight: 900; letter-spacing: -0.01em;
   display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px;
@@ -315,7 +319,7 @@ body {
 
 <header class="lp-header">
   <div>
-    <div class="lp-header-title">Data Program · Lead Console</div>
+    <div class="lp-header-title">Data Program · Lead Console<span class="lp-header-version" id="lp-version"></span></div>
     <div id="lp-context" class="lp-header-context">Loading…</div>
   </div>
   <div class="lp-header-actions">
@@ -439,10 +443,10 @@ body {
 </div>
 
 <!-- Shared libraries — cache-bust ?v= bumped on each deploy (mirrors index.html pattern) -->
-<script src="src/util.js?v=1.16.0.0018"></script>
-<script src="src/constants.js?v=1.16.0.0018"></script>
-<script src="src/agol.js?v=1.16.0.0018"></script>
-<script src="src/auth.js?v=1.16.0.0018"></script>
-<script src="src/dataprogram-lite.js?v=1.16.0.0018"></script>
+<script src="src/util.js?v=1.16.0.0019"></script>
+<script src="src/constants.js?v=1.16.0.0019"></script>
+<script src="src/agol.js?v=1.16.0.0019"></script>
+<script src="src/auth.js?v=1.16.0.0019"></script>
+<script src="src/dataprogram-lite.js?v=1.16.0.0019"></script>
 </body>
 </html>

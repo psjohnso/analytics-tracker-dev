@@ -31,6 +31,12 @@ var _lpAllTeams = [];             // full Data Program team list (header dropdow
 var _lpMembers = [];              // sorted list of active team-member names for the Contact dropdown
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Show the app version next to the title — pulled from APP_VERSION
+  // (constants.js) so it stays in sync with each deploy.
+  var verEl = document.getElementById('lp-version');
+  if (verEl && typeof APP_VERSION !== 'undefined') {
+    verEl.textContent = '· v' + APP_VERSION;
+  }
   // Status-change handler: show/hide the Completion-date field
   var statusSel = document.getElementById('lp-f-status');
   if (statusSel) {
