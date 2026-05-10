@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Analytics Project Tracker â€” User Guide â€” Tucson Data Team</title>
+<title>Analytics Project Tracker — User Guide — Tucson Data Team</title>
 <link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -48,7 +48,6 @@ body { font-family: 'Cardo', Georgia, serif; background: var(--bg); color: var(-
 .guide-nav a.active { color: var(--navy); font-weight: 700; border-left-color: var(--gold); background: rgba(255,219,34,0.15); }
 .guide-nav .nav-section { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #C24200; padding: 16px 24px 6px; }
 .guide-nav a.external { color: var(--navy); font-weight: 700; }
-.guide-nav a.external::after { content: ' â†’'; opacity: 0.7; }
 
 /* Content */
 .guide-content { flex: 1; padding: 32px 48px 80px; max-width: 820px; }
@@ -108,9 +107,9 @@ li strong { color: var(--navy); }
 <header class="guide-header">
   <div>
     <h1>Analytics Project Tracker <span class="subtitle">User Guide</span></h1>
-    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">Updated for v1.15.0.0003</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">Updated for v1.15.0.0004</div>
   </div>
-  <a href="javascript:void(0)" onclick="window.close();" class="back-btn">â† Back to Tracker</a>
+  <a href="javascript:void(0)" onclick="window.close();" class="back-btn">← Back to Tracker</a>
 </header>
 
 <div class="guide-layout">
@@ -148,8 +147,7 @@ li strong { color: var(--navy); }
   <strong>Looking for step-by-step walkthroughs?</strong> The <a href="walkthroughs.html">Walkthroughs page</a> covers common tasks (logging time, updating tasks, running a project, etc.) with numbered steps and inline UI examples. This page is the deeper feature reference.
 </div>
 
-
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="getting-started">Getting Started</h2>
 
 <h3>Logging In</h3>
@@ -165,7 +163,7 @@ li strong { color: var(--navy); }
 <h3>Browser Requirements</h3>
 <p>The application runs entirely in the browser as a single HTML page. It works with modern versions of Chrome, Edge, Firefox, and Safari. No software installation is required.</p>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="navigation">Navigating the Application</h2>
 
 <h3>Tab Bar</h3>
@@ -176,15 +174,15 @@ li strong { color: var(--navy); }
   <li><strong>Projects:</strong> Full list of analytics projects with filtering, sorting, and detail views. Supports grid and list layouts.</li>
   <li><strong>Tasks:</strong> Individual task management with status tracking, due dates, and assignee information.</li>
   <li><strong>Resources:</strong> (Admin only) Team capacity planning with per-person allocation charts, utilization metrics, and an interactive allocation editor.</li>
-  <li><strong>ðŸ“Š Forecast:</strong> (Admin only) Forward-looking capacity projection showing team availability and utilization trends.</li>
-  <li><strong>ðŸ’¡ Insights:</strong> (Admin only) Strategic reporting and data analysis views.</li>
-  <li><strong>ðŸ› Issues:</strong> Issue tracking and bug reporting for the team.</li>
-  <li><strong>âš™ï¸ Settings:</strong> Personal preferences (all users) plus team member management, dropdown list configuration, AI features, and developer tools (admin only).</li>
+  <li><strong>📊 Forecast:</strong> (Admin only) Forward-looking capacity projection showing team availability and utilization trends.</li>
+  <li><strong>💡 Insights:</strong> (Admin only) Strategic reporting and data analysis views.</li>
+  <li><strong>🐛 Issues:</strong> Issue tracking and bug reporting for the team.</li>
+  <li><strong>⚙️ Settings:</strong> Personal preferences (all users) plus team member management, dropdown list configuration, AI features, and developer tools (admin only).</li>
 </ul>
 
 <h3>Sidebar Filters</h3>
-<p>The left sidebar provides filtering options on the Projects and Tasks tabs. Filter by project status, priority, category, partner department, ITD team, or team member. Task-specific filters (task status, task category, tool) appear when viewing the Tasks tab. Filters are independent between tabs â€” project status filters do not cascade to the Tasks tab.</p>
-<p>Active filters appear as descriptive chips above the filter panel (e.g., "Status: Active, Scheduled" or "Member: Peter Johnson"), each with an Ã— button to remove that individual filter. A "Clear all" link appears when multiple filters are active.</p>
+<p>The left sidebar provides filtering options on the Projects and Tasks tabs. Filter by project status, priority, category, partner department, ITD team, or team member. Task-specific filters (task status, task category, tool) appear when viewing the Tasks tab. Filters are independent between tabs — project status filters do not cascade to the Tasks tab.</p>
+<p>Active filters appear as descriptive chips above the filter panel (e.g., "Status: Active, Scheduled" or "Member: Peter Johnson"), each with an × button to remove that individual filter. A "Clear all" link appears when multiple filters are active.</p>
 <p>The team member filter defaults to showing only Data Intelligence team members. Check "Show N affiliated members" to include collaborators from other teams. A separate "Show former members" toggle reveals inactive team members.</p>
 
 <h3>View Toggle</h3>
@@ -192,16 +190,16 @@ li strong { color: var(--navy); }
 
 <h3>Toolbar Actions</h3>
 <ul>
-  <li><strong>ðŸ”„ Refresh:</strong> Reloads all data from ArcGIS Online, including projects, tasks, and resource allocations.</li>
-  <li><strong>ðŸ’¡ Submit Idea:</strong> Opens a simplified form for submitting new project ideas. Ideas enter with "Idea" status and must be promoted by an Admin.</li>
-  <li><strong>ðŸ“‹ Weekly Review:</strong> Filters tasks to show only those with activity in the current week.</li>
+  <li><strong>🔄 Refresh:</strong> Reloads all data from ArcGIS Online, including projects, tasks, and resource allocations.</li>
+  <li><strong>💡 Submit Idea:</strong> Opens a simplified form for submitting new project ideas. Ideas enter with "Idea" status and must be promoted by an Admin.</li>
+  <li><strong>📋 Weekly Review:</strong> Filters tasks to show only those with activity in the current week.</li>
 </ul>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="overview-tab">Overview Tab</h2>
 <p>The Overview tab provides a high-level dashboard of the team's current workload. It displays summary KPI cards showing the number of projects by status (Active, On Hold, Complete, etc.), task counts, and overall team utilization. This tab hides the sidebar and view toggle to provide a clean dashboard layout.</p>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="mywork-tab">My Work Tab (Logged-In Users)</h2>
 <p>The My Work tab provides a personalized dashboard that shows only <em>your</em> projects, tasks, and allocations. It appears in the tab bar after you sign in, and matches your ArcGIS Online display name to project contacts, team members, and task assignees.</p>
 
@@ -209,111 +207,111 @@ li strong { color: var(--navy); }
 <p>Five cards at the top show your active project count, open task count, overdue tasks, tasks due this week, and your current week utilization percentage. Overdue and due-this-week counts highlight in red and yellow respectively when they need attention.</p>
 
 <h3>My Week</h3>
-<p>Directly below the KPIs, this section shows your allocation breakdown for the current week from the Resources data. It displays your work schedule type (5/8, 4/10, or 9/80), which pay period week you're in (A or B), your scheduled hours, and your RDO day if applicable. A daily bar shows your scheduled hours and work window (e.g., "8h / 7aâ€“5p") for each day of the current week (Monâ€“Fri), with days off marked as "OFF." Below that, it shows hours and percentage allocated to each project, with a visual bar chart, plus your total allocated hours, capacity, and remaining availability.</p>
+<p>Directly below the KPIs, this section shows your allocation breakdown for the current week from the Resources data. It displays your work schedule type (5/8, 4/10, or 9/80), which pay period week you're in (A or B), your scheduled hours, and your RDO day if applicable. A daily bar shows your scheduled hours and work window (e.g., "8h / 7a–5p") for each day of the current week (Mon–Fri), with days off marked as "OFF." Below that, it shows hours and percentage allocated to each project, with a visual bar chart, plus your total allocated hours, capacity, and remaining availability.</p>
 
 <h3>Two-Column Layout</h3>
-<p>Below the KPIs and My Week sections, the remaining content is arranged in two columns. The left column shows your Projects, while the right column shows your Tasks. If any items need attention, a compact summary bar appears above both columns showing counts (e.g., "3 overdue Â· 1 due soon Â· 2 missing data").</p>
+<p>Below the KPIs and My Week sections, the remaining content is arranged in two columns. The left column shows your Projects, while the right column shows your Tasks. If any items need attention, a compact summary bar appears above both columns showing counts (e.g., "3 overdue · 1 due soon · 2 missing data").</p>
 
 <h3>Inline Attention Badges</h3>
 <p>Rather than a separate attention section, each project card and task row carries its own alert badges directly. Items with alerts sort to the top of their group by severity:</p>
 <ul>
-  <li><strong>Red badge</strong> (e.g., "5d overdue") â€” Overdue items. Shows with a red left border. Active tasks with unresolved dependencies also get a red "Deps pending" badge.</li>
-  <li><strong>Yellow badge</strong> (e.g., "Due in 3d" or "Ready to activate") â€” Items due within 7 days, or Future/Scheduled projects whose start date has passed.</li>
-  <li><strong>Gray badge</strong> (e.g., "Missing: description, end date") â€” Incomplete project or task data. For Active tasks, missing start date and due date are flagged. Strategic alignment gaps (IT Initiative, City Initiative, WWC Practice) appear for authorized editors only.</li>
+  <li><strong>Red badge</strong> (e.g., "5d overdue") — Overdue items. Shows with a red left border. Active tasks with unresolved dependencies also get a red "Deps pending" badge.</li>
+  <li><strong>Yellow badge</strong> (e.g., "Due in 3d" or "Ready to activate") — Items due within 7 days, or Future/Scheduled projects whose start date has passed.</li>
+  <li><strong>Gray badge</strong> (e.g., "Missing: description, end date") — Incomplete project or task data. For Active tasks, missing start date and due date are flagged. Strategic alignment gaps (IT Initiative, City Initiative, WWC Practice) appear for authorized editors only.</li>
 </ul>
 
 <h3>Timeline (Gantt Chart)</h3>
-<p>A visual timeline showing your active, on-hold, and scheduled projects as horizontal bars spanning from start date to working due date. All open tasks for each project are shown nested under their parent project â€” your tasks appear at full opacity with bold labels, while other team members' tasks render at reduced opacity. Tasks are sorted with yours first, then others by due date. A legend at the bottom explains the visual distinction.</p>
-<p>Tasks with unresolved dependencies (see <a href="#dependencies">Dependencies</a>) are shown with a hatched/striped bar pattern and a ðŸ”’ icon in the label. The chart includes month headers, a red "TODAY" marker, and red outlines on overdue bars. Click any label to open the detail page.</p>
+<p>A visual timeline showing your active, on-hold, and scheduled projects as horizontal bars spanning from start date to working due date. All open tasks for each project are shown nested under their parent project — your tasks appear at full opacity with bold labels, while other team members' tasks render at reduced opacity. Tasks are sorted with yours first, then others by due date. A legend at the bottom explains the visual distinction.</p>
+<p>Tasks with unresolved dependencies (see <a href="#dependencies">Dependencies</a>) are shown with a hatched/striped bar pattern and a 🔒 icon in the label. The chart includes month headers, a red "TODAY" marker, and red outlines on overdue bars. Click any label to open the detail page.</p>
 
 <h3>My Projects</h3>
 <p>All projects where you're the primary contact or a listed team member. By default, only Active, Scheduled, and Idea projects are shown. Click "Show more" to reveal On Hold, Future, Complete, and Canceled projects. Each row shows task completion progress, and projects where you are the lead are marked with a "Lead" badge.</p>
 
 <h3>My Tasks</h3>
-<p>All tasks assigned to you. By default, only "In Progress" and "Waiting for Response" tasks are shown â€” these are the ones that need active attention. Click the "Show more" button at the bottom to reveal Pending, On Hold, Complete, and Canceled tasks. Complete and Canceled tasks are further collapsed to the first 3 entries each.</p>
+<p>All tasks assigned to you. By default, only "In Progress" and "Waiting for Response" tasks are shown — these are the ones that need active attention. Click the "Show more" button at the bottom to reveal Pending, On Hold, Complete, and Canceled tasks. Complete and Canceled tasks are further collapsed to the first 3 entries each.</p>
 
 <div class="note-box">
   <strong>Name matching:</strong> The My Work tab matches your ArcGIS Online display name to the data. If your projects or tasks don't appear, ensure your display name in ArcGIS Online matches the name used in the project/task records (e.g., "Peter Johnson" not "pjohnson").
 </div>
 
 <h3>Time Tracking</h3>
-<p>Time tracking is an <strong>opt-in feature</strong> that must be enabled per employee by a team lead in the Settings tab. When enabled, a "â±ï¸ Time Tracking" panel appears in the My Work tab between the KPI cards and the My Week section.</p>
+<p>Time tracking is an <strong>opt-in feature</strong> that must be enabled per employee by a team lead in the Settings tab. When enabled, a "⏱️ Time Tracking" panel appears in the My Work tab between the KPI cards and the My Week section.</p>
 
 <h4>How It Works</h4>
 <p>The system uses a <strong>start/stop timer</strong> model. To log time on a task:</p>
 <ul>
   <li>Select a task from the dropdown (shows your In Progress, Waiting for Response, and On Hold tasks).</li>
-  <li>Click <strong>"â–¶ Start"</strong> to begin the timer.</li>
+  <li>Click <strong>"▶ Start"</strong> to begin the timer.</li>
   <li>Work on the task. The elapsed time updates automatically.</li>
-  <li>Click <strong>"â¸ Pause"</strong> to temporarily stop the timer â€” the entry is saved, and a green <strong>"â–¶"</strong> Resume button appears in today's log so you can quickly restart the same task later.</li>
-  <li>Click <strong>"â¹ Stop"</strong> when you're completely done with a work session. Hours are calculated automatically from the start and end times.</li>
+  <li>Click <strong>"⏸ Pause"</strong> to temporarily stop the timer — the entry is saved, and a green <strong>"▶"</strong> Resume button appears in today's log so you can quickly restart the same task later.</li>
+  <li>Click <strong>"⏹ Stop"</strong> when you're completely done with a work session. Hours are calculated automatically from the start and end times.</li>
 </ul>
-<p>You can run <strong>multiple timers simultaneously</strong> on different tasks. Active timers display with a green pulsing indicator and a live elapsed time counter. Pausing and resuming a task creates separate time entries that sum to the correct total â€” there's no limit to how many times you can pause and resume.</p>
+<p>You can run <strong>multiple timers simultaneously</strong> on different tasks. Active timers display with a green pulsing indicator and a live elapsed time counter. Pausing and resuming a task creates separate time entries that sum to the correct total — there's no limit to how many times you can pause and resume.</p>
 
 <div class="tip-box">
-  <strong>Overnight and weekend protection:</strong> If you forget to stop a timer, the system automatically caps the logged hours to your actual work schedule. For example, if you start a timer at 3:00 PM and stop it at 9:00 AM the next morning, it only counts 3:00â€“5:00 PM on day one and 8:00â€“9:00 AM on day two (based on your configured work hours), minus lunch â€” not the raw 18-hour span. Weekends and RDO days are excluded entirely.
+  <strong>Overnight and weekend protection:</strong> If you forget to stop a timer, the system automatically caps the logged hours to your actual work schedule. For example, if you start a timer at 3:00 PM and stop it at 9:00 AM the next morning, it only counts 3:00–5:00 PM on day one and 8:00–9:00 AM on day two (based on your configured work hours), minus lunch — not the raw 18-hour span. Weekends and RDO days are excluded entirely.
 </div>
 
 <h4>Today's Log</h4>
 <p>Completed time entries for today appear below the timer controls, showing the task name, start/end times, and calculated hours. You can:</p>
 <ul>
-  <li><strong>âœï¸ Edit:</strong> Adjust start/end times and add notes (useful if you forgot to start or stop the timer).</li>
-  <li><strong>ðŸ—‘ Delete:</strong> Remove an incorrect entry.</li>
+  <li><strong>✏️ Edit:</strong> Adjust start/end times and add notes (useful if you forgot to start or stop the timer).</li>
+  <li><strong>🗑 Delete:</strong> Remove an incorrect entry.</li>
 </ul>
 <p>Daily and weekly hour totals are displayed above the log.</p>
 
 <h4>Enabling Time Tracking</h4>
-<p>In the Settings tab, the team members table includes a <strong>â±ï¸ checkbox column</strong>. Check the box to enable time tracking for that employee; uncheck to disable it. Changes take effect immediately. Time entries already recorded are preserved even if tracking is disabled â€” they can be re-enabled at any time.</p>
+<p>In the Settings tab, the team members table includes a <strong>⏱️ checkbox column</strong>. Check the box to enable time tracking for that employee; uncheck to disable it. Changes take effect immediately. Time entries already recorded are preserved even if tracking is disabled — they can be re-enabled at any time.</p>
 
 <div class="tip-box">
   <strong>Pilot approach:</strong> Consider enabling time tracking for a few team members first to test the workflow, then roll it out to the full team once the process is established.
 </div>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="projects-tab">Projects Tab</h2>
 
 <h3>Viewing Projects</h3>
-<p>Projects can be viewed in grid (card) or list (table) format. Each project shows its title, status, priority, category, assigned contact, start/end dates, and completion percentage. Click a project card or row to open its detail page with all fields, associated tasks, team members, and a timeline view. From the detail page, you can add a new task directly linked to the project using the <strong>"ï¼‹ Add Task"</strong> button in the Tasks section â€” the task form will open with the project pre-selected.</p>
+<p>Projects can be viewed in grid (card) or list (table) format. Each project shows its title, status, priority, category, assigned contact, start/end dates, and completion percentage. Click a project card or row to open its detail page with all fields, associated tasks, team members, and a timeline view. From the detail page, you can add a new task directly linked to the project using the <strong>"＋ Add Task"</strong> button in the Tasks section — the task form will open with the project pre-selected.</p>
 
 <h3>Creating and Editing Projects</h3>
-<p>To create a new project, an Admin must promote a submitted idea. Standard users can submit ideas through the "ðŸ’¡ Submit Idea" button. Once promoted, projects can be edited by clicking into the detail view â€” but <strong>only the project lead or an admin can edit, complete, or delete a project</strong>. The "Copy Summary" button is available to all users. Changes save directly to the ArcGIS Online projects feature service. <strong>Project names must be unique</strong> â€” the application prevents creating or renaming a project to a name that already exists (case-insensitive).</p>
+<p>To create a new project, an Admin must promote a submitted idea. Standard users can submit ideas through the "💡 Submit Idea" button. Once promoted, projects can be edited by clicking into the detail view — but <strong>only the project lead or an admin can edit, complete, or delete a project</strong>. The "Copy Summary" button is available to all users. Changes save directly to the ArcGIS Online projects feature service. <strong>Project names must be unique</strong> — the application prevents creating or renaming a project to a name that already exists (case-insensitive).</p>
 <div class="tip-box">
-  <strong>Choosing a category:</strong> The category field features a searchable dropdown â€” start typing to filter. If you're unsure which category fits, click the <strong>âœ¨ Help me choose</strong> button below the field. A short 2-question wizard will guide you to the right one.
+  <strong>Choosing a category:</strong> The category field features a searchable dropdown — start typing to filter. If you're unsure which category fits, click the <strong>✨ Help me choose</strong> button below the field. A short 2-question wizard will guide you to the right one.
 </div>
 
-<h3>Project Detail â€” Task List</h3>
+<h3>Project Detail — Task List</h3>
 <p>The task list on a project detail page is divided into sections with distinct visual treatments:</p>
 <ul>
-  <li><strong>In progress</strong> (green header) â€” Active, On Hold, and Waiting for Response tasks at full opacity.</li>
-  <li><strong>Pending</strong> (gray header, 70% opacity) â€” Tasks waiting to start.</li>
-  <li><strong>Complete</strong> (blue header, 60% opacity) â€” Finished tasks with muted styling.</li>
-  <li><strong>Canceled</strong> (gray header, 60% opacity) â€” Canceled tasks with strikethrough titles.</li>
+  <li><strong>In progress</strong> (green header) — Active, On Hold, and Waiting for Response tasks at full opacity.</li>
+  <li><strong>Pending</strong> (gray header, 70% opacity) — Tasks waiting to start.</li>
+  <li><strong>Complete</strong> (blue header, 60% opacity) — Finished tasks with muted styling.</li>
+  <li><strong>Canceled</strong> (gray header, 60% opacity) — Canceled tasks with strikethrough titles.</li>
 </ul>
-<p>Each section only appears if it contains tasks. Column headers (ID, Task, Status, Priority, Assignee, Due Date, Hours) are <strong>sortable</strong> â€” click a header to sort ascending, click again for descending. Sorting applies independently within each section. Tasks with dependency icons (ðŸ”’ deps pending, ðŸ”“ deps resolved, â›“ required by others) appear inline with the task title.</p>
+<p>Each section only appears if it contains tasks. Column headers (ID, Task, Status, Priority, Assignee, Due Date, Hours) are <strong>sortable</strong> — click a header to sort ascending, click again for descending. Sorting applies independently within each section. Tasks with dependency icons (🔒 deps pending, 🔓 deps resolved, ⛓ required by others) appear inline with the task title.</p>
 <p>The <strong>batch editor</strong> lets you select multiple tasks via checkboxes and change their status, priority, or assignee in bulk. The status dropdown includes On Hold as an option.</p>
 
 <h3>Project Statuses</h3>
 <p>Projects follow this lifecycle:</p>
-<p><strong>Idea â†’ Active â†’ On Hold / Complete / Canceled</strong></p>
+<p><strong>Idea → Active → On Hold / Complete / Canceled</strong></p>
 <p>The "Future" status is also available for planned work not yet started.</p>
 
 <h3>Project &amp; Task Dates</h3>
 <p>Both projects and tasks use a three-date model to track schedule changes over time:</p>
 <ul>
-  <li><strong>Original End / Due Date</strong> â€” Set when the project or task is first created. This is the baseline and should not change once established â€” it represents the initial commitment.</li>
-  <li><strong>Working Due Date</strong> â€” The current target completion date. Updated as scope or timelines shift. All overdue calculations, alerts, and deadline displays throughout the app use this date. On creation, it is automatically set to match the original due date.</li>
-  <li><strong>Actual End Date</strong> â€” Automatically set to today's date when the status changes to "Complete." Represents when the work was actually finished.</li>
+  <li><strong>Original End / Due Date</strong> — Set when the project or task is first created. This is the baseline and should not change once established — it represents the initial commitment.</li>
+  <li><strong>Working Due Date</strong> — The current target completion date. Updated as scope or timelines shift. All overdue calculations, alerts, and deadline displays throughout the app use this date. On creation, it is automatically set to match the original due date.</li>
+  <li><strong>Actual End Date</strong> — Automatically set to today's date when the status changes to "Complete." Represents when the work was actually finished.</li>
 </ul>
 <p>Detail pages show all three dates side by side, with a red <strong>(moved)</strong> indicator when the working due date differs from the original. List views and cards show the working due date since that's the current target.</p>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="tasks-tab">Tasks Tab</h2>
 <p>Tasks are individual work items associated with projects. Each task has a title, status, assignee, due date, and parent project reference.</p>
 
 <h3>Creating Tasks</h3>
-<p>Click the <strong>"ï¼‹ New Task"</strong> button in the toolbar or on the My Work tab. Required fields are Title, Status, Assignee, Project, and Description. Select the parent project, assign a team member, set dates, and provide a description.</p>
+<p>Click the <strong>"＋ New Task"</strong> button in the toolbar or on the My Work tab. Required fields are Title, Status, Assignee, Project, and Description. Select the parent project, assign a team member, set dates, and provide a description.</p>
 <div class="tip-box">
-  <strong>AI-powered helpers:</strong> Category, Tool, and Project Size fields each have a <strong>âœ¨ Help me choose</strong> button â€” an amber pill that opens a guided wizard to recommend the best fit based on your answers.
+  <strong>AI-powered helpers:</strong> Category, Tool, and Project Size fields each have a <strong>✨ Help me choose</strong> button — an amber pill that opens a guided wizard to recommend the best fit based on your answers.
 </div>
 
 <h3>Task Statuses</h3>
@@ -322,34 +320,34 @@ li strong { color: var(--navy); }
 <h3>Date Requirements for Active Tasks</h3>
 <p>Setting a task to <strong>Active</strong> requires both a <strong>start date</strong> and a <strong>due date</strong>. This is enforced in three places:</p>
 <ul>
-  <li><strong>Inline status dropdown</strong> â€” the dropdown reverts if dates are missing.</li>
-  <li><strong>Batch update</strong> â€” the entire batch is blocked if any selected tasks lack dates.</li>
-  <li><strong>Task form</strong> â€” the save is blocked and the missing date field highlights red.</li>
+  <li><strong>Inline status dropdown</strong> — the dropdown reverts if dates are missing.</li>
+  <li><strong>Batch update</strong> — the entire batch is blocked if any selected tasks lack dates.</li>
+  <li><strong>Task form</strong> — the save is blocked and the missing date field highlights red.</li>
 </ul>
 <p>Pending, On Hold, and Waiting for Response tasks do not require dates.</p>
 
 <h3>Filtering Tasks by Member</h3>
-<p>The member filter on the Tasks tab matches <strong>only the task assignee</strong>. Filtering by "James McGinnis" shows only tasks where James is the assignee â€” not all tasks on projects he leads.</p>
+<p>The member filter on the Tasks tab matches <strong>only the task assignee</strong>. Filtering by "James McGinnis" shows only tasks where James is the assignee — not all tasks on projects he leads.</p>
 
 <h3>Completing Tasks</h3>
 <p>There are several quick ways to mark a task as Complete without opening the edit form:</p>
 <ul>
-  <li><strong>Task detail page:</strong> Click the green <strong>"âœ“ Complete"</strong> button in the header bar (next to Edit and Delete).</li>
-  <li><strong>Project detail page:</strong> Each open task in the task list has a green <strong>âœ“</strong> button on the right side of the row.</li>
-  <li><strong>My Work tab:</strong> Each open task in the My Tasks section has a green <strong>âœ“</strong> button.</li>
+  <li><strong>Task detail page:</strong> Click the green <strong>"✓ Complete"</strong> button in the header bar (next to Edit and Delete).</li>
+  <li><strong>Project detail page:</strong> Each open task in the task list has a green <strong>✓</strong> button on the right side of the row.</li>
+  <li><strong>My Work tab:</strong> Each open task in the My Tasks section has a green <strong>✓</strong> button.</li>
 </ul>
 <p>Completing a task sets its status to "Complete" and records today's date as the actual completion date. A confirmation dialog is shown before the change is saved.</p>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="resources-tab">Resources Tab</h2>
 <p>The Resources tab is the team capacity planning hub. It shows how each team member's time is allocated across projects and whether they are over- or under-utilized.</p>
 
 <h3>Team Member Cards</h3>
 <p>The top section, labeled <strong>"Current Week Project Allocations,"</strong> displays a card for each team member showing their name, role, and current week utilization percentage. The utilization badge is color-coded:</p>
 <ul>
-  <li><span class="badge badge-green">Green</span> â€” Under 70% utilized (has capacity)</li>
-  <li><span class="badge badge-amber">Amber</span> â€” 70â€“90% utilized (getting busy)</li>
-  <li><span class="badge badge-red">Red</span> â€” Over 90% utilized (at or over capacity)</li>
+  <li><span class="badge badge-green">Green</span> — Under 70% utilized (has capacity)</li>
+  <li><span class="badge badge-amber">Amber</span> — 70–90% utilized (getting busy)</li>
+  <li><span class="badge badge-red">Red</span> — Over 90% utilized (at or over capacity)</li>
 </ul>
 <p>Click a card to view that person's detailed allocation below.</p>
 
@@ -363,13 +361,13 @@ li strong { color: var(--navy); }
 <p>A table lists each project the selected person is allocated to, showing project status, a sparkline of recent allocation, and current week allocation percentage and hours.</p>
 
 <h3>Editing Allocations</h3>
-<p>Click <strong>"âœï¸ Edit Allocations"</strong> to open the allocation editor popup. This shows a grid of projects (rows) by weeks (columns). Enter allocation percentages (0â€“100%) for each project and week.</p>
+<p>Click <strong>"✏️ Edit Allocations"</strong> to open the allocation editor popup. This shows a grid of projects (rows) by weeks (columns). Enter allocation percentages (0–100%) for each project and week.</p>
 <div class="tip-box">
   <strong>Tip:</strong> Projects are sorted alphabetically. Pressing <strong>Tab</strong> moves down the column (same week, next project) rather than across a row, making it easy to fill in one week at a time.
 </div>
-<p>The total row at the bottom shows combined allocation â€” totals over 100% are highlighted in red. Click <strong>"âœ“ Apply Changes"</strong> to save. Changes are written to the ArcGIS Online allocations service and the view updates immediately.</p>
+<p>The total row at the bottom shows combined allocation — totals over 100% are highlighted in red. Click <strong>"✓ Apply Changes"</strong> to save. Changes are written to the ArcGIS Online allocations service and the view updates immediately.</p>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="forecast-tab">Forecast Tab</h2>
 <p>The Forecast tab projects team capacity into the future based on current allocation patterns. It shows how loaded each person is over a configurable window (default 13 weeks from the current week), helping managers identify periods of over- or under-capacity and plan resource assignments accordingly.</p>
 
@@ -384,30 +382,30 @@ li strong { color: var(--navy); }
 <h3>How Future Availability is Calculated</h3>
 <p>The forecast uses a <strong>"snapshot" approach</strong> to project current workloads into the future. Here's how it works step by step:</p>
 
-<h4>Step 1 â€” Past/Present Weeks: Actual Data</h4>
-<p>For all weeks up to and including the current week, the forecast uses <strong>actual entered allocation hours</strong> â€” no estimation. These are the real values from the allocations service, so past data is always accurate.</p>
+<h4>Step 1 — Past/Present Weeks: Actual Data</h4>
+<p>For all weeks up to and including the current week, the forecast uses <strong>actual entered allocation hours</strong> — no estimation. These are the real values from the allocations service, so past data is always accurate.</p>
 
-<h4>Step 2 â€” Find the Snapshot Week</h4>
+<h4>Step 2 — Find the Snapshot Week</h4>
 <p>For each person, the system walks backward from the current week to find the <strong>most recent week where any allocations were entered</strong> (i.e., total allocation fractions across all projects are greater than zero). This becomes the person's "snapshot week."</p>
-<p>For example, if James has allocation data entered through March 8, then March 8 is his snapshot week â€” even if the current calendar week is March 15.</p>
+<p>For example, if James has allocation data entered through March 8, then March 8 is his snapshot week — even if the current calendar week is March 15.</p>
 <div class="note-box">
   <strong>Why a snapshot?</strong> This approach preserves the real allocation split (all project fractions summing to roughly 100%) from a single point in time, rather than mixing stale data from different weeks where projects may have changed.
 </div>
 
-<h4>Step 3 â€” Project Forward</h4>
+<h4>Step 3 — Project Forward</h4>
 <p>For each project that had a <strong>non-zero allocation fraction</strong> in the snapshot week, the system carries that same fraction forward into every future week. So if James was 33% allocated to a project in the snapshot week, the forecast assumes 33% continues indefinitely.</p>
 <p>The allocated hours for each future week are calculated as:</p>
-<div class="formula">Future Allocated Hours = Snapshot Fraction Ã— Project Capacity for that week</div>
-<p>Note that project capacity can vary week to week due to absences â€” a future vacation week will show reduced capacity (and therefore reduced allocated hours) if the absence has been entered in the Settings tab.</p>
+<div class="formula">Future Allocated Hours = Snapshot Fraction × Project Capacity for that week</div>
+<p>Note that project capacity can vary week to week due to absences — a future vacation week will show reduced capacity (and therefore reduced allocated hours) if the absence has been entered in the Settings tab.</p>
 
-<h4>Step 4 â€” Respect Project End Dates</h4>
-<p>If a project has an end date and a future week falls <strong>after that date</strong>, the allocation drops to zero for that project. This is how the forecast shows capacity "freeing up" when projects end â€” revealing future availability for new work.</p>
+<h4>Step 4 — Respect Project End Dates</h4>
+<p>If a project has an end date and a future week falls <strong>after that date</strong>, the allocation drops to zero for that project. This is how the forecast shows capacity "freeing up" when projects end — revealing future availability for new work.</p>
 
-<h4>Step 5 â€” Calculate Availability</h4>
+<h4>Step 5 — Calculate Availability</h4>
 <p>For each person, for each week:</p>
-<div class="formula">Availability = Project Capacity âˆ’ Total Allocated Hours</div>
-<p>Where Project Capacity uses the standard formula: <code>(40 âˆ’ Absence Hours) Ã— 0.75 Ã— Project Time %</code>.</p>
-<p>Utilization is then: <code>Total Allocated Hours Ã· Project Capacity</code>, capped at 125% for display purposes.</p>
+<div class="formula">Availability = Project Capacity − Total Allocated Hours</div>
+<p>Where Project Capacity uses the standard formula: <code>(40 − Absence Hours) × 0.75 × Project Time %</code>.</p>
+<p>Utilization is then: <code>Total Allocated Hours ÷ Project Capacity</code>, capped at 125% for display purposes.</p>
 
 <h4>Worked Example</h4>
 <p>James McGinnis is 63% project-allocated with no absences. In his snapshot week (March 8), he has:</p>
@@ -420,13 +418,13 @@ li strong { color: var(--navy); }
 <p>For a future week with no absences, his project capacity is 18.9 hours. The forecast calculates:</p>
 <table class="guide-table">
   <tr><th>Project</th><th>Calculation</th><th>Hours</th></tr>
-  <tr><td>Safe Cities Dashboard</td><td>0.33 Ã— 18.9</td><td>6.24h</td></tr>
-  <tr><td>Parking Utilization</td><td>0.25 Ã— 18.9</td><td>4.73h</td></tr>
-  <tr><td>Water Quality Mapping</td><td>0.20 Ã— 18.9</td><td>3.78h</td></tr>
+  <tr><td>Safe Cities Dashboard</td><td>0.33 × 18.9</td><td>6.24h</td></tr>
+  <tr><td>Parking Utilization</td><td>0.25 × 18.9</td><td>4.73h</td></tr>
+  <tr><td>Water Quality Mapping</td><td>0.20 × 18.9</td><td>3.78h</td></tr>
   <tr><td><strong>Total Allocated</strong></td><td></td><td><strong>14.74h</strong></td></tr>
 </table>
-<p>Availability = 18.9 âˆ’ 14.74 = <strong>4.16 hours free</strong>. Utilization = 14.74 Ã· 18.9 = <strong>78%</strong>.</p>
-<p>If the Water Quality Mapping project ends in two weeks, then from that point forward James's forecast would show only 10.97h allocated and 7.93h free (58% utilization) â€” making him a good candidate for new work.</p>
+<p>Availability = 18.9 − 14.74 = <strong>4.16 hours free</strong>. Utilization = 14.74 ÷ 18.9 = <strong>78%</strong>.</p>
+<p>If the Water Quality Mapping project ends in two weeks, then from that point forward James's forecast would show only 10.97h allocated and 7.93h free (58% utilization) — making him a good candidate for new work.</p>
 
 <h3>Limitations</h3>
 <div class="tip-box">
@@ -436,41 +434,41 @@ li strong { color: var(--navy); }
   <li><strong>No allocation data = fully available:</strong> If a person has never had allocations entered (snapshot week is -1), their future shows as 100% available since there's nothing to project forward.</li>
   <li><strong>Future absences must be pre-entered:</strong> The forecast uses the capacity formula, which depends on absence data. If someone has a planned vacation next month but the absence hours haven't been entered in the Settings tab yet, the forecast won't reflect that reduced capacity.</li>
   <li><strong>Static snapshot:</strong> The forecast doesn't account for planned changes in allocation. If you know someone will move from Project A to Project B next month, the forecast won't reflect this until you actually update their allocations.</li>
-  <li><strong>No new project predictions:</strong> The forecast only projects existing allocations forward â€” it can't predict when new projects will start consuming capacity.</li>
+  <li><strong>No new project predictions:</strong> The forecast only projects existing allocations forward — it can't predict when new projects will start consuming capacity.</li>
 </ul>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="insights-tab">Insights Tab (Admin Only)</h2>
 <p>The Insights tab provides strategic reporting and data analysis views for team leadership. It is only visible to admins. Content includes project portfolio summaries, strategic alignment coverage, and trend analysis.</p>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="issues-tab">Issues Tab</h2>
 <p>The Issues tab provides a space for tracking bugs, feature requests, and operational issues. It is visible to all team members.</p>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="settings-tab">Settings Tab</h2>
 <p>The Settings tab is visible to all logged-in users. Non-admin users see only the <strong>Preferences</strong> section. Admin users see Preferences plus all admin sections (Team Members, Allocations, Dropdown Lists, etc.).</p>
 
 <h3>Preferences (All Users)</h3>
 <p>Personal settings that customize how the application looks and works for you. Preferences are saved to your team member record and persist across sessions and devices. Available preferences:</p>
 <ul>
-  <li><strong>Default tab</strong> â€” Which tab to show when you first open the application (Overview, My Work, Projects, or Tasks).</li>
-  <li><strong>Projects tab layout</strong> â€” Default layout for the Projects tab (List view or Grid view).</li>
-  <li><strong>Timeline range</strong> â€” How many months the My Work timeline shows ahead (3, 6, 9, or 12 months).</li>
-  <li><strong>Start with sidebar collapsed</strong> â€” Hide the filter sidebar by default.</li>
-  <li><strong>Collapse completed sections</strong> â€” Start with Complete and Canceled sections collapsed on project detail pages.</li>
-  <li><strong>Show all tasks on timeline</strong> â€” Show all project tasks on the My Work timeline, or only your assigned tasks.</li>
-  <li><strong>Compact rows</strong> â€” Use tighter row spacing in tables for a denser view.</li>
+  <li><strong>Default tab</strong> — Which tab to show when you first open the application (Overview, My Work, Projects, or Tasks).</li>
+  <li><strong>Projects tab layout</strong> — Default layout for the Projects tab (List view or Grid view).</li>
+  <li><strong>Timeline range</strong> — How many months the My Work timeline shows ahead (3, 6, 9, or 12 months).</li>
+  <li><strong>Start with sidebar collapsed</strong> — Hide the filter sidebar by default.</li>
+  <li><strong>Collapse completed sections</strong> — Start with Complete and Canceled sections collapsed on project detail pages.</li>
+  <li><strong>Show all tasks on timeline</strong> — Show all project tasks on the My Work timeline, or only your assigned tasks.</li>
+  <li><strong>Compact rows</strong> — Use tighter row spacing in tables for a denser view.</li>
 </ul>
 
 <h3>Admin Sections</h3>
 <p>The following sections are only visible to admins. Admins can toggle a <strong>"Preview as member"</strong> button in the header to see the app as a standard user would.</p>
 
 <h3>Team Members</h3>
-<p>Lists all team members with their name, role, team, member group, project allocation percentage, and work schedule. The <strong>Member Group</strong> field classifies each person as either "Data Intelligence" (core team) or "Affiliated" (collaborator from another team) â€” this controls whether they appear by default in the sidebar member filter.</p>
+<p>Lists all team members with their name, role, team, member group, project allocation percentage, and work schedule. The <strong>Member Group</strong> field classifies each person as either "Data Intelligence" (core team) or "Affiliated" (collaborator from another team) — this controls whether they appear by default in the sidebar member filter.</p>
 
 <h3>Adding Team Members</h3>
-<p>Click <strong>"ï¼‹ Add Member"</strong> to open a form for adding a new team member. Fields include full name, role, team, member group, skill area, tracking level, percentage of work week for project work, and work schedule (5/8, 4/10, or 9/80).</p>
+<p>Click <strong>"＋ Add Member"</strong> to open a form for adding a new team member. Fields include full name, role, team, member group, skill area, tracking level, percentage of work week for project work, and work schedule (5/8, 4/10, or 9/80).</p>
 
 <h3>Managing Dropdown Lists</h3>
 <p>The <strong>Dropdown Lists</strong> section lets you add or remove options from project form fields including Partner Departments and ITD Teams. The <strong>Categories and Tools</strong> section manages task category and tool dropdown options.</p>
@@ -478,31 +476,31 @@ li strong { color: var(--navy); }
 <h3>AI Features</h3>
 <p>Configuration for AI-powered features including task suggestions and strategic alignment recommendations.</p>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="strategic-alignment">Strategic Alignment</h2>
 <p>Each project can be tagged with strategic alignment fields that connect it to broader organizational goals. These fields are managed by authorized Strategic Alignment Editors (currently limited to specific users).</p>
 
 <h3>Alignment Fields</h3>
 <p>Six multi-select fields are available on the project form under the "Strategic Alignment" collapsible section:</p>
 <ul>
-  <li><strong>IT Initiative</strong> â€” Links to FY26 IT Strategic Plan objectives (3.3.1 through 3.3.5).</li>
-  <li><strong>City Initiative</strong> â€” Major cross-departmental City priorities (Asset Scorecard, CMO Dashboard, etc.).</li>
-  <li><strong>IT Priority Project</strong> â€” Top IT department priority efforts.</li>
-  <li><strong>Data Program Goal</strong> â€” Goals of the City's Data Program for building data maturity.</li>
-  <li><strong>WWC Foundational Practice</strong> â€” What Works Cities certification practice areas.</li>
-  <li><strong>WWC Criteria</strong> â€” Specific criteria within WWC practice areas.</li>
+  <li><strong>IT Initiative</strong> — Links to FY26 IT Strategic Plan objectives (3.3.1 through 3.3.5).</li>
+  <li><strong>City Initiative</strong> — Major cross-departmental City priorities (Asset Scorecard, CMO Dashboard, etc.).</li>
+  <li><strong>IT Priority Project</strong> — Top IT department priority efforts.</li>
+  <li><strong>Data Program Goal</strong> — Goals of the City's Data Program for building data maturity.</li>
+  <li><strong>WWC Foundational Practice</strong> — What Works Cities certification practice areas.</li>
+  <li><strong>WWC Criteria</strong> — Specific criteria within WWC practice areas.</li>
 </ul>
 <p>Each field includes a <strong>"None"</strong> option for projects where no specific alignment applies.</p>
 
 <h3>AI-Powered Suggestions</h3>
-<p>Click the <strong>âœ¨ Suggest Alignment</strong> button in the Strategic Alignment section header to have the AI analyze the project's title, description, category, and problem statement and recommend alignments. The AI is particularly selective with Data Program Goals â€” it only suggests them for projects that build the data team's capabilities, processes, or infrastructure (not routine operational work or one-off requests). Suggestions can be accepted individually or in bulk.</p>
+<p>Click the <strong>✨ Suggest Alignment</strong> button in the Strategic Alignment section header to have the AI analyze the project's title, description, category, and problem statement and recommend alignments. The AI is particularly selective with Data Program Goals — it only suggests them for projects that build the data team's capabilities, processes, or infrastructure (not routine operational work or one-off requests). Suggestions can be accepted individually or in bulk.</p>
 
 <h3>Data Program Derivation</h3>
 <p>The "Data Program" flag on projects is derived automatically from the Data Program Goal field. If any goal other than "None" is selected, the project is flagged as a Data Program project. There is no separate checkbox.</p>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="dependencies">Task Dependencies</h2>
-<p>The dependency system lets you define relationships between tasks â€” marking which tasks must be completed before others can start. This feature is behind a feature flag (<code>FEATURE_DEPENDENCIES</code>) and can be disabled if it doesn't work for the team.</p>
+<p>The dependency system lets you define relationships between tasks — marking which tasks must be completed before others can start. This feature is behind a feature flag (<code>FEATURE_DEPENDENCIES</code>) and can be disabled if it doesn't work for the team.</p>
 
 <h3>Setting Dependencies</h3>
 <p>When editing a task, a <strong>Dependencies</strong> section appears above the Timeline fields. It shows a checkbox list of all sibling tasks (same project), each with their task number, title, and current status. Check the tasks that must be completed before this task can start.</p>
@@ -510,16 +508,16 @@ li strong { color: var(--navy); }
 <h3>Viewing Dependencies</h3>
 <p>Dependencies are visible in several places:</p>
 <ul>
-  <li><strong>Task detail page</strong> â€” A "Depends on" section shows each dependency with a ðŸ”’ (unresolved) or âœ… (done) icon and its current status. A "Required by" section shows tasks that depend on this one with a â›“ icon. Both are clickable.</li>
-  <li><strong>Project detail task table</strong> â€” Dependency icons appear inline with task titles: ðŸ”’ (has unresolved dependencies), ðŸ”“ (all dependencies resolved), â›“ (required by other tasks).</li>
-  <li><strong>My Work attention badges</strong> â€” Active tasks with unresolved dependencies get a red "Deps pending" badge.</li>
-  <li><strong>Timeline</strong> â€” Tasks with pending dependencies show a hatched/striped bar pattern and a ðŸ”’ icon in the label.</li>
+  <li><strong>Task detail page</strong> — A "Depends on" section shows each dependency with a 🔒 (unresolved) or ✅ (done) icon and its current status. A "Required by" section shows tasks that depend on this one with a ⛓ icon. Both are clickable.</li>
+  <li><strong>Project detail task table</strong> — Dependency icons appear inline with task titles: 🔒 (has unresolved dependencies), 🔓 (all dependencies resolved), ⛓ (required by other tasks).</li>
+  <li><strong>My Work attention badges</strong> — Active tasks with unresolved dependencies get a red "Deps pending" badge.</li>
+  <li><strong>Timeline</strong> — Tasks with pending dependencies show a hatched/striped bar pattern and a 🔒 icon in the label.</li>
 </ul>
 
 <h3>Data Model</h3>
 <p>Dependencies use a single <code>blocked_by</code> text field on the tasks feature service, storing comma-separated task numbers (e.g., "P-319-003,P-319-005"). Reverse links (which tasks depend on this one) are derived at runtime. To disable the entire feature, set <code>FEATURE_DEPENDENCIES = false</code> in the application code.</p>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="deep-linking">Deep Linking</h2>
 <p>The tracker supports direct links to specific projects via URL query parameters. This is used by the Tucson DATA leadership app's "Open in tracker" buttons and can be used in emails, Slack messages, or any other context where you want to link someone directly to a project.</p>
 <p>URL format: <code>https://psjohnso.github.io/analytics-tracker/?project=P-NNN</code></p>
@@ -529,82 +527,82 @@ li strong { color: var(--navy); }
 <p>The sidebar filter system provides consistent filtering across the Projects and Tasks tabs.</p>
 
 <h3>How Filters Work</h3>
-<p>Shared filters (Member, Priority, Search) apply to both tabs. Project-specific filters (Status, Category, Partner Dept, ITD Team, Data Program) only affect the Projects tab. Task-specific filters (Task Status, Task Category, Tool) only affect the Tasks tab. <strong>Project status filters do not cascade to the Tasks tab</strong> â€” each tab's filters are independent.</p>
+<p>Shared filters (Member, Priority, Search) apply to both tabs. Project-specific filters (Status, Category, Partner Dept, ITD Team, Data Program) only affect the Projects tab. Task-specific filters (Task Status, Task Category, Tool) only affect the Tasks tab. <strong>Project status filters do not cascade to the Tasks tab</strong> — each tab's filters are independent.</p>
 
 <h3>Member Filter</h3>
-<p>On the Projects tab, the member filter shows projects where the selected person is the lead or a contributor. On the Tasks tab, the member filter matches <strong>only the task assignee</strong>. By default, only Data Intelligence team members are shown â€” check "Show affiliated members" to include collaborators from other teams.</p>
+<p>On the Projects tab, the member filter shows projects where the selected person is the lead or a contributor. On the Tasks tab, the member filter matches <strong>only the task assignee</strong>. By default, only Data Intelligence team members are shown — check "Show affiliated members" to include collaborators from other teams.</p>
 
 <h3>Active Filter Chips</h3>
-<p>When filters are active, descriptive chips appear above the filter panel showing exactly what's filtered (e.g., "Status: Active, Scheduled" or "Member: Peter Johnson"). Each chip has an Ã— button to remove that specific filter. A "Clear all" link appears when multiple filters are active.</p>
+<p>When filters are active, descriptive chips appear above the filter panel showing exactly what's filtered (e.g., "Status: Active, Scheduled" or "Member: Peter Johnson"). Each chip has an × button to remove that specific filter. A "Clear all" link appears when multiple filters are active.</p>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="capacity-math">Capacity & Utilization: Assumptions and Math</h2>
 <p>This section explains how the application calculates project capacity, allocated hours, and utilization. Understanding these calculations is important for interpreting the data on the Resources and Forecast tabs.</p>
 
 <h3>Core Assumptions</h3>
 <table class="guide-table">
   <tr><th>Assumption</th><th>Value / Explanation</th></tr>
-  <tr><td><strong>Scheduled Work Hours</strong></td><td>Computed from each employee's daily start/end times and lunch duration: <code>daily_hours = (end âˆ’ start) âˆ’ lunch</code>, summed for the week. A 5/8 schedule (8amâ€“5pm, 1hr lunch) yields 40 hours/week. A 9/80 schedule alternates between ~44 hours (Week A) and ~36 hours (Week B) across a 2-week pay period starting on Sundays.</td></tr>
-  <tr><td><strong>Productivity Factor</strong></td><td><strong>75%</strong> â€” Only 75% of available work hours are assumed to be productive project time. The remaining 25% accounts for meetings, email, administrative tasks, context-switching, and breaks. This is based on workplace productivity research showing the average knowledge worker is productively focused for roughly 6 of 8 hours per day.</td></tr>
+  <tr><td><strong>Scheduled Work Hours</strong></td><td>Computed from each employee's daily start/end times and lunch duration: <code>daily_hours = (end − start) − lunch</code>, summed for the week. A 5/8 schedule (8am–5pm, 1hr lunch) yields 40 hours/week. A 9/80 schedule alternates between ~44 hours (Week A) and ~36 hours (Week B) across a 2-week pay period starting on Sundays.</td></tr>
+  <tr><td><strong>Productivity Factor</strong></td><td><strong>75%</strong> — Only 75% of available work hours are assumed to be productive project time. The remaining 25% accounts for meetings, email, administrative tasks, context-switching, and breaks. This is based on workplace productivity research showing the average knowledge worker is productively focused for roughly 6 of 8 hours per day.</td></tr>
   <tr><td><strong>Project Time %</strong></td><td>Each team member has a configurable percentage of their productive time dedicated to project work (e.g., 63% for a Lead Data Analyst). The remainder goes to operational duties, support, and overhead not tracked as projects.</td></tr>
   <tr><td><strong>Absences</strong></td><td>Hours off per week (vacation, sick, holidays) are entered in the Settings tab. These reduce the scheduled hours before the productivity factor is applied.</td></tr>
 </table>
 
 <h3>The Capacity Formula</h3>
 <p>For each person, for each week:</p>
-<div class="formula">Project Capacity = (Scheduled Hours âˆ’ Absence Hours) Ã— 0.75 Ã— Project Time %</div>
+<div class="formula">Project Capacity = (Scheduled Hours − Absence Hours) × 0.75 × Project Time %</div>
 <p>Where Scheduled Hours is determined by the employee's work schedule and which week of the pay period it is (Week A or Week B for 9/80 employees).</p>
 
-<h4>Worked Example â€” 5/8 Schedule, No Absences</h4>
+<h4>Worked Example — 5/8 Schedule, No Absences</h4>
 <p>James McGinnis has a 5/8 schedule, a project time allocation of 63%, and no absences this week:</p>
 <table class="guide-table">
   <tr><th>Step</th><th>Calculation</th></tr>
   <tr><td>Scheduled hours</td><td>40 hours (5/8 schedule)</td></tr>
-  <tr><td>Subtract absences</td><td>40 âˆ’ 0 = 40 hours available</td></tr>
-  <tr><td>Apply 75% productivity</td><td>40 Ã— 0.75 = 30 productive hours</td></tr>
-  <tr><td>Apply 63% project time</td><td>30 Ã— 0.63 = <strong>18.9 project hours</strong></td></tr>
+  <tr><td>Subtract absences</td><td>40 − 0 = 40 hours available</td></tr>
+  <tr><td>Apply 75% productivity</td><td>40 × 0.75 = 30 productive hours</td></tr>
+  <tr><td>Apply 63% project time</td><td>30 × 0.63 = <strong>18.9 project hours</strong></td></tr>
 </table>
 
-<h4>Worked Example â€” 9/80 Schedule, Week B</h4>
+<h4>Worked Example — 9/80 Schedule, Week B</h4>
 <p>If James were on a 9/80 schedule during Week B (36-hour week) with no absences:</p>
 <table class="guide-table">
   <tr><th>Step</th><th>Calculation</th></tr>
   <tr><td>Scheduled hours</td><td>36 hours (9/80 Week B)</td></tr>
-  <tr><td>Subtract absences</td><td>36 âˆ’ 0 = 36 hours available</td></tr>
-  <tr><td>Apply 75% productivity</td><td>36 Ã— 0.75 = 27 productive hours</td></tr>
-  <tr><td>Apply 63% project time</td><td>27 Ã— 0.63 = <strong>17.01 project hours</strong></td></tr>
+  <tr><td>Subtract absences</td><td>36 − 0 = 36 hours available</td></tr>
+  <tr><td>Apply 75% productivity</td><td>36 × 0.75 = 27 productive hours</td></tr>
+  <tr><td>Apply 63% project time</td><td>27 × 0.63 = <strong>17.01 project hours</strong></td></tr>
 </table>
 
-<h4>Worked Example â€” With 1 Day Off</h4>
+<h4>Worked Example — With 1 Day Off</h4>
 <p>If James (5/8 schedule) takes 8 hours (1 day) off:</p>
 <table class="guide-table">
   <tr><th>Step</th><th>Calculation</th></tr>
   <tr><td>Scheduled hours</td><td>40 hours</td></tr>
-  <tr><td>Subtract absences</td><td>40 âˆ’ 8 = 32 hours available</td></tr>
-  <tr><td>Apply 75% productivity</td><td>32 Ã— 0.75 = 24 productive hours</td></tr>
-  <tr><td>Apply 63% project time</td><td>24 Ã— 0.63 = <strong>15.12 project hours</strong></td></tr>
+  <tr><td>Subtract absences</td><td>40 − 8 = 32 hours available</td></tr>
+  <tr><td>Apply 75% productivity</td><td>32 × 0.75 = 24 productive hours</td></tr>
+  <tr><td>Apply 63% project time</td><td>24 × 0.63 = <strong>15.12 project hours</strong></td></tr>
 </table>
 
 <h3>Allocated Hours</h3>
 <p>When a team member is allocated a percentage to a project for a given week:</p>
-<div class="formula">Allocated Hours = Allocation % Ã— Project Capacity</div>
-<p>For example, if James is allocated 50% to a project with 18.9 hours capacity: 0.50 Ã— 18.9 = <strong>9.45 hours</strong>. The total allocated hours for a person is the sum across all their project allocations for that week.</p>
+<div class="formula">Allocated Hours = Allocation % × Project Capacity</div>
+<p>For example, if James is allocated 50% to a project with 18.9 hours capacity: 0.50 × 18.9 = <strong>9.45 hours</strong>. The total allocated hours for a person is the sum across all their project allocations for that week.</p>
 
 <h3>Utilization</h3>
 <p>Utilization measures how much of a person's available project capacity is actually allocated:</p>
-<div class="formula">Utilization = Total Allocated Hours Ã· Project Capacity</div>
+<div class="formula">Utilization = Total Allocated Hours ÷ Project Capacity</div>
 <p>Utilization is displayed as a percentage. 100% means fully allocated. Over 100% indicates overallocation. The color coding is:</p>
 <ul>
-  <li><span class="badge badge-green">Green</span> â€” Under 70%</li>
-  <li><span class="badge badge-amber">Amber</span> â€” 70â€“90%</li>
-  <li><span class="badge badge-red">Red</span> â€” Over 90%</li>
+  <li><span class="badge badge-green">Green</span> — Under 70%</li>
+  <li><span class="badge badge-amber">Amber</span> — 70–90%</li>
+  <li><span class="badge badge-red">Red</span> — Over 90%</li>
 </ul>
 
 <div class="note-box">
   <strong>Note:</strong> Both <em>weekly_allocated</em> and <em>utilization</em> are always computed client-side from the actual allocation data. This means they are always in sync with the latest edits, even before a page refresh.
 </div>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="data-architecture">Data Architecture</h2>
 <p>All data is stored in ArcGIS Online as hosted feature services. The application queries these services via the ArcGIS REST API using the authenticated user's OAuth token.</p>
 
@@ -630,14 +628,14 @@ li strong { color: var(--navy); }
 <h3>Data Flow</h3>
 <p>On page load, the application queries projects, tasks, team_members, absences, allocations, and app_config in parallel. The data is reconstructed into an in-memory structure used for all rendering. If the logged-in user has time tracking enabled, their time entries are also loaded. When changes are made (editing allocations, updating absences, managing team members, logging time), the application writes back to the appropriate REST service and updates local data immediately for a responsive UI.</p>
 
-<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="access-control">Access Control & Permissions</h2>
 
 <h3>Authentication</h3>
 <p>All users must authenticate through ArcGIS Online OAuth 2.0 (Implicit Grant flow, 120-minute token lifetime). Expired tokens trigger automatic re-authentication.</p>
 
 <h3>Group-Based Permissions</h3>
-<p>Administrative privileges (Settings tab access, Idea promotion) are controlled by membership in a designated ArcGIS Online group (Team Leads). This is managed entirely through ArcGIS Online group membership â€” no application-level user management is needed.</p>
+<p>Administrative privileges (Settings tab access, Idea promotion) are controlled by membership in a designated ArcGIS Online group (Team Leads). This is managed entirely through ArcGIS Online group membership — no application-level user management is needed.</p>
 
 <h3>Feature Service Permissions</h3>
 <p>Read and write access to the underlying feature services is controlled through ArcGIS Online sharing settings. The following services must have editing enabled: projects, tasks, team_members, absences, allocations, app_config, and time_entries.</p>
@@ -645,17 +643,17 @@ li strong { color: var(--navy); }
 <h3>Permission Summary</h3>
 <table class="guide-table">
   <tr><th>Action</th><th>Standard User</th><th>Admin</th></tr>
-  <tr><td>View Overview, My Work, Projects, Tasks, Issues, Settings (Preferences)</td><td>âœ… Yes</td><td>âœ… Yes</td></tr>
-  <tr><td>View Resources, Forecast, Insights, Settings (Admin sections)</td><td>âŒ No</td><td>âœ… Yes</td></tr>
-  <tr><td>Create tasks</td><td>âœ… Yes</td><td>âœ… Yes</td></tr>
-  <tr><td>Edit / delete projects (as project lead)</td><td>âœ… Own projects</td><td>âœ… All projects</td></tr>
-  <tr><td>Submit project ideas</td><td>âœ… Yes</td><td>âœ… Yes</td></tr>
-  <tr><td>Promote ideas to active projects</td><td>âŒ No</td><td>âœ… Yes</td></tr>
-  <tr><td>Edit strategic alignment fields</td><td>âŒ No</td><td>Authorized editors only</td></tr>
-  <tr><td>Edit allocations</td><td>âœ… Yes</td><td>âœ… Yes</td></tr>
-  <tr><td>Manage team members</td><td>âŒ No</td><td>âœ… Yes</td></tr>
-  <tr><td>Preview as member</td><td>âŒ No</td><td>âœ… Yes</td></tr>
-  <tr><td>Log time entries (if enabled)</td><td>âœ… Yes</td><td>âœ… Yes</td></tr>
+  <tr><td>View Overview, My Work, Projects, Tasks, Issues, Settings (Preferences)</td><td>✅ Yes</td><td>✅ Yes</td></tr>
+  <tr><td>View Resources, Forecast, Insights, Settings (Admin sections)</td><td>❌ No</td><td>✅ Yes</td></tr>
+  <tr><td>Create tasks</td><td>✅ Yes</td><td>✅ Yes</td></tr>
+  <tr><td>Edit / delete projects (as project lead)</td><td>✅ Own projects</td><td>✅ All projects</td></tr>
+  <tr><td>Submit project ideas</td><td>✅ Yes</td><td>✅ Yes</td></tr>
+  <tr><td>Promote ideas to active projects</td><td>❌ No</td><td>✅ Yes</td></tr>
+  <tr><td>Edit strategic alignment fields</td><td>❌ No</td><td>Authorized editors only</td></tr>
+  <tr><td>Edit allocations</td><td>✅ Yes</td><td>✅ Yes</td></tr>
+  <tr><td>Manage team members</td><td>❌ No</td><td>✅ Yes</td></tr>
+  <tr><td>Preview as member</td><td>❌ No</td><td>✅ Yes</td></tr>
+  <tr><td>Log time entries (if enabled)</td><td>✅ Yes</td><td>✅ Yes</td></tr>
 </table>
 
 </main>
