@@ -500,7 +500,10 @@ function switchTab(tab, preserveFilters) {
   document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'projectReview') ? 'none' : '';
   const addBtn = document.getElementById('btn-add-new');
   if (tab === 'tasks') { addBtn.style.display='flex'; addBtn.textContent='＋ New Task'; }
-  else if (tab === 'projects' && typeof canCreateProject === 'function' && canCreateProject()) {
+  else if (tab === 'projects' && typeof isAdmin === 'function' && isAdmin()) {
+    // Admins create projects directly here. Data Program leads use the
+    // simpler dataprogram.html console (linked from the toolbar) — they
+    // don't see this button to avoid confusion about which path to use.
     addBtn.style.display='flex'; addBtn.textContent='＋ New Project';
   }
   else { addBtn.style.display='none'; }

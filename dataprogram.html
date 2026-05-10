@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Program — Lead Console — Tucson Data Team</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #002669;
+  --navy-deep: #001540;
+  --gold: #FFDB22;
+  --gold-deep: #92400E;
+  --orange: #C24200;
+  --success: #83AC16;
+  --warning: #EF9F27;
+  --danger: #A32D2D;
+  --text-body: #1F2937;
+  --text-muted: #6B7280;
+  --border: #DDE0DD;
+  --border-soft: #ECE9DF;
+  --surface: #F8F5EE;
+  --surface-2: #FDFCF6;
+  --bg: #EAEDF4;
+  --white: #FFFFFF;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  font-family: 'Lato', sans-serif;
+  color: var(--text-body);
+}
+
+/* ── Page shell ───────────────────────────────────────────────────── */
+.lp-header {
+  background: var(--navy);
+  color: white;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.lp-header-title {
+  font-size: 13px; font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; opacity: 0.7;
+}
+.lp-header-context {
+  font-size: 18px; font-weight: 900; letter-spacing: -0.01em;
+}
+.lp-header-actions {
+  display: flex; gap: 8px; align-items: center;
+}
+.lp-header-link {
+  padding: 7px 14px; background: rgba(255,255,255,0.1);
+  color: white; border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 6px; font-size: 12px; font-weight: 700;
+  text-decoration: none; cursor: pointer;
+}
+.lp-header-link:hover { background: rgba(255,255,255,0.2); }
+
+.lp-accent-bar {
+  height: 4px;
+  background: linear-gradient(90deg, #C24200 25%, #FFDB22 25%, #FFDB22 50%, #83AC16 50%, #83AC16 75%, #002669 75%);
+}
+
+.lp-page {
+  width: min(1200px, 100%);
+  margin: 0 auto;
+  padding: 28px;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────────────── */
+.lp-toolbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.lp-btn-primary {
+  padding: 10px 20px; border: none; border-radius: 8px;
+  background: var(--gold); color: var(--gold-deep);
+  font-size: 14px; font-weight: 800; letter-spacing: 0.04em;
+  cursor: pointer; font-family: 'Lato', sans-serif;
+}
+.lp-btn-primary:hover { background: #F0CC00; }
+.lp-chip {
+  padding: 6px 14px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--white);
+  color: var(--text-muted); font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: 'Lato', sans-serif;
+}
+.lp-chip:hover { background: var(--surface); }
+.lp-chip.active { background: var(--navy); color: white; border-color: var(--navy); }
+.lp-toolbar-spacer { flex: 1; }
+.lp-toolbar-meta { font-size: 12px; color: var(--text-muted); }
+
+/* ── Project list ─────────────────────────────────────────────────── */
+.lp-group {
+  margin-bottom: 22px;
+}
+.lp-group-head {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--navy);
+  margin-bottom: 8px; padding-bottom: 4px;
+  border-bottom: 2px solid var(--border);
+}
+.lp-row {
+  display: grid;
+  grid-template-columns: 100px 100px minmax(0, 1fr) 140px 90px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.lp-row:hover { border-color: var(--navy); transform: translateY(-1px); }
+.lp-row-pid {
+  font-size: 12px; font-weight: 800; color: var(--navy);
+  background: var(--surface); padding: 3px 8px; border-radius: 4px;
+  text-align: center;
+}
+.lp-row-status {
+  font-size: 10px; padding: 3px 10px; border-radius: 999px;
+  font-weight: 800; letter-spacing: 0.04em;
+  text-align: center;
+}
+.lp-row-status.active     { background: #DCFCE7; color: #166534; }
+.lp-row-status.scheduled  { background: #FEF3C7; color: #92400E; }
+.lp-row-status.hold       { background: #FEE2E2; color: #B91C1C; }
+.lp-row-status.complete   { background: #E0E7FF; color: #3730A3; }
+.lp-row-status.canceled   { background: #F3F4F6; color: #6B7280; }
+.lp-row-status.future     { background: #F0FDF4; color: #065F46; }
+.lp-row-title {
+  font-size: 14px; font-weight: 700; color: var(--navy);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lp-row-date {
+  font-size: 12px; color: var(--text-muted);
+}
+.lp-row-edit {
+  font-size: 11px; color: var(--text-muted); text-align: right;
+}
+
+.lp-empty {
+  background: var(--white);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.lp-empty .lp-empty-icon { font-size: 36px; margin-bottom: 10px; }
+.lp-empty .lp-empty-title { font-size: 16px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+.lp-empty .lp-empty-body { font-size: 13px; }
+
+/* ── Modal form ───────────────────────────────────────────────────── */
+.lp-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4); z-index: 100;
+  align-items: flex-start; justify-content: center;
+  padding: 40px 16px;
+  overflow-y: auto;
+}
+.lp-backdrop.open { display: flex; }
+.lp-modal {
+  background: var(--white);
+  width: min(620px, 100%);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+.lp-modal-head {
+  padding: 18px 24px;
+  background: linear-gradient(180deg, var(--surface-2), var(--white));
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.lp-modal-title {
+  font-size: 16px; font-weight: 900; color: var(--navy);
+  letter-spacing: -0.01em;
+}
+.lp-modal-close {
+  background: transparent; border: none; cursor: pointer;
+  font-size: 22px; color: var(--text-muted); line-height: 1;
+  padding: 4px 8px;
+}
+.lp-modal-close:hover { color: var(--navy); }
+.lp-modal-body {
+  padding: 20px 24px;
+}
+.lp-field {
+  margin-bottom: 14px;
+}
+.lp-field-label {
+  display: block;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+  text-transform: uppercase; color: var(--navy);
+  margin-bottom: 4px;
+}
+.lp-field-input, .lp-field-select, .lp-field-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: 'Lato', sans-serif;
+  color: var(--text-body);
+  background: var(--white);
+}
+.lp-field-textarea {
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+.lp-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.lp-modal-foot {
+  padding: 14px 24px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.lp-btn-save {
+  padding: 9px 20px; border: none; border-radius: 7px;
+  background: var(--success); color: white;
+  font-size: 13px; font-weight: 800; letter-spacing: 0.04em;
+  cursor: pointer; font-family: 'Lato', sans-serif;
+}
+.lp-btn-save:hover { background: #6e9112; }
+.lp-btn-cancel {
+  padding: 9px 18px; border: 1px solid var(--border); border-radius: 7px;
+  background: var(--white); color: var(--navy);
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: 'Lato', sans-serif;
+}
+.lp-btn-delete {
+  padding: 9px 18px; border: 1px solid #FECACA; border-radius: 7px;
+  background: #FEF2F2; color: #B91C1C;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: 'Lato', sans-serif;
+  margin-left: auto;
+}
+.lp-btn-delete:hover { background: #FEE2E2; }
+
+/* ── Toast / banner / state messages ──────────────────────────────── */
+.lp-state {
+  text-align: center;
+  padding: 80px 24px;
+  color: var(--text-muted);
+}
+.lp-state h2 {
+  margin: 0 0 8px;
+  font-size: 22px; font-weight: 900; color: var(--navy);
+}
+.lp-state p { margin: 0 0 16px; font-size: 14px; }
+.lp-state .lp-btn-primary { display: inline-block; text-decoration: none; }
+
+.lp-toast {
+  position: fixed; bottom: 24px; right: 24px;
+  padding: 12px 18px; border-radius: 8px;
+  font-size: 13px; font-weight: 700;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+  z-index: 200; animation: lp-toast-in 0.2s ease;
+}
+.lp-toast.success { background: var(--success); color: white; }
+.lp-toast.error { background: var(--danger); color: white; }
+.lp-toast.info { background: var(--navy); color: white; }
+@keyframes lp-toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 768px) {
+  .lp-page { padding: 16px; }
+  .lp-header { padding: 12px 16px; }
+  .lp-row { grid-template-columns: 90px minmax(0,1fr); gap: 8px; }
+  .lp-row-pid, .lp-row-status { grid-column: 1; }
+  .lp-row-title { grid-column: 2; }
+  .lp-row-date, .lp-row-edit { grid-column: 1 / -1; font-size: 11px; }
+  .lp-field-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="lp-header">
+  <div>
+    <div class="lp-header-title">Data Program · Lead Console</div>
+    <div id="lp-context" class="lp-header-context">Loading…</div>
+  </div>
+  <div class="lp-header-actions">
+    <a href="index.html" class="lp-header-link" id="lp-link-tracker">Open the full Tracker</a>
+    <a href="javascript:void(0)" id="lp-signout" class="lp-header-link" style="display:none;">Sign out</a>
+  </div>
+</header>
+<div class="lp-accent-bar"></div>
+
+<main class="lp-page">
+  <!-- Bootstrap state — replaced after data loads -->
+  <div id="lp-bootstrap" class="lp-state">
+    <h2>Loading…</h2>
+    <p>Signing you in and fetching your team’s projects.</p>
+  </div>
+
+  <!-- Main view (hidden until lead status confirmed) -->
+  <div id="lp-main" style="display:none;">
+    <div class="lp-toolbar">
+      <button class="lp-btn-primary" onclick="lpOpenNew()">＋ New project</button>
+      <span style="width:1px;height:24px;background:var(--border);margin:0 4px;"></span>
+      <span class="lp-chip active" data-filter="all" onclick="lpSetFilter('all')">All</span>
+      <span class="lp-chip" data-filter="Active" onclick="lpSetFilter('Active')">Active</span>
+      <span class="lp-chip" data-filter="Scheduled" onclick="lpSetFilter('Scheduled')">Scheduled</span>
+      <span class="lp-chip" data-filter="Complete" onclick="lpSetFilter('Complete')">Completed YTD</span>
+      <div class="lp-toolbar-spacer"></div>
+      <span class="lp-toolbar-meta" id="lp-list-summary"></span>
+    </div>
+    <div id="lp-list"></div>
+  </div>
+
+  <!-- Access-denied state -->
+  <div id="lp-access-denied" class="lp-state" style="display:none;">
+    <h2>This page is for Data Program team leads.</h2>
+    <p>Your account isn’t flagged as a Data Program lead. If you think it should be, ask Peter Johnson to set your <code>data_program_lead_team</code> in Settings → Team Members.</p>
+    <a href="index.html" class="lp-btn-primary">Open the full Tracker →</a>
+  </div>
+</main>
+
+<!-- Edit / New modal -->
+<div id="lp-modal-backdrop" class="lp-backdrop" onclick="if(event.target===this)lpCloseModal()">
+  <div class="lp-modal" role="dialog" aria-labelledby="lp-modal-title">
+    <div class="lp-modal-head">
+      <div id="lp-modal-title" class="lp-modal-title">New project</div>
+      <button class="lp-modal-close" onclick="lpCloseModal()" aria-label="Close">×</button>
+    </div>
+    <div class="lp-modal-body">
+      <div class="lp-field">
+        <label class="lp-field-label" for="lp-f-title">Title</label>
+        <input id="lp-f-title" class="lp-field-input" type="text" placeholder="Project title…">
+      </div>
+      <div class="lp-field-row">
+        <div class="lp-field">
+          <label class="lp-field-label" for="lp-f-status">Status</label>
+          <select id="lp-f-status" class="lp-field-select"></select>
+        </div>
+        <div class="lp-field">
+          <label class="lp-field-label" for="lp-f-partner-dept">Partner department</label>
+          <select id="lp-f-partner-dept" class="lp-field-select"></select>
+        </div>
+      </div>
+      <div class="lp-field-row">
+        <div class="lp-field">
+          <label class="lp-field-label" for="lp-f-start">Start date</label>
+          <input id="lp-f-start" class="lp-field-input" type="date">
+        </div>
+        <div class="lp-field">
+          <label class="lp-field-label" for="lp-f-end">Target end date</label>
+          <input id="lp-f-end" class="lp-field-input" type="date">
+        </div>
+      </div>
+      <div class="lp-field-row">
+        <div class="lp-field">
+          <label class="lp-field-label" for="lp-f-working-due">Working due (optional)</label>
+          <input id="lp-f-working-due" class="lp-field-input" type="date">
+        </div>
+        <div class="lp-field" id="lp-f-actual-end-wrap" style="display:none;">
+          <label class="lp-field-label" for="lp-f-actual-end">Completion date</label>
+          <input id="lp-f-actual-end" class="lp-field-input" type="date">
+        </div>
+      </div>
+      <div class="lp-field">
+        <label class="lp-field-label" for="lp-f-description">Description</label>
+        <textarea id="lp-f-description" class="lp-field-textarea" placeholder="What is this project? Who does it serve? What outcome does it produce?"></textarea>
+      </div>
+    </div>
+    <div class="lp-modal-foot">
+      <button class="lp-btn-save" onclick="lpSaveProject()">Save</button>
+      <button class="lp-btn-cancel" onclick="lpCloseModal()">Cancel</button>
+      <button id="lp-btn-delete" class="lp-btn-delete" onclick="lpDeleteProject()" style="display:none;">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Session-expired modal (reused from app pattern) -->
+<div id="session-expired-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:28px;width:min(420px,100%);text-align:center;">
+    <h3 style="margin:0 0 10px;color:var(--navy);">Session expired</h3>
+    <p style="font-size:14px;color:var(--text-muted);">Your ArcGIS session has ended. Sign in again to continue.</p>
+    <button onclick="sessionReAuth()" class="lp-btn-primary" style="margin-top:14px;">Sign in</button>
+  </div>
+</div>
+
+<!-- Shared libraries — cache-bust ?v= bumped on each deploy (mirrors index.html pattern) -->
+<script src="src/util.js?v=1.16.0.0010"></script>
+<script src="src/constants.js?v=1.16.0.0010"></script>
+<script src="src/agol.js?v=1.16.0.0010"></script>
+<script src="src/auth.js?v=1.16.0.0010"></script>
+<script src="src/dataprogram-lite.js?v=1.16.0.0010"></script>
+</body>
+</html>

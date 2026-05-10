@@ -10,7 +10,7 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.16.0.0009';
+const APP_VERSION = '1.16.0.0010';
 
 // ══════════════════════════════════════════════════════════════════════
 //  DATA PROGRAM TEAMS — fallback default
