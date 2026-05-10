@@ -392,18 +392,23 @@ async function fetchAgolUserInfo(token) {
       ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
       : displayName.slice(0, 2).toUpperCase();
 
-    // Check for a thumbnail
+    // Update the header user-info elements if present (they don't
+    // exist in the lite app — guard each access so missing DOM doesn't
+    // throw and skip the group-membership check below).
     const avatarEl = document.getElementById('user-avatar');
-    if (data.thumbnail) {
-      const thumbUrl = ARCGIS_CONFIG.portalUrl + '/sharing/rest/community/users/' +
-        encodeURIComponent(username) + '/info/' + data.thumbnail + '?token=' + encodeURIComponent(token);
-      avatarEl.innerHTML = '<img src="' + thumbUrl + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.textContent=\'' + initials + '\'">';
-    } else {
-      avatarEl.textContent = initials;
+    if (avatarEl) {
+      if (data.thumbnail) {
+        const thumbUrl = ARCGIS_CONFIG.portalUrl + '/sharing/rest/community/users/' +
+          encodeURIComponent(username) + '/info/' + data.thumbnail + '?token=' + encodeURIComponent(token);
+        avatarEl.innerHTML = '<img src="' + thumbUrl + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.textContent=\'' + initials + '\'">';
+      } else {
+        avatarEl.textContent = initials;
+      }
     }
-
-    document.getElementById('user-name').textContent = displayName;
-    document.getElementById('user-display').style.display = 'flex';
+    const userNameEl = document.getElementById('user-name');
+    if (userNameEl) userNameEl.textContent = displayName;
+    const userDisplayEl = document.getElementById('user-display');
+    if (userDisplayEl) userDisplayEl.style.display = 'flex';
     // Show My Work tab for all logged-in users
     const myWorkTab = document.getElementById('tab-mywork');
     if (myWorkTab) myWorkTab.style.display = '';

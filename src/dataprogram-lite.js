@@ -58,10 +58,14 @@ async function lpBootstrap() {
     Auth.token = token;
     Auth.loggedIn = true;
 
-    // 2. Populate Auth.fullName (used to find the user's member record)
+    // 2. Populate Auth.fullName (used to find the user's member record).
+    // If the stored token is invalid (AGO 498), Auth.fullName won't be
+    // set — auto-recover by clearing the stale token and bouncing
+    // through OAuth to get a fresh one.
     await fetchAgolUserInfo(token);
     if (!Auth.fullName) {
-      lpShowError('Could not determine your identity. Please sign in again.');
+      if (typeof clearAgolToken === 'function') clearAgolToken();
+      window.location.replace(agolAuthorizeUrl());
       return;
     }
 
