@@ -2752,6 +2752,11 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .pr-cycle-never { background:var(--surface);color:var(--text-muted);border:1px dashed var(--border); }
 .pr-card-body { padding:16px 22px;display:grid;grid-template-columns:1fr 1fr;gap:24px; }
 .pr-section-label { font-family:'Lato',sans-serif;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--orange);margin-bottom:8px; }
+.pr-dod-body { font-family:'Lato',sans-serif;font-size:13px;color:var(--text-body);line-height:1.5; }
+.pr-dod-body p { margin: 0 0 6px; }
+.pr-dod-body p:last-child { margin-bottom: 0; }
+.pr-dod-body ul, .pr-dod-body ol { margin: 4px 0 6px 18px; }
+.pr-dod-body code { background:#F3F1EB; color:var(--navy); padding:1px 5px; border-radius:3px; font-size:12px; }
 .pr-people-chips { display:flex;flex-wrap:wrap;gap:6px; }
 .pr-person-chip { font-family:'Lato',sans-serif;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--surface);color:var(--navy);border:1px solid var(--border);display:inline-flex;align-items:center;gap:6px; }
 .pr-person-chip.pr-lead { background:var(--yellow);border-color:var(--orange); }

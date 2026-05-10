@@ -808,7 +808,7 @@ function renderProjectReviewCard(p, rt) {
   // Body
   html += '<div class="pr-card-body">';
 
-  // People
+  // People (+ Definition of Done underneath when set)
   var roster = prGetRoster(p);
   html += '<div>';
   html += '<div class="pr-section-label">People on Project</div>';
@@ -821,6 +821,11 @@ function renderProjectReviewCard(p, rt) {
     html += '</div>';
   } else {
     html += '<div class="pr-tbp-empty">No contact or other members listed on the project record.</div>';
+  }
+  // Definition of Done — appears below the people chips when set on the project
+  if (p.definition_of_done) {
+    html += '<div class="pr-section-label" style="margin-top:16px;">Definition of Done</div>';
+    html += '<div class="pr-dod-body">' + (typeof renderMd === 'function' ? renderMd(p.definition_of_done) : esc(p.definition_of_done)) + '</div>';
   }
   html += '</div>';
 
