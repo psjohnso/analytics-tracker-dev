@@ -1562,9 +1562,11 @@ function openFormModal(mode, id) {
   const isEdit    = mode.indexOf('edit')    >= 0;
   const record    = isEdit ? (isProject ? DataStore.getProject(id) : DataStore.getTask(id)) : null;
 
-  // Permission check: only project lead or admin can edit projects
-  if (isEdit && isProject && record && !isAdmin() && record.contact !== Auth.fullName) {
-    showToast('Only the project lead or an admin can edit this project.', 'warn');
+  // Permission check: admin OR project lead OR (Data Program Lead whose
+  // team owns this project) can edit. canEditProject() in auth.js
+  // captures all three cases.
+  if (isEdit && isProject && record && typeof canEditProject === 'function' && !canEditProject(record)) {
+    showToast('Only the project lead, the team\'s Data Program lead, or an admin can edit this project.', 'warn');
     return;
   }
 

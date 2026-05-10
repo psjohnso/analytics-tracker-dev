@@ -500,6 +500,9 @@ function switchTab(tab, preserveFilters) {
   document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'projectReview') ? 'none' : '';
   const addBtn = document.getElementById('btn-add-new');
   if (tab === 'tasks') { addBtn.style.display='flex'; addBtn.textContent='＋ New Task'; }
+  else if (tab === 'projects' && typeof canCreateProject === 'function' && canCreateProject()) {
+    addBtn.style.display='flex'; addBtn.textContent='＋ New Project';
+  }
   else { addBtn.style.display='none'; }
   document.getElementById('open-projects-btn').style.display = (tab === 'projects') ? 'flex' : 'none';
   document.getElementById('open-tasks-btn').style.display = (tab === 'tasks') ? 'flex' : 'none';
