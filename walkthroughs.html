@@ -183,7 +183,7 @@ li strong { color: var(--navy); }
 <header class="guide-header">
   <div>
     <h1>Analytics Project Tracker <span class="subtitle">Walkthroughs</span></h1>
-    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">Updated for v1.15.0.0004</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">Updated for v1.15.0.0005</div>
   </div>
   <div class="header-actions">
     <a href="guide.html" class="header-link">📖 Reference Guide</a>
@@ -765,6 +765,22 @@ in the same task slot, not opens a new entry."&gt;</pre>
 </div>
 
 <script>
+// Auto cache-bust internal HTML links using the version in the header.
+// Single source of truth = the "Updated for v..." line above.
+(function() {
+  var headerEl = document.querySelector('.guide-header div[style*="rgba(255,255,255"]');
+  if (!headerEl) return;
+  var m = (headerEl.textContent || '').match(/v([\d.]+)/);
+  if (!m) return;
+  var v = m[1];
+  document.querySelectorAll('a[href]').forEach(function(a) {
+    var href = a.getAttribute('href') || '';
+    if (!href.endsWith('.html')) return;
+    if (href.indexOf('://') >= 0 || href.indexOf('?') >= 0) return;
+    a.setAttribute('href', href + '?v=' + v);
+  });
+})();
+
 // Highlight active nav link on scroll
 const sections = document.querySelectorAll('h2[id], section[id]');
 const navLinks = document.querySelectorAll('.guide-nav a:not(.external)');

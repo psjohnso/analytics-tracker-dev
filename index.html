@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.15.0.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.15.0.0004"></script>
+<script src="src/constants.js?v=1.15.0.0005"></script>
 <script src="src/agol.js?v=1.9.1.0004"></script>
 <script src="src/auth.js?v=1.14.1.0001"></script>
 <script src="src/render.js?v=1.14.1.0002"></script>
@@ -107,7 +107,7 @@
         🔄 Refresh
       </button>
       <button id="btn-export" onclick="openExportModal()" title="Export projects and tasks to CSV" style="display:none;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-family:Lato,sans-serif;font-size:14px;color:var(--navy);transition:background 0.15s;" onmouseover="this.style.background='#F3F1EB'" onmouseout="this.style.background='#fff'">⬇</button>
-      <a href="javascript:void(0)" onclick="window.open('guide.html','_blank')" id="btn-help" title="User Guide & Help">About / Help</a>
+      <a href="javascript:void(0)" onclick="window.open('guide.html?v='+APP_VERSION,'_blank')" id="btn-help" title="User Guide & Help">About / Help</a>
     </div>
   </nav>
 
