@@ -28,6 +28,7 @@ var _lpRole = 'viewer';           // 'admin' | 'lead' | 'viewer' — drives crea
 var _lpMyTeam = null;             // Set only when _lpRole === 'lead' (the team they own)
 var _lpFilterTeam = 'all';        // 'all' or a specific team name — drives the project list query
 var _lpAllTeams = [];             // full Data Program team list (header dropdown options)
+var _lpMembers = [];              // sorted list of active team-member names for the Contact dropdown
 
 document.addEventListener('DOMContentLoaded', function() {
   // Status-change handler: show/hide the Completion-date field
@@ -83,13 +84,27 @@ async function lpBootstrap() {
       _lpAllTeams = (DATA_PROGRAM_DEFAULT_CONFIG.teams || []);
     }
 
-    // 4. Look up the user's member record + their data_program_lead_team
-    var safeName = Auth.fullName.replace(/'/g, "''");
-    var members = await agolQuery(ARCGIS_CONFIG.teamMembersUrl, "name='" + safeName + "'");
+    // 4. Load all active team members. We need this for two things:
+    // (a) find the signed-in user's record to read their
+    //     data_program_lead_team flag, and
+    // (b) populate the Contact dropdown in the project edit form.
+    var allMembers = await agolQuery(ARCGIS_CONFIG.teamMembersUrl, "1=1");
+    var activeMembers = (allMembers || []).filter(function(f) {
+      var a = f.attributes || {};
+      return a.active !== 'false' && a.active !== false;
+    });
+    _lpMembers = activeMembers
+      .map(function(f) { return (f.attributes || {}).name; })
+      .filter(Boolean)
+      .sort();
+    var safeNameLc = Auth.fullName.toLowerCase();
+    var myMember = activeMembers.find(function(f) {
+      var nm = (f.attributes || {}).name || '';
+      return nm.toLowerCase() === safeNameLc;
+    });
     var leadTeam = null;
-    if (members && members.length > 0) {
-      var attrs = members[0].attributes || {};
-      // Case-insensitive field lookup (AGO field names sometimes differ in case)
+    if (myMember) {
+      var attrs = myMember.attributes || {};
       Object.keys(attrs).forEach(function(k) {
         if (k.toLowerCase() === 'data_program_lead_team' && attrs[k]) {
           var v = String(attrs[k]).trim();
@@ -351,7 +366,7 @@ function lpRender() {
 }
 
 // ─── Modal: New / Edit / Save / Delete ────────────────────────────────
-function lpPopulateSelects(currentStatus, currentDept) {
+function lpPopulateSelects(currentStatus, currentDept, currentContact) {
   var statusSel = document.getElementById('lp-f-status');
   statusSel.innerHTML = _lpStatuses.map(function(s) {
     return '<option value="' + esc(s) + '"' + (s === currentStatus ? ' selected' : '') + '>' + esc(s) + '</option>';
@@ -367,6 +382,18 @@ function lpPopulateSelects(currentStatus, currentDept) {
     deptOptions += '<option value="' + esc(currentDept) + '" selected>' + esc(currentDept) + '</option>';
   }
   deptSel.innerHTML = deptOptions;
+
+  // Contact (Project lead) — pulled from active team_members on bootstrap
+  var contactSel = document.getElementById('lp-f-contact');
+  var contactOptions = '<option value="">— Unassigned —</option>';
+  _lpMembers.forEach(function(n) {
+    contactOptions += '<option value="' + esc(n) + '"' + (n === currentContact ? ' selected' : '') + '>' + esc(n) + '</option>';
+  });
+  // Preserve out-of-list values so existing records don't lose their contact
+  if (currentContact && _lpMembers.indexOf(currentContact) < 0) {
+    contactOptions += '<option value="' + esc(currentContact) + '" selected>' + esc(currentContact) + ' (not in team list)</option>';
+  }
+  contactSel.innerHTML = contactOptions;
 }
 
 // Toggle modal fields and Save/Delete visibility based on whether the
@@ -374,7 +401,7 @@ function lpPopulateSelects(currentStatus, currentDept) {
 // leads looking at another team's project) shows the same form but
 // with all inputs disabled and only Cancel available.
 function lpSetModalEditability(editable) {
-  ['lp-f-title','lp-f-status','lp-f-partner-dept','lp-f-start','lp-f-end','lp-f-working-due','lp-f-actual-end','lp-f-description'].forEach(function(id) {
+  ['lp-f-title','lp-f-status','lp-f-contact','lp-f-partner-dept','lp-f-start','lp-f-end','lp-f-working-due','lp-f-actual-end','lp-f-description','lp-f-definition-of-done','lp-f-key-results'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.disabled = !editable;
   });
@@ -396,13 +423,16 @@ function lpOpenNew() {
   // Determine the team this new project will be created for
   var targetTeam = (_lpRole === 'lead') ? _lpMyTeam : _lpFilterTeam;
   document.getElementById('lp-modal-title').textContent = 'New ' + targetTeam + ' project';
-  lpPopulateSelects('Active', '');
+  // Default Contact to the current user (they can change it via dropdown)
+  lpPopulateSelects('Active', '', _lpFullName);
   document.getElementById('lp-f-title').value = '';
   document.getElementById('lp-f-start').value = '';
   document.getElementById('lp-f-end').value = '';
   document.getElementById('lp-f-working-due').value = '';
   document.getElementById('lp-f-actual-end').value = '';
   document.getElementById('lp-f-description').value = '';
+  document.getElementById('lp-f-definition-of-done').value = '';
+  document.getElementById('lp-f-key-results').value = '';
   document.getElementById('lp-f-actual-end-wrap').style.display = 'none';
   lpSetModalEditability(true);
   document.getElementById('lp-modal-backdrop').classList.add('open');
@@ -419,13 +449,15 @@ function lpOpenEdit(objectId) {
   // Show the team in the title when filter is 'all' so it's clear which team owns this
   var teamPrefix = (_lpFilterTeam === 'all' && p.data_program_team) ? ' (' + p.data_program_team + ')' : '';
   document.getElementById('lp-modal-title').textContent = pid + teamPrefix + titleSuffix;
-  lpPopulateSelects(p.status, p.partner_dept);
+  lpPopulateSelects(p.status, p.partner_dept, p.contact);
   document.getElementById('lp-f-title').value = p.title || '';
   document.getElementById('lp-f-start').value = p.start || '';
   document.getElementById('lp-f-end').value = p.end || '';
   document.getElementById('lp-f-working-due').value = p.working_due || '';
   document.getElementById('lp-f-actual-end').value = p.actual_end || '';
   document.getElementById('lp-f-description').value = p.description || '';
+  document.getElementById('lp-f-definition-of-done').value = p.definition_of_done || '';
+  document.getElementById('lp-f-key-results').value = p.key_results || '';
   document.getElementById('lp-f-actual-end-wrap').style.display = (p.status === 'Complete') ? '' : 'none';
   lpSetModalEditability(canEdit);
   document.getElementById('lp-modal-backdrop').classList.add('open');
@@ -446,20 +478,21 @@ async function lpSaveProject() {
   var attrs = {
     title: title,
     status: status,
+    contact: document.getElementById('lp-f-contact').value || null,
     start: document.getElementById('lp-f-start').value || null,
     end_: document.getElementById('lp-f-end').value || null,  // ArcGIS field is end_ (end is reserved)
     working_due: document.getElementById('lp-f-working-due').value || null,
     actual_end: status === 'Complete' ? (actualEndVal || new Date().toISOString().slice(0, 10)) : null,
     partner_dept: document.getElementById('lp-f-partner-dept').value || null,
     description: document.getElementById('lp-f-description').value.trim() || null,
+    definition_of_done: document.getElementById('lp-f-definition-of-done').value.trim() || null,
+    key_results: document.getElementById('lp-f-key-results').value.trim() || null,
   };
   if (_lpEditingId) {
     // Edit: don't change data_program_team (preserve project's owning team).
-    // Don't change contact (preserve original creator/lead).
     attrs.OBJECTID = _lpEditingId;
   } else {
-    // New: stamp data_program_team based on role/filter; contact = current user.
-    attrs.contact = _lpFullName;
+    // New: stamp data_program_team based on role/filter.
     attrs.data_program_team = (_lpRole === 'lead') ? _lpMyTeam : _lpFilterTeam;
   }
   try {

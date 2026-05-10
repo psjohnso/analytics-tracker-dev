@@ -347,9 +347,13 @@ body {
           <select id="lp-f-status" class="lp-field-select"></select>
         </div>
         <div class="lp-field">
-          <label class="lp-field-label" for="lp-f-partner-dept">Partner department</label>
-          <select id="lp-f-partner-dept" class="lp-field-select"></select>
+          <label class="lp-field-label" for="lp-f-contact">Project lead</label>
+          <select id="lp-f-contact" class="lp-field-select"></select>
         </div>
+      </div>
+      <div class="lp-field">
+        <label class="lp-field-label" for="lp-f-partner-dept">Partner department</label>
+        <select id="lp-f-partner-dept" class="lp-field-select"></select>
       </div>
       <div class="lp-field-row">
         <div class="lp-field">
@@ -375,6 +379,14 @@ body {
         <label class="lp-field-label" for="lp-f-description">Description</label>
         <textarea id="lp-f-description" class="lp-field-textarea" placeholder="What is this project? Who does it serve? What outcome does it produce?"></textarea>
       </div>
+      <div class="lp-field">
+        <label class="lp-field-label" for="lp-f-definition-of-done">Definition of done</label>
+        <textarea id="lp-f-definition-of-done" class="lp-field-textarea" placeholder="What does it mean for this project to be complete? Concrete, observable outcomes."></textarea>
+      </div>
+      <div class="lp-field">
+        <label class="lp-field-label" for="lp-f-key-results">Key results</label>
+        <textarea id="lp-f-key-results" class="lp-field-textarea" placeholder="Measurable indicators that this project succeeded."></textarea>
+      </div>
     </div>
     <div class="lp-modal-foot">
       <button class="lp-btn-save" onclick="lpSaveProject()">Save</button>
@@ -394,10 +406,10 @@ body {
 </div>
 
 <!-- Shared libraries — cache-bust ?v= bumped on each deploy (mirrors index.html pattern) -->
-<script src="src/util.js?v=1.16.0.0013"></script>
-<script src="src/constants.js?v=1.16.0.0013"></script>
-<script src="src/agol.js?v=1.16.0.0013"></script>
-<script src="src/auth.js?v=1.16.0.0013"></script>
-<script src="src/dataprogram-lite.js?v=1.16.0.0013"></script>
+<script src="src/util.js?v=1.16.0.0014"></script>
+<script src="src/constants.js?v=1.16.0.0014"></script>
+<script src="src/agol.js?v=1.16.0.0014"></script>
+<script src="src/auth.js?v=1.16.0.0014"></script>
+<script src="src/dataprogram-lite.js?v=1.16.0.0014"></script>
 </body>
 </html>
