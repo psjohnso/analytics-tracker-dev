@@ -339,14 +339,56 @@ function _buildOverviewSlides() {
     '</div>' + odSvg +
     '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;">Current: ' + currentOd + ' overdue · Peak: ' + peakOd + ' · Trend: ' + trendDir + '</div>';
 
+  // ── Data Program at a glance — cross-team view ──────────────────
+  // Hero count of active Data Program projects, per-team tiles with
+  // active + YTD-completed counts, and a status bar.
+  var dpTeamsForSlide = (typeof getDataProgramTeams === 'function') ? getDataProgramTeams() : [];
+  var yearStartStr = new Date(today.getFullYear(), 0, 1).toISOString().slice(0, 10);
+  var dpStats = dpTeamsForSlide.map(function(t) {
+    var teamProjects = PROJECTS.filter(function(p) { return p.data_program_team === t.name; });
+    var active = teamProjects.filter(function(p) { return p.status === 'Active'; }).length;
+    var completedYtd = teamProjects.filter(function(p) {
+      return p.status === 'Complete' && p.actual_end && p.actual_end >= yearStartStr;
+    }).length;
+    return { id: t.id, name: t.name, color: t.color || '#9CA3AF', active: active, completedYtd: completedYtd };
+  });
+  var dpTotalActive = dpStats.reduce(function(s, t) { return s + t.active; }, 0);
+  var dpProjectsAll = PROJECTS.filter(function(p) { return p.is_data_program; });
+  var dpStatusActive    = dpProjectsAll.filter(function(p) { return p.status === 'Active'; }).length;
+  var dpStatusScheduled = dpProjectsAll.filter(function(p) { return p.status === 'Scheduled'; }).length;
+  var dpStatusHold      = dpProjectsAll.filter(function(p) { return p.status === 'On Hold'; }).length;
+
+  var dataProgramHtml = '<div class="slideshow-dp-card">';
+  dataProgramHtml += '<div class="slideshow-dp-hero">';
+  dataProgramHtml +=   '<div class="slideshow-dp-hero-num">' + dpTotalActive + '</div>';
+  dataProgramHtml +=   '<div class="slideshow-dp-hero-cap">active Data Program projects across ' + dpStats.length + ' team' + (dpStats.length === 1 ? '' : 's') + '</div>';
+  dataProgramHtml += '</div>';
+  dataProgramHtml += '<div class="slideshow-dp-teams">';
+  dpStats.forEach(function(t) {
+    dataProgramHtml += '<div class="slideshow-dp-team-tile" style="border-top-color:' + esc(t.color) + ';">';
+    dataProgramHtml +=   '<div class="slideshow-dp-team-tile-name">' + esc(t.name) + '</div>';
+    dataProgramHtml +=   '<div class="slideshow-dp-team-tile-num">' + t.active + '</div>';
+    dataProgramHtml +=   '<div class="slideshow-dp-team-tile-lbl">active &middot; ' + t.completedYtd + ' completed YTD</div>';
+    dataProgramHtml += '</div>';
+  });
+  dataProgramHtml += '</div>';
+  dataProgramHtml += '<div class="slideshow-dp-status">';
+  dataProgramHtml +=   '<div><strong>' + dpStatusActive + '</strong>Active</div>';
+  dataProgramHtml +=   '<div><strong>' + dpStatusScheduled + '</strong>Scheduled</div>';
+  dataProgramHtml +=   '<div><strong>' + dpStatusHold + '</strong>On Hold</div>';
+  dataProgramHtml +=   '<div style="margin-left:auto;color:var(--text-muted);font-size:13px;">Updated daily &middot; Excludes DI projects not flagged Data Program</div>';
+  dataProgramHtml += '</div>';
+  dataProgramHtml += '</div>';
+
   return [
-    { id: 'snapshot',  title: 'Portfolio snapshot',                              html: snapshotHtml },
-    { id: 'pipeline',  title: 'Project throughput — last 16 weeks',              html: pipelineHtml },
-    { id: 'deadlines', title: 'Upcoming project and task deadlines',             html: deadlineHtml },
-    { id: 'priority',  title: 'Open task priority breakdown',                    html: priHtml },
-    { id: 'category',  title: 'Projects by category',                            html: catHtml },
-    { id: 'intake',    title: 'Tasks created vs. completed — intake balance',   html: intakeHtml },
-    { id: 'overdue',   title: 'Overdue projects and tasks — last 10 weeks',     html: overdueTrendHtml },
+    { id: 'snapshot',    title: 'Portfolio snapshot',                              html: snapshotHtml },
+    { id: 'pipeline',    title: 'Project throughput — last 16 weeks',              html: pipelineHtml },
+    { id: 'dataprogram', title: 'Data Program at a glance',                        html: dataProgramHtml },
+    { id: 'deadlines',   title: 'Upcoming project and task deadlines',             html: deadlineHtml },
+    { id: 'priority',    title: 'Open task priority breakdown',                    html: priHtml },
+    { id: 'category',    title: 'Projects by category',                            html: catHtml },
+    { id: 'intake',      title: 'Tasks created vs. completed — intake balance',   html: intakeHtml },
+    { id: 'overdue',     title: 'Overdue projects and tasks — last 10 weeks',     html: overdueTrendHtml },
   ];
 }
 

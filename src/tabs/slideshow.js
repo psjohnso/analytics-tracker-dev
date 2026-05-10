@@ -25,13 +25,14 @@ var _slideshowFullscreenListenerAttached = false;
 var _slideshowDefaultConfig = {
   defaultDurationSec: 15,
   slides: [
-    { id: 'snapshot',  enabled: true, durationSec: null },
-    { id: 'pipeline',  enabled: true, durationSec: null },
-    { id: 'deadlines', enabled: true, durationSec: null },
-    { id: 'priority',  enabled: true, durationSec: null },
-    { id: 'category',  enabled: true, durationSec: null },
-    { id: 'intake',    enabled: true, durationSec: null },
-    { id: 'overdue',   enabled: true, durationSec: null },
+    { id: 'snapshot',    enabled: true, durationSec: null },
+    { id: 'pipeline',    enabled: true, durationSec: null },
+    { id: 'dataprogram', enabled: true, durationSec: null },
+    { id: 'deadlines',   enabled: true, durationSec: null },
+    { id: 'priority',    enabled: true, durationSec: null },
+    { id: 'category',    enabled: true, durationSec: null },
+    { id: 'intake',      enabled: true, durationSec: null },
+    { id: 'overdue',     enabled: true, durationSec: null },
   ],
 };
 
