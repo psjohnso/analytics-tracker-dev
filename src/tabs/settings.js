@@ -90,6 +90,23 @@ function buildPreferencesPanel() {
     '</div>';
   }
 
+  function prefSlider(id, label, desc, min, max, step, currentVal, formatPct) {
+    var pct = formatPct ? Math.round(parseFloat(currentVal) * 100) + '%' : String(currentVal);
+    return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F3F1EB;gap:20px;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:13px;font-weight:700;color:var(--text-body);">' + label + '</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + desc + '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;width:240px;">' +
+        '<input type="range" id="pref-' + id + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + currentVal + '" ' +
+          'oninput="previewUiScale(this.value)" ' +
+          'onchange="updatePref(\'' + id + '\',this.value)" ' +
+          'style="flex:1;cursor:pointer;accent-color:var(--navy);">' +
+        '<span id="pref-' + id + '-val" style="font-size:12px;font-weight:700;color:var(--navy);min-width:42px;text-align:right;">' + pct + '</span>' +
+      '</div>' +
+    '</div>';
+  }
+
   function prefButtonGroup(id, label, desc, options, currentVal) {
     var btns = options.map(function(o, i) {
       var active = String(o.value) === String(currentVal);
@@ -132,12 +149,8 @@ function buildPreferencesPanel() {
 
   html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px 20px;margin-bottom:20px;">';
 
-  html += prefButtonGroup('uiScale', 'UI size', 'Scale the entire interface — fonts and spacing — relative to the default.', [
-    { value: '0.9',  label: 'Small' },
-    { value: '1.0',  label: 'Default' },
-    { value: '1.1',  label: 'Large' },
-    { value: '1.2',  label: 'XL' }
-  ], (UserPrefs.uiScale || 1.0).toFixed(1));
+  html += prefSlider('uiScale', 'UI size', 'Scale the entire interface — fonts and spacing — from 80% to 160% of the default.',
+    0.8, 1.6, 0.05, (UserPrefs.uiScale || 1.0), true);
 
   html += prefSelect('defaultTab', 'Default tab', 'Which tab to show when you first open the application.', [
     { value: 'overview', label: 'Overview' },

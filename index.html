@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.16.0.0022">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.17.0.0028"></script>
+<script src="src/constants.js?v=1.17.0.0029"></script>
 <script src="src/agol.js?v=1.16.1.0023"></script>
 <script src="src/auth.js?v=1.16.0.0012"></script>
 <script src="src/render.js?v=1.16.1.0027"></script>
@@ -18,7 +18,7 @@
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.9.1.0010"></script>
 <script src="src/tabs/overview.js?v=1.16.0.0009"></script>
-<script src="src/tabs/settings.js?v=1.17.0.0028"></script>
+<script src="src/tabs/settings.js?v=1.17.0.0029"></script>
 <script src="src/tabs/resources.js?v=1.9.1.0013"></script>
 <script src="src/tabs/my-work.js?v=1.16.1.0024"></script>
 <script src="src/tabs/projects-tasks.js?v=1.16.1.0026"></script>
@@ -1225,8 +1225,19 @@ function applyUiScale() {
   if (!isFinite(s) || s <= 0) s = 1.0;
   // Clamp to a sane range so a corrupt pref can't make the UI unusable.
   if (s < 0.7) s = 0.7;
-  if (s > 1.5) s = 1.5;
+  if (s > 1.6) s = 1.6;
   document.body.style.zoom = s;
+}
+
+// Live preview while dragging the UI-size slider — apply zoom and update
+// the percent label without persisting. The onchange (release) handler in
+// settings.js calls updatePref() to save.
+function previewUiScale(value) {
+  var s = parseFloat(value);
+  if (!isFinite(s) || s <= 0) return;
+  document.body.style.zoom = s;
+  var lbl = document.getElementById('pref-uiScale-val');
+  if (lbl) lbl.textContent = Math.round(s * 100) + '%';
 }
 
 // Show or hide the optional Capacity + Slideshow tabs based on UserPrefs.
