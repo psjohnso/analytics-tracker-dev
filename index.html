@@ -6,9 +6,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;family=Cardo:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <!-- ArcGIS REST API integration (no external auth library needed) -->
-<link rel="stylesheet" href="src/app.css?v=1.26.0.0001">
+<link rel="stylesheet" href="src/app.css?v=1.26.0.0002">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.26.0.0001"></script>
+<script src="src/constants.js?v=1.26.0.0002"></script>
 <script src="src/agol.js?v=1.16.1.0023"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
 <script src="src/render.js?v=1.26.0.0001"></script>
@@ -17,7 +17,7 @@
 <script src="src/project-notes.js?v=1.16.1.0023"></script>
 <script src="src/confetti.js?v=1.17.2.0033"></script>
 <script src="src/achievements.js?v=1.25.0.0001"></script>
-<script src="src/saved-views.js?v=1.26.0.0001"></script>
+<script src="src/saved-views.js?v=1.26.0.0002"></script>
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.17.5.0036"></script>
 <script src="src/tabs/overview.js?v=1.17.6.0039"></script>
@@ -3997,6 +3997,28 @@ let _ganttFilter = {};     // { projectTitle: true/false } — which projects sh
     <div class="issue-form-btns">
       <button onclick="closeIssueForm()" style="padding:8px 18px;background:#fff;border:1px solid #E8E6DF;border-radius:6px;font-size:12px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;color:var(--navy);">Cancel</button>
       <button onclick="submitIssueForm()" style="padding:8px 18px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE-VIEW MODAL — for naming a saved filter view -->
+<div id="save-view-backdrop" class="save-view-backdrop" onclick="if(event.target===this)closeSaveViewModal()">
+  <div class="save-view-modal">
+    <div class="save-view-header">
+      <h2>Save filter view</h2>
+      <button class="save-view-close" onclick="closeSaveViewModal()" title="Close">×</button>
+    </div>
+    <div class="save-view-body">
+      <label class="save-view-label" for="save-view-name">View name</label>
+      <input type="text" id="save-view-name" maxlength="40" placeholder="e.g. Active DI projects" autocomplete="off">
+      <div id="save-view-warning" class="save-view-warning" style="display:none;"></div>
+
+      <div class="save-view-summary-label">Filters included</div>
+      <div id="save-view-summary" class="save-view-summary"></div>
+    </div>
+    <div class="save-view-footer">
+      <button class="save-view-cancel" onclick="closeSaveViewModal()">Cancel</button>
+      <button class="save-view-save" id="save-view-save-btn" onclick="commitSaveViewModal()">Save view</button>
     </div>
   </div>
 </div>

@@ -840,6 +840,104 @@ body {
 .ach-num { font-size: 18px; font-weight: 900; color: var(--navy); line-height: 1; }
 .ach-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
 
+/* ── Save-view modal ──────────────────────────────────────────────── */
+.save-view-backdrop {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,38,105,0.45);
+  z-index:9999;
+  align-items:center; justify-content:center;
+  backdrop-filter: blur(2px);
+}
+.save-view-backdrop.open { display:flex; animation: svFade 0.15s ease; }
+@keyframes svFade { from { opacity:0; } to { opacity:1; } }
+.save-view-modal {
+  background:#fff; border-radius:12px;
+  width:460px; max-width:92vw; max-height:80vh; overflow:hidden;
+  display:flex; flex-direction:column;
+  box-shadow:0 24px 64px rgba(0,38,105,0.22), 0 4px 16px rgba(0,0,0,0.12);
+  animation: svSlide 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes svSlide { from { opacity:0; transform:scale(0.96) translateY(8px); } to { opacity:1; transform:none; } }
+.save-view-header {
+  background:var(--navy); color:#fff;
+  padding:16px 22px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.save-view-header h2 {
+  margin:0; font-family:'Lato',sans-serif;
+  font-size:16px; font-weight:800; letter-spacing:-0.01em;
+}
+.save-view-close {
+  background:rgba(255,255,255,0.15); border:none; color:#fff;
+  width:28px; height:28px; border-radius:50%; cursor:pointer;
+  font-size:16px; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+  transition: background 0.15s;
+}
+.save-view-close:hover { background:rgba(255,255,255,0.3); }
+.save-view-body { padding:20px 22px 4px; overflow-y:auto; }
+.save-view-label {
+  font-family:'Lato',sans-serif;
+  font-size:11px; font-weight:700; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:0.08em;
+  display:block; margin-bottom:6px;
+}
+#save-view-name {
+  width:100%; box-sizing:border-box;
+  padding:10px 14px; border:1.5px solid var(--border); border-radius:8px;
+  font-size:14px; font-family:Lato,sans-serif; color:var(--text-body);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+#save-view-name:focus {
+  outline:none; border-color:var(--navy);
+  box-shadow:0 0 0 3px rgba(0,38,105,0.15);
+}
+.save-view-warning {
+  margin-top:10px; padding:9px 12px;
+  background:#FFFBEB; border:1px solid #FDE68A; border-radius:7px;
+  font-size:12px; color:#92400E; line-height:1.4;
+}
+.save-view-summary-label {
+  font-family:'Lato',sans-serif;
+  font-size:11px; font-weight:700; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:0.08em;
+  margin:18px 0 6px;
+}
+.save-view-summary {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:10px 14px;
+  font-size:13px; color:var(--text-body); line-height:1.6;
+  max-height:200px; overflow-y:auto;
+}
+.save-view-summary-row { display:flex; gap:8px; padding:2px 0; }
+.save-view-summary-row strong {
+  color:var(--navy); font-weight:700; font-size:12px;
+  text-transform:uppercase; letter-spacing:0.04em;
+  min-width:120px; flex-shrink:0;
+}
+.save-view-summary-empty { color:var(--text-muted); font-style:italic; }
+.save-view-footer {
+  padding:14px 22px; border-top:1px solid var(--border);
+  display:flex; justify-content:flex-end; gap:8px;
+  background:#FDFCF8;
+}
+.save-view-cancel {
+  padding:9px 16px; border:1px solid var(--border); background:#fff;
+  border-radius:7px; cursor:pointer;
+  font-size:13px; font-weight:700; color:var(--text-muted);
+  font-family:Lato,sans-serif;
+  transition: color 0.15s, border-color 0.15s;
+}
+.save-view-cancel:hover { color:var(--navy); border-color:var(--navy); }
+.save-view-save {
+  padding:9px 20px; border:none; background:var(--navy); color:#fff;
+  border-radius:7px; cursor:pointer;
+  font-size:13px; font-weight:700; font-family:Lato,sans-serif;
+  transition: background 0.15s;
+}
+.save-view-save:hover { background:#1a3a7c; }
+.save-view-save:disabled { opacity:0.5; cursor:not-allowed; }
+
 /* ── Saved filter views (sidebar chips) ─────────────────────────────── */
 .saved-views-list { display:flex; flex-direction:column; gap:4px; }
 .saved-view-chip {

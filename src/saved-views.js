@@ -66,33 +66,106 @@ function applySavedView(id) {
   if (typeof showToast === 'function') showToast('Applied view: ' + view.name, 'success');
 }
 
+// Human-readable labels for activeFilters keys (for the modal summary).
+var SV_FILTER_LABELS = {
+  status: 'Project status',
+  priority: 'Priority',
+  category: 'Project category',
+  member: 'Team member',
+  partnerDept: 'Partner dept',
+  itdTeam: 'ITD team',
+  taskStatus: 'Task status',
+  taskCategory: 'Task category',
+  taskTool: 'Task tool'
+};
+
+function svRenderFilterSummary(filters) {
+  var rows = [];
+  Object.keys(SV_FILTER_LABELS).forEach(function(k) {
+    if (Array.isArray(filters[k]) && filters[k].length) {
+      rows.push('<div class="save-view-summary-row"><strong>' + SV_FILTER_LABELS[k] + '</strong><span>' + esc(filters[k].join(', ')) + '</span></div>');
+    }
+  });
+  if (filters.dataProgram) rows.push('<div class="save-view-summary-row"><strong>Data Program</strong><span>Yes</span></div>');
+  if (filters.search) rows.push('<div class="save-view-summary-row"><strong>Search</strong><span>"' + esc(filters.search) + '"</span></div>');
+  return rows.length ? rows.join('') : '<div class="save-view-summary-empty">No filters set.</div>';
+}
+
 function saveCurrentView() {
   if (!svHasAnyFilters(svCaptureCurrent())) {
     showToast('Add some filters first, then save them as a view.', 'warn');
     return;
   }
-  var name = prompt('Name this view:');
-  if (!name) return;
-  name = name.trim().slice(0, 40);
-  if (!name) return;
+  openSaveViewModal();
+}
 
+function openSaveViewModal() {
+  var bd = document.getElementById('save-view-backdrop');
+  if (!bd) return;
+  var input = document.getElementById('save-view-name');
+  var summary = document.getElementById('save-view-summary');
+  var warning = document.getElementById('save-view-warning');
+  if (input) {
+    input.value = '';
+    input.oninput = updateSaveViewWarning;
+    input.onkeydown = function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); commitSaveViewModal(); }
+      else if (e.key === 'Escape') { e.preventDefault(); closeSaveViewModal(); }
+    };
+  }
+  if (summary) summary.innerHTML = svRenderFilterSummary(svCaptureCurrent());
+  if (warning) warning.style.display = 'none';
+  bd.classList.add('open');
+  // Focus after the animation kicks in so screen readers announce correctly.
+  setTimeout(function() { if (input) input.focus(); }, 60);
+}
+
+function closeSaveViewModal() {
+  var bd = document.getElementById('save-view-backdrop');
+  if (bd) bd.classList.remove('open');
+}
+
+function updateSaveViewWarning() {
+  var input = document.getElementById('save-view-name');
+  var warning = document.getElementById('save-view-warning');
+  if (!input || !warning) return;
+  var name = (input.value || '').trim();
+  var views = (UserPrefs && UserPrefs.savedViews) || [];
+  var dup = null;
+  for (var i = 0; i < views.length; i++) if (views[i].name === name) { dup = views[i]; break; }
+  if (dup && name) {
+    warning.style.display = '';
+    warning.innerHTML = '⚠ A view named <strong>"' + esc(name) + '"</strong> already exists. Saving will replace it.';
+  } else {
+    warning.style.display = 'none';
+  }
+}
+
+function commitSaveViewModal() {
+  var input = document.getElementById('save-view-name');
+  if (!input) return;
+  var name = (input.value || '').trim().slice(0, 40);
+  if (!name) {
+    input.focus();
+    input.style.borderColor = '#EF4444';
+    setTimeout(function() { input.style.borderColor = ''; }, 800);
+    return;
+  }
   UserPrefs.savedViews = UserPrefs.savedViews || [];
-  // Replace existing view of the same name (with confirmation).
-  var existingIdx = -1;
+  // Replace existing view of the same name (the warning already disclosed this).
   for (var i = 0; i < UserPrefs.savedViews.length; i++) {
-    if (UserPrefs.savedViews[i].name === name) { existingIdx = i; break; }
+    if (UserPrefs.savedViews[i].name === name) {
+      UserPrefs.savedViews.splice(i, 1);
+      break;
+    }
   }
-  if (existingIdx >= 0) {
-    if (!confirm('A view named "' + name + '" already exists. Replace it?')) return;
-    UserPrefs.savedViews.splice(existingIdx, 1);
-  }
-
   UserPrefs.savedViews.push({
     id: String(Date.now()) + '-' + Math.floor(Math.random() * 1000),
     name: name,
     filters: svCaptureCurrent()
   });
   saveUserPrefs();
+  closeSaveViewModal();
   if (typeof showToast === 'function') showToast('Saved view: ' + name, 'success');
   render();
 }
