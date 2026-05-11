@@ -110,16 +110,15 @@ function reorderSidebarFilters(tab) {
 }
 
 function buildSidebarFilters() {
-  const statuses = {};
-  PROJECTS.forEach(p => { statuses[p.status || 'Unknown'] = (statuses[p.status || 'Unknown'] || 0) + 1; });
+  // Each badge is a *live preview*: the count you'd see if you ADDED that
+  // filter on top of the currently-active filter set. So we compute counts
+  // by re-applying every active filter EXCEPT the one whose badges we're
+  // about to render — that way toggling unrelated filters updates the
+  // numbers as the user expects.
+  const tab = (typeof currentTab !== 'undefined') ? currentTab : 'overview';
+  const showProjects = tab !== 'tasks';
+  const showTasks = tab !== 'projects';
 
-  const priorities = {};
-  PROJECTS.forEach(p => { priorities[p.priority || 'Unset'] = (priorities[p.priority || 'Unset'] || 0) + 1; });
-
-  const categories = {};
-  PROJECTS.forEach(p => { if(p.category) categories[p.category] = (categories[p.category] || 0) + 1; });
-
-  const members = {};
   const showFormer = document.getElementById('show-former-members');
   const showContribs = document.getElementById('show-contributors');
   const includeInactive = showFormer && showFormer.checked;
@@ -135,8 +134,105 @@ function buildSidebarFilters() {
     if (!RESOURCES_DATA || !RESOURCES_DATA.people[name]) return true;
     return RESOURCES_DATA.people[name].member_group !== 'Affiliated';
   };
-  TASKS.forEach(t => { if(t.assignee && isVisibleMember(t.assignee)) members[t.assignee] = (members[t.assignee] || 0) + 1; });
-  PROJECTS.forEach(p => { if(p.contact && !members[p.contact] && isVisibleMember(p.contact)) members[p.contact] = 0; });
+
+  // Mirror filterProjects() but skip one named filter so we can group/count by it.
+  function projectsExcluding(skip) {
+    let data = PROJECTS;
+    if (skip !== 'status' && activeFilters.status.length)
+      data = data.filter(p => activeFilters.status.includes(p.status));
+    if (skip !== 'priority' && activeFilters.priority.length)
+      data = data.filter(p => activeFilters.priority.includes(p.priority || 'Unset'));
+    if (skip !== 'category' && activeFilters.category.length)
+      data = data.filter(p => activeFilters.category.includes(p.category));
+    if (skip !== 'member' && activeFilters.member.length)
+      data = data.filter(p => activeFilters.member.includes(p.contact) ||
+        (p.other_members && activeFilters.member.some(m => p.other_members.includes(m))));
+    if (skip !== 'partnerDept' && activeFilters.partnerDept.length)
+      data = data.filter(p => activeFilters.partnerDept.includes(p.partner_dept));
+    if (skip !== 'itdTeam' && activeFilters.itdTeam.length)
+      data = data.filter(p => activeFilters.itdTeam.includes(p.itd_team));
+    if (skip !== 'dataProgram' && activeFilters.dataProgram)
+      data = data.filter(p => p.is_data_program);
+    if (activeFilters.search) data = data.filter(p =>
+      (p.title || '').toLowerCase().includes(activeFilters.search) ||
+      (p.description || '').toLowerCase().includes(activeFilters.search) ||
+      (p.contact || '').toLowerCase().includes(activeFilters.search) ||
+      (p.other_members || '').toLowerCase().includes(activeFilters.search) ||
+      (p.partner_dept || '').toLowerCase().includes(activeFilters.search) ||
+      (p.project_number || '').toLowerCase().includes(activeFilters.search)
+    );
+    return data;
+  }
+
+  // Mirror filterTasks() but skip one named filter.
+  function tasksExcluding(skip) {
+    let data = TASKS;
+    if (skip !== 'taskStatus' && activeFilters.taskStatus.length)
+      data = data.filter(t => activeFilters.taskStatus.includes(t.status));
+    if (skip !== 'priority' && activeFilters.priority.length)
+      data = data.filter(t => activeFilters.priority.includes(t.priority || 'Unset'));
+    if (skip !== 'taskCategory' && activeFilters.taskCategory.length)
+      data = data.filter(t => activeFilters.taskCategory.includes(t.category));
+    if (skip !== 'taskTool' && activeFilters.taskTool.length)
+      data = data.filter(t => activeFilters.taskTool.includes(t.tool));
+    if (skip !== 'member' && activeFilters.member.length)
+      data = data.filter(t => activeFilters.member.includes(t.assignee));
+    if (activeFilters.search) data = data.filter(t =>
+      (t.title || '').toLowerCase().includes(activeFilters.search) ||
+      resolveProjectTitle(t).toLowerCase().includes(activeFilters.search) ||
+      (t.assignee || '').toLowerCase().includes(activeFilters.search) ||
+      (t.task_number || '').toLowerCase().includes(activeFilters.search)
+    );
+    return data;
+  }
+
+  // ── Project filter counts ──
+  const statuses = {};
+  const priorities = {};
+  const categories = {};
+  const depts = {};
+  const teams = {};
+  if (showProjects) {
+    projectsExcluding('status').forEach(p => { const k = p.status || 'Unknown'; statuses[k] = (statuses[k] || 0) + 1; });
+    projectsExcluding('priority').forEach(p => { const k = p.priority || 'Unset'; priorities[k] = (priorities[k] || 0) + 1; });
+    projectsExcluding('category').forEach(p => { if (p.category) categories[p.category] = (categories[p.category] || 0) + 1; });
+    projectsExcluding('partnerDept').forEach(p => { if (p.partner_dept) depts[p.partner_dept] = (depts[p.partner_dept] || 0) + 1; });
+    projectsExcluding('itdTeam').forEach(p => { if (p.itd_team) teams[p.itd_team] = (teams[p.itd_team] || 0) + 1; });
+  }
+
+  // ── Task filter counts ──
+  const taskStatuses = {};
+  const taskCats = {};
+  const taskTools = {};
+  if (showTasks) {
+    tasksExcluding('taskStatus').forEach(t => { const k = t.status || 'Unknown'; taskStatuses[k] = (taskStatuses[k] || 0) + 1; });
+    tasksExcluding('taskCategory').forEach(t => { if (t.category) taskCats[t.category] = (taskCats[t.category] || 0) + 1; });
+    tasksExcluding('taskTool').forEach(t => { if (t.tool) taskTools[t.tool] = (taskTools[t.tool] || 0) + 1; });
+  }
+
+  // ── Member counts ── Scope to whichever entity types are currently
+  // visible: assigned-tasks on Tasks tab; contact/contributor projects on
+  // Projects tab; sum of both on Overview-style tabs.
+  const members = {};
+  function bump(name) { if (name && isVisibleMember(name)) members[name] = (members[name] || 0) + 1; }
+  if (showTasks) {
+    tasksExcluding('member').forEach(t => bump(t.assignee));
+  }
+  if (showProjects) {
+    projectsExcluding('member').forEach(p => {
+      bump(p.contact);
+      if (p.other_members) {
+        String(p.other_members).split(',').forEach(n => bump(n.trim()));
+      }
+    });
+  }
+  // Show members with no current matches at 0 so they remain selectable.
+  if (showTasks) {
+    TASKS.forEach(t => { if (t.assignee && !(t.assignee in members) && isVisibleMember(t.assignee)) members[t.assignee] = 0; });
+  }
+  if (showProjects) {
+    PROJECTS.forEach(p => { if (p.contact && !(p.contact in members) && isVisibleMember(p.contact)) members[p.contact] = 0; });
+  }
 
   // Update affiliated toggle label with count
   var contribCount = 0;
@@ -149,34 +245,19 @@ function buildSidebarFilters() {
   var contribLabel = document.getElementById('show-contributors-label');
   if (contribLabel) contribLabel.textContent = contribCount > 0 ? 'Show ' + contribCount + ' affiliated member' + (contribCount !== 1 ? 's' : '') : 'Show affiliated members';
 
-  const taskStatuses = {};
-  TASKS.forEach(t => { taskStatuses[t.status || 'Unknown'] = (taskStatuses[t.status || 'Unknown'] || 0) + 1; });
-
-  const depts = {};
-  PROJECTS.forEach(p => { if(p.partner_dept) depts[p.partner_dept] = (depts[p.partner_dept] || 0) + 1; });
-
-  const teams = {};
-  PROJECTS.forEach(p => { if(p.itd_team) teams[p.itd_team] = (teams[p.itd_team] || 0) + 1; });
-
   renderFilterGroup('status-filters', statuses, 'status');
   renderFilterGroup('priority-filters', priorities, 'priority');
   renderFilterGroup('category-filters', Object.fromEntries(Object.entries(categories).sort((a,b) => a[0].localeCompare(b[0]))), 'category');
   renderFilterGroup('member-filters', Object.fromEntries(Object.entries(members).sort((a,b) => a[0].localeCompare(b[0]))), 'member');
   renderFilterGroup('task-status-filters', taskStatuses, 'taskStatus');
-
-  const taskCats = {};
-  TASKS.forEach(t => { if(t.category) taskCats[t.category] = (taskCats[t.category] || 0) + 1; });
   renderFilterGroup('task-category-filters', Object.fromEntries(Object.entries(taskCats).sort((a,b) => a[0].localeCompare(b[0]))), 'taskCategory');
-
-  const taskTools = {};
-  TASKS.forEach(t => { if(t.tool) taskTools[t.tool] = (taskTools[t.tool] || 0) + 1; });
   renderFilterGroup('task-tool-filters', Object.fromEntries(Object.entries(taskTools).sort((a,b) => a[0].localeCompare(b[0]))), 'taskTool');
-
   renderFilterGroup('dept-filters', Object.fromEntries(Object.entries(depts).sort((a,b) => a[0].localeCompare(b[0]))), 'partnerDept');
   renderFilterGroup('team-filters', Object.fromEntries(Object.entries(teams).sort((a,b) => a[0].localeCompare(b[0]))), 'itdTeam');
 
-  // Data Program toggle filter
-  const dpCount = PROJECTS.filter(p => p.is_data_program).length;
+  // Data Program toggle filter — count projects that would remain if this
+  // toggle were ON, given other active filters.
+  const dpCount = projectsExcluding('dataProgram').filter(p => p.is_data_program).length;
   const dpEl = document.getElementById('dp-filter');
   if (dpEl) {
     dpEl.innerHTML = '<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:2px 0;color:var(--text-body);">' +
