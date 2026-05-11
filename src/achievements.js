@@ -387,11 +387,13 @@ function teammatesWorkedWith(name) {
 
 // Milestone definitions: tier label, glyph, threshold, current-value
 // extractor, and friendly format for the "current / threshold" subtitle.
-function _milestonesFor(name) {
-  var lh = lifetimeHours(name);
-  var tAll = tasksCompletedAllTime(name);
-  var pAll = projectsShipped(name);
-  var longest = longestStreakEver(name).length;
+// Accepts pre-computed totals so buildAchievementsPage doesn't trigger a
+// second pass over TIME_ENTRIES / TASKS / PROJECTS.
+function _milestonesFor(name, lh, tAll, pAll, longest) {
+  if (lh == null) lh = lifetimeHours(name);
+  if (tAll == null) tAll = tasksCompletedAllTime(name);
+  if (pAll == null) pAll = projectsShipped(name);
+  if (longest == null) longest = longestStreakEver(name).length;
   return [
     { group: 'Hours logged', glyph: '🥇', name: '100 hours logged',  threshold: 100,  current: lh },
     { group: 'Hours logged', glyph: '🥈', name: '500 hours logged',  threshold: 500,  current: lh },
@@ -410,10 +412,9 @@ function _milestonesFor(name) {
   ];
 }
 
-function renderAchievementsPanel(name, opts) {
+function renderAchievementsPanel(name) {
   if (typeof UserPrefs !== 'undefined' && UserPrefs && UserPrefs.showAchievements === false) return '';
   if (!name) return '';
-  opts = opts || {};
 
   var streak = computeTimeLoggingStreak(name);
   var tMon = tasksCompletedThisMonth(name);
@@ -421,7 +422,10 @@ function renderAchievementsPanel(name, opts) {
   var wkHrs = hoursThisWeek(name);
 
   // Don't take up real estate for fresh accounts with nothing to show.
-  if (!streak && !tasksCompletedAllTime(name) && !proj && !wkHrs) return '';
+  // tMon covers this-month, but a fresh account with old tasks could still
+  // have all-time entries — that's already implied by `proj` so no need to
+  // do a second scan just for the gate.
+  if (!streak && !tMon && !proj && !wkHrs) return '';
 
   var isSelf = (typeof Auth !== 'undefined' && Auth.fullName === name);
   var title = isSelf ? '✨ Your achievements' : '✨ ' + esc(name.split(' ')[0]) + '\'s achievements';
@@ -522,7 +526,7 @@ function buildAchievementsPage() {
   var tools = toolsUsed(name);
   var pCount = projectsContributedTo(name);
   var teammates = teammatesWorkedWith(name);
-  var medals = _milestonesFor(name);
+  var medals = _milestonesFor(name, lh, tAll, proj, longest.length);
 
   // ── Hero ────────────────────────────────────────────────────
   var initials = name.split(' ').map(function(w) { return (w[0] || '').toUpperCase(); }).slice(0, 2).join('');

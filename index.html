@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.27.0.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.27.0.0002"></script>
+<script src="src/constants.js?v=1.27.0.0003"></script>
 <script src="src/agol.js?v=1.16.1.0023"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
 <script src="src/render.js?v=1.27.0.0001"></script>
@@ -16,7 +16,7 @@
 <script src="src/tabs/project-review.js?v=1.16.0.0020"></script>
 <script src="src/project-notes.js?v=1.16.1.0023"></script>
 <script src="src/confetti.js?v=1.17.2.0033"></script>
-<script src="src/achievements.js?v=1.25.0.0001"></script>
+<script src="src/achievements.js?v=1.27.0.0003"></script>
 <script src="src/saved-views.js?v=1.26.1.0001"></script>
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.17.5.0036"></script>
@@ -24,7 +24,7 @@
 <script src="src/tabs/settings.js?v=1.27.0.0001"></script>
 <script src="src/tabs/resources.js?v=1.17.6.0039"></script>
 <script src="src/tabs/my-work.js?v=1.17.4.0035"></script>
-<script src="src/tabs/projects-tasks.js?v=1.17.6.0039"></script>
+<script src="src/tabs/projects-tasks.js?v=1.27.0.0003"></script>
 <script src="src/tabs/projects-tasks-detail.js?v=1.16.1.0023"></script>
 <script src="src/tabs/slideshow.js?v=1.16.0.0009"></script>
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
@@ -958,6 +958,45 @@ let PROJECTS = [];
 let TASKS = [];
 let ISSUES = [];  // { objectId, title, type, description, steps_to_reproduce, status, priority, submitted_by, submitted_date, resolved_date }
 
+// Lookup indexes rebuilt from PROJECTS / TASKS on every data-dirty render.
+// Avoids per-task PROJECTS.find() scans (the old O(T × P) hot path inside
+// resolveProjectTitle / filterTasks / sortData / row renderers).
+let _PROJECTS_BY_TITLE = {};    // title (lowercased) → project
+let _PROJECTS_BY_ID = {};       // id (string) → project
+let _TASK_COUNTS_BY_PROJ_TITLE = {}; // project title → { total, done }
+let _TASK_COUNTS_BY_PROJ_ID = {};    // project id (string) → { total, done }
+function rebuildProjectIndexes() {
+  _PROJECTS_BY_TITLE = {};
+  _PROJECTS_BY_ID = {};
+  for (var i = 0; i < PROJECTS.length; i++) {
+    var p = PROJECTS[i];
+    if (p.title) _PROJECTS_BY_TITLE[String(p.title).toLowerCase()] = p;
+    if (p.id != null) _PROJECTS_BY_ID[String(p.id)] = p;
+  }
+  _TASK_COUNTS_BY_PROJ_TITLE = {};
+  _TASK_COUNTS_BY_PROJ_ID = {};
+  for (var j = 0; j < TASKS.length; j++) {
+    var t = TASKS[j];
+    var bucket = null;
+    if (t.project) {
+      bucket = _TASK_COUNTS_BY_PROJ_TITLE[t.project] || (_TASK_COUNTS_BY_PROJ_TITLE[t.project] = { total: 0, done: 0 });
+    } else if (t.project_id != null) {
+      var key = String(t.project_id);
+      bucket = _TASK_COUNTS_BY_PROJ_ID[key] || (_TASK_COUNTS_BY_PROJ_ID[key] = { total: 0, done: 0 });
+    }
+    if (bucket) {
+      bucket.total++;
+      if (t.status === 'Complete') bucket.done++;
+    }
+  }
+}
+function getTaskCountsForProject(p) {
+  if (!p) return { total: 0, done: 0 };
+  if (p.title && _TASK_COUNTS_BY_PROJ_TITLE[p.title]) return _TASK_COUNTS_BY_PROJ_TITLE[p.title];
+  if (p.id != null && _TASK_COUNTS_BY_PROJ_ID[String(p.id)]) return _TASK_COUNTS_BY_PROJ_ID[String(p.id)];
+  return { total: 0, done: 0 };
+}
+
 // RESOURCES_DATA is loaded from ArcGIS Online REST services at startup.
 // See loadResourcesData() for the query logic that reconstructs this object.
 let RESOURCES_DATA = null;
@@ -986,6 +1025,7 @@ function render() {
 
   // ── Expensive work: only when data has changed ────────────────────
   if (Internal.dataDirty) {
+    rebuildProjectIndexes();
     updateHeaderStats();
     buildSidebarFilters();
     Internal.dataDirty = false;

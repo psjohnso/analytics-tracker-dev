@@ -23,9 +23,9 @@ function projectCard(p) {
   const statusColor = STATUS_COLOR(p.status) || '#9CA3AF';
   const initials = (p.contact || '?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
   const endDate = p.status === 'Complete' && p.actual_end ? p.actual_end : (p.working_due || p.end || '—');
-  const projTasks = TASKS.filter(function(t) { return t.project === p.title || (!t.project && t.project_id == p.id); });
-  const totalTasks = projTasks.length;
-  const doneTasks = projTasks.filter(function(t) { return t.status === 'Complete'; }).length;
+  const counts = getTaskCountsForProject(p);
+  const totalTasks = counts.total;
+  const doneTasks = counts.done;
   const taskChip = totalTasks > 0 ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#EEF2FF;color:#002669;white-space:nowrap;">${doneTasks}/${totalTasks} tasks</span>` : '';
   return `
   <div class="project-card" onclick="openProject(${p.objectId})">
@@ -88,7 +88,7 @@ function renderProjectList(data, showLead) {
 
   function buildRow(p) {
     const statusColor = STATUS_COLOR(p.status) || '#9CA3AF';
-    var taskCount = TASKS.filter(function(t) { return t.project === p.title || (!t.project && t.project_id == p.id); }).length;
+    var taskCount = getTaskCountsForProject(p).total;
     var row = `<div class="task-row" onclick="openProject(${p.objectId})">
       <div class="task-cell" style="font-family:monospace;">${esc(p.project_number || '—')}</div>
       <div class="task-title-cell">${esc(p.title)}</div>
@@ -501,16 +501,18 @@ function showCalcPopup(evt, key) {
   popup.style.top = top + 'px';
 }
 
-// Resolve the correct project title for a task by looking up project title first
-// (since project names are unique), then falling back to project_id.
+// Resolve the correct project title for a task. Uses the index built by
+// rebuildProjectIndexes() to avoid a PROJECTS.find scan per call — this
+// runs once per task in filterTasks, sortData, and every row render, so
+// the previous linear scan made the hot path O(T × P).
 function resolveProjectTitle(t) {
   if (t.project) {
-    const p = PROJECTS.find(x => x.title === t.project);
+    var p = _PROJECTS_BY_TITLE && _PROJECTS_BY_TITLE[String(t.project).toLowerCase()];
     if (p) return p.title;
   }
   if (t.project_id != null) {
-    const p = PROJECTS.find(x => x.id == t.project_id);
-    if (p) return p.title;
+    var p2 = _PROJECTS_BY_ID && _PROJECTS_BY_ID[String(t.project_id)];
+    if (p2) return p2.title;
   }
   return t.project || '';
 }
