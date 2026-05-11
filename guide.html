@@ -128,6 +128,7 @@ li strong { color: var(--navy); }
   <a href="#forecast-tab">Forecast Tab</a>
   <a href="#insights-tab">Insights Tab</a>
   <a href="#issues-tab">Issues Tab</a>
+  <a href="#achievements-tab">🏆 Achievements Tab</a>
   <a href="#settings-tab">Settings Tab</a>
   <div class="nav-section">Features</div>
   <a href="#strategic-alignment">Strategic Alignment</a>
@@ -305,6 +306,16 @@ li strong { color: var(--navy); }
 </ul>
 <p>Detail pages show all three dates side by side, with a red <strong>(moved)</strong> indicator when the working due date differs from the original. List views and cards show the working due date since that's the current target.</p>
 
+<h3>Project Journal</h3>
+<p>Each project detail page includes a <strong>Project Journal</strong> section below the description / Definition of Done / Key Results blocks. It's a running log of observations, decisions, blockers, or anything that doesn't belong in the structured fields.</p>
+<ul>
+  <li><strong>Append-only</strong> — Once an entry is saved it stays. No edit or delete UI; admins can clean up directly in the AGO table if needed.</li>
+  <li><strong>Timestamped + attributed</strong> — Each entry shows the date+time and the author's full name.</li>
+  <li><strong>Newest first</strong> — The most recent entry appears at the top of the timeline.</li>
+  <li><strong>Visible to everyone signed in</strong> — Journal entries are a project-level record, not a personal note.</li>
+</ul>
+<p>Backed by a separate AGO hosted table (<code>Project_Notes</code>) keyed on <code>project_number</code>, loaded at bootstrap.</p>
+
 <!-- ═══════════════════════════════════════════════════ -->
 <h2 id="tasks-tab">Tasks Tab</h2>
 <p>Tasks are individual work items associated with projects. Each task has a title, status, assignee, due date, and parent project reference.</p>
@@ -447,11 +458,52 @@ li strong { color: var(--navy); }
 <p>The Issues tab provides a space for tracking bugs, feature requests, and operational issues. It is visible to all team members.</p>
 
 <!-- ═══════════════════════════════════════════════════ -->
+<h2 id="achievements-tab">🏆 Achievements Tab</h2>
+<p>The Achievements tab celebrates your continued use of the tracker. It computes everything live from your existing time entries, tasks, and projects — no separate data is stored beyond what you already log.</p>
+
+<h3>Slim panel on My Work</h3>
+<p>A four-tile strip sits at the top of My Work showing near-term progress: 🔥 day streak · 🎯 tasks this month · ⏱ hours this week · 🏆 projects shipped. A <strong>View all →</strong> link in the header jumps to the full tab. Toggle off in Preferences → Personal → Show achievements panel.</p>
+
+<h3>Full tab — six sections</h3>
+<ul>
+  <li><strong>Right now</strong> — current streak (featured), tasks this month, hours this week, projects shipped.</li>
+  <li><strong>Lifetime</strong> — active days, lifetime hours, longest streak (with date range), months strong (with member-since date).</li>
+  <li><strong>This year</strong> — tasks closed, projects shipped, hours logged, weeks active.</li>
+  <li><strong>Records</strong> — best week (tasks closed in a single week), longest day (hours in a single day), longest streak, biggest project.</li>
+  <li><strong>Breadth</strong> — categories explored, tools used, projects contributed to, teammates worked alongside.</li>
+  <li><strong>Milestones</strong> — 14 medals across Hours / Tasks / Projects / Streaks. Unlocked medals glow yellow; locked ones show a progress bar (e.g. "247 / 250").</li>
+</ul>
+
+<h3>Streak math</h3>
+<p>The streak counts consecutive <strong>workdays</strong> (Mon–Fri) with at least one time entry, ending today or the most recent workday. Weekends are skipped — neither required nor breaking. If today is a workday but you haven't logged time yet, the streak is still alive as long as yesterday's workday had an entry. The flame emoji escalates: 🔥 at 1+ days, 🔥🔥 at 14, 🔥🔥🔥 at 30.</p>
+
+<div class="note-box">
+  <strong>Viewing teammates' achievements:</strong> Admins peeking at someone else's My Work see that person's slim panel titled with their first name (e.g. "Pete's achievements"). The full Achievements tab always shows the signed-in user.
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
 <h2 id="settings-tab">Settings Tab</h2>
 <p>The Settings tab is visible to all logged-in users. Non-admin users see only the <strong>Preferences</strong> section. Admin users see Preferences plus all admin sections (Team Members, Allocations, Dropdown Lists, etc.).</p>
 
 <h3>Preferences (All Users)</h3>
-<p>Personal settings that customize how the application looks and works for you. Preferences are saved to your team member record and persist across sessions and devices. Available preferences:</p>
+<p>Personal settings that customize how the application looks and works for you. Preferences are saved to your team member record and persist across sessions and devices. Preferences are grouped into <strong>Appearance</strong>, <strong>Personal</strong>, and <strong>Layout &amp; navigation</strong>.</p>
+
+<h4>Appearance</h4>
+<ul>
+  <li><strong>Theme</strong> — Five color palettes: Tucson Classic (default navy + cardinal), Sonoran Sunset (burnt orange-brown + sunset orange), Desert Twilight (deep purple + magenta), Pueblo (terracotta + warm clay), Saguaro (cactus green + saguaro red). Each retints any UI surface backed by the brand CSS variables.</li>
+  <li><strong>UI size</strong> — Type a percentage between 80 and 160 (default 100). Scales fonts and spacing across the entire app via CSS zoom. Press Enter or click away to apply.</li>
+  <li><strong>Accent color</strong> — Personalize your own avatar across the app (header, project cards, task cards, Overview, Resources, Forecast, form pickers). 10 preset swatches plus a custom HTML color picker. Only you see your color; teammates see theirs. Reset clears to default.</li>
+  <li><strong>Avatar emoji</strong> — Replace your initials with an emoji everywhere your avatar appears. 20 preset chips (🎯 🐢 🦊 🐙 🦉 …) plus a free-text input. Combines naturally with the accent color.</li>
+  <li><strong>Color-blind safe palette</strong> — Swap status, priority, and alert colors to an Okabe-Ito-derived palette that stays distinguishable for the common red-green color-blindness types (deuteranopia, protanopia). Touches status dots, priority badges, gantt bars, alert badges, KPI alert colors, and every accent chip that uses the brand CSS variables.</li>
+</ul>
+
+<h4>Personal</h4>
+<ul>
+  <li><strong>✨ Show achievements panel</strong> — Toggles the slim achievements strip at the top of My Work. The full Achievements tab is always available regardless.</li>
+  <li><strong>🎉 Celebrate completions</strong> — When on, a brief confetti burst fires when you mark a task or project Complete. Anchored to wherever you clicked. The OS-level "reduce motion" preference always wins regardless of this toggle.</li>
+</ul>
+
+<h4>Layout &amp; navigation</h4>
 <ul>
   <li><strong>Default tab</strong> — Which tab to show when you first open the application (Overview, My Work, Projects, or Tasks).</li>
   <li><strong>Projects tab layout</strong> — Default layout for the Projects tab (List view or Grid view).</li>
@@ -535,6 +587,19 @@ li strong { color: var(--navy); }
 
 <h3>Active Filter Chips</h3>
 <p>When filters are active, descriptive chips appear above the filter panel showing exactly what's filtered (e.g., "Status: Active, Scheduled" or "Member: Peter Johnson"). Each chip has an × button to remove that specific filter. A "Clear all" link appears when multiple filters are active.</p>
+
+<h3>Live Badge Counts</h3>
+<p>Each filter button shows a small badge with the number of items that would remain if you added that filter to your <em>current</em> filter set. Counts react to other active filters and to the current tab — set Status = Active and the member badges shrink to only members with active items. The "All" button shows the count if you remove that filter entirely.</p>
+
+<h3>Saved Filter Views ("My Views")</h3>
+<p>Once you've set filters you'll reuse, save them as a named view from the top of the sidebar.</p>
+<ul>
+  <li><strong>＋ Save current filters as view</strong> — appears whenever any filter is active. Opens a modal where you name the combo and see a summary of the filters being captured.</li>
+  <li><strong>Apply</strong> — click any saved chip to reset all filters then apply that snapshot. The active chip highlights navy when the current filters match it exactly.</li>
+  <li><strong>Pin as default</strong> — click the ★ on a chip to mark that view as your default. Its filters auto-apply every time you open the app. Only one view can be default at a time; clicking the star on the current default clears it.</li>
+  <li><strong>Delete</strong> — the × on each chip removes that view (with a confirm).</li>
+</ul>
+<p>Views are stored in the user_preferences JSON on your team_members record, so they persist across sessions and devices.</p>
 
 <!-- ═══════════════════════════════════════════════════ -->
 <h2 id="data-program-fields">Data Program field model</h2>
