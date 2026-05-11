@@ -6,9 +6,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;family=Cardo:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <!-- ArcGIS REST API integration (no external auth library needed) -->
-<link rel="stylesheet" href="src/app.css?v=1.17.6.0037">
+<link rel="stylesheet" href="src/app.css?v=1.17.6.0039">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.17.6.0038"></script>
+<script src="src/constants.js?v=1.17.6.0039"></script>
 <script src="src/agol.js?v=1.16.1.0023"></script>
 <script src="src/auth.js?v=1.16.0.0012"></script>
 <script src="src/render.js?v=1.16.1.0027"></script>
@@ -19,11 +19,11 @@
 <script src="src/achievements.js?v=1.17.4.0035"></script>
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.17.5.0036"></script>
-<script src="src/tabs/overview.js?v=1.17.5.0036"></script>
-<script src="src/tabs/settings.js?v=1.17.6.0038"></script>
-<script src="src/tabs/resources.js?v=1.17.5.0036"></script>
+<script src="src/tabs/overview.js?v=1.17.6.0039"></script>
+<script src="src/tabs/settings.js?v=1.17.6.0039"></script>
+<script src="src/tabs/resources.js?v=1.17.6.0039"></script>
 <script src="src/tabs/my-work.js?v=1.17.4.0035"></script>
-<script src="src/tabs/projects-tasks.js?v=1.17.5.0036"></script>
+<script src="src/tabs/projects-tasks.js?v=1.17.6.0039"></script>
 <script src="src/tabs/projects-tasks-detail.js?v=1.16.1.0023"></script>
 <script src="src/tabs/slideshow.js?v=1.16.0.0009"></script>
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
@@ -75,10 +75,7 @@
     <span id="user-display" style="display:none;align-items:center;gap:6px;">
       <span id="user-avatar" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;letter-spacing:0.02em;overflow:hidden;"></span>
       <span style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;">
-        <span style="display:flex;align-items:center;gap:6px;">
-          <span id="user-name" style="font-weight:600;white-space:nowrap;"></span>
-          <span id="user-status-display" style="display:none;align-items:center;gap:4px;cursor:pointer;" onclick="switchTab('settings');"></span>
-        </span>
+        <span id="user-name" style="font-weight:600;white-space:nowrap;"></span>
         <span id="user-role-badge" style="display:none;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;background:rgba(131,172,22,0.85);color:#fff;padding:1px 6px;border-radius:3px;line-height:1.4;">Admin</span>
       </span>
     </span>
@@ -980,7 +977,6 @@ function render() {
     applyUiScale();
     applyTheme();
     applyAccentColor();
-    applyUserStatus();
     applyAvatarEmoji();
   }
 
@@ -1230,10 +1226,6 @@ var UserPrefs = {
   // Celebrate task/project completion with a confetti burst. Default on;
   // OS prefers-reduced-motion overrides this regardless of the toggle.
   confetti: true,
-  // Slack-style personal status — an emoji + short text shown next to the
-  // user's name throughout the app. Stored here, surfaced via team_members
-  // user_preferences so teammates see it too. Empty fields = no status.
-  status: { emoji: '', text: '' },
   // Optional emoji to display instead of initials inside the user's avatar
   // circle everywhere their avatar appears (header, chips, person cards).
   // Empty string = use initials (default behavior).
@@ -1257,20 +1249,16 @@ function applyTheme() {
 }
 
 // Parse user_preferences JSON for every loaded member and extract any
-// publicly-visible pieces (currently just `status`). Cheap; runs once
-// after RESOURCES_DATA.people is built, and whenever we re-load resources.
+// publicly-visible pieces (currently just `avatarEmoji`). Cheap; runs
+// once after RESOURCES_DATA.people is built, and again on resource reload.
 function attachMemberStatuses() {
   if (!RESOURCES_DATA || !RESOURCES_DATA.people) return;
   Object.keys(RESOURCES_DATA.people).forEach(function(name) {
     var p = RESOURCES_DATA.people[name];
-    p.status = null;
     p.avatarEmoji = '';
     if (p.user_preferences) {
       try {
         var prefs = JSON.parse(p.user_preferences);
-        if (prefs && prefs.status && (prefs.status.emoji || prefs.status.text)) {
-          p.status = { emoji: prefs.status.emoji || '', text: prefs.status.text || '' };
-        }
         if (prefs && prefs.avatarEmoji) {
           p.avatarEmoji = String(prefs.avatarEmoji);
         }
@@ -1286,23 +1274,6 @@ function getMemberAvatarEmoji(name) {
   if (!name || !RESOURCES_DATA || !RESOURCES_DATA.people) return '';
   var p = RESOURCES_DATA.people[name];
   return (p && p.avatarEmoji) || '';
-}
-
-function getMemberStatus(name) {
-  if (!name || !RESOURCES_DATA || !RESOURCES_DATA.people) return null;
-  var p = RESOURCES_DATA.people[name];
-  return p && p.status ? p.status : null;
-}
-
-// HTML for an inline status badge next to a person's name. Returns ''
-// when the person has no status set, so it's safe to splat into any
-// renderer unconditionally.
-function renderUserStatusBadge(name) {
-  var s = getMemberStatus(name);
-  if (!s || (!s.emoji && !s.text)) return '';
-  var emoji = s.emoji || '💬';
-  var label = s.text || s.emoji || '';
-  return '<span class="user-status-badge" title="' + escapeAttr(label) + '">' + emoji + '</span>';
 }
 
 // Override the header avatar's content with the user's chosen emoji (or
@@ -1326,21 +1297,6 @@ function applyAvatarEmoji() {
     if (!av.querySelector('img')) av.textContent = initials;
     av.classList.remove('user-emoji-av');
   }
-}
-
-// Refresh the header status display for the signed-in user.
-function applyUserStatus() {
-  var hdr = document.getElementById('user-status-display');
-  if (!hdr) return;
-  if (!Auth.loggedIn || !Auth.fullName) { hdr.innerHTML = ''; hdr.style.display = 'none'; return; }
-  var s = (UserPrefs && UserPrefs.status) || null;
-  if (!s || (!s.emoji && !s.text)) { hdr.innerHTML = ''; hdr.style.display = 'none'; return; }
-  hdr.style.display = 'inline-flex';
-  var emoji = s.emoji || '💬';
-  var text = s.text || '';
-  hdr.title = text || emoji;
-  hdr.innerHTML = '<span style="font-size:14px;line-height:1;">' + emoji + '</span>' +
-    (text ? '<span style="font-size:11px;color:rgba(255,255,255,0.85);">' + escapeAttr(text) + '</span>' : '');
 }
 
 // Compute a foreground color (#fff or #000) that contrasts with the given
@@ -1859,7 +1815,6 @@ async function loadArcGISData() {
     applyUiScale();
     applyTheme();
     applyAccentColor();
-    applyUserStatus();
     applyAvatarEmoji();
     applyBetaTabVisibility();
     applyOptionalTabVisibility();

@@ -62,7 +62,7 @@ function buildResourcePersonCards(people, currentWeekIdx) {
         return `<div class="person-avatar-lg${selfCls}${emj?' user-emoji-av':''}" style="background:linear-gradient(135deg,${utilColor}cc,${utilColor}88)">${emj || initials}</div>`;
       })()}
       <div class="person-info">
-        <div class="name">${esc(name)}${renderUserStatusBadge(name)}</div>
+        <div class="name">${esc(name)}</div>
         <div class="role">${esc(p.role)}</div>
       </div>
       <span class="person-util-badge" style="background:${utilColor}22;color:${utilColor};">${curUtil.toFixed(0)}%</span>

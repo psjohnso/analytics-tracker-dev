@@ -55,7 +55,7 @@ function projectCard(p) {
             var selfCls = p.contact && Auth.fullName && p.contact === Auth.fullName ? ' user-self-avatar' : '';
             return `<div class="assignee-avatar${selfCls}${emj?' user-emoji-av':''}">${emj || initials}</div>`;
           })()}
-          ${esc(p.contact || 'Unassigned')}${renderUserStatusBadge(p.contact)}
+          ${esc(p.contact || 'Unassigned')}
         </div>
         ${(p.other_members || '').split(',').map(s=>s.trim()).filter(Boolean).map(name => {
           const av = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
@@ -174,7 +174,7 @@ function renderTaskGrid(data) {
             var selfCls = t.assignee && Auth.fullName && t.assignee === Auth.fullName ? ' user-self-avatar' : '';
             return `<div class="assignee-avatar${selfCls}${emj?' user-emoji-av':''}">${emj || initials}</div>`;
           })()}
-          ${esc(t.assignee || 'Unassigned')}${renderUserStatusBadge(t.assignee)}
+          ${esc(t.assignee || 'Unassigned')}
         </div>
         <div class="date-info">${getTaskHours(t.idx) > 0 ? '<span style="font-weight:700;color:var(--navy);margin-right:8px;">⏱ ' + hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx)) + '</span>' : ''}<span style="${dueStyle}">${dueStr || '—'}</span></div>
       </div>

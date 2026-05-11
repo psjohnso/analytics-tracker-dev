@@ -832,18 +832,6 @@ body {
 .ach-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
 .ach-sub { font-size: 11px; color: var(--text-muted); margin-top: 5px; font-style: italic; }
 
-/* Slack-style personal status — emoji next to a person's name across
-   the app. Decorative only; full status text is in the title attribute. */
-.user-status-badge {
-  display: inline-block;
-  margin-left: 5px;
-  font-size: 1em;
-  line-height: 1;
-  vertical-align: -1px;
-  cursor: default;
-  user-select: none;
-}
-
 /* Confetti burst — fired by fireConfetti() in src/confetti.js. Each
    particle sets --cf-dx, --cf-dy, --cf-grav, --cf-r inline so a single
    keyframe definition covers every spawn. */
