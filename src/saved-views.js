@@ -167,7 +167,10 @@ function commitSaveViewModal() {
   saveUserPrefs();
   closeSaveViewModal();
   if (typeof showToast === 'function') showToast('Saved view: ' + name, 'success');
-  render();
+  // Refresh the sidebar's saved-views section directly — render() alone
+  // wouldn't rebuild it, since buildSidebarFilters only runs when the
+  // dataDirty flag is set.
+  renderSavedViews();
 }
 
 // Mark one saved view as the default (auto-applied on every app load).
@@ -187,7 +190,7 @@ function setSavedViewAsDefault(id, event) {
   if (typeof showToast === 'function') {
     showToast(wasDefault ? 'Default cleared.' : 'Default: ' + target.name + ' (applies on load)', 'success');
   }
-  render();
+  renderSavedViews();
 }
 
 function getDefaultSavedView() {
@@ -224,7 +227,7 @@ function deleteSavedView(id, event) {
   if (!confirm('Delete view "' + view.name + '"?')) return;
   UserPrefs.savedViews = UserPrefs.savedViews.filter(function(v) { return v.id !== id; });
   saveUserPrefs();
-  render();
+  renderSavedViews();
 }
 
 // Fill the #saved-views-section container with chips + an Add button.
