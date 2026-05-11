@@ -99,7 +99,6 @@ function buildPreferencesPanel() {
       '</div>' +
       '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' +
         '<input type="number" id="pref-' + id + '" min="' + minPct + '" max="' + maxPct + '" step="1" value="' + pct + '" ' +
-          'oninput="previewUiScale((parseFloat(this.value)||100)/100)" ' +
           'onchange="commitUiScalePref(this)" ' +
           'onkeydown="if(event.key===\'Enter\'){this.blur();}" ' +
           'style="width:70px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;text-align:right;font-family:Lato,sans-serif;">' +
