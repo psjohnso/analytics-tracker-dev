@@ -15,6 +15,17 @@
 
 // ─── IDEA SUBMISSION ──────────────────────────────────────────────────
 
+// Resolve the submitter's ITD team from their member record so a new idea
+// inherits it without the submitter having to pick. Returns null if the
+// name doesn't match a known member or the member has no team set.
+function lookupSubmitterTeam(contactName) {
+  if (!contactName) return null;
+  if (!RESOURCES_DATA || !RESOURCES_DATA.people) return null;
+  var member = RESOURCES_DATA.people[contactName];
+  if (!member) return null;
+  return member.team || null;
+}
+
 function openIdeaForm() {
   if (!ensureValidSession(function() { openIdeaForm(); })) return;
   refreshEnums();
@@ -413,6 +424,7 @@ async function submitGuidedIdeaForm() {
   };
 
   var todayStr = new Date().toISOString().slice(0, 10);
+  var submitterTeam = lookupSubmitterTeam(sa.contact);
 
   await DataStore.createProject({
     title:             sa.title,
@@ -421,7 +433,7 @@ async function submitGuidedIdeaForm() {
     contact:           sa.contact,
     other_members:     null,
     partner_dept:      sa.dept || null,
-    itd_team:          null,
+    itd_team:          submitterTeam,
     category:          sa.category,
     start:             todayStr,
     end:               null,
@@ -509,6 +521,7 @@ async function submitIdeaForm() {
   const urgency  = (document.getElementById('idea-urgency').value || '').trim();
 
   const todayStr = new Date().toISOString().slice(0, 10);
+  const submitterTeam = lookupSubmitterTeam(contact);
 
   await DataStore.createProject({
     title,
@@ -517,7 +530,7 @@ async function submitIdeaForm() {
     contact,
     other_members:     null,
     partner_dept:      dept || null,
-    itd_team:          null,
+    itd_team:          submitterTeam,
     category:          null,
     start:             todayStr,
     end:               null,
