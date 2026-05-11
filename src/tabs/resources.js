@@ -58,7 +58,7 @@ function buildResourcePersonCards(people, currentWeekIdx) {
     return `<div class="person-card${isActive?' active':''}" onclick="selectPerson('${name.replace(/'/g,"\'")}')">
       <div class="person-avatar-lg${Auth.fullName && name === Auth.fullName ? ' user-self-avatar' : ''}" style="background:linear-gradient(135deg,${utilColor}cc,${utilColor}88)">${initials}</div>
       <div class="person-info">
-        <div class="name">${esc(name)}</div>
+        <div class="name">${esc(name)}${renderUserStatusBadge(name)}</div>
         <div class="role">${esc(p.role)}</div>
       </div>
       <span class="person-util-badge" style="background:${utilColor}22;color:${utilColor};">${curUtil.toFixed(0)}%</span>

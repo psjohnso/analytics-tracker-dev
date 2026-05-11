@@ -90,6 +90,41 @@ function buildPreferencesPanel() {
     '</div>';
   }
 
+  function prefStatusInput(currentStatus) {
+    var emoji = currentStatus && currentStatus.emoji || '';
+    var text = currentStatus && currentStatus.text || '';
+    var presets = [
+      { e: '🧘', t: 'Heads down' },
+      { e: '📞', t: 'In a meeting' },
+      { e: '🍽', t: 'Lunch' },
+      { e: '✈️', t: 'Out of office' },
+      { e: '🔥', t: 'Crunching' },
+      { e: '💡', t: 'Brainstorming' },
+      { e: '🤝', t: 'Available' },
+      { e: '🏠', t: 'Remote today' }
+    ];
+    var presetBtns = presets.map(function(p) {
+      var e2 = String(p.e).replace(/'/g, "\\'");
+      var t2 = String(p.t).replace(/'/g, "\\'");
+      return '<button type="button" onclick="setUserStatus(\'' + e2 + '\',\'' + t2 + '\')" style="font-size:12px;padding:5px 11px;border:1px solid var(--border);border-radius:14px;background:#fff;cursor:pointer;font-family:Lato,sans-serif;color:var(--text-body);">' + p.e + ' ' + esc(p.t) + '</button>';
+    }).join('');
+    return '<div style="padding:14px 0;border-bottom:1px solid #F3F1EB;">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:13px;font-weight:700;color:var(--text-body);">Your status</div>' +
+          '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Emoji + short note shown next to your name across the app. Visible to teammates.</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">' +
+          '<input type="text" id="pref-status-emoji" value="' + esc(emoji) + '" maxlength="8" placeholder="—" style="width:46px;text-align:center;font-size:18px;padding:6px;border:1px solid var(--border);border-radius:6px;font-family:Lato,sans-serif;">' +
+          '<input type="text" id="pref-status-text" value="' + esc(text) + '" maxlength="80" placeholder="What\'s your status?" onkeydown="if(event.key===\'Enter\')commitUserStatus();" style="width:220px;font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:Lato,sans-serif;">' +
+          '<button type="button" onclick="commitUserStatus()" style="font-size:12px;font-weight:700;padding:6px 12px;border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:6px;cursor:pointer;font-family:Lato,sans-serif;">Set</button>' +
+          (emoji || text ? '<button type="button" onclick="clearUserStatus()" style="font-size:11px;font-weight:700;padding:6px 10px;border:1px solid var(--border);background:#fff;color:var(--text-muted);border-radius:6px;cursor:pointer;font-family:Lato,sans-serif;">Clear</button>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;justify-content:flex-end;">' + presetBtns + '</div>' +
+    '</div>';
+  }
+
   function prefAccentColor(currentHex) {
     var presets = [
       '#0C447C', // Navy
@@ -188,6 +223,8 @@ function buildPreferencesPanel() {
 
   html += prefAccentColor(UserPrefs.accentColor);
 
+  html += prefStatusInput(UserPrefs.status);
+
   html += prefToggle('confetti', '🎉 Celebrate completions', 'Briefly show a confetti burst when you mark a task or project Complete. Always disabled if your system has reduced-motion enabled.', UserPrefs.confetti);
 
   html += prefSelect('defaultTab', 'Default tab', 'Which tab to show when you first open the application.', [
@@ -275,6 +312,34 @@ function buildPreferencesPanel() {
   }
 
   return html;
+}
+
+// Personal status (emoji + short text). Stored in UserPrefs.status,
+// persisted via saveUserPrefs to team_members.user_preferences, and
+// re-attached to RESOURCES_DATA.people[Auth.fullName] so the local view
+// updates immediately without a round-trip through attachMemberStatuses.
+function setUserStatus(emoji, text) {
+  UserPrefs.status = { emoji: emoji || '', text: text || '' };
+  saveUserPrefs();
+  if (RESOURCES_DATA && RESOURCES_DATA.people && Auth.fullName && RESOURCES_DATA.people[Auth.fullName]) {
+    var hasAny = !!(emoji || text);
+    RESOURCES_DATA.people[Auth.fullName].status = hasAny ? { emoji: emoji || '', text: text || '' } : null;
+  }
+  if (typeof applyUserStatus === 'function') applyUserStatus();
+  showToast(emoji || text ? 'Status updated.' : 'Status cleared.', 'success');
+  render();
+}
+
+function commitUserStatus() {
+  var eEl = document.getElementById('pref-status-emoji');
+  var tEl = document.getElementById('pref-status-text');
+  var e = eEl ? (eEl.value || '').trim() : '';
+  var t = tEl ? (tEl.value || '').trim() : '';
+  setUserStatus(e, t);
+}
+
+function clearUserStatus() {
+  setUserStatus('', '');
 }
 
 // Read the percent value from the UI Size input, clamp it to the allowed
