@@ -728,7 +728,7 @@ function fmMemberMultiSelect(id, members, currentVal) {
     const checked = selected.includes(name) ? ' checked' : '';
     return '<label class="fm-member-check">' +
       '<input type="checkbox" name="' + id + '" value="' + name + '"' + checked + '>' +
-      '<span class="fm-member-avatar' + (Auth.fullName && name === Auth.fullName ? ' user-self-avatar' : '') + '">' + initials + '</span>' +
+      '<span class="fm-member-avatar' + (Auth.fullName && name === Auth.fullName ? ' user-self-avatar' : '') + (getMemberAvatarEmoji(name) ? ' user-emoji-av' : '') + '">' + (getMemberAvatarEmoji(name) || initials) + '</span>' +
       name +
       '</label>';
   }).join('');
@@ -1071,7 +1071,11 @@ function renderTeamAvailList(currentOtherMembers, currentContact) {
     var rowClass = 'fm-ta-row' + (checked ? ' fm-ta-checked' : '') + (isContact ? ' fm-ta-contact' : '');
     html += '<div class="' + rowClass + '">';
     html += '<input type="checkbox" class="fm-ta-cb" name="fm-other-members" value="' + esc(name) + '"' + (checked ? ' checked' : '') + ' onclick="event.stopPropagation();fmMemberCbChanged()">';
-    html += '<div class="fm-ta-avatar' + (Auth.fullName && name === Auth.fullName ? ' user-self-avatar' : '') + '">' + initials + '</div>';
+    (function() {
+      var emj = getMemberAvatarEmoji(name);
+      var selfCls = Auth.fullName && name === Auth.fullName ? ' user-self-avatar' : '';
+      html += '<div class="fm-ta-avatar' + selfCls + (emj ? ' user-emoji-av' : '') + '">' + (emj || initials) + '</div>';
+    })();
     html += '<div style="flex:1;min-width:0;">';
     html += '<div class="fm-ta-name">' + esc(name) + (isContact ? ' <span style="font-size:9px;background:#002669;color:#fff;padding:1px 5px;border-radius:4px;font-weight:700;vertical-align:middle;">LEAD</span>' : '') + '</div>';
     if (jobRole) html += '<div class="fm-ta-role">' + esc(jobRole) + '</div>';

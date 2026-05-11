@@ -764,6 +764,19 @@ body {
   color: var(--user-accent-fg, #fff) !important;
 }
 
+/* Emoji-avatar mode — replaces initials with a chosen emoji. Each base
+   avatar class has its own size, so we override font-size per surface to
+   keep the glyph balanced inside the circle. font-weight resets so emoji
+   fonts (which ignore weight) render at their natural color. */
+.user-emoji-av { font-weight: 400 !important; letter-spacing: 0 !important; }
+.assignee-avatar.user-emoji-av { font-size: 13px !important; }
+.cp-person-avatar.user-emoji-av { font-size: 18px !important; }
+.ov-avatar.user-emoji-av { font-size: 24px !important; }
+.fm-ta-avatar.user-emoji-av { font-size: 16px !important; }
+.fm-member-avatar.user-emoji-av { font-size: 14px !important; }
+.person-avatar-lg.user-emoji-av { font-size: 26px !important; }
+#user-avatar.user-emoji-av { font-size: 18px !important; }
+
 /* Achievements panel — small celebratory grid above the My Work KPIs.
    Four tiles: streak, tasks done, projects shipped, hours this week. */
 .achievements-panel {

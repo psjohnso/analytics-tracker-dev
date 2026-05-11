@@ -90,6 +90,29 @@ function buildPreferencesPanel() {
     '</div>';
   }
 
+  function prefAvatarEmoji(currentEmoji) {
+    var current = currentEmoji || '';
+    var presets = ['🎯','🐢','🦊','🐙','🦉','🦄','🌵','🌮','🍕','☕','🎨','🎮','🎸','🚀','💻','📊','✨','🔥','⚡','🌟'];
+    var presetBtns = presets.map(function(e) {
+      var sel = e === current;
+      return '<button type="button" onclick="setAvatarEmoji(\'' + e + '\')" title="' + e + '" style="font-size:18px;width:32px;height:32px;border:1px solid ' + (sel ? 'var(--navy)' : 'var(--border)') + ';' + (sel ? 'background:#EEF2FF;' : 'background:#fff;') + 'border-radius:6px;cursor:pointer;padding:0;line-height:1;">' + e + '</button>';
+    }).join('');
+    return '<div style="padding:14px 0;border-bottom:1px solid #F3F1EB;">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;">' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:13px;font-weight:700;color:var(--text-body);">Avatar emoji</div>' +
+          '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Replace your initials with an emoji everywhere your avatar appears. Leave blank to use initials.</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' +
+          '<input type="text" id="pref-avatarEmoji" value="' + esc(current) + '" maxlength="8" placeholder="—" onkeydown="if(event.key===\'Enter\')commitAvatarEmoji();" style="width:60px;text-align:center;font-size:22px;padding:6px;border:1px solid var(--border);border-radius:6px;font-family:Lato,sans-serif;">' +
+          '<button type="button" onclick="commitAvatarEmoji()" style="font-size:12px;font-weight:700;padding:6px 12px;border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:6px;cursor:pointer;font-family:Lato,sans-serif;">Set</button>' +
+          (current ? '<button type="button" onclick="setAvatarEmoji(\'\')" style="font-size:11px;font-weight:700;padding:6px 10px;border:1px solid var(--border);background:#fff;color:var(--text-muted);border-radius:6px;cursor:pointer;font-family:Lato,sans-serif;">Clear</button>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;justify-content:flex-end;">' + presetBtns + '</div>' +
+    '</div>';
+  }
+
   function prefStatusInput(currentStatus) {
     var emoji = currentStatus && currentStatus.emoji || '';
     var text = currentStatus && currentStatus.text || '';
@@ -223,6 +246,8 @@ function buildPreferencesPanel() {
 
   html += prefAccentColor(UserPrefs.accentColor);
 
+  html += prefAvatarEmoji(UserPrefs.avatarEmoji);
+
   html += prefStatusInput(UserPrefs.status);
 
   html += prefToggle('confetti', '🎉 Celebrate completions', 'Briefly show a confetti burst when you mark a task or project Complete. Always disabled if your system has reduced-motion enabled.', UserPrefs.confetti);
@@ -342,6 +367,23 @@ function commitUserStatus() {
 
 function clearUserStatus() {
   setUserStatus('', '');
+}
+
+function setAvatarEmoji(emoji) {
+  UserPrefs.avatarEmoji = emoji || '';
+  saveUserPrefs();
+  if (RESOURCES_DATA && RESOURCES_DATA.people && Auth.fullName && RESOURCES_DATA.people[Auth.fullName]) {
+    RESOURCES_DATA.people[Auth.fullName].avatarEmoji = emoji || '';
+  }
+  if (typeof applyAvatarEmoji === 'function') applyAvatarEmoji();
+  showToast(emoji ? 'Avatar emoji set.' : 'Avatar emoji cleared.', 'success');
+  render();
+}
+
+function commitAvatarEmoji() {
+  var el = document.getElementById('pref-avatarEmoji');
+  var v = el ? (el.value || '').trim() : '';
+  setAvatarEmoji(v);
 }
 
 // Read the percent value from the UI Size input, clamp it to the allowed

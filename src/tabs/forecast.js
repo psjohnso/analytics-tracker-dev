@@ -200,7 +200,11 @@ function cpRenderPlanner() {
 
     html += '<div class="cp-person-row">';
     html += '<div class="cp-person-top">';
-    html += '<div class="cp-person-avatar' + (Auth.fullName && item.name === Auth.fullName ? ' user-self-avatar' : '') + '">' + initials + '</div>';
+    (function() {
+      var emj = getMemberAvatarEmoji(item.name);
+      var selfCls = Auth.fullName && item.name === Auth.fullName ? ' user-self-avatar' : '';
+      html += '<div class="cp-person-avatar' + selfCls + (emj ? ' user-emoji-av' : '') + '">' + (emj || initials) + '</div>';
+    })();
     html += '<div><div class="cp-person-name">' + esc(item.name) + '</div>';
     html += '<div class="cp-person-role">' + esc(d.role || '') + ' | ' + Math.round((d.cap[curIdx] || 0)) + 'h/week</div></div>';
     html += '<div class="cp-avail-badge ' + badgeClass + '">' + badgeText + '</div>';

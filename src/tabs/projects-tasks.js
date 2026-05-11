@@ -50,13 +50,18 @@ function projectCard(p) {
     <div class="project-footer">
       <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;flex:1;min-width:0;">
         <div class="assignee-chip">
-          <div class="assignee-avatar${p.contact && Auth.fullName && p.contact === Auth.fullName ? ' user-self-avatar' : ''}">${initials}</div>
+          ${(function(){
+            var emj = getMemberAvatarEmoji(p.contact);
+            var selfCls = p.contact && Auth.fullName && p.contact === Auth.fullName ? ' user-self-avatar' : '';
+            return `<div class="assignee-avatar${selfCls}${emj?' user-emoji-av':''}">${emj || initials}</div>`;
+          })()}
           ${esc(p.contact || 'Unassigned')}${renderUserStatusBadge(p.contact)}
         </div>
         ${(p.other_members || '').split(',').map(s=>s.trim()).filter(Boolean).map(name => {
           const av = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
           const selfCls = Auth.fullName && name === Auth.fullName ? ' user-self-avatar' : '';
-          return `<div class="assignee-avatar${selfCls}" title="${esc(name)}" style="background:var(--orange);flex-shrink:0;">${av}</div>`;
+          const emj = getMemberAvatarEmoji(name);
+          return `<div class="assignee-avatar${selfCls}${emj?' user-emoji-av':''}" title="${esc(name)}" style="background:var(--orange);flex-shrink:0;">${emj || av}</div>`;
         }).join('')}
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
@@ -164,7 +169,11 @@ function renderTaskGrid(data) {
       </div>
       <div class="project-footer">
         <div class="assignee-chip">
-          <div class="assignee-avatar${t.assignee && Auth.fullName && t.assignee === Auth.fullName ? ' user-self-avatar' : ''}">${initials}</div>
+          ${(function(){
+            var emj = getMemberAvatarEmoji(t.assignee);
+            var selfCls = t.assignee && Auth.fullName && t.assignee === Auth.fullName ? ' user-self-avatar' : '';
+            return `<div class="assignee-avatar${selfCls}${emj?' user-emoji-av':''}">${emj || initials}</div>`;
+          })()}
           ${esc(t.assignee || 'Unassigned')}${renderUserStatusBadge(t.assignee)}
         </div>
         <div class="date-info">${getTaskHours(t.idx) > 0 ? '<span style="font-weight:700;color:var(--navy);margin-right:8px;">⏱ ' + hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx)) + '</span>' : ''}<span style="${dueStyle}">${dueStr || '—'}</span></div>
