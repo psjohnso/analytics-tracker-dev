@@ -170,6 +170,49 @@ function commitSaveViewModal() {
   render();
 }
 
+// Mark one saved view as the default (auto-applied on every app load).
+// Clicking the star on the currently-default view clears it. Only one
+// view can be default at a time.
+function setSavedViewAsDefault(id, event) {
+  if (event) { event.stopPropagation(); event.preventDefault(); }
+  if (!UserPrefs || !UserPrefs.savedViews) return;
+  var views = UserPrefs.savedViews;
+  var target = null;
+  for (var i = 0; i < views.length; i++) if (views[i].id === id) { target = views[i]; break; }
+  if (!target) return;
+  var wasDefault = !!target.isDefault;
+  views.forEach(function(v) { v.isDefault = false; });
+  if (!wasDefault) target.isDefault = true;
+  saveUserPrefs();
+  if (typeof showToast === 'function') {
+    showToast(wasDefault ? 'Default cleared.' : 'Default: ' + target.name + ' (applies on load)', 'success');
+  }
+  render();
+}
+
+function getDefaultSavedView() {
+  if (!UserPrefs || !UserPrefs.savedViews) return null;
+  for (var i = 0; i < UserPrefs.savedViews.length; i++) {
+    if (UserPrefs.savedViews[i].isDefault) return UserPrefs.savedViews[i];
+  }
+  return null;
+}
+
+// Apply the user's default saved view (if any) directly to activeFilters.
+// Called once at bootstrap, after loadUserPrefs and before the first render.
+// We don't call render() here — the bootstrap render is right behind us.
+function applyDefaultSavedViewOnLoad() {
+  var def = getDefaultSavedView();
+  if (!def) return;
+  SV_ARRAY_FILTERS.forEach(function(k) {
+    activeFilters[k] = (def.filters && def.filters[k]) ? def.filters[k].slice() : [];
+  });
+  activeFilters.dataProgram = def.filters && def.filters.dataProgram === true;
+  activeFilters.search = (def.filters && def.filters.search) || '';
+  var si = document.getElementById('search-input');
+  if (si) si.value = activeFilters.search;
+}
+
 function deleteSavedView(id, event) {
   if (event) { event.stopPropagation(); event.preventDefault(); }
   if (!UserPrefs || !UserPrefs.savedViews) return;
@@ -208,7 +251,10 @@ function renderSavedViews() {
     html += '<div class="saved-views-list">';
     views.forEach(function(v) {
       var active = v.id === activeId;
+      var isDef = !!v.isDefault;
+      var starTitle = isDef ? 'Default view — applies on load (click to clear)' : 'Set as default (applies on load)';
       html += '<div class="saved-view-chip' + (active ? ' active' : '') + '" onclick="applySavedView(\'' + v.id + '\')" title="Apply this view">' +
+        '<button class="sv-star' + (isDef ? ' is-default' : '') + '" onclick="setSavedViewAsDefault(\'' + v.id + '\', event)" title="' + starTitle + '">★</button>' +
         '<span class="sv-name">' + esc(v.name) + '</span>' +
         '<button class="sv-delete" onclick="deleteSavedView(\'' + v.id + '\', event)" title="Delete view">×</button>' +
       '</div>';

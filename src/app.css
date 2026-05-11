@@ -941,15 +941,27 @@ body {
 /* ── Saved filter views (sidebar chips) ─────────────────────────────── */
 .saved-views-list { display:flex; flex-direction:column; gap:4px; }
 .saved-view-chip {
-  display:flex; align-items:center; gap:6px;
-  padding:6px 8px 6px 12px;
+  display:flex; align-items:center; gap:4px;
+  padding:6px 6px 6px 6px;
   background:#fff; border:1px solid var(--border); border-radius:6px;
   cursor:pointer; font-size:12px; font-weight:600; color:var(--text-body);
   transition: background 0.1s, border-color 0.1s;
 }
 .saved-view-chip:hover { border-color:var(--navy); background:#F0F4FF; }
 .saved-view-chip.active { background:var(--navy); color:#fff; border-color:var(--navy); }
-.sv-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sv-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 2px; }
+.sv-star {
+  background:none; border:none; cursor:pointer;
+  font-size:14px; line-height:1; padding:2px 4px;
+  border-radius:3px; color:#D1D5DB;
+  transition: color 0.15s, background 0.15s, transform 0.1s;
+}
+.sv-star:hover { color:#FBBF24; }
+.sv-star:active { transform:scale(0.9); }
+.sv-star.is-default { color:#F59E0B; text-shadow:0 0 6px rgba(245,158,11,0.4); }
+.saved-view-chip.active .sv-star { color:rgba(255,255,255,0.5); }
+.saved-view-chip.active .sv-star.is-default { color:#FBBF24; text-shadow:0 0 8px rgba(251,191,36,0.6); }
+.saved-view-chip.active .sv-star:hover { color:#FBBF24; }
 .sv-delete {
   background:none; border:none; color:#9CA3AF; cursor:pointer;
   font-size:16px; padding:0 4px; line-height:1; border-radius:3px;
