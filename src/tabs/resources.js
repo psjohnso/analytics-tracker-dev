@@ -56,7 +56,7 @@ function buildResourcePersonCards(people, currentWeekIdx) {
     const initials = name.split(' ').map(w => w[0]).join('').slice(0,2);
     const isActive = name === selectedPerson;
     return `<div class="person-card${isActive?' active':''}" onclick="selectPerson('${name.replace(/'/g,"\'")}')">
-      <div class="person-avatar-lg" style="background:linear-gradient(135deg,${utilColor}cc,${utilColor}88)">${initials}</div>
+      <div class="person-avatar-lg${Auth.fullName && name === Auth.fullName ? ' user-self-avatar' : ''}" style="background:linear-gradient(135deg,${utilColor}cc,${utilColor}88)">${initials}</div>
       <div class="person-info">
         <div class="name">${esc(name)}</div>
         <div class="role">${esc(p.role)}</div>

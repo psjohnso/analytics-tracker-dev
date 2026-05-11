@@ -542,7 +542,7 @@ function renderOverview(area) {
   html +=   '<div class="ov-team">';
   roster.forEach(function(p) {
     html += '<div class="ov-person' + (p.lead ? ' lead' : '') + '">';
-    html +=   '<div class="ov-avatar">' + esc(p.initials) + '</div>';
+    html +=   '<div class="ov-avatar' + (Auth.fullName && p.name === Auth.fullName ? ' user-self-avatar' : '') + '">' + esc(p.initials) + '</div>';
     html +=   '<div class="ov-person-name">' + esc(p.name) + '</div>';
     html +=   '<div class="ov-person-role">' + p.role + '</div>'; // role contains <br> for one row
     html += '</div>';

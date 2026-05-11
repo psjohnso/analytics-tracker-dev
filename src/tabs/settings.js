@@ -90,6 +90,40 @@ function buildPreferencesPanel() {
     '</div>';
   }
 
+  function prefAccentColor(currentHex) {
+    var presets = [
+      '#0C447C', // Navy
+      '#C24200', // Cardinal
+      '#0088FF', // Sky
+      '#83AC16', // Green
+      '#FFDB22', // Gold
+      '#EF4444', // Red
+      '#7C3AED', // Purple
+      '#EC4899', // Pink
+      '#14B8A6', // Teal
+      '#475569'  // Slate
+    ];
+    var currentNorm = currentHex ? String(currentHex).toLowerCase() : '';
+    var swatches = presets.map(function(hex) {
+      var sel = hex.toLowerCase() === currentNorm;
+      var ring = sel ? '3px solid var(--text-body)' : '2px solid #fff';
+      return '<button type="button" onclick="updatePref(\'accentColor\',\'' + hex + '\')" title="' + hex + '" style="width:24px;height:24px;border-radius:50%;border:' + ring + ';outline:1px solid var(--border);background:' + hex + ';cursor:pointer;padding:0;"></button>';
+    }).join('');
+    var customVal = currentHex || '#0C447C';
+    var resetBtn = currentHex ? '<button type="button" onclick="updatePref(\'accentColor\',\'\')" style="font-size:11px;font-weight:700;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text-muted);cursor:pointer;font-family:Lato,sans-serif;">Reset</button>' : '';
+    return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F3F1EB;gap:20px;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:13px;font-weight:700;color:var(--text-body);">Accent color</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Personalize your avatar across the app. Only you see this color — others see their own.</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:340px;">' +
+        swatches +
+        '<input type="color" id="pref-accentColor-custom" value="' + customVal + '" onchange="updatePref(\'accentColor\',this.value)" title="Custom color" style="width:28px;height:28px;border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:0;background:transparent;">' +
+        resetBtn +
+      '</div>' +
+    '</div>';
+  }
+
   function prefPercentInput(id, label, desc, minPct, maxPct, currentScale) {
     var pct = Math.round((parseFloat(currentScale) || 1) * 100);
     return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F3F1EB;gap:20px;">' +
@@ -151,6 +185,8 @@ function buildPreferencesPanel() {
 
   html += prefPercentInput('uiScale', 'UI size', 'Scale the entire interface — fonts and spacing — relative to the default. Enter a value between 80 and 160.',
     80, 160, (UserPrefs.uiScale || 1.0));
+
+  html += prefAccentColor(UserPrefs.accentColor);
 
   html += prefSelect('defaultTab', 'Default tab', 'Which tab to show when you first open the application.', [
     { value: 'overview', label: 'Overview' },
@@ -256,6 +292,11 @@ function updatePref(key, value) {
   // Type conversion
   if (key === 'timelineRange') value = parseInt(value) || 6;
   if (key === 'uiScale') value = parseFloat(value) || 1.0;
+  if (key === 'accentColor') {
+    // Empty string from the Reset button → null (clear). Otherwise must be a #RRGGBB hex.
+    if (!value) value = null;
+    else if (!/^#[0-9a-fA-F]{6}$/.test(String(value))) return;
+  }
   if (key === 'sidebarCollapsed' || key === 'completedCollapsed' || key === 'timelineShowAll' || key === 'compactRows' ||
       key === 'showCapacity' || key === 'showSlideshow') {
     value = value === true || value === 'true';
@@ -265,6 +306,7 @@ function updatePref(key, value) {
   // Apply immediately where possible
   if (key === 'projectView') currentView = value;
   if (key === 'uiScale' && typeof applyUiScale === 'function') applyUiScale();
+  if (key === 'accentColor' && typeof applyAccentColor === 'function') applyAccentColor();
   if (key === 'sidebarCollapsed') {
     var sidebar = document.querySelector('.sidebar');
     if (sidebar) sidebar.classList.toggle('collapsed', value);

@@ -50,12 +50,13 @@ function projectCard(p) {
     <div class="project-footer">
       <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;flex:1;min-width:0;">
         <div class="assignee-chip">
-          <div class="assignee-avatar">${initials}</div>
+          <div class="assignee-avatar${p.contact && Auth.fullName && p.contact === Auth.fullName ? ' user-self-avatar' : ''}">${initials}</div>
           ${esc(p.contact || 'Unassigned')}
         </div>
         ${(p.other_members || '').split(',').map(s=>s.trim()).filter(Boolean).map(name => {
           const av = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-          return `<div class="assignee-avatar" title="${esc(name)}" style="background:var(--orange);flex-shrink:0;">${av}</div>`;
+          const selfCls = Auth.fullName && name === Auth.fullName ? ' user-self-avatar' : '';
+          return `<div class="assignee-avatar${selfCls}" title="${esc(name)}" style="background:var(--orange);flex-shrink:0;">${av}</div>`;
         }).join('')}
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
@@ -163,7 +164,7 @@ function renderTaskGrid(data) {
       </div>
       <div class="project-footer">
         <div class="assignee-chip">
-          <div class="assignee-avatar">${initials}</div>
+          <div class="assignee-avatar${t.assignee && Auth.fullName && t.assignee === Auth.fullName ? ' user-self-avatar' : ''}">${initials}</div>
           ${esc(t.assignee || 'Unassigned')}
         </div>
         <div class="date-info">${getTaskHours(t.idx) > 0 ? '<span style="font-weight:700;color:var(--navy);margin-right:8px;">⏱ ' + hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx)) + '</span>' : ''}<span style="${dueStyle}">${dueStr || '—'}</span></div>

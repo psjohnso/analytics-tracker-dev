@@ -6,9 +6,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;family=Cardo:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <!-- ArcGIS REST API integration (no external auth library needed) -->
-<link rel="stylesheet" href="src/app.css?v=1.16.0.0022">
+<link rel="stylesheet" href="src/app.css?v=1.17.1.0032">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.17.0.0031"></script>
+<script src="src/constants.js?v=1.17.1.0032"></script>
 <script src="src/agol.js?v=1.16.1.0023"></script>
 <script src="src/auth.js?v=1.16.0.0012"></script>
 <script src="src/render.js?v=1.16.1.0027"></script>
@@ -16,12 +16,12 @@
 <script src="src/tabs/project-review.js?v=1.16.0.0020"></script>
 <script src="src/project-notes.js?v=1.16.1.0023"></script>
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
-<script src="src/tabs/forecast.js?v=1.9.1.0010"></script>
-<script src="src/tabs/overview.js?v=1.16.0.0009"></script>
-<script src="src/tabs/settings.js?v=1.17.0.0031"></script>
-<script src="src/tabs/resources.js?v=1.9.1.0013"></script>
+<script src="src/tabs/forecast.js?v=1.17.1.0032"></script>
+<script src="src/tabs/overview.js?v=1.17.1.0032"></script>
+<script src="src/tabs/settings.js?v=1.17.1.0032"></script>
+<script src="src/tabs/resources.js?v=1.17.1.0032"></script>
 <script src="src/tabs/my-work.js?v=1.16.1.0024"></script>
-<script src="src/tabs/projects-tasks.js?v=1.16.1.0026"></script>
+<script src="src/tabs/projects-tasks.js?v=1.17.1.0032"></script>
 <script src="src/tabs/projects-tasks-detail.js?v=1.16.1.0023"></script>
 <script src="src/tabs/slideshow.js?v=1.16.0.0009"></script>
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
@@ -29,7 +29,7 @@
 <script src="src/modals/member-form.js?v=1.16.0.0002"></script>
 <script src="src/modals/alloc-editor.js?v=1.10.0.0001"></script>
 <script src="src/modals/settings-editors.js?v=1.16.0.0007"></script>
-<script src="src/modals/forms.js?v=1.16.0.0016"></script>
+<script src="src/modals/forms.js?v=1.17.1.0032"></script>
 <script src="src/ai/prompts.js?v=1.12.0.0001"></script>
 <script src="src/ai/ai-suggestions.js?v=1.16.0.0015"></script>
 <script src="src/test-harness.js?v=1.9.1.0026"></script>
@@ -973,6 +973,7 @@ function render() {
   if (typeof UserPrefs !== 'undefined' && UserPrefs) {
     document.body.classList.toggle('compact-mode', !!UserPrefs.compactRows);
     applyUiScale();
+    applyAccentColor();
   }
 
   // ── Expensive work: only when data has changed ────────────────────
@@ -1215,8 +1216,48 @@ var UserPrefs = {
   showSlideshow: false,
   // UI scale — multiplier applied to body via CSS zoom. 1.0 = default.
   uiScale: 1.0,
+  // Personal accent color — hex string used to tint the user's own avatar
+  // chips throughout the app. null = use the app default (navy).
+  accentColor: null,
   betaFeatures: {}
 };
+
+// Compute a foreground color (#fff or #000) that contrasts with the given
+// hex background, using a luminance threshold around 0.6.
+function accentContrastFg(hex) {
+  var c = String(hex || '').replace('#', '');
+  if (c.length === 3) c = c.split('').map(function(x) { return x + x; }).join('');
+  if (!/^[0-9a-fA-F]{6}$/.test(c)) return '#fff';
+  var r = parseInt(c.substr(0, 2), 16);
+  var g = parseInt(c.substr(2, 2), 16);
+  var b = parseInt(c.substr(4, 2), 16);
+  var lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.6 ? '#000' : '#fff';
+}
+
+// Apply the saved accent color to the document. Sets CSS vars consumed by
+// the .user-self-avatar rule, and tints the header user-avatar inline since
+// its background is set as an inline style.
+function applyAccentColor() {
+  var hex = (UserPrefs && UserPrefs.accentColor) ? String(UserPrefs.accentColor) : null;
+  var valid = hex && /^#[0-9a-fA-F]{6}$/.test(hex);
+  var headerAv = document.getElementById('user-avatar');
+  if (valid) {
+    document.body.style.setProperty('--user-accent', hex);
+    document.body.style.setProperty('--user-accent-fg', accentContrastFg(hex));
+    if (headerAv) {
+      headerAv.style.background = hex;
+      headerAv.style.color = accentContrastFg(hex);
+    }
+  } else {
+    document.body.style.removeProperty('--user-accent');
+    document.body.style.removeProperty('--user-accent-fg');
+    if (headerAv) {
+      headerAv.style.background = 'rgba(255,255,255,0.2)';
+      headerAv.style.color = '#fff';
+    }
+  }
+}
 
 // Apply the saved UI scale (font + spacing zoom) to the document body.
 // Safe to call anytime; falls back to 1.0 if pref is missing or invalid.
@@ -1694,6 +1735,7 @@ async function loadArcGISData() {
     initResourcesWeekIndices();
     loadUserPrefs();
     applyUiScale();
+    applyAccentColor();
     applyBetaTabVisibility();
     applyOptionalTabVisibility();
     // Apply default view preference

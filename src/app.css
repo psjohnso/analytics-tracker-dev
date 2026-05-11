@@ -757,6 +757,13 @@ body {
   flex-shrink: 0;
 }
 
+/* Personal-accent tint: applied to avatars/chips for the signed-in user.
+   Wins over inline backgrounds (e.g. resources gradient) via !important. */
+.user-self-avatar {
+  background: var(--user-accent, var(--navy)) !important;
+  color: var(--user-accent-fg, #fff) !important;
+}
+
 .date-info {
   font-size: 12px;
   color: var(--text-muted);
