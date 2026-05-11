@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.16.0.0022">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.16.1.0027"></script>
+<script src="src/constants.js?v=1.17.0.0028"></script>
 <script src="src/agol.js?v=1.16.1.0023"></script>
 <script src="src/auth.js?v=1.16.0.0012"></script>
 <script src="src/render.js?v=1.16.1.0027"></script>
@@ -18,7 +18,7 @@
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.9.1.0010"></script>
 <script src="src/tabs/overview.js?v=1.16.0.0009"></script>
-<script src="src/tabs/settings.js?v=1.16.0.0007"></script>
+<script src="src/tabs/settings.js?v=1.17.0.0028"></script>
 <script src="src/tabs/resources.js?v=1.9.1.0013"></script>
 <script src="src/tabs/my-work.js?v=1.16.1.0024"></script>
 <script src="src/tabs/projects-tasks.js?v=1.16.1.0026"></script>
@@ -972,6 +972,7 @@ function render() {
   // Apply user preferences (guard: UserPrefs may not be initialized on first render)
   if (typeof UserPrefs !== 'undefined' && UserPrefs) {
     document.body.classList.toggle('compact-mode', !!UserPrefs.compactRows);
+    applyUiScale();
   }
 
   // ── Expensive work: only when data has changed ────────────────────
@@ -1212,8 +1213,21 @@ var UserPrefs = {
   showCapacity: false,
   // Slideshow tab — opt-in for everyone (lobby-display use case).
   showSlideshow: false,
+  // UI scale — multiplier applied to body via CSS zoom. 1.0 = default.
+  uiScale: 1.0,
   betaFeatures: {}
 };
+
+// Apply the saved UI scale (font + spacing zoom) to the document body.
+// Safe to call anytime; falls back to 1.0 if pref is missing or invalid.
+function applyUiScale() {
+  var s = (UserPrefs && UserPrefs.uiScale) ? parseFloat(UserPrefs.uiScale) : 1.0;
+  if (!isFinite(s) || s <= 0) s = 1.0;
+  // Clamp to a sane range so a corrupt pref can't make the UI unusable.
+  if (s < 0.7) s = 0.7;
+  if (s > 1.5) s = 1.5;
+  document.body.style.zoom = s;
+}
 
 // Show or hide the optional Capacity + Slideshow tabs based on UserPrefs.
 // - Capacity (Resources, Forecast, Insights): admins always see; members opt in.
@@ -1668,6 +1682,7 @@ async function loadArcGISData() {
     await loadResourcesData();
     initResourcesWeekIndices();
     loadUserPrefs();
+    applyUiScale();
     applyBetaTabVisibility();
     applyOptionalTabVisibility();
     // Apply default view preference

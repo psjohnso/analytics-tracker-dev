@@ -90,6 +90,27 @@ function buildPreferencesPanel() {
     '</div>';
   }
 
+  function prefButtonGroup(id, label, desc, options, currentVal) {
+    var btns = options.map(function(o, i) {
+      var active = String(o.value) === String(currentVal);
+      var bg = active ? 'var(--navy)' : 'var(--white)';
+      var color = active ? '#fff' : 'var(--text-body)';
+      var border = active ? 'var(--navy)' : 'var(--border)';
+      var radius = '';
+      if (i === 0) radius += 'border-top-left-radius:6px;border-bottom-left-radius:6px;';
+      if (i === options.length - 1) radius += 'border-top-right-radius:6px;border-bottom-right-radius:6px;';
+      var rightBorder = i === options.length - 1 ? '' : 'border-right-width:0;';
+      return '<button type="button" onclick="updatePref(\'' + id + '\',\'' + o.value + '\')" style="font-size:12px;font-weight:700;padding:6px 12px;border:1px solid ' + border + ';background:' + bg + ';color:' + color + ';cursor:pointer;font-family:Lato,sans-serif;' + radius + rightBorder + '">' + esc(o.label) + '</button>';
+    }).join('');
+    return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F3F1EB;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:13px;font-weight:700;color:var(--text-body);">' + label + '</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + desc + '</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-shrink:0;">' + btns + '</div>' +
+    '</div>';
+  }
+
   function prefToggle(id, label, desc, currentVal) {
     var checked = currentVal ? ' checked' : '';
     return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F3F1EB;">' +
@@ -110,6 +131,13 @@ function buildPreferencesPanel() {
   html += '<div class="settings-panel-desc">Customize how the application looks and works for you. These preferences are saved to your profile and persist across sessions.</div>';
 
   html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px 20px;margin-bottom:20px;">';
+
+  html += prefButtonGroup('uiScale', 'UI size', 'Scale the entire interface — fonts and spacing — relative to the default.', [
+    { value: '0.9',  label: 'Small' },
+    { value: '1.0',  label: 'Default' },
+    { value: '1.1',  label: 'Large' },
+    { value: '1.2',  label: 'XL' }
+  ], (UserPrefs.uiScale || 1.0).toFixed(1));
 
   html += prefSelect('defaultTab', 'Default tab', 'Which tab to show when you first open the application.', [
     { value: 'overview', label: 'Overview' },
@@ -201,6 +229,7 @@ function buildPreferencesPanel() {
 function updatePref(key, value) {
   // Type conversion
   if (key === 'timelineRange') value = parseInt(value) || 6;
+  if (key === 'uiScale') value = parseFloat(value) || 1.0;
   if (key === 'sidebarCollapsed' || key === 'completedCollapsed' || key === 'timelineShowAll' || key === 'compactRows' ||
       key === 'showCapacity' || key === 'showSlideshow') {
     value = value === true || value === 'true';
@@ -209,6 +238,7 @@ function updatePref(key, value) {
   saveUserPrefs();
   // Apply immediately where possible
   if (key === 'projectView') currentView = value;
+  if (key === 'uiScale' && typeof applyUiScale === 'function') applyUiScale();
   if (key === 'sidebarCollapsed') {
     var sidebar = document.querySelector('.sidebar');
     if (sidebar) sidebar.classList.toggle('collapsed', value);
