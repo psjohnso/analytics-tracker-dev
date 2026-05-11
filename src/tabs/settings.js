@@ -90,19 +90,20 @@ function buildPreferencesPanel() {
     '</div>';
   }
 
-  function prefSlider(id, label, desc, min, max, step, currentVal, formatPct) {
-    var pct = formatPct ? Math.round(parseFloat(currentVal) * 100) + '%' : String(currentVal);
+  function prefPercentInput(id, label, desc, minPct, maxPct, currentScale) {
+    var pct = Math.round((parseFloat(currentScale) || 1) * 100);
     return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F3F1EB;gap:20px;">' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="font-size:13px;font-weight:700;color:var(--text-body);">' + label + '</div>' +
         '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + desc + '</div>' +
       '</div>' +
-      '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;width:240px;">' +
-        '<input type="range" id="pref-' + id + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + currentVal + '" ' +
-          'oninput="previewUiScale(this.value)" ' +
-          'onchange="updatePref(\'' + id + '\',this.value)" ' +
-          'style="flex:1;cursor:pointer;accent-color:var(--navy);">' +
-        '<span id="pref-' + id + '-val" style="font-size:12px;font-weight:700;color:var(--navy);min-width:42px;text-align:right;">' + pct + '</span>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' +
+        '<input type="number" id="pref-' + id + '" min="' + minPct + '" max="' + maxPct + '" step="1" value="' + pct + '" ' +
+          'oninput="previewUiScale((parseFloat(this.value)||100)/100)" ' +
+          'onchange="commitUiScalePref(this)" ' +
+          'onkeydown="if(event.key===\'Enter\'){this.blur();}" ' +
+          'style="width:70px;font-size:13px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;text-align:right;font-family:Lato,sans-serif;">' +
+        '<span style="font-size:13px;font-weight:700;color:var(--text-muted);">%</span>' +
       '</div>' +
     '</div>';
   }
@@ -149,8 +150,8 @@ function buildPreferencesPanel() {
 
   html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px 20px;margin-bottom:20px;">';
 
-  html += prefSlider('uiScale', 'UI size', 'Scale the entire interface — fonts and spacing — from 80% to 160% of the default.',
-    0.8, 1.6, 0.05, (UserPrefs.uiScale || 1.0), true);
+  html += prefPercentInput('uiScale', 'UI size', 'Scale the entire interface — fonts and spacing — relative to the default. Enter a value between 80 and 160.',
+    80, 160, (UserPrefs.uiScale || 1.0));
 
   html += prefSelect('defaultTab', 'Default tab', 'Which tab to show when you first open the application.', [
     { value: 'overview', label: 'Overview' },
@@ -237,6 +238,19 @@ function buildPreferencesPanel() {
   }
 
   return html;
+}
+
+// Read the percent value from the UI Size input, clamp it to the allowed
+// range, write it back to the input so the user sees the corrected value,
+// and persist as a decimal scale via updatePref.
+function commitUiScalePref(inputEl) {
+  var pct = parseFloat(inputEl.value);
+  if (!isFinite(pct)) pct = 100;
+  if (pct < 80) pct = 80;
+  if (pct > 160) pct = 160;
+  pct = Math.round(pct);
+  inputEl.value = pct;
+  updatePref('uiScale', pct / 100);
 }
 
 function updatePref(key, value) {
