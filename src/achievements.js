@@ -101,12 +101,13 @@ function streakFlame(n) {
   return '✨';
 }
 
-function _achTile(icon, num, label, sub) {
+function _achTile(icon, num, label) {
   return '<div class="achievement-tile">' +
     '<div class="ach-icon">' + icon + '</div>' +
-    '<div class="ach-num">' + num + '</div>' +
-    '<div class="ach-label">' + esc(label) + '</div>' +
-    (sub ? '<div class="ach-sub">' + esc(sub) + '</div>' : '') +
+    '<div>' +
+      '<div class="ach-num">' + num + '</div>' +
+      '<div class="ach-label">' + esc(label) + '</div>' +
+    '</div>' +
   '</div>';
 }
 
@@ -116,29 +117,28 @@ function renderAchievementsPanel(name, opts) {
   opts = opts || {};
 
   var streak = computeTimeLoggingStreak(name);
-  var tAll = tasksCompletedAllTime(name);
   var tMon = tasksCompletedThisMonth(name);
   var proj = projectsShipped(name);
   var wkHrs = hoursThisWeek(name);
 
   // Don't take up real estate for fresh accounts with nothing to show.
-  if (!streak && !tAll && !proj && !wkHrs) return '';
+  if (!streak && !tasksCompletedAllTime(name) && !proj && !wkHrs) return '';
 
   var isSelf = (typeof Auth !== 'undefined' && Auth.fullName === name);
   var title = isSelf ? '✨ Your achievements' : '✨ ' + esc(name.split(' ')[0]) + '\'s achievements';
 
-  var streakSub = streak === 0 ? 'Log time to start one' : (streak >= 7 ? 'Keep it up!' : null);
-  var taskSub = tMon > 0 ? tMon + ' this month' : null;
-
   var html = '<div class="achievements-panel">';
   html += '<div class="achievements-header">';
   html += '<span class="achievements-title">' + title + '</span>';
+  // Link to full breakdown — placeholder for now; switches to the
+  // Achievements tab once that's built.
+  html += '<a class="achievements-link" href="javascript:void(0)" onclick="if(typeof showToast===\'function\')showToast(\'Achievements tab coming soon.\',\'info\')">View all →</a>';
   html += '</div>';
   html += '<div class="achievements-grid">';
-  html += _achTile(streakFlame(streak), streak, streak === 1 ? 'day streak' : 'day streak', streakSub);
-  html += _achTile('🎯', tAll, tAll === 1 ? 'task done' : 'tasks done', taskSub);
-  html += _achTile('🏆', proj, proj === 1 ? 'project shipped' : 'projects shipped', null);
-  html += _achTile('⏱', wkHrs, 'h this week', null);
+  html += _achTile(streakFlame(streak), streak, 'day streak');
+  html += _achTile('🎯', tMon, 'tasks · month');
+  html += _achTile('⏱', wkHrs + 'h', 'this week');
+  html += _achTile('🏆', proj, proj === 1 ? 'project shipped' : 'projects shipped');
   html += '</div>';
   html += '</div>';
   return html;

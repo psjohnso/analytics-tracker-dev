@@ -801,36 +801,44 @@ body {
 .person-avatar-lg.user-emoji-av { font-size: 26px !important; }
 #user-avatar.user-emoji-av { font-size: 18px !important; }
 
-/* Achievements panel — small celebratory grid above the My Work KPIs.
-   Four tiles: streak, tasks done, projects shipped, hours this week. */
+/* Achievements panel — slim strip above the My Work KPIs. Four stats in
+   a single row of icon + number + tiny label, with thin dividers between
+   tiles. Designed to take minimal vertical space; the full breakdown
+   lives on the Achievements tab. */
 .achievements-panel {
-  background: linear-gradient(135deg, #FDFCF8, #fff);
+  background: #fff;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 18px 16px;
-  margin-bottom: 18px;
+  border-radius: 10px;
+  padding: 8px 14px;
+  margin-bottom: 14px;
 }
 .achievements-header {
   display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 .achievements-title {
   font-family: 'Lato', sans-serif;
-  font-size: 13px; font-weight: 800; color: var(--navy);
+  font-size: 11px; font-weight: 800; color: var(--navy);
   text-transform: uppercase; letter-spacing: 0.06em;
 }
+.achievements-link {
+  font-size: 11px; font-weight: 700; color: var(--navy);
+  text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+.achievements-link:hover { text-decoration: underline; }
 .achievements-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
 }
-@media (max-width: 760px) { .achievements-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 760px) { .achievements-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
 .achievement-tile {
-  text-align: center; background: #fff; border: 1px solid #E8E6DF;
-  border-radius: 10px; padding: 12px 8px 10px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0 4px 10px;
+  border-left: 2px solid var(--border);
 }
-.ach-icon { font-size: 22px; line-height: 1; margin-bottom: 4px; }
-.ach-num { font-size: 26px; font-weight: 900; color: var(--navy); line-height: 1.1; }
-.ach-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
-.ach-sub { font-size: 11px; color: var(--text-muted); margin-top: 5px; font-style: italic; }
+.achievement-tile:first-child { border-left: none; padding-left: 0; }
+.ach-icon { font-size: 18px; line-height: 1; flex-shrink: 0; }
+.ach-num { font-size: 18px; font-weight: 900; color: var(--navy); line-height: 1; }
+.ach-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
 
 /* Confetti burst — fired by fireConfetti() in src/confetti.js. Each
    particle sets --cf-dx, --cf-dy, --cf-grav, --cf-r inline so a single
