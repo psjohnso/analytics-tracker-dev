@@ -1284,8 +1284,8 @@ function renderMyWork(area) {
     const visibleCount = ganttItems.filter(function(g) { return _ganttFilter[g.title]; }).length;
 
     html += '<div class="mywork-section mywork-full-width" id="mw-timeline">';
-    html += '<div class="mywork-section-header" style="cursor:pointer;user-select:none;" onclick="toggleGantt()"><span id="gantt-arrow">▶</span> 📊 Timeline <span style="font-size:11px;font-weight:400;color:var(--text-muted);">(' + visibleCount + ' of ' + ganttItems.length + ' projects)</span></div>';
-    html += '<div id="mywork-gantt" style="display:none;">';
+    html += '<div class="mywork-section-header" style="cursor:pointer;user-select:none;" onclick="toggleGantt()"><span id="gantt-arrow">▼</span> 📊 Timeline <span style="font-size:11px;font-weight:400;color:var(--text-muted);">(' + visibleCount + ' of ' + ganttItems.length + ' projects)</span></div>';
+    html += '<div id="mywork-gantt">';
 
     html += '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:10px;padding:8px 0;border-bottom:1px solid var(--border);">';
 
