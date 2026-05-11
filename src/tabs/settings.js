@@ -90,6 +90,40 @@ function buildPreferencesPanel() {
     '</div>';
   }
 
+  function prefTheme(currentTheme) {
+    var current = currentTheme || '';
+    // Each theme: id, label, primary, secondary, surface
+    var themes = [
+      { id: '',          label: 'Tucson Classic', p: '#002669', s: '#C24200', bg: '#F7F5EF' },
+      { id: 'sonoran',   label: 'Sonoran Sunset', p: '#8B3A1A', s: '#F77F00', bg: '#FFF4DC' },
+      { id: 'twilight',  label: 'Desert Twilight',p: '#3D2660', s: '#C2185B', bg: '#F5EFFA' },
+      { id: 'pueblo',    label: 'Pueblo',         p: '#7A3520', s: '#D77845', bg: '#FAEED9' },
+      { id: 'saguaro',   label: 'Saguaro',        p: '#2D4F1E', s: '#C04020', bg: '#EDF1E2' }
+    ];
+    var cards = themes.map(function(t) {
+      var sel = t.id === current;
+      var ring = sel ? '2px solid var(--navy)' : '1px solid var(--border)';
+      // Mini preview: 4 stacked stripes for surface/primary/secondary/text
+      var preview =
+        '<div style="display:flex;flex-direction:column;border-radius:6px;overflow:hidden;width:80px;height:50px;">' +
+          '<div style="flex:1.5;background:' + t.p + ';"></div>' +
+          '<div style="flex:1;background:' + t.s + ';"></div>' +
+          '<div style="flex:2;background:' + t.bg + ';"></div>' +
+        '</div>';
+      return '<button type="button" onclick="setTheme(\'' + t.id + '\')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px;border:' + ring + ';background:#fff;border-radius:10px;cursor:pointer;font-family:Lato,sans-serif;">' +
+        preview +
+        '<span style="font-size:11px;font-weight:700;color:var(--text-body);white-space:nowrap;">' + esc(t.label) + (sel ? ' ✓' : '') + '</span>' +
+      '</button>';
+    }).join('');
+    return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F3F1EB;gap:20px;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:13px;font-weight:700;color:var(--text-body);">Theme</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Switch the app\'s color palette. All themes are tuned for Tucson — sunsets, twilight, pueblo, saguaro.</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;flex-shrink:0;max-width:480px;">' + cards + '</div>' +
+    '</div>';
+  }
+
   function prefAvatarEmoji(currentEmoji) {
     var current = currentEmoji || '';
     var presets = ['🎯','🐢','🦊','🐙','🦉','🦄','🌵','🌮','🍕','☕','🎨','🎮','🎸','🚀','💻','📊','✨','🔥','⚡','🌟'];
@@ -246,6 +280,8 @@ function buildPreferencesPanel() {
 
   html += prefAccentColor(UserPrefs.accentColor);
 
+  html += prefTheme(UserPrefs.theme);
+
   html += prefAvatarEmoji(UserPrefs.avatarEmoji);
 
   html += prefStatusInput(UserPrefs.status);
@@ -377,6 +413,14 @@ function setAvatarEmoji(emoji) {
   }
   if (typeof applyAvatarEmoji === 'function') applyAvatarEmoji();
   showToast(emoji ? 'Avatar emoji set.' : 'Avatar emoji cleared.', 'success');
+  render();
+}
+
+function setTheme(themeId) {
+  UserPrefs.theme = themeId || '';
+  saveUserPrefs();
+  if (typeof applyTheme === 'function') applyTheme();
+  showToast(themeId ? 'Theme applied.' : 'Default theme restored.', 'success');
   render();
 }
 

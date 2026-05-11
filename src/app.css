@@ -21,6 +21,30 @@
   --card-padding: 28px;
 }
 
+/* Theme palettes — applied via body[data-theme="..."]. Each theme
+   overrides the primary, secondary, and surface vars. Text colors stay
+   constant so contrast is preserved everywhere. */
+body[data-theme="sonoran"] {
+  --navy: #8B3A1A;     /* burnt orange-brown — primary */
+  --orange: #F77F00;   /* sunset orange — secondary */
+  --surface: #FFF4DC;  /* warm cream */
+}
+body[data-theme="twilight"] {
+  --navy: #3D2660;     /* deep twilight purple */
+  --orange: #C2185B;   /* dusty magenta */
+  --surface: #F5EFFA;  /* pale lilac */
+}
+body[data-theme="pueblo"] {
+  --navy: #7A3520;     /* dark terracotta */
+  --orange: #D77845;   /* warm clay */
+  --surface: #FAEED9;  /* sand */
+}
+body[data-theme="saguaro"] {
+  --navy: #2D4F1E;     /* deep cactus green */
+  --orange: #C04020;   /* saguaro flower red */
+  --surface: #EDF1E2;  /* pale celadon */
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
