@@ -136,9 +136,13 @@ function renderProjectList(data, showLead) {
 // ─── TASK GRID ────────────────────────────────────────────────────────
 function renderTaskGrid(data) {
   if (!data.length) return '<div class="empty-state">No tasks match your filters.</div>';
+  const todayStr = (function() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
   return `<div class="projects-grid">${data.map(t => {
     const statusColor = STATUS_COLOR(t.status) || '#9CA3AF';
     const initials = (t.assignee || '?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    const dueStr = t.working_due || t.due || '';
+    const isOverdue = dueStr && dueStr < todayStr && (t.status === 'Active' || t.status === 'Waiting for Response');
+    const dueStyle = isOverdue ? 'color:#EF4444;font-weight:700;' : '';
     return `
     <div class="project-card" onclick="openTask(${t.objectId})">
       <div class="project-card-accent" style="background:var(--orange)"></div>
@@ -162,7 +166,7 @@ function renderTaskGrid(data) {
           <div class="assignee-avatar">${initials}</div>
           ${esc(t.assignee || 'Unassigned')}
         </div>
-        <div class="date-info">${getTaskHours(t.idx) > 0 ? '<span style="font-weight:700;color:var(--navy);margin-right:8px;">⏱ ' + hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx)) + '</span>' : ''}${t.working_due || t.due || '—'}</div>
+        <div class="date-info">${getTaskHours(t.idx) > 0 ? '<span style="font-weight:700;color:var(--navy);margin-right:8px;">⏱ ' + hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx)) + '</span>' : ''}<span style="${dueStyle}">${dueStr || '—'}</span></div>
       </div>
     </div>`;
   }).join('')}</div>`;
@@ -180,17 +184,21 @@ function renderTaskList(data) {
   if (!data.length) return '<div class="empty-state">No tasks match your filters.</div>';
   const arrow = (key) => taskSortKey === key ? (taskSortDir === 'asc' ? ' ↑' : ' ↓') : ' ↕';
   const th = (label, key) => `<div class="th-sortable" onclick="setTaskSort('${key}')" style="cursor:pointer;user-select:none;">${label}<span style="opacity:${taskSortKey===key?'1':'0.35'};font-size:10px;">${arrow(key)}</span></div>`;
+  const todayStr = (function() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
   const rows = data.map(t => {
     const statusColor = STATUS_COLOR(t.status) || '#9CA3AF';
     const tHrs = getTaskHours(t.idx);
     const mHrs = getMyTaskHours(t.idx);
+    const dueStr = t.working_due || t.due || '';
+    const isOverdue = dueStr && dueStr < todayStr && (t.status === 'Active' || t.status === 'Waiting for Response');
+    const dueCellStyle = isOverdue ? 'color:#EF4444;font-weight:700;' : '';
     return `<div class="task-row" onclick="openTask(${t.objectId})">
       <div class="task-cell" title="${esc(resolveProjectTitle(t))}"><strong style="color:var(--text-dark);">${esc(resolveProjectTitle(t)||'—')}</strong></div>
       <div class="task-title-cell">${esc(t.title)}</div>
       <div class="task-cell"><span class="status-pill" style="background:${statusColor}22;color:${statusColor};"><span style="width:5px;height:5px;border-radius:50%;background:${statusColor};display:inline-block;"></span>${t.status||'—'}</span></div>
       <div class="task-cell"><span class="priority-badge priority-${t.priority||'null'}">${t.priority||'—'}</span></div>
       <div class="task-cell">${esc(t.assignee||'—')}</div>
-      <div class="task-cell">${t.working_due||t.due||'—'}</div>
+      <div class="task-cell" style="${dueCellStyle}">${dueStr||'—'}</div>
       <div class="task-cell" style="font-weight:700;color:var(--navy);">${tHrs > 0 ? hoursLabel(tHrs, mHrs) : '—'}</div>
     </div>`;
   }).join('');
