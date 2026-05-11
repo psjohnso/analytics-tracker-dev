@@ -471,6 +471,7 @@ const TAB_GROUPS = {
   capacity:  { label: 'Capacity',   subs: ['resources', 'forecast', 'insights'] },
   slideshow: { label: '📺 Slideshow', subs: ['slideshow'] },                                // single-destination, opt-in
   issues:    { label: '🐛 Issues',  subs: ['issues'] },                                    // single-destination
+  achievements: { label: '🏆 Achievements', subs: ['achievements'] },                       // single-destination, auth-only
   settings:  { label: '⚙️ Settings', subs: ['settings'] }                                  // single-destination, auth-only
 };
 const TAB_TO_GROUP = {};
@@ -537,7 +538,7 @@ function switchTab(tab, preserveFilters) {
   // Guard: auth-only tabs require sign-in
   // Slideshow is intentionally NOT in this list — it's designed to run on
   // unattended lobby displays without an authenticated session.
-  var authOnlyTabs = ['mywork', 'resources', 'forecast', 'insights', 'issues', 'settings', 'projectReview'];
+  var authOnlyTabs = ['mywork', 'resources', 'forecast', 'insights', 'issues', 'achievements', 'settings', 'projectReview'];
   if (!Auth.loggedIn && authOnlyTabs.indexOf(tab) >= 0) {
     showToast('Sign in to access ' + tab + '.', 'warn');
     return;
@@ -578,7 +579,7 @@ function switchTab(tab, preserveFilters) {
   document.getElementById('view-list').classList.toggle('active', currentView === 'list');
   document.getElementById('sort-select').style.display = (tab === 'projects' || tab === 'tasks') ? '' : 'none';
   // Hide entire toolbar on tabs that don't need it
-  document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'projectReview') ? 'none' : '';
+  document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'achievements' || tab === 'projectReview') ? 'none' : '';
   const addBtn = document.getElementById('btn-add-new');
   if (tab === 'tasks') { addBtn.style.display='flex'; addBtn.textContent='＋ New Task'; }
   else if (tab === 'projects' && typeof isAdmin === 'function' && isAdmin()) {

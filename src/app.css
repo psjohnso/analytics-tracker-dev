@@ -840,6 +840,51 @@ body {
 .ach-num { font-size: 18px; font-weight: 900; color: var(--navy); line-height: 1; }
 .ach-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
 
+/* ── Full Achievements tab ─────────────────────────────────────────── */
+.at-page { background:#fff; border:1px solid var(--border); border-radius:14px; padding:28px 32px; max-width:1100px; margin:24px auto; box-shadow:0 1px 0 rgba(0,0,0,0.02); }
+.at-hero { display:flex; align-items:center; gap:18px; padding-bottom:18px; border-bottom:2px solid var(--border); margin-bottom:24px; }
+.at-avatar { width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,var(--navy),#0C447C); color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:900; flex-shrink:0; }
+.at-hero-info h1 { margin:0; font-family:'Lato',sans-serif; font-size:24px; font-weight:900; color:var(--navy); letter-spacing:-0.02em; }
+.at-hero-meta { font-family:'Cardo',serif; font-style:italic; font-size:14px; color:var(--text-muted); margin-top:2px; }
+
+.at-section { margin-bottom:26px; }
+.at-section-title { font-size:12px; font-weight:800; color:var(--orange); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.at-section-title::before { content:''; width:18px; height:2px; background:var(--orange); display:inline-block; }
+
+.at-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+@media (max-width:860px) { .at-grid { grid-template-columns:repeat(2,1fr); } }
+.at-tile { text-align:center; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 10px 14px; }
+.at-tile.featured { background:linear-gradient(135deg,#FFF9E0,#fff); border-color:#FED7AA; }
+.at-tile-icon { font-size:28px; line-height:1; margin-bottom:6px; }
+.at-tile-num { font-size:30px; font-weight:900; color:var(--navy); line-height:1.05; }
+.at-tile-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; }
+.at-tile-sub { font-size:12px; color:var(--text-muted); margin-top:5px; font-style:italic; min-height:16px; }
+
+.at-record { display:flex; justify-content:space-between; padding:11px 14px; background:var(--surface); border:1px solid var(--border); border-radius:8px; margin-bottom:6px; font-size:13px; }
+.at-record strong { color:var(--navy); }
+.at-record-icon { display:inline-block; margin-right:4px; }
+.at-record-when { color:var(--text-muted); font-style:italic; font-family:'Cardo',serif; }
+
+.at-breadth { display:grid; grid-template-columns:130px 1fr 100px; gap:14px; align-items:center; padding:10px 14px; background:var(--surface); border:1px solid var(--border); border-radius:8px; margin-bottom:6px; font-size:13px; }
+.at-breadth-label { font-weight:700; color:var(--navy); }
+.at-breadth-bar { height:10px; background:#E8E6DF; border-radius:5px; overflow:hidden; }
+.at-breadth-fill { height:100%; background:var(--green); border-radius:5px; }
+.at-breadth-count { text-align:right; font-weight:700; color:var(--navy); font-size:13px; }
+
+.at-medals { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+@media (max-width:860px) { .at-medals { grid-template-columns:repeat(2,1fr); } }
+.at-medal { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:#fff; }
+.at-medal.unlocked { background:linear-gradient(135deg,#FFF9E0,#fff); border-color:#FED7AA; }
+.at-medal.locked   { background:#FAFAF7; opacity:0.85; }
+.at-medal-glyph { font-size:24px; line-height:1; flex-shrink:0; }
+.at-medal-body { flex:1; min-width:0; }
+.at-medal-name { font-size:13px; font-weight:700; color:var(--navy); }
+.at-medal-progress { height:5px; background:#E8E6DF; border-radius:3px; overflow:hidden; margin-top:5px; }
+.at-medal-progress-fill { height:100%; background:var(--green); border-radius:3px; }
+.at-medal-status { font-size:11px; color:var(--text-muted); margin-top:3px; font-style:italic; }
+.at-medal.unlocked .at-medal-status { color:#15803D; font-style:normal; font-weight:700; }
+.at-empty { padding:24px; text-align:center; color:var(--text-muted); font-style:italic; }
+
 /* Confetti burst — fired by fireConfetti() in src/confetti.js. Each
    particle sets --cf-dx, --cf-dy, --cf-grav, --cf-r inline so a single
    keyframe definition covers every spawn. */

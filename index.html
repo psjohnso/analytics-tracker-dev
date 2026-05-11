@@ -6,17 +6,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;family=Cardo:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <!-- ArcGIS REST API integration (no external auth library needed) -->
-<link rel="stylesheet" href="src/app.css?v=1.24.1.0002">
+<link rel="stylesheet" href="src/app.css?v=1.25.0.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.24.1.0002"></script>
+<script src="src/constants.js?v=1.25.0.0001"></script>
 <script src="src/agol.js?v=1.16.1.0023"></script>
-<script src="src/auth.js?v=1.16.0.0012"></script>
-<script src="src/render.js?v=1.16.1.0027"></script>
+<script src="src/auth.js?v=1.25.0.0001"></script>
+<script src="src/render.js?v=1.25.0.0001"></script>
 <script src="src/tabs/issues.js?v=1.10.0.0001"></script>
 <script src="src/tabs/project-review.js?v=1.16.0.0020"></script>
 <script src="src/project-notes.js?v=1.16.1.0023"></script>
 <script src="src/confetti.js?v=1.17.2.0033"></script>
-<script src="src/achievements.js?v=1.24.1.0002"></script>
+<script src="src/achievements.js?v=1.25.0.0001"></script>
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.17.5.0036"></script>
 <script src="src/tabs/overview.js?v=1.17.6.0039"></script>
@@ -100,6 +100,7 @@
     <button class="primary-tab" data-group="capacity" onclick="switchPrimaryGroup('capacity')" style="display:none;">Capacity</button>
     <button class="primary-tab" data-group="slideshow" id="tab-slideshow" onclick="switchPrimaryGroup('slideshow')" style="display:none;">📺 Slideshow</button>
     <button class="primary-tab" data-group="issues" id="tab-issues" onclick="switchPrimaryGroup('issues')">🐛 Issues <span class="tab-count" id="issues-tab-count"></span></button>
+    <button class="primary-tab" data-group="achievements" id="tab-achievements" onclick="switchPrimaryGroup('achievements')" style="display:none;">🏆 Achievements</button>
     <button class="primary-tab" data-group="settings" id="tab-settings" onclick="switchPrimaryGroup('settings')" style="display:none;">⚙️ Settings</button>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 4px 0 0;align-self:center;">
       <span id="unsaved-dot" title="Unsaved changes" class="show"></span>
@@ -1073,6 +1074,15 @@ function render() {
   if (currentTab === 'issues') {
     document.querySelector('.app-body').classList.remove('detail-mode');
     area.innerHTML = buildIssuesPage();
+    const pg = document.getElementById('pagination');
+    if (pg) pg.remove();
+    document.getElementById('result-count').textContent = '';
+    return;
+  }
+
+  if (currentTab === 'achievements') {
+    document.querySelector('.app-body').classList.remove('detail-mode');
+    area.innerHTML = buildAchievementsPage();
     const pg = document.getElementById('pagination');
     if (pg) pg.remove();
     document.getElementById('result-count').textContent = '';

@@ -293,8 +293,10 @@ function toggleAuth() {
     if (settingsTab) settingsTab.style.display = 'none';
     const myWorkTab = document.getElementById('tab-mywork');
     if (myWorkTab) myWorkTab.style.display = 'none';
+    const achievementsTab = document.getElementById('tab-achievements');
+    if (achievementsTab) achievementsTab.style.display = 'none';
     ['tab-resources', 'tab-forecast', 'tab-insights', 'tab-projectreview', 'tab-slideshow'].forEach(function(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; });
-    if (currentTab === 'settings' || currentTab === 'mywork' || currentTab === 'resources' || currentTab === 'forecast' || currentTab === 'insights' || currentTab === 'projectReview' || currentTab === 'slideshow') switchTab('overview');
+    if (currentTab === 'settings' || currentTab === 'mywork' || currentTab === 'achievements' || currentTab === 'resources' || currentTab === 'forecast' || currentTab === 'insights' || currentTab === 'projectReview' || currentTab === 'slideshow') switchTab('overview');
     if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();
     applyAuthState();
   } else {
@@ -432,6 +434,9 @@ async function fetchAgolUserInfo(token) {
           // Settings is visible to everyone (admins for full settings, members for Preferences only)
           const settingsTab = document.getElementById('tab-settings');
           if (settingsTab) settingsTab.style.display = '';
+          // Achievements visible to all signed-in users.
+          const achievementsTab = document.getElementById('tab-achievements');
+          if (achievementsTab) achievementsTab.style.display = '';
           if (!Auth.isTeamLead) {
             Auth.devMode = false;
             sessionStorage.removeItem('dev_mode');
