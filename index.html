@@ -6,12 +6,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;family=Cardo:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <!-- ArcGIS REST API integration (no external auth library needed) -->
-<link rel="stylesheet" href="src/app.css?v=1.26.0.0003">
+<link rel="stylesheet" href="src/app.css?v=1.27.0.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.26.1.0001"></script>
+<script src="src/constants.js?v=1.27.0.0001"></script>
 <script src="src/agol.js?v=1.16.1.0023"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
-<script src="src/render.js?v=1.26.0.0001"></script>
+<script src="src/render.js?v=1.27.0.0001"></script>
 <script src="src/tabs/issues.js?v=1.10.0.0001"></script>
 <script src="src/tabs/project-review.js?v=1.16.0.0020"></script>
 <script src="src/project-notes.js?v=1.16.1.0023"></script>
@@ -21,7 +21,7 @@
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.17.5.0036"></script>
 <script src="src/tabs/overview.js?v=1.17.6.0039"></script>
-<script src="src/tabs/settings.js?v=1.17.6.0039"></script>
+<script src="src/tabs/settings.js?v=1.27.0.0001"></script>
 <script src="src/tabs/resources.js?v=1.17.6.0039"></script>
 <script src="src/tabs/my-work.js?v=1.17.4.0035"></script>
 <script src="src/tabs/projects-tasks.js?v=1.17.6.0039"></script>
@@ -979,6 +979,7 @@ function render() {
     document.body.classList.toggle('compact-mode', !!UserPrefs.compactRows);
     applyUiScale();
     applyTheme();
+    applyColorBlindMode();
     applyAccentColor();
     applyAvatarEmoji();
   }
@@ -1252,8 +1253,20 @@ var UserPrefs = {
   // where `filters` is a sparse snapshot of activeFilters (only non-empty
   // values stored). See saved-views.js for save / apply / delete helpers.
   savedViews: [],
+  // Color-blind safe palette — when true, STATUS_COLOR returns an
+  // Okabe-Ito-derived set and body.cb-safe overrides priority / status /
+  // alert badge backgrounds to a deuteranopia/protanopia-friendly mix.
+  colorBlindMode: false,
   betaFeatures: {}
 };
+
+// Toggle the body.cb-safe class. Renderers that consume STATUS_COLOR
+// also need a re-render to pick up new hex values; the toggle handler
+// calls render() to make that happen.
+function applyColorBlindMode() {
+  var on = !!(UserPrefs && UserPrefs.colorBlindMode);
+  document.body.classList.toggle('cb-safe', on);
+}
 
 // Apply the saved theme to the document by stamping body[data-theme="..."],
 // which lets the per-theme CSS blocks override --navy / --orange / --surface.
@@ -1831,6 +1844,7 @@ async function loadArcGISData() {
     attachMemberStatuses();
     applyUiScale();
     applyTheme();
+    applyColorBlindMode();
     applyAccentColor();
     applyAvatarEmoji();
     if (typeof applyDefaultSavedViewOnLoad === 'function') applyDefaultSavedViewOnLoad();

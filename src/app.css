@@ -21,6 +21,40 @@
   --card-padding: 28px;
 }
 
+/* Color-blind safe palette — applied via body.cb-safe. Swaps the brand
+   variables that carry status meaning and overrides priority / status
+   pill / alert badge classes (which use baked-in hex values). The
+   STATUS_COLOR JS helper has a parallel CB map for inline-style usage. */
+body.cb-safe {
+  --green: #009E73;
+  --orange: #E69F00;
+  --yellow: #F0E442;
+  --sky: #56B4E9;
+  --cactus: #CC79A7;
+  --sand: #999999;
+}
+/* Priority badges — swap red/green pair for vermillion/blue */
+body.cb-safe .priority-High   { background:#FFE5CC; color:#8C2D04; }
+body.cb-safe .priority-Medium { background:#FEF3C7; color:#92400E; }
+body.cb-safe .priority-Low    { background:#DBEAFE; color:#1E40AF; }
+/* Status pills */
+body.cb-safe .status-Active        { background:#D0F0E8; color:#005C45; }
+body.cb-safe .status-Complete      { background:#DBEAFE; color:#1E40AF; }
+body.cb-safe .status-Future        { background:#FFEFD4; color:#7A5A00; }
+body.cb-safe .status-Pending       { background:#FFE5CC; color:#8C2D04; }
+body.cb-safe .status-In\.Progress  { background:#D0F0E8; color:#005C45; }
+body.cb-safe .status-On\.Hold      { background:#FFEFD4; color:#7A5A00; }
+body.cb-safe .status-Waiting       { background:#F3E8FF; color:#6B21A8; }
+body.cb-safe .status-Scheduled     { background:#F3E8FF; color:#6B21A8; }
+/* My Work alert badges + KPI alert colors */
+body.cb-safe .mw-att-red          { background:#FFE5CC; color:#8C2D04; }
+body.cb-safe .mw-att-yellow       { background:#FFF4CC; color:#7A5A00; }
+body.cb-safe .mw-att-border-red   { border-left-color:#D55E00 !important; }
+body.cb-safe .mw-att-border-yellow{ border-left-color:#E69F00 !important; }
+body.cb-safe .mywork-kpi-value.alert { color:#D55E00; }
+body.cb-safe .mywork-kpi-value.warn  { color:#E69F00; }
+body.cb-safe .mywork-kpi-value.good  { color:#009E73; }
+
 /* Theme palettes — applied via body[data-theme="..."]. Each theme
    overrides the primary, secondary, and surface vars. Text colors stay
    constant so contrast is preserved everywhere. */

@@ -57,15 +57,36 @@ const STATUS_COLOR_MAP = {
   'Pending': '#C24200',             // Sunset Orange
   'Waiting for Response': '#002669',// Tucson Blue
 };
+// Okabe-Ito-derived alternates, used when UserPrefs.colorBlindMode is on.
+// Picks colors that stay distinguishable for deuteranopia and protanopia
+// (the common red-green types). Yellow and gray stay; greens shift to a
+// bluish-green; reds/oranges shift to vermillion + Okabe orange; the
+// scheduled magenta moves to reddish-purple.
+const STATUS_COLOR_MAP_CB = {
+  'Active': '#009E73',              // bluish green
+  'Complete': '#0072B2',            // deep blue
+  'Canceled': '#B0B3AE',            // gray (unchanged)
+  'Future': '#E69F00',              // Okabe orange
+  'On Hold': '#F0E442',              // Okabe yellow
+  'Scheduled': '#CC79A7',            // reddish purple
+  'Idea': '#E5D086',                 // sand (unchanged — light)
+  'Pending': '#D55E00',              // vermillion
+  'Waiting for Response': '#56B4E9'  // sky blue
+};
 // STATUS_COLOR() returns a color for any status, including unknown ones.
 // Unknown statuses get a deterministic color derived from the string itself
 // so each distinct new status gets its own consistent color rather than
 // all collapsing to the same gray.
 function STATUS_COLOR(s) {
   if (!s) return '#9CA3AF';
-  if (STATUS_COLOR_MAP[s]) return STATUS_COLOR_MAP[s];
-  // Hash the string to pick from a set of brand-adjacent palette colors
-  const extras = ['#0088FF','#83AC16','#C24200','#002669','#9E0059','#E5D086'];
+  var cb = (typeof UserPrefs !== 'undefined' && UserPrefs && UserPrefs.colorBlindMode);
+  var map = cb ? STATUS_COLOR_MAP_CB : STATUS_COLOR_MAP;
+  if (map[s]) return map[s];
+  // Hash the string to pick from a set of brand-adjacent palette colors.
+  // CB palette uses the Okabe-Ito 7 (skip yellow to avoid collisions with On Hold).
+  const extras = cb
+    ? ['#0072B2','#009E73','#E69F00','#56B4E9','#CC79A7','#D55E00']
+    : ['#0088FF','#83AC16','#C24200','#002669','#9E0059','#E5D086'];
   let hash = 0;
   for (let i = 0; i < s.length; i++) hash = (hash * 31 + s.charCodeAt(i)) | 0;
   return extras[Math.abs(hash) % extras.length];

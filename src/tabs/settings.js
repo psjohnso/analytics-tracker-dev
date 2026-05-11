@@ -257,6 +257,7 @@ function buildPreferencesPanel() {
     80, 160, (UserPrefs.uiScale || 1.0));
   html += prefAccentColor(UserPrefs.accentColor);
   html += prefAvatarEmoji(UserPrefs.avatarEmoji);
+  html += prefToggle('colorBlindMode', 'Color-blind safe palette', 'Swap status / priority / alert colors for an Okabe-Ito-derived palette that stays distinguishable for the common red-green color-blindness types.', UserPrefs.colorBlindMode);
   html += sectionClose;
 
   // ── Personal ────────────────────────────────────────────────
@@ -395,7 +396,8 @@ function updatePref(key, value) {
     else if (!/^#[0-9a-fA-F]{6}$/.test(String(value))) return;
   }
   if (key === 'sidebarCollapsed' || key === 'completedCollapsed' || key === 'timelineShowAll' || key === 'compactRows' ||
-      key === 'showCapacity' || key === 'showSlideshow' || key === 'confetti' || key === 'showAchievements') {
+      key === 'showCapacity' || key === 'showSlideshow' || key === 'confetti' || key === 'showAchievements' ||
+      key === 'colorBlindMode') {
     value = value === true || value === 'true';
   }
   UserPrefs[key] = value;
@@ -404,6 +406,7 @@ function updatePref(key, value) {
   if (key === 'projectView') currentView = value;
   if (key === 'uiScale' && typeof applyUiScale === 'function') applyUiScale();
   if (key === 'accentColor' && typeof applyAccentColor === 'function') applyAccentColor();
+  if (key === 'colorBlindMode' && typeof applyColorBlindMode === 'function') applyColorBlindMode();
   if (key === 'sidebarCollapsed') {
     var sidebar = document.querySelector('.sidebar');
     if (sidebar) sidebar.classList.toggle('collapsed', value);
