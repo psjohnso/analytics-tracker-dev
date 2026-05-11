@@ -969,6 +969,8 @@ function renderProjectDetail(id) {
         <div class="detail-prose" style="white-space:pre-line;">${esc(p.reviewer_notes)}</div>
       </div>` : ''}
 
+      ${typeof renderProjectJournalSection === 'function' ? renderProjectJournalSection(p) : ''}
+
       <div class="detail-section">
         <div class="detail-section-label detail-section-label-flex">
           <span>Time Logged${calcInfoIcon('ytdHours')}</span>

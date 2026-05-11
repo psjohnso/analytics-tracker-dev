@@ -25,6 +25,7 @@ const ARCGIS_CONFIG = {
   statusHistoryUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/status_history/FeatureServer/0',
   issuesUrl:        'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/issues/FeatureServer/0',
   projectReviewsUrl:'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/Project_Reviews/FeatureServer/0',
+  projectNotesUrl:  'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/Project_Notes/FeatureServer/0',
   // Public views — ArcGIS Online Item IDs for read-only feature layer views.
   // Create views in ArcGIS Online: Content → source layer → Manage → Create View Layer.
   // Share the views publicly or org-wide. Find the Item ID in the URL bar of the item page.
