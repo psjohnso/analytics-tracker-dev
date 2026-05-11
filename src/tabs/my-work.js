@@ -945,6 +945,12 @@ function renderMyWork(area) {
   html += '<div class="mywork-page">';
   html += '<div class="mywork-columns">';
 
+  // ── Achievements panel — celebratory layer above operational KPIs ──
+  if (typeof renderAchievementsPanel === 'function') {
+    var ach = renderAchievementsPanel(name);
+    if (ach) html += '<div class="mywork-full-width">' + ach + '</div>';
+  }
+
   // ── KPIs — spans both columns ──────────────────────────────
   const utilClass = weekUtil > 100 ? 'alert' : weekUtil > 85 ? 'warn' : 'good';
   html += '<div class="mywork-kpis mywork-full-width">';

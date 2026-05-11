@@ -764,6 +764,37 @@ body {
   color: var(--user-accent-fg, #fff) !important;
 }
 
+/* Achievements panel — small celebratory grid above the My Work KPIs.
+   Four tiles: streak, tasks done, projects shipped, hours this week. */
+.achievements-panel {
+  background: linear-gradient(135deg, #FDFCF8, #fff);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px 16px;
+  margin-bottom: 18px;
+}
+.achievements-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.achievements-title {
+  font-family: 'Lato', sans-serif;
+  font-size: 13px; font-weight: 800; color: var(--navy);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.achievements-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+}
+@media (max-width: 760px) { .achievements-grid { grid-template-columns: repeat(2, 1fr); } }
+.achievement-tile {
+  text-align: center; background: #fff; border: 1px solid #E8E6DF;
+  border-radius: 10px; padding: 12px 8px 10px;
+}
+.ach-icon { font-size: 22px; line-height: 1; margin-bottom: 4px; }
+.ach-num { font-size: 26px; font-weight: 900; color: var(--navy); line-height: 1.1; }
+.ach-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
+.ach-sub { font-size: 11px; color: var(--text-muted); margin-top: 5px; font-style: italic; }
+
 /* Slack-style personal status — emoji next to a person's name across
    the app. Decorative only; full status text is in the title attribute. */
 .user-status-badge {
