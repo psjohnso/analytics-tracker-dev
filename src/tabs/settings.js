@@ -270,54 +270,60 @@ function buildPreferencesPanel() {
     '</div>';
   }
 
+  // ── Section helper: heading + boxed group, mirrors the existing
+  // Optional tabs / Beta features pattern lower in the panel.
+  function sectionOpen(title, desc) {
+    return '<div style="margin-top:8px;margin-bottom:20px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+        '<span style="font-size:15px;font-weight:700;color:var(--navy);">' + esc(title) + '</span>' +
+      '</div>' +
+      (desc ? '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">' + esc(desc) + '</div>' : '') +
+      '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px 20px;">';
+  }
+  var sectionClose = '</div></div>';
+
   var html = '<div class="settings-panel-title">Preferences</div>';
   html += '<div class="settings-panel-desc">Customize how the application looks and works for you. These preferences are saved to your profile and persist across sessions.</div>';
 
-  html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px 20px;margin-bottom:20px;">';
-
+  // ── Appearance ──────────────────────────────────────────────
+  html += sectionOpen('Appearance', 'Look-and-feel of the interface.');
+  html += prefTheme(UserPrefs.theme);
   html += prefPercentInput('uiScale', 'UI size', 'Scale the entire interface — fonts and spacing — relative to the default. Enter a value between 80 and 160.',
     80, 160, (UserPrefs.uiScale || 1.0));
-
   html += prefAccentColor(UserPrefs.accentColor);
-
-  html += prefTheme(UserPrefs.theme);
-
   html += prefAvatarEmoji(UserPrefs.avatarEmoji);
+  html += sectionClose;
 
+  // ── Personal ────────────────────────────────────────────────
+  html += sectionOpen('Personal', 'Things that make the app feel like yours.');
   html += prefStatusInput(UserPrefs.status);
-
-  html += prefToggle('confetti', '🎉 Celebrate completions', 'Briefly show a confetti burst when you mark a task or project Complete. Always disabled if your system has reduced-motion enabled.', UserPrefs.confetti);
-
   html += prefToggle('showAchievements', '✨ Show achievements panel', 'Display your streak, tasks done, projects shipped, and weekly hours at the top of the My Work tab.', UserPrefs.showAchievements);
+  html += prefToggle('confetti', '🎉 Celebrate completions', 'Briefly show a confetti burst when you mark a task or project Complete. Always disabled if your system has reduced-motion enabled.', UserPrefs.confetti);
+  html += sectionClose;
 
+  // ── Layout & navigation ─────────────────────────────────────
+  html += sectionOpen('Layout & navigation', 'How the app opens and lays out its panels.');
   html += prefSelect('defaultTab', 'Default tab', 'Which tab to show when you first open the application.', [
     { value: 'overview', label: 'Overview' },
     { value: 'mywork', label: 'My Work' },
     { value: 'projects', label: 'Projects' },
     { value: 'tasks', label: 'Tasks' }
   ], UserPrefs.defaultTab);
-
   html += prefSelect('projectView', 'Projects tab layout', 'Default layout for the Projects tab.', [
     { value: 'list', label: 'List view' },
     { value: 'grid', label: 'Grid view' }
   ], UserPrefs.projectView);
-
   html += prefSelect('timelineRange', 'Timeline range', 'How many months the My Work timeline shows ahead from today.', [
     { value: '3', label: '3 months' },
     { value: '6', label: '6 months' },
     { value: '9', label: '9 months' },
     { value: '12', label: '12 months' }
   ], String(UserPrefs.timelineRange));
-
   html += prefToggle('sidebarCollapsed', 'Start with sidebar collapsed', 'Hide the filter sidebar by default. You can always toggle it with the Filters button.', UserPrefs.sidebarCollapsed);
-
   html += prefToggle('completedCollapsed', 'Collapse completed sections', 'Start with the Complete and Canceled sections collapsed on project detail pages.', UserPrefs.completedCollapsed);
-
   html += prefToggle('timelineShowAll', 'Show all tasks on timeline', 'Show all project tasks on the My Work timeline. When off, only your assigned tasks are shown.', UserPrefs.timelineShowAll);
-
   html += prefToggle('compactRows', 'Compact rows', 'Use tighter row spacing in project and task tables for a denser view.', UserPrefs.compactRows);
-
-  html += '</div>';
+  html += sectionClose;
 
   // Optional tabs — opt-in extras in the top nav.
   // - Capacity: admins always see; members opt in. Hidden from the toggle list
