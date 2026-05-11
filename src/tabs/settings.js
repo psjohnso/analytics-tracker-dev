@@ -188,6 +188,8 @@ function buildPreferencesPanel() {
 
   html += prefAccentColor(UserPrefs.accentColor);
 
+  html += prefToggle('confetti', '🎉 Celebrate completions', 'Briefly show a confetti burst when you mark a task or project Complete. Always disabled if your system has reduced-motion enabled.', UserPrefs.confetti);
+
   html += prefSelect('defaultTab', 'Default tab', 'Which tab to show when you first open the application.', [
     { value: 'overview', label: 'Overview' },
     { value: 'mywork', label: 'My Work' },
@@ -298,7 +300,7 @@ function updatePref(key, value) {
     else if (!/^#[0-9a-fA-F]{6}$/.test(String(value))) return;
   }
   if (key === 'sidebarCollapsed' || key === 'completedCollapsed' || key === 'timelineShowAll' || key === 'compactRows' ||
-      key === 'showCapacity' || key === 'showSlideshow') {
+      key === 'showCapacity' || key === 'showSlideshow' || key === 'confetti') {
     value = value === true || value === 'true';
   }
   UserPrefs[key] = value;

@@ -764,6 +764,15 @@ body {
   color: var(--user-accent-fg, #fff) !important;
 }
 
+/* Confetti burst — fired by fireConfetti() in src/confetti.js. Each
+   particle sets --cf-dx, --cf-dy, --cf-grav, --cf-r inline so a single
+   keyframe definition covers every spawn. */
+@keyframes confettiPiece {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  70%  { opacity: 1; }
+  100% { transform: translate(var(--cf-dx), calc(var(--cf-dy) + var(--cf-grav))) rotate(var(--cf-r)); opacity: 0; }
+}
+
 .date-info {
   font-size: 12px;
   color: var(--text-muted);

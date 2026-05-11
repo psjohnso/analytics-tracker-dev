@@ -6,19 +6,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;family=Cardo:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <!-- ArcGIS REST API integration (no external auth library needed) -->
-<link rel="stylesheet" href="src/app.css?v=1.17.1.0032">
+<link rel="stylesheet" href="src/app.css?v=1.17.2.0033">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.17.1.0032"></script>
+<script src="src/constants.js?v=1.17.2.0033"></script>
 <script src="src/agol.js?v=1.16.1.0023"></script>
 <script src="src/auth.js?v=1.16.0.0012"></script>
 <script src="src/render.js?v=1.16.1.0027"></script>
 <script src="src/tabs/issues.js?v=1.10.0.0001"></script>
 <script src="src/tabs/project-review.js?v=1.16.0.0020"></script>
 <script src="src/project-notes.js?v=1.16.1.0023"></script>
+<script src="src/confetti.js?v=1.17.2.0033"></script>
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.17.1.0032"></script>
 <script src="src/tabs/overview.js?v=1.17.1.0032"></script>
-<script src="src/tabs/settings.js?v=1.17.1.0032"></script>
+<script src="src/tabs/settings.js?v=1.17.2.0033"></script>
 <script src="src/tabs/resources.js?v=1.17.1.0032"></script>
 <script src="src/tabs/my-work.js?v=1.16.1.0024"></script>
 <script src="src/tabs/projects-tasks.js?v=1.17.1.0032"></script>
@@ -1219,6 +1220,9 @@ var UserPrefs = {
   // Personal accent color — hex string used to tint the user's own avatar
   // chips throughout the app. null = use the app default (navy).
   accentColor: null,
+  // Celebrate task/project completion with a confetti burst. Default on;
+  // OS prefers-reduced-motion overrides this regardless of the toggle.
+  confetti: true,
   betaFeatures: {}
 };
 
@@ -1867,6 +1871,12 @@ const DataStore = {
       const today = new Date();
       fields.actual_end = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
     }
+    // 🎉 Celebrate the moment of completion (before the async network call
+    // so the burst feels anchored to the click). Bigger burst for projects
+    // since they're rarer than tasks.
+    if (typeof fireConfetti === 'function' && newStatus === 'Complete' && oldStatus !== 'Complete') {
+      fireConfetti({ count: 60 });
+    }
     const oldTitle = PROJECTS[i].title;
     const newTitle = fields.title;
     const snapshot = Object.assign({}, PROJECTS[i]); // save snapshot for rollback
@@ -2122,10 +2132,15 @@ const DataStore = {
   async updateTask(taskId, fields) {
     const i = TASKS.findIndex(function(t) { return t.objectId == taskId; });
     if (i < 0) return null;
+    const oldTaskStatus = TASKS[i].status;
     // Auto-set actual_end when status changes to Complete
     if (fields.status === 'Complete' && !fields.actual_end && !TASKS[i].actual_end) {
       const today = new Date();
       fields.actual_end = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    }
+    // 🎉 Celebrate the moment of completion.
+    if (typeof fireConfetti === 'function' && fields.status === 'Complete' && oldTaskStatus !== 'Complete') {
+      fireConfetti({ count: 36 });
     }
     if (fields.project) {
       const proj = PROJECTS.find(function(p) { return p.title === fields.project; });
