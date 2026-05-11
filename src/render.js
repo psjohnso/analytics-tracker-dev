@@ -255,6 +255,10 @@ function buildSidebarFilters() {
   renderFilterGroup('dept-filters', Object.fromEntries(Object.entries(depts).sort((a,b) => a[0].localeCompare(b[0]))), 'partnerDept');
   renderFilterGroup('team-filters', Object.fromEntries(Object.entries(teams).sort((a,b) => a[0].localeCompare(b[0]))), 'itdTeam');
 
+  // Saved-views sidebar section — re-rendered on every filter rebuild
+  // so the "active" chip highlight tracks the live filter state.
+  if (typeof renderSavedViews === 'function') renderSavedViews();
+
   // Data Program toggle filter — count projects that would remain if this
   // toggle were ON, given other active filters.
   const dpCount = projectsExcluding('dataProgram').filter(p => p.is_data_program).length;
