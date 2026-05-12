@@ -280,7 +280,18 @@ function buildForecastPage() {
   if (!RESOURCES_DATA) return '<div class="empty-state">Resources data is loading…</div>';
   const rd = RESOURCES_DATA;
   const weeks = rd.weeks;
-  const avData = fcAvailData();
+  // Forecast is scoped to the Data Intelligence team only — affiliated
+  // collaborators from other ITD teams (DA / DL / EDI / etc.) plan against
+  // their own teams' capacity, not ours. Filter on the team field from the
+  // team_members feature service (which matches the ITD Team dropdown
+  // values). fcAvailData() already excludes inactive/former members, so
+  // we don't need to repeat that check here.
+  const fullAvData = fcAvailData();
+  const avData = {};
+  Object.keys(fullAvData).forEach(function(name) {
+    var p = rd.people[name];
+    if (p && p.team === 'Data Intelligence') avData[name] = fullAvData[name];
+  });
   const people = Object.keys(avData);
   const curIdx = window.currentWeekIdx || 9;
 
