@@ -169,7 +169,7 @@ let _cpRole = 'Contributor';
 let _cpTeam = null;
 
 // Known data-team values for the planner dropdown.
-const CP_TEAMS = ['Data Intelligence', 'Data Architecture', 'Data Librarian', 'EDI'];
+const CP_TEAMS = ['Data Intelligence', 'Data Architecture', 'Data Librarian', 'Emerging Data Infrastructure'];
 
 // Resolve the default team filter from the signed-in user's team record.
 // If they're not on one of the four known teams, fall back to All so they
