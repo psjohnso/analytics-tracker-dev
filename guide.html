@@ -390,6 +390,10 @@ li strong { color: var(--navy); }
 <h2 id="forecast-tab">Forecast Tab</h2>
 <p>The Forecast tab projects team capacity into the future based on current allocation patterns. It shows how loaded each person is over a configurable window (default 13 weeks from the current week), helping managers identify periods of over- or under-capacity and plan resource assignments accordingly.</p>
 
+<div class="note-box">
+  <strong>Scope:</strong> The Forecast view (Summary Cards, Team Load Chart, Utilization Heatmap) shows only <strong>Data Intelligence</strong> team members &mdash; affiliated collaborators from Data Architecture, Data Librarian, or Emerging Data Infrastructure plan against their own teams' capacity. The Capacity Planner below the forecast has a separate Team dropdown that defaults to your own team and lets you switch among all four.
+</div>
+
 <h3>What the Forecast Shows</h3>
 <p>The Forecast tab has three main sections:</p>
 <ul>
@@ -455,6 +459,18 @@ li strong { color: var(--navy); }
   <li><strong>Static snapshot:</strong> The forecast doesn't account for planned changes in allocation. If you know someone will move from Project A to Project B next month, the forecast won't reflect this until you actually update their allocations.</li>
   <li><strong>No new project predictions:</strong> The forecast only projects existing allocations forward — it can't predict when new projects will start consuming capacity.</li>
 </ul>
+
+<h3>Capacity Planner</h3>
+<p>Below the forecast, the Capacity Planner answers the question <em>"when can each person take on a new project?"</em> Pick a Team, project Size (S/M/L/XL — drives both the % of project time and the project duration), and Role (Lead / Contributor / Reviewer), and the planner sorts each candidate by their earliest plausible start week.</p>
+
+<h4>Team filter</h4>
+<p>The Team dropdown sits first in the planner controls and offers <em>All teams</em> · <em>Data Intelligence</em> · <em>Data Architecture</em> · <em>Data Librarian</em> · <em>Emerging Data Infrastructure</em>. On first render, it pre-selects the signed-in user's own ITD team (from <code>team_members.team</code>); if you're not on one of the four data teams, it defaults to <em>All teams</em>. Switching the dropdown filters the candidate list to people on that team only — useful for managers focused on staffing within their own team.</p>
+
+<h4>What "earliest start" means</h4>
+<p>For each person, the planner scans forward week by week from today and finds the first week where adding the new project's required % would keep them at or under capacity through the full project duration. Existing project allocations come from the same data the Forecast uses. People at capacity for the entire window show as "At capacity" with the projects holding their time listed below.</p>
+
+<h4>Timeline bars</h4>
+<p>Each person's row includes a 20-week timeline. Existing utilization renders as green / yellow / red bars (under 80% / 80–100% / over). When a candidate start week is found, a navy overlay shows where the new project's hours would slot in. The current week is highlighted with a subtle navy tint.</p>
 
 <!-- ═══════════════════════════════════════════════════ -->
 <h2 id="insights-tab">Insights Tab (Admin Only)</h2>
