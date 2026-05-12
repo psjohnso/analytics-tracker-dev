@@ -16,6 +16,11 @@
 // ═══════════════════════════════════════════════════════════════════════
 var _issuesFilter = 'all'; // 'all' | 'Bug' | 'Improvement'
 var _issuesStatusFilter = 'open'; // 'open' | 'all' | 'done'
+// Submitter filter — null = not yet initialized; '' = "All users"; or an
+// exact submitted_by string. Initialized to the signed-in user's name on
+// first render of the Issues tab so people land on "their" issues by
+// default and can switch to All from there.
+var _issuesUserFilter = null;
 var _editingIssueId = null;
 
 async function loadIssues() {
@@ -60,7 +65,20 @@ function setIssuesStatusFilter(status) {
   document.getElementById('content-area').innerHTML = buildIssuesPage();
 }
 
+function setIssuesUserFilter(name) {
+  _issuesUserFilter = name || '';
+  document.getElementById('content-area').innerHTML = buildIssuesPage();
+}
+
 function buildIssuesPage() {
+  // First-render initialization of the submitter filter — default to the
+  // signed-in user so people see their own issues without configuring.
+  // Anonymous (no Auth.fullName) sees all issues until they pick.
+  if (_issuesUserFilter === null) {
+    if (typeof Auth !== 'undefined' && Auth.fullName) _issuesUserFilter = Auth.fullName;
+    else _issuesUserFilter = '';
+  }
+
   var filtered = ISSUES.slice();
 
   // Type filter
@@ -75,6 +93,11 @@ function buildIssuesPage() {
     filtered = filtered.filter(function(iss) { return iss.status === 'Done'; });
   }
 
+  // Submitter filter (empty string = all users; otherwise exact match)
+  if (_issuesUserFilter) {
+    filtered = filtered.filter(function(iss) { return iss.submitted_by === _issuesUserFilter; });
+  }
+
   // Sort: open issues by priority then date, done issues by resolved date
   var priOrder = { High: 0, Medium: 1, Low: 2 };
   filtered.sort(function(a, b) {
@@ -87,9 +110,14 @@ function buildIssuesPage() {
     return (b.submitted_date || '').localeCompare(a.submitted_date || '');
   });
 
-  var openCount = ISSUES.filter(function(iss) { return iss.status !== 'Done'; }).length;
-  var bugCount = ISSUES.filter(function(iss) { return iss.type === 'Bug' && iss.status !== 'Done'; }).length;
-  var impCount = ISSUES.filter(function(iss) { return iss.type === 'Improvement' && iss.status !== 'Done'; }).length;
+  // Counts in the type pills reflect the current submitter filter so the
+  // numbers match what the user sees when they click each pill.
+  var countPool = _issuesUserFilter
+    ? ISSUES.filter(function(iss) { return iss.submitted_by === _issuesUserFilter; })
+    : ISSUES;
+  var openCount = countPool.filter(function(iss) { return iss.status !== 'Done'; }).length;
+  var bugCount = countPool.filter(function(iss) { return iss.type === 'Bug' && iss.status !== 'Done'; }).length;
+  var impCount = countPool.filter(function(iss) { return iss.type === 'Improvement' && iss.status !== 'Done'; }).length;
 
   var html = '<div class="issues-page">';
 
@@ -106,6 +134,30 @@ function buildIssuesPage() {
   html += '<button class="issues-pill' + (_issuesStatusFilter === 'all' ? ' active' : '') + '" onclick="setIssuesStatusFilter(\'all\')">All</button>';
   html += '<button class="issues-pill' + (_issuesStatusFilter === 'done' ? ' active' : '') + '" onclick="setIssuesStatusFilter(\'done\')">Done</button>';
   html += '</div>';
+
+  // Submitter filter — distinct submitted_by values from ISSUES, sorted.
+  // The signed-in user is bumped to the top of the list for quick access
+  // even if they've never submitted an issue.
+  var submitters = {};
+  ISSUES.forEach(function(iss) { if (iss.submitted_by) submitters[iss.submitted_by] = true; });
+  var selfName = (typeof Auth !== 'undefined' && Auth.fullName) ? Auth.fullName : '';
+  if (selfName) submitters[selfName] = true; // ensure the user can always pick themselves
+  var submitterList = Object.keys(submitters).sort(function(a, b) {
+    if (a === selfName) return -1;
+    if (b === selfName) return 1;
+    return a.localeCompare(b);
+  });
+  html += '<div class="issues-filters" style="margin-left:8px;">';
+  html += '<select class="issues-pill" onchange="setIssuesUserFilter(this.value)" title="Filter by submitter" style="padding:5px 24px 5px 14px;cursor:pointer;appearance:auto;font-family:Lato,sans-serif;">';
+  html += '<option value=""' + (_issuesUserFilter === '' ? ' selected' : '') + '>All users</option>';
+  submitterList.forEach(function(name) {
+    var sel = name === _issuesUserFilter ? ' selected' : '';
+    var label = (name === selfName) ? name + ' (me)' : name;
+    html += '<option value="' + esc(name) + '"' + sel + '>' + esc(label) + '</option>';
+  });
+  html += '</select>';
+  html += '</div>';
+
   html += '<button class="issues-submit-btn" onclick="openIssueForm()">＋ Report Issue</button>';
   html += '</div>';
 
