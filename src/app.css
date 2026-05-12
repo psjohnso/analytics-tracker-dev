@@ -2613,6 +2613,38 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
 .mywork-compact-row { background:#fff; border:1px solid #E8E6DF; border-radius:6px; padding:10px 16px;
   margin-bottom:6px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.15s; }
 .mywork-compact-row:hover { border-color:var(--navy); background:#F0F4FF; }
+
+/* Missing-tasks flag — applied to My Week rows where the user has no
+   active/on-hold/waiting tasks for that project. Matches the existing
+   .mw-att-border-yellow attention pattern. The helpline sits flush below
+   the row so they read as one connected unit. */
+.mywork-compact-row.mw-missing-tasks {
+  background:#FFFBEB;
+  border-left:3px solid #F59E0B !important;
+  border-radius:0 6px 6px 0 !important;
+  margin-bottom:0;
+}
+.mywork-compact-row.mw-missing-tasks:hover { background:#FEF3C7; }
+.mw-missing-tasks-helpline {
+  background:#FFFBEB;
+  border-left:3px solid #F59E0B;
+  border-radius:0 0 6px 0;
+  padding:6px 14px 8px 24px;
+  margin-bottom:6px;
+  font-size:11px;
+  color:#92400E;
+  font-style:italic;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.mw-missing-tasks-helpline a {
+  color:var(--navy); font-weight:700; text-decoration:none;
+  margin-left:auto; font-style:normal;
+  padding:3px 10px; border:1px solid var(--navy); border-radius:4px;
+  background:#fff;
+}
+.mw-missing-tasks-helpline a:hover { background:var(--navy); color:#fff; }
 .mw-att-row { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
 .mw-att-badge { font-size:11px; font-weight:700; padding:3px 8px; border-radius:4px; }
 .mw-att-red { background:#FCEBEB; color:#791F1F; }

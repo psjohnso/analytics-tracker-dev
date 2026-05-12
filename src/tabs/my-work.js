@@ -1043,20 +1043,40 @@ function renderMyWork(area) {
       const proj = PROJECTS.find(function(p) { return p.title === a.project; });
       const onclick = proj ? ' onclick="openProject(' + proj.objectId + ')"' : '';
       const cursor = proj ? 'pointer' : 'default';
-      html += '<div class="mywork-compact-row" style="cursor:' + cursor + ';"' + onclick + '>';
-      html += '<span class="mywork-compact-title"><span style="font-size:10px;font-weight:700;color:var(--text-muted);margin-right:4px;">Project:</span>' + esc(a.project) + '</span>';
-      html += '<span style="font-size:12px;font-weight:700;color:var(--navy);white-space:nowrap;min-width:50px;text-align:right;">' + a.hours + 'h</span>';
-      html += '<span style="font-size:11px;color:var(--text-muted);white-space:nowrap;min-width:35px;text-align:right;">' + Math.round(a.frac * 100) + '%</span>';
-      html += '<div class="mywork-alloc-bar"><div class="mywork-alloc-fill" style="width:' + Math.min(100, pct) + '%;background:' + barColor + ';"></div></div>';
-      html += '</div>';
 
-      // Show user's active/on hold/waiting tasks for this project
+      // Filter the user's active-ish tasks for this project — used both
+      // to render the task list below the row and to decide whether to
+      // flag the row as "missing tasks" (interpretation A: the user has
+      // capacity here but no actionable work queued for themselves).
       var weekTaskStatuses = ['Active', 'On Hold', 'Waiting for Response'];
       var weekTasks = TASKS.filter(function(t) {
         return t.project === a.project && t.assignee === name && weekTaskStatuses.indexOf(t.status) >= 0;
       }).sort(function(ta, tb) {
         var pa = { High: 0, Medium: 1, Low: 2 }; return (pa[ta.priority] || 3) - (pa[tb.priority] || 3);
       });
+      var isMissingTasks = weekTasks.length === 0;
+      var rowCls = 'mywork-compact-row' + (isMissingTasks ? ' mw-missing-tasks' : '');
+      html += '<div class="' + rowCls + '" style="cursor:' + cursor + ';"' + onclick + '>';
+      html += '<span class="mywork-compact-title"><span style="font-size:10px;font-weight:700;color:var(--text-muted);margin-right:4px;">Project:</span>' + esc(a.project) + '</span>';
+      html += '<span style="font-size:12px;font-weight:700;color:var(--navy);white-space:nowrap;min-width:50px;text-align:right;">' + a.hours + 'h</span>';
+      html += '<span style="font-size:11px;color:var(--text-muted);white-space:nowrap;min-width:35px;text-align:right;">' + Math.round(a.frac * 100) + '%</span>';
+      html += '<div class="mywork-alloc-bar"><div class="mywork-alloc-fill" style="width:' + Math.min(100, pct) + '%;background:' + barColor + ';"></div></div>';
+      html += '</div>';
+
+      // Missing-tasks helpline — appears immediately below the flagged row.
+      // Includes a one-click '＋ Add a task' affordance when the project
+      // is resolvable from PROJECTS (it almost always is for allocations).
+      if (isMissingTasks) {
+        if (proj) {
+          var safeTitle = esc(proj.title).replace(/'/g, "\\'");
+          html += '<div class="mw-missing-tasks-helpline">⚠ No active tasks assigned to you on this project.';
+          html += '<a href="javascript:void(0)" onclick="event.stopPropagation();addTaskToProject(' + proj.objectId + ', \'' + safeTitle + '\')">＋ Add a task</a>';
+          html += '</div>';
+        } else {
+          html += '<div class="mw-missing-tasks-helpline">⚠ No active tasks assigned to you on this project.</div>';
+        }
+      }
+
       if (weekTasks.length > 0) {
         weekTasks.forEach(function(t) {
           var sc = STATUS_COLOR(t.status);
