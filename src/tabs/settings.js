@@ -530,6 +530,7 @@ function renderSettingsPage(area) {
       }
       return '<tr' + rowStyle + '>' +
         '<td style="font-weight:700;color:var(--navy);">' + esc(name) + '</td>' +
+        '<td>' + esc(p.position_title || '') + '</td>' +
         '<td>' + esc(p.role) + '</td>' +
         '<td>' + esc(p.team) + '</td>' +
         '<td style="text-align:center;">' + trackingLabel + '</td>' +
@@ -555,7 +556,7 @@ function renderSettingsPage(area) {
         '<button class="settings-btn settings-btn-primary" onclick="openMemberForm(\'add\')">＋ Add Member</button>' +
       '</div>' +
       '<table class="member-table">' +
-        '<thead><tr><th>Name</th><th>Role</th><th>Team</th><th>Tracking</th><th>Project %</th><th>Schedule</th><th style="text-align:center;">⏱️</th><th style="text-align:center;">Status</th><th style="text-align:right;">Actions</th></tr></thead>' +
+        '<thead><tr><th>Name</th><th>Position</th><th>Role</th><th>Team</th><th>Tracking</th><th>Project %</th><th>Schedule</th><th style="text-align:center;">⏱️</th><th style="text-align:center;">Status</th><th style="text-align:right;">Actions</th></tr></thead>' +
         '<tbody>' + memberRows + '</tbody>' +
       '</table>' +
       '<div id="settings-absence-section"></div>';

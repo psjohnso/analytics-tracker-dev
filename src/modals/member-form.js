@@ -26,6 +26,7 @@ function openMemberForm(mode, name) {
     const p = RESOURCES_DATA.people[name];
     document.getElementById('mf-name').value = name;
     document.getElementById('mf-name').dataset.origName = name;
+    document.getElementById('mf-position-title').value = p.position_title || '';
     document.getElementById('mf-role').value = p.role;
     document.getElementById('mf-team').value = p.team;
     document.getElementById('mf-member-group').value = p.member_group || 'Data Intelligence';
@@ -314,6 +315,7 @@ function closeMemberForm() {
 
 async function saveMemberForm() {
   const name = document.getElementById('mf-name').value.trim();
+  const positionTitle = document.getElementById('mf-position-title').value.trim();
   const role = document.getElementById('mf-role').value.trim();
   const team = document.getElementById('mf-team').value.trim();
   const memberGroup = document.getElementById('mf-member-group').value || 'Data Intelligence';
@@ -355,6 +357,10 @@ async function saveMemberForm() {
     proj_pct: projPct / 100,
     tracking_level: trackingLevel,
   };
+  if (RESOURCES_DATA && RESOURCES_DATA._memberFieldNames) {
+    const ptField = RESOURCES_DATA._memberFieldNames.find(function(f) { return f.toLowerCase() === 'position_title'; });
+    if (ptField) memberAttrs[ptField] = positionTitle;
+  }
 
   // Only include schedule fields if the service supports them
   if (RESOURCES_DATA && RESOURCES_DATA._memberFieldNames) {
