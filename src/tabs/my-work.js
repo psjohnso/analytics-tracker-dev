@@ -1089,6 +1089,19 @@ function renderMyWork(area) {
       html += '<strong>' + Math.round(weekAllocHours * 10) / 10 + 'h</strong> allocated of <strong>' + Math.round(weekCapHours * 10) / 10 + 'h</strong> capacity' + calcInfoIcon('projCapacity');
       html += ' · <strong style="color:' + (availableHours > 0 ? '#22C55E' : '#EF4444') + ';">' + Math.round(availableHours * 10) / 10 + 'h</strong> available' + calcInfoIcon('availableHours');
       html += '</div>';
+
+      // Bounds of the current week as YYYY-MM-DD (Mon..Sun) — used to
+      // narrow the "Recently done" subheader to only tasks completed
+      // during this week, not all-time. Computed once outside the
+      // allocation loop since every row shares the same week.
+      var _today = new Date();
+      var _dow = _today.getDay() || 7; // treat Sunday (0) as 7
+      var _mon = new Date(_today); _mon.setDate(_today.getDate() - (_dow - 1));
+      var _sun = new Date(_mon); _sun.setDate(_mon.getDate() + 6);
+      function _ymd(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+      var weekStartYmd = _ymd(_mon);
+      var weekEndYmd = _ymd(_sun);
+
     weekAllocations.forEach(function(a) {
       const pct = weekCapHours > 0 ? (a.hours / weekCapHours * 100) : 0;
       const barColor = pct > 40 ? 'var(--navy)' : pct > 20 ? '#3B82F6' : '#93C5FD';
@@ -1113,7 +1126,14 @@ function renderMyWork(area) {
         return (pa[ta.priority] || 3) - (pa[tb.priority] || 3);
       });
       var pendingTasks = weekTasks.filter(function(t) { return t.status !== 'Complete'; });
-      var doneTasks   = weekTasks.filter(function(t) { return t.status === 'Complete'; });
+      // "Recently done" = tasks completed during THIS WEEK (Mon..Sun),
+      // not all-time. Tasks finished in earlier weeks shouldn't crowd
+      // the row — they're celebrated in the Achievements tab.
+      var doneTasks = weekTasks.filter(function(t) {
+        if (t.status !== 'Complete') return false;
+        if (!t.actual_end) return false;
+        return t.actual_end >= weekStartYmd && t.actual_end <= weekEndYmd;
+      });
       var isMissingTasks = pendingTasks.length === 0;
       var rowCls = 'mywork-compact-row' + (isMissingTasks ? ' mw-missing-tasks' : '');
       html += '<div class="' + rowCls + '" style="cursor:' + cursor + ';"' + onclick + '>';
@@ -1137,7 +1157,7 @@ function renderMyWork(area) {
         }
       }
 
-      if (weekTasks.length > 0) {
+      if (pendingTasks.length > 0 || doneTasks.length > 0) {
         pendingTasks.forEach(function(t) { html += _mwTaskLineHtml(t); });
         if (doneTasks.length > 0) {
           html += '<div class="mw-done-header"><span>✓ Recently done</span></div>';
