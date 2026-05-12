@@ -1044,15 +1044,21 @@ function renderMyWork(area) {
       const onclick = proj ? ' onclick="openProject(' + proj.objectId + ')"' : '';
       const cursor = proj ? 'pointer' : 'default';
 
-      // Filter the user's active-ish tasks for this project — used both
-      // to render the task list below the row and to decide whether to
-      // flag the row as "missing tasks" (interpretation A: the user has
-      // capacity here but no actionable work queued for themselves).
-      var weekTaskStatuses = ['Active', 'On Hold', 'Waiting for Response'];
+      // Filter the user's recent tasks for this project — used both to
+      // render the task list below the row and to decide whether to flag
+      // the row as "missing tasks". Include Complete so the user sees
+      // recently-finished work without it triggering the missing-tasks
+      // warning. Sort pending statuses ahead of completed, then by
+      // priority within each group.
+      var weekTaskStatuses = ['Active', 'On Hold', 'Waiting for Response', 'Complete'];
       var weekTasks = TASKS.filter(function(t) {
         return t.project === a.project && t.assignee === name && weekTaskStatuses.indexOf(t.status) >= 0;
       }).sort(function(ta, tb) {
-        var pa = { High: 0, Medium: 1, Low: 2 }; return (pa[ta.priority] || 3) - (pa[tb.priority] || 3);
+        var sa = ta.status === 'Complete' ? 1 : 0;
+        var sb = tb.status === 'Complete' ? 1 : 0;
+        if (sa !== sb) return sa - sb;
+        var pa = { High: 0, Medium: 1, Low: 2 };
+        return (pa[ta.priority] || 3) - (pa[tb.priority] || 3);
       });
       var isMissingTasks = weekTasks.length === 0;
       var rowCls = 'mywork-compact-row' + (isMissingTasks ? ' mw-missing-tasks' : '');
@@ -1082,10 +1088,15 @@ function renderMyWork(area) {
           var sc = STATUS_COLOR(t.status);
           var dueStr = t.working_due || t.due || '';
           var todayStr = new Date().toISOString().slice(0, 10);
-          var isOverdue = dueStr && dueStr < todayStr;
-          html += '<div style="display:flex;align-items:center;gap:8px;padding:4px 8px 4px 24px;cursor:pointer;font-size:11px;border-bottom:0.5px solid #F3F1EB;" onclick="event.stopPropagation();openTask(' + t.objectId + ')">';
+          var isOverdue = dueStr && dueStr < todayStr && t.status !== 'Complete';
+          var isComplete = t.status === 'Complete';
+          // Render completed tasks at reduced opacity with strikethrough
+          // so they're visible but visually subordinate to pending work.
+          var lineStyle = isComplete ? 'opacity:0.6;' : '';
+          var titleStyle = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-body);' + (isComplete ? 'text-decoration:line-through;' : '');
+          html += '<div style="display:flex;align-items:center;gap:8px;padding:4px 8px 4px 24px;cursor:pointer;font-size:11px;border-bottom:0.5px solid #F3F1EB;' + lineStyle + '" onclick="event.stopPropagation();openTask(' + t.objectId + ')">';
           html += '<span style="width:6px;height:6px;border-radius:50%;background:' + sc + ';flex-shrink:0;"></span>';
-          html += '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-body);">' + esc(t.title) + '</span>';
+          html += '<span style="' + titleStyle + '">' + esc(t.title) + '</span>';
           if (t.priority) {
             var priBg = t.priority === 'High' ? '#FCEBEB' : t.priority === 'Medium' ? '#FAEEDA' : '#EAF3DE';
             var priColor = t.priority === 'High' ? '#791F1F' : t.priority === 'Medium' ? '#633806' : '#27500A';
