@@ -1096,12 +1096,12 @@ function renderMyWork(area) {
       const onclick = proj ? ' onclick="openProject(' + proj.objectId + ')"' : '';
       const cursor = proj ? 'pointer' : 'default';
 
-      // Filter the user's recent tasks for this project — used both to
-      // render the task list below the row and to decide whether to flag
-      // the row as "missing tasks". Include Complete so the user sees
-      // recently-finished work without it triggering the missing-tasks
-      // warning. Sort pending statuses ahead of completed, then by
-      // priority within each group.
+      // Filter the user's recent tasks for this project. Split the list
+      // into pending (Active / On Hold / Waiting) and completed up
+      // front: the display shows both groups, but only the pending
+      // count drives the "missing tasks" warning. A project where all
+      // your work is done isn't actionable, so it counts as missing
+      // pending work — same as a project with no tasks at all.
       var weekTaskStatuses = ['Active', 'On Hold', 'Waiting for Response', 'Complete'];
       var weekTasks = TASKS.filter(function(t) {
         return t.project === a.project && t.assignee === name && weekTaskStatuses.indexOf(t.status) >= 0;
@@ -1112,7 +1112,9 @@ function renderMyWork(area) {
         var pa = { High: 0, Medium: 1, Low: 2 };
         return (pa[ta.priority] || 3) - (pa[tb.priority] || 3);
       });
-      var isMissingTasks = weekTasks.length === 0;
+      var pendingTasks = weekTasks.filter(function(t) { return t.status !== 'Complete'; });
+      var doneTasks   = weekTasks.filter(function(t) { return t.status === 'Complete'; });
+      var isMissingTasks = pendingTasks.length === 0;
       var rowCls = 'mywork-compact-row' + (isMissingTasks ? ' mw-missing-tasks' : '');
       html += '<div class="' + rowCls + '" style="cursor:' + cursor + ';"' + onclick + '>';
       html += '<span class="mywork-compact-title"><span style="font-size:10px;font-weight:700;color:var(--text-muted);margin-right:4px;">Project:</span>' + esc(a.project) + '</span>';
@@ -1136,10 +1138,6 @@ function renderMyWork(area) {
       }
 
       if (weekTasks.length > 0) {
-        // Split into pending vs done so we can group completed tasks
-        // under their own "Recently done" subheader below the active set.
-        var pendingTasks = weekTasks.filter(function(t) { return t.status !== 'Complete'; });
-        var doneTasks   = weekTasks.filter(function(t) { return t.status === 'Complete'; });
         pendingTasks.forEach(function(t) { html += _mwTaskLineHtml(t); });
         if (doneTasks.length > 0) {
           html += '<div class="mw-done-header"><span>✓ Recently done</span></div>';
