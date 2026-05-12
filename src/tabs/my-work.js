@@ -413,6 +413,58 @@ function buildGanttBars() {
 function effectiveDue(t) { return t.working_due || t.due || null; }
 function effectiveEnd(p) { return p.working_due || p.end || null; }
 
+// Render a single task line in the My Week section. Columns are
+// padded/aligned so every row lines up — empty priority or due slots
+// still reserve their width so the status pill never wobbles.
+//   • status dot    (8px)
+//   • title         (flex:1, ellipsis)
+//   • priority      (52px, right-aligned)
+//   • due date      (76px, right-aligned)
+//   • status pill   (72px, right-aligned)
+function _mwTaskLineHtml(t) {
+  var sc = STATUS_COLOR(t.status);
+  var dueStr = t.working_due || t.due || '';
+  var todayStr = new Date().toISOString().slice(0, 10);
+  var isOverdue = dueStr && dueStr < todayStr && t.status !== 'Complete';
+  var isComplete = t.status === 'Complete';
+
+  // Priority slot — reserve width even when empty.
+  var priInner = '';
+  if (t.priority) {
+    var priBg = t.priority === 'High' ? '#FCEBEB' : t.priority === 'Medium' ? '#FAEEDA' : '#EAF3DE';
+    var priColor = t.priority === 'High' ? '#791F1F' : t.priority === 'Medium' ? '#633806' : '#27500A';
+    priInner = '<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;background:' + priBg + ';color:' + priColor + ';">' + esc(t.priority) + '</span>';
+  }
+  var priHtml = '<span style="display:inline-flex;justify-content:flex-end;min-width:52px;flex-shrink:0;">' + priInner + '</span>';
+
+  // Due slot — reserve width even when empty.
+  var dueInner = '';
+  if (dueStr) dueInner = (isOverdue ? '⚠ ' : '') + esc(dueStr);
+  else dueInner = '<span style="color:#D1D5DB;">—</span>';
+  var dueColor = isOverdue ? '#EF4444' : 'var(--text-muted)';
+  var dueHtml = '<span style="display:inline-flex;justify-content:flex-end;min-width:76px;flex-shrink:0;font-size:10px;color:' + dueColor + ';white-space:nowrap;">' + dueInner + '</span>';
+
+  // Status pill — reuses Option B styling. Always shown.
+  var pillBg = '#F3F4F6', pillColor = '#374151', pillLabel = t.status || '—';
+  if (t.status === 'Active')               { pillBg = '#DCFCE7'; pillColor = '#166534'; pillLabel = 'Active'; }
+  else if (t.status === 'On Hold')         { pillBg = '#FEF3C7'; pillColor = '#92400E'; pillLabel = 'On Hold'; }
+  else if (t.status === 'Waiting for Response') { pillBg = '#DBEAFE'; pillColor = '#1E40AF'; pillLabel = 'Waiting'; }
+  else if (t.status === 'Complete')        { pillBg = '#E0F2FE'; pillColor = '#0C4A6E'; pillLabel = '✓ Done'; }
+  var pillHtml = '<span style="display:inline-flex;justify-content:flex-end;min-width:72px;flex-shrink:0;">' +
+    '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:' + pillBg + ';color:' + pillColor + ';text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;">' + esc(pillLabel) + '</span>' +
+    '</span>';
+
+  // Completed tasks render with reduced opacity (no strikethrough — that
+  // reads as 'canceled'). The "Recently done" subheader above the group
+  // is the primary signal that these are completed.
+  var lineStyle = isComplete ? 'opacity:0.7;' : '';
+  return '<div style="display:flex;align-items:center;gap:8px;padding:4px 8px 4px 24px;cursor:pointer;font-size:11px;border-bottom:0.5px solid #F3F1EB;' + lineStyle + '" onclick="event.stopPropagation();openTask(' + t.objectId + ')">' +
+    '<span style="width:6px;height:6px;border-radius:50%;background:' + sc + ';flex-shrink:0;"></span>' +
+    '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-body);">' + esc(t.title) + '</span>' +
+    priHtml + dueHtml + pillHtml +
+  '</div>';
+}
+
 // ── Dependency helpers (behind isFeatureOn('dependencies') flag) ──────────
 function parseBlockedBy(t) {
   if (!isFeatureOn('dependencies') || !t.blocked_by) return [];
@@ -1084,29 +1136,15 @@ function renderMyWork(area) {
       }
 
       if (weekTasks.length > 0) {
-        weekTasks.forEach(function(t) {
-          var sc = STATUS_COLOR(t.status);
-          var dueStr = t.working_due || t.due || '';
-          var todayStr = new Date().toISOString().slice(0, 10);
-          var isOverdue = dueStr && dueStr < todayStr && t.status !== 'Complete';
-          var isComplete = t.status === 'Complete';
-          // Render completed tasks at reduced opacity with strikethrough
-          // so they're visible but visually subordinate to pending work.
-          var lineStyle = isComplete ? 'opacity:0.6;' : '';
-          var titleStyle = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-body);' + (isComplete ? 'text-decoration:line-through;' : '');
-          html += '<div style="display:flex;align-items:center;gap:8px;padding:4px 8px 4px 24px;cursor:pointer;font-size:11px;border-bottom:0.5px solid #F3F1EB;' + lineStyle + '" onclick="event.stopPropagation();openTask(' + t.objectId + ')">';
-          html += '<span style="width:6px;height:6px;border-radius:50%;background:' + sc + ';flex-shrink:0;"></span>';
-          html += '<span style="' + titleStyle + '">' + esc(t.title) + '</span>';
-          if (t.priority) {
-            var priBg = t.priority === 'High' ? '#FCEBEB' : t.priority === 'Medium' ? '#FAEEDA' : '#EAF3DE';
-            var priColor = t.priority === 'High' ? '#791F1F' : t.priority === 'Medium' ? '#633806' : '#27500A';
-            html += '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:' + priBg + ';color:' + priColor + ';flex-shrink:0;">' + t.priority + '</span>';
-          }
-          if (dueStr) {
-            html += '<span style="font-size:10px;color:' + (isOverdue ? '#EF4444' : 'var(--text-muted)') + ';white-space:nowrap;flex-shrink:0;">' + (isOverdue ? '⚠ ' : '') + dueStr + '</span>';
-          }
-          html += '</div>';
-        });
+        // Split into pending vs done so we can group completed tasks
+        // under their own "Recently done" subheader below the active set.
+        var pendingTasks = weekTasks.filter(function(t) { return t.status !== 'Complete'; });
+        var doneTasks   = weekTasks.filter(function(t) { return t.status === 'Complete'; });
+        pendingTasks.forEach(function(t) { html += _mwTaskLineHtml(t); });
+        if (doneTasks.length > 0) {
+          html += '<div class="mw-done-header"><span>✓ Recently done</span></div>';
+          doneTasks.forEach(function(t) { html += _mwTaskLineHtml(t); });
+        }
       }
     });
     } // close else (has allocations)

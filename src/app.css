@@ -2614,6 +2614,21 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   margin-bottom:6px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.15s; }
 .mywork-compact-row:hover { border-color:var(--navy); background:#F0F4FF; }
 
+/* "Recently done" subheader between pending and complete task lines
+   under a My Week allocation row. A short label on the left, a thin
+   rule extending to the right edge, so completed work feels visually
+   "below the fold" without taking up much vertical space. */
+.mw-done-header {
+  display:flex; align-items:center; gap:8px;
+  padding:6px 8px 4px 24px;
+  font-size:10px; font-weight:800;
+  color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:0.08em;
+}
+.mw-done-header::after {
+  content:''; flex:1; height:1px; background:var(--border);
+}
+
 /* Missing-tasks flag — applied to My Week rows where the user has no
    active/on-hold/waiting tasks for that project. Matches the existing
    .mw-att-border-yellow attention pattern. The helpline sits flush below
