@@ -207,6 +207,7 @@ li strong { color: var(--navy); }
   <a href="#wt-saved-views">10. Save &amp; reuse filter views</a>
   <a href="#wt-achievements">11. Tour your achievements</a>
   <a href="#wt-journal">12. Add a project journal entry</a>
+  <a href="#wt-my-week">13. Manage your week from My Week</a>
   <div class="nav-section">Maintenance</div>
   <a href="#maintaining-walkthroughs">Updating walkthroughs</a>
   <a href="#screenshot-shot-list">Screenshot shot list</a>
@@ -796,6 +797,44 @@ li strong { color: var(--navy); }
   <div class="note-box">
     <strong>No edit or delete in the UI.</strong> Entries are append-only by design &mdash; the journal is meant to be a faithful log over time. If a stray entry needs correcting, an admin can edit the row directly in the <code>Project_Notes</code> AGO table.
   </div>
+</section>
+
+<!-- ── Walkthrough 13: Manage your week from My Week ──────────── -->
+<section class="wt-card" id="wt-my-week">
+  <div class="wt-head">
+    <h3>13. Manage your week from My Week</h3>
+    <div class="wt-meta">
+      <span class="wt-badge everyone">Everyone</span>
+      <span class="wt-time">~2 minutes</span>
+    </div>
+  </div>
+  <div class="wt-summary"><p>The My Week section pairs each project allocation with the tasks you&rsquo;ll touch on that project this week. Use it to spot projects with no actionable work and add tasks on the spot.</p></div>
+  <ol class="wt-steps">
+    <li>
+      <div class="wt-step-title">Open <strong>My Work</strong> and scroll to <strong>📅 My Week</strong>.</div>
+      <div class="wt-step-body">Below the daily hours bar you&rsquo;ll see one row per project you&rsquo;re allocated to this week (hours, percentage, allocation bar).</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Read the per-project task list under each row.</div>
+      <div class="wt-step-body">Pending tasks (Active, On Hold, Waiting for Response) are listed first, sorted by priority. Each row shows a status dot, the task title, an optional priority badge, the due date, and a status pill on the right (Active / On Hold / Waiting / ✓ Done). All columns line up so the pill column is easy to scan vertically.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Check the <strong>"✓ Recently done"</strong> subheader.</div>
+      <div class="wt-step-body">Below the pending tasks, a thin divider labelled "✓ Recently done" groups any tasks you completed during the current week (Mon&ndash;Sun). Done tasks render at 70% opacity so they sit visually subordinate to pending work. Tasks completed in earlier weeks aren&rsquo;t shown here &mdash; they&rsquo;re on the project detail page and counted toward your Achievements tab.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Respond to a yellow-bordered row.</div>
+      <div class="wt-step-body">If a project row has a yellow-amber left border and a warm-cream background, you have <em>no actionable tasks</em> assigned to yourself on that project (only completed ones, or none at all). A helpline below reads "⚠ No active tasks assigned to you on this project" with a <strong>＋ Add a task</strong> button on the right.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Click <strong>＋ Add a task</strong> on the helpline.</div>
+      <div class="wt-step-body">The New Task form opens pre-scoped to that project &mdash; you only need to fill in the task title, status, assignee, and due date. Save, and the yellow border on the row clears.</div>
+    </li>
+    <li>
+      <div class="wt-step-title">Click a task to open it directly.</div>
+      <div class="wt-step-body">Each task line is clickable and jumps to the task detail page where you can update status, log time, or add notes. Clicking the project row itself opens the project detail.</div>
+    </li>
+  </ol>
 </section>
 
 <!-- ═══════════════════════════════════════════════════ -->

@@ -211,6 +211,13 @@ li strong { color: var(--navy); }
 <h3>My Week</h3>
 <p>Directly below the KPIs, this section shows your allocation breakdown for the current week from the Resources data. It displays your work schedule type (5/8, 4/10, or 9/80), which pay period week you're in (A or B), your scheduled hours, and your RDO day if applicable. A daily bar shows your scheduled hours and work window (e.g., "8h / 7a–5p") for each day of the current week (Mon–Fri), with days off marked as "OFF." Below that, it shows hours and percentage allocated to each project, with a visual bar chart, plus your total allocated hours, capacity, and remaining availability.</p>
 
+<h4>Per-project task list</h4>
+<p>Underneath each project allocation row, the section shows your tasks for that project across four statuses: <strong>Active</strong>, <strong>On Hold</strong>, <strong>Waiting for Response</strong>, and <strong>Complete</strong>. Each task line carries a colored status dot, the task title, an optional priority badge (High/Medium/Low), a due date, and a small status pill on the right (Active · On Hold · Waiting · ✓ Done). Columns are aligned across rows so the pills line up cleanly.</p>
+<p>Pending tasks (Active / On Hold / Waiting) are listed first, sorted by priority. Below them, a thin <strong>"✓ Recently done"</strong> subheader groups any tasks you <em>completed during this week</em> (Mon–Sun). Older completed tasks aren't shown here — they're visible on the project's detail page and counted toward your Achievements tab.</p>
+
+<h4>Missing-tasks flag</h4>
+<p>If a project shows up in your weekly allocation but you have <strong>no Active, On Hold, or Waiting tasks assigned to yourself</strong> on that project, the row is flagged with a yellow-amber left border and warm-cream background. A helpline appears directly below the row: <em>"⚠ No active tasks assigned to you on this project"</em>, with a one-click <strong>＋ Add a task</strong> button that opens the New Task form pre-scoped to that project. The flag still fires if your only tasks on the project are Complete — completed work doesn't count as "actionable." Adding a new pending task clears the warning.</p>
+
 <h3>Two-Column Layout</h3>
 <p>Below the KPIs and My Week sections, the remaining content is arranged in two columns. The left column shows your Projects, while the right column shows your Tasks. If any items need attention, a compact summary bar appears above both columns showing counts (e.g., "3 overdue · 1 due soon · 2 missing data").</p>
 
