@@ -294,20 +294,20 @@ function buildPreferencesPanel() {
   // - Capacity: admins always see; members opt in. Hidden from the toggle list
   //   for plain admins (they have no choice to make) unless previewing as member.
   // - Slideshow: opt-in for everyone, including admins.
+  // The Slideshow toggle is always shown; the Capacity toggle is only
+  // useful for non-admin users (admins always see those tabs anyway).
   var showCapToggle = !Auth.isTeamLead || Auth.previewMode;
-  if (showCapToggle || true /* slideshow row always shown */) {
-    html += '<div style="margin-top:8px;margin-bottom:20px;">';
-    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
-    html += '<span style="font-size:15px;font-weight:700;color:var(--navy);">Optional tabs</span>';
-    html += '</div>';
-    html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Add extra tabs to your top navigation. Off by default.</div>';
-    html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px 20px;">';
-    if (showCapToggle) {
-      html += prefToggle('showCapacity', 'Show Capacity tabs', 'Reveals Resources (capacity chart + allocation table), Forecast (utilization grid + capacity planner), and Insights (retrospective charts on completed projects).', UserPrefs.showCapacity);
-    }
-    html += prefToggle('showSlideshow', 'Show Slideshow tab', 'Cycle through the Overview dashboard panels on a timer — designed for unattended display on a TV or large monitor in a shared space. Includes a fullscreen toggle.', UserPrefs.showSlideshow);
-    html += '</div></div>';
+  html += '<div style="margin-top:8px;margin-bottom:20px;">';
+  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
+  html += '<span style="font-size:15px;font-weight:700;color:var(--navy);">Optional tabs</span>';
+  html += '</div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Add extra tabs to your top navigation. Off by default.</div>';
+  html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px 20px;">';
+  if (showCapToggle) {
+    html += prefToggle('showCapacity', 'Show Capacity tabs', 'Reveals Resources (capacity chart + allocation table), Forecast (utilization grid + capacity planner), and Insights (retrospective charts on completed projects).', UserPrefs.showCapacity);
   }
+  html += prefToggle('showSlideshow', 'Show Slideshow tab', 'Cycle through the Overview dashboard panels on a timer — designed for unattended display on a TV or large monitor in a shared space. Includes a fullscreen toggle.', UserPrefs.showSlideshow);
+  html += '</div></div>';
 
   // Beta Features section — only show features with flag === 'beta'
   var betaKeys = Object.keys(BETA_FEATURES).filter(function(key) {

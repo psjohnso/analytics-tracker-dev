@@ -502,7 +502,9 @@ function buildAchievementsPage() {
     return '<div class="empty-state">Sign in to view your achievements.</div>';
   }
   var name = Auth.fullName;
-  var isSelf = true;
+  // The Achievements tab always renders for the signed-in user — the
+  // admin "view another person's My Work" flow stays on the slim panel
+  // in renderAchievementsPanel(name), not this full-page version.
 
   // ── Compute everything once ─────────────────────────────────
   var streak = computeTimeLoggingStreak(name);
@@ -541,7 +543,7 @@ function buildAchievementsPage() {
   html += '<div class="at-hero">';
   html += '<div class="at-avatar' + (avEmoji ? ' user-emoji-av' : '') + '">' + (avEmoji || esc(initials)) + '</div>';
   html += '<div class="at-hero-info">';
-  html += '<h1>' + esc(isSelf ? 'Your achievements' : name.split(' ')[0] + '\'s achievements') + '</h1>';
+  html += '<h1>Your achievements</h1>';
   html += '<div class="at-hero-meta">' + esc(heroMeta) + '</div>';
   html += '</div>';
   html += '</div>';

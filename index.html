@@ -6,9 +6,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;family=Cardo:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <!-- ArcGIS REST API integration (no external auth library needed) -->
-<link rel="stylesheet" href="src/app.css?v=1.27.0.0001">
+<link rel="stylesheet" href="src/app.css?v=1.27.0.0004">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.27.0.0003"></script>
+<script src="src/constants.js?v=1.27.0.0004"></script>
 <script src="src/agol.js?v=1.16.1.0023"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
 <script src="src/render.js?v=1.27.0.0001"></script>
@@ -16,12 +16,12 @@
 <script src="src/tabs/project-review.js?v=1.16.0.0020"></script>
 <script src="src/project-notes.js?v=1.16.1.0023"></script>
 <script src="src/confetti.js?v=1.17.2.0033"></script>
-<script src="src/achievements.js?v=1.27.0.0003"></script>
+<script src="src/achievements.js?v=1.27.0.0004"></script>
 <script src="src/saved-views.js?v=1.26.1.0001"></script>
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.17.5.0036"></script>
 <script src="src/tabs/overview.js?v=1.17.6.0039"></script>
-<script src="src/tabs/settings.js?v=1.27.0.0001"></script>
+<script src="src/tabs/settings.js?v=1.27.0.0004"></script>
 <script src="src/tabs/resources.js?v=1.17.6.0039"></script>
 <script src="src/tabs/my-work.js?v=1.17.4.0035"></script>
 <script src="src/tabs/projects-tasks.js?v=1.27.0.0003"></script>
@@ -1321,7 +1321,7 @@ function applyTheme() {
 // Parse user_preferences JSON for every loaded member and extract any
 // publicly-visible pieces (currently just `avatarEmoji`). Cheap; runs
 // once after RESOURCES_DATA.people is built, and again on resource reload.
-function attachMemberStatuses() {
+function attachMemberAvatarEmojis() {
   if (!RESOURCES_DATA || !RESOURCES_DATA.people) return;
   Object.keys(RESOURCES_DATA.people).forEach(function(name) {
     var p = RESOURCES_DATA.people[name];
@@ -1415,17 +1415,6 @@ function applyUiScale() {
   if (s < 0.7) s = 0.7;
   if (s > 1.6) s = 1.6;
   document.body.style.zoom = s;
-}
-
-// Live preview while dragging the UI-size slider — apply zoom and update
-// the percent label without persisting. The onchange (release) handler in
-// settings.js calls updatePref() to save.
-function previewUiScale(value) {
-  var s = parseFloat(value);
-  if (!isFinite(s) || s <= 0) return;
-  document.body.style.zoom = s;
-  var lbl = document.getElementById('pref-uiScale-val');
-  if (lbl) lbl.textContent = Math.round(s * 100) + '%';
 }
 
 // Show or hide the optional Capacity + Slideshow tabs based on UserPrefs.
@@ -1881,7 +1870,7 @@ async function loadArcGISData() {
     await loadResourcesData();
     initResourcesWeekIndices();
     loadUserPrefs();
-    attachMemberStatuses();
+    attachMemberAvatarEmojis();
     applyUiScale();
     applyTheme();
     applyColorBlindMode();
