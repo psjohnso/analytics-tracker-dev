@@ -1160,7 +1160,7 @@ function renderMyWork(area) {
       if (pendingTasks.length > 0 || doneTasks.length > 0) {
         pendingTasks.forEach(function(t) { html += _mwTaskLineHtml(t); });
         if (doneTasks.length > 0) {
-          html += '<div class="mw-done-header"><span>✓ Recently done</span></div>';
+          html += '<div class="mw-done-header"><span>✓ Completed this Week</span></div>';
           doneTasks.forEach(function(t) { html += _mwTaskLineHtml(t); });
         }
       }
