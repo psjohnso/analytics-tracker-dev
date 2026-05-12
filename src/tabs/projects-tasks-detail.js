@@ -779,8 +779,24 @@ function renderProjectDetail(id) {
   });
   const statusColor = STATUS_COLOR(p.status) || '#9CA3AF';
   const returnTab = currentDetail._returnTab || 'projects';
-  const backLabels = { mywork: '← Back to My Work', resources: '← Back to Resources', tasks: '← Back to Tasks', forecast: '← Back to Forecast' };
-  const backLabel = backLabels[returnTab] || '← Back to Projects';
+  // Labels for every tab that can link to a project. Falls back to a
+  // generic "← Back" when the originating tab isn't in the map, so we
+  // never promise the wrong destination.
+  const backLabels = {
+    overview:      '← Back to Overview',
+    mywork:        '← Back to My Work',
+    projects:      '← Back to Projects',
+    tasks:         '← Back to Tasks',
+    projectReview: '← Back to Project Review',
+    resources:     '← Back to Resources',
+    forecast:      '← Back to Forecast',
+    insights:      '← Back to Insights',
+    issues:        '← Back to Issues',
+    achievements:  '← Back to Achievements',
+    slideshow:     '← Back to Slideshow',
+    settings:      '← Back to Settings'
+  };
+  const backLabel = backLabels[returnTab] || '← Back';
 
   const allMembers = (() => {
     const arr = [p.contact, ...(p.other_members||'').split(',').map(s=>s.trim())].filter(Boolean);
@@ -1084,15 +1100,29 @@ function renderTaskDetail(idx) {
   const proj = t.project ? PROJECTS.find(function(x) { return x.title === t.project; }) : PROJECTS.find(function(x) { return x.id == t.project_id; });
   const taskReturnTab = currentDetail._returnTab || 'tasks';
   const taskFromProject = currentDetail._fromProject;
-  const taskBackLabels = { mywork: '← Back to My Work', resources: '← Back to Resources', projects: '← Back to Projects', forecast: '← Back to Forecast' };
-  // If task has a parent project, always offer to go back to it
-  const taskBackLabel = (taskFromProject || proj) ? '← Back to Project'
+  // Labels for every tab that can link to a task. Same comprehensive map
+  // as the project detail. "← Back to Project" is reserved for the case
+  // where the user genuinely navigated here from a project's detail view
+  // (openTaskFromProject set _fromProject) — NOT just because the task
+  // happens to have a parent project. Forcing _fromProject onto every
+  // task with a resolvable proj used to make Back skip past the user's
+  // actual originating tab; that behavior is removed.
+  const taskBackLabels = {
+    overview:      '← Back to Overview',
+    mywork:        '← Back to My Work',
+    projects:      '← Back to Projects',
+    tasks:         '← Back to Tasks',
+    projectReview: '← Back to Project Review',
+    resources:     '← Back to Resources',
+    forecast:      '← Back to Forecast',
+    insights:      '← Back to Insights',
+    issues:        '← Back to Issues',
+    achievements:  '← Back to Achievements',
+    slideshow:     '← Back to Slideshow',
+    settings:      '← Back to Settings'
+  };
+  const taskBackLabel = taskFromProject ? '← Back to Project'
     : taskBackLabels[taskReturnTab] || '← Back';
-
-  // Ensure _fromProject is set for goBackFromDetail if we have a parent project
-  if (proj && !taskFromProject) {
-    currentDetail._fromProject = proj.objectId;
-  }
 
   const isCompletable = t.status && t.status !== 'Complete' && t.status !== 'Canceled';
 
