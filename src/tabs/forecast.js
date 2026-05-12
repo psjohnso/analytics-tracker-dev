@@ -162,15 +162,49 @@ function fcUtilColor(u) {
 // ── Capacity Planner State ──
 let _cpSize = 'M';
 let _cpRole = 'Contributor';
+// Team filter — null = not yet initialized; '' = All; or one of the four
+// ITD data-team values. Initialized lazily once Auth.fullName + RESOURCES_DATA
+// are both available, defaulting to the signed-in user's team. The user
+// can then switch to any team or All from the dropdown.
+let _cpTeam = null;
+
+// Known data-team values for the planner dropdown.
+const CP_TEAMS = ['Data Intelligence', 'Data Architecture', 'Data Librarian', 'EDI'];
+
+// Resolve the default team filter from the signed-in user's team record.
+// If they're not on one of the four known teams, fall back to All so they
+// aren't accidentally filtered into an empty list.
+function cpDefaultTeam() {
+  if (typeof Auth === 'undefined' || !Auth.fullName) return '';
+  if (!RESOURCES_DATA || !RESOURCES_DATA.people) return '';
+  var p = RESOURCES_DATA.people[Auth.fullName];
+  if (!p || !p.team) return '';
+  return CP_TEAMS.indexOf(p.team) >= 0 ? p.team : '';
+}
+
+// Lazy init — call before reading _cpTeam in either the controls or the
+// planner body. Once initialized, the user's explicit choice wins.
+function cpEnsureTeamInit() {
+  if (_cpTeam === null) _cpTeam = cpDefaultTeam();
+}
 
 function cpSetSize(val) { _cpSize = val; cpRenderPlanner(); }
 function cpSetRole(val) { _cpRole = val; cpRenderPlanner(); }
+function cpSetTeam(val) { _cpTeam = val || ''; cpRenderPlanner(); }
 
 function cpRenderPlanner() {
   var container = document.getElementById('cp-planner-body');
   if (!container || !RESOURCES_DATA || !RESOURCES_DATA.people) return;
+  cpEnsureTeamInit();
   var avData = fcAvailData();
   var people = Object.keys(avData);
+  // Filter by team if a specific team is selected ('' = All).
+  if (_cpTeam) {
+    people = people.filter(function(name) {
+      var p = RESOURCES_DATA.people[name];
+      return p && p.team === _cpTeam;
+    });
+  }
   var curIdx = window.currentWeekIdx || 9;
   var weeks = RESOURCES_DATA.weeks || [];
   var pct = (_allocationDefaults[_cpSize] || {})[_cpRole] || 0;
@@ -256,6 +290,7 @@ function cpRenderPlanner() {
 }
 
 function buildCapacityPlannerSection() {
+  cpEnsureTeamInit();
   var sizeOpts = ['S', 'M', 'L', 'XL'].map(function(s) {
     var labels = { S: 'S — Small (2 wks)', M: 'M — Medium (6 wks)', L: 'L — Large (13 wks)', XL: 'XL — Extra large (26 wks)' };
     return '<option value="' + s + '"' + (s === _cpSize ? ' selected' : '') + '>' + labels[s] + '</option>';
@@ -263,11 +298,16 @@ function buildCapacityPlannerSection() {
   var roleOpts = ['Lead', 'Contributor', 'Reviewer'].map(function(r) {
     return '<option value="' + r + '"' + (r === _cpRole ? ' selected' : '') + '>' + r + '</option>';
   }).join('');
+  var teamOpts = '<option value=""' + (_cpTeam === '' ? ' selected' : '') + '>All teams</option>';
+  CP_TEAMS.forEach(function(t) {
+    teamOpts += '<option value="' + esc(t) + '"' + (t === _cpTeam ? ' selected' : '') + '>' + esc(t) + '</option>';
+  });
   var pct = (_allocationDefaults[_cpSize] || {})[_cpRole] || 0;
 
   return '<div class="cp-section">' +
     '<div class="fc-section-label">Capacity planner' + calcInfoIcon('earliestStart') + ' <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--text-muted);">When can each person take on a new project?</span></div>' +
     '<div class="cp-controls">' +
+      '<div><label>Team</label><select onchange="cpSetTeam(this.value)">' + teamOpts + '</select></div>' +
       '<div><label>Project size</label><select onchange="cpSetSize(this.value)">' + sizeOpts + '</select></div>' +
       '<div><label>Role</label><select onchange="cpSetRole(this.value)">' + roleOpts + '</select></div>' +
       '<div style="font-size:12px;color:var(--text-muted);padding-bottom:6px;">' + pct + '% of project time/week' + calcInfoIcon('autoFillPct') + ' for ' + SIZE_DURATIONS[_cpSize] + ' weeks</div>' +
