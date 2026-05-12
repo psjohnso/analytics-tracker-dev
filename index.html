@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.28.0.0003">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.31.0.0001"></script>
+<script src="src/constants.js?v=1.31.0.0002"></script>
 <script src="src/agol.js?v=1.16.1.0023"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
 <script src="src/render.js?v=1.27.0.0001"></script>
@@ -1684,6 +1684,7 @@ async function loadResourcesData() {
     people[nm] = {
       objectId:         ci('objectid') || a.objectid || a.OBJECTID || a.ObjectId,
       user_preferences: ci('user_preferences') || null,
+      position_title:   ci('position_title') || '',
       role:             a.role || '',
       team:             a.team || '',
       skill:            a.skill || ci('skill') || '',
