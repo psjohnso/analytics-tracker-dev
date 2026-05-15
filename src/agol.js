@@ -14,22 +14,26 @@
 const ARCGIS_CONFIG = {
   portalUrl:        'https://cotgis.maps.arcgis.com',
   clientId:         'H8cR2cAUoy0fVrJF',
-  projectsUrl:      'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/projects/FeatureServer/0',
-  tasksUrl:         'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/tasks/FeatureServer/0',
-  teamMembersUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/team_members/FeatureServer/0',
-  absencesUrl:      'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/absences/FeatureServer/0',
-  allocationsUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/allocations/FeatureServer/0',
-  weeklyCapacityUrl:'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/weekly_capacity/FeatureServer/0',
-  appConfigUrl:     'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/app_config/FeatureServer/0',
-  timeEntriesUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/time_series/FeatureServer/0',
-  statusHistoryUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/status_history/FeatureServer/0',
-  issuesUrl:        'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/issues/FeatureServer/0',
-  projectReviewsUrl:'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/Project_Reviews/FeatureServer/0',
-  projectNotesUrl:  'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/Project_Notes/FeatureServer/0',
+
+  // Three consolidated FeatureServers replace the previous twelve.
+  // Layer indices verified 2026-05-15 against ?f=json output.
+  projectsUrl:       'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/0',
+  tasksUrl:          'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/1',
+  projectNotesUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/2',
+  projectReviewsUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/3',
+  statusHistoryUrl:  'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/4',
+
+  teamMembersUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/0',
+  absencesUrl:       'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/1',
+  timeEntriesUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/2',
+  allocationsUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/3',
+
+  appConfigUrl:      'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin/FeatureServer/0',
+  issuesUrl:         'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin/FeatureServer/1',
+
   // Public views — ArcGIS Online Item IDs for read-only feature layer views.
-  // Create views in ArcGIS Online: Content → source layer → Manage → Create View Layer.
-  // Share the views publicly or org-wide. Find the Item ID in the URL bar of the item page.
-  // Leave empty to disable read-only public access.
+  // These still wrap the LEGACY services (frozen but online). New public
+  // views over the consolidated services are a follow-on task.
   publicProjectsItemId: '8d28b20af78d4e01bffbac8abd9dd8ed',
   publicTasksItemId:    '1b24f6c11021452e938747ff18cd5340',
   publicConfigItemId:   '693882a97ea84c92ad2b41f7d35fa529',

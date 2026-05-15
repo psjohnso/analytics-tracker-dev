@@ -10,7 +10,7 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.31.0.0002';
+const APP_VERSION = '1.32.0.0001';
 
 // ArcGIS Online group whose members are authorized to change a project's
 // status from "Idea" to any other status (also gates admin / Team Lead UI
