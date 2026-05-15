@@ -98,7 +98,9 @@ async function loadProjectReviews() {
         review_id: a.review_id,
         review_type_id: a.review_type_id,
         project_number: a.project_number,
-        meeting_date: a.meeting_date,   // epoch ms (DateOnly) — keep raw for sort
+        // meeting_date on the wire is DateOnly (YYYY-MM-DD string in new
+        // schema). Local model uses epoch ms for sort/date math. Normalize.
+        meeting_date: (typeof a.meeting_date === 'string') ? prDateToEpoch(a.meeting_date) : a.meeting_date,
         attendees: a.attendees || '',
         notes: a.notes || '',
         decisions: a.decisions || '',
@@ -1064,7 +1066,7 @@ async function prSaveLog() {
       var existing = PROJECT_REVIEWS.find(function(r) { return r.objectId === _prModalState.editObjectId; });
       var updateAttrs = {
         ObjectId: _prModalState.editObjectId,
-        meeting_date: meetingEpoch,
+        meeting_date: meetingDate,  // DateOnly: send YYYY-MM-DD string
         attendees: attendees,
         notes: notes,
         decisions: decisions,
@@ -1092,7 +1094,7 @@ async function prSaveLog() {
       var addAttrs = {
         review_type_id: _prModalState.reviewTypeId,
         project_number: _prModalState.projectNumber,
-        meeting_date: meetingEpoch,
+        meeting_date: meetingDate,  // DateOnly: send YYYY-MM-DD string
         attendees: attendees,
         notes: notes,
         decisions: decisions,
@@ -1109,7 +1111,7 @@ async function prSaveLog() {
         review_id: newReviewId,  // local-only; field dropped from schema
         review_type_id: addAttrs.review_type_id,
         project_number: addAttrs.project_number,
-        meeting_date: addAttrs.meeting_date,
+        meeting_date: meetingEpoch,  // local model uses epoch ms (sort/date math)
         attendees: addAttrs.attendees,
         notes: addAttrs.notes,
         decisions: addAttrs.decisions,
