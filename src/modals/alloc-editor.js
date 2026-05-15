@@ -410,14 +410,10 @@ async function autoFillAllocationsForNewProject(fields) {
       adds.push({
         attributes: {
           name:           member.name,
-          project:        fields.title,
-          project_status: fields.status || 'Active',
-          project_type:   fields.category || '',
-          analytics_id:   analyticsId,
+          project_number: analyticsId,
           project_role:   member.role,
           week_date:      wDate,
           fraction:       fraction,
-          hours:          hours,
         }
       });
     }
@@ -624,14 +620,10 @@ async function saveAllocationsToRest(edits) {
         adds.push({
           attributes: {
             name:           e.name,
-            project:        e.project,
-            project_status: e.project_status,
-            project_type:   e.project_type,
-            analytics_id:   e.analytics_id,
+            project_number: e.analytics_id,
             project_role:   e.project_role || null,
             week_date:      e.week_date,
             fraction:       e.fraction,
-            hours:          e.hours,
           }
         });
       }

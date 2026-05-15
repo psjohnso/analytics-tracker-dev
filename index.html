@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.28.0.0003">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.32.0.0004"></script>
+<script src="src/constants.js?v=1.32.0.0005"></script>
 <script src="src/agol.js?v=1.32.0.0003"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
 <script src="src/render.js?v=1.27.0.0001"></script>
@@ -30,8 +30,8 @@
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
 <script src="src/modals/idea.js?v=1.16.1.0025"></script>
 <script src="src/modals/member-form.js?v=1.32.0.0002"></script>
-<script src="src/modals/alloc-editor.js?v=1.10.0.0001"></script>
-<script src="src/modals/settings-editors.js?v=1.32.0.0002"></script>
+<script src="src/modals/alloc-editor.js?v=1.32.0.0005"></script>
+<script src="src/modals/settings-editors.js?v=1.32.0.0005"></script>
 <script src="src/modals/forms.js?v=1.17.5.0036"></script>
 <script src="src/ai/prompts.js?v=1.12.0.0001"></script>
 <script src="src/ai/ai-suggestions.js?v=1.16.0.0015"></script>
@@ -2968,10 +2968,16 @@ async function logStatusChange(projectId, projectTitle, newStatus) {
   };
   // Add to local array immediately
   STATUS_HISTORY.push(record);
-  // Save to ArcGIS Online
+  // Save to ArcGIS Online (record uses alias key project_id; AGO needs project_number)
   try {
     const result = await agolApplyEdits(ARCGIS_CONFIG.statusHistoryUrl, {
-      adds: [{ attributes: record }]
+      adds: [{ attributes: {
+        project_number: projectId,
+        project_title: projectTitle,
+        status: newStatus,
+        changed_date: todayStr,
+        changed_by: who,
+      }}]
     });
     if (result && result.addResults && result.addResults[0] && result.addResults[0].objectId) {
       record.objectId = result.addResults[0].objectId;
@@ -3290,8 +3296,8 @@ async function startTimer(taskIdx) {
     const result = await agolApplyEdits(ARCGIS_CONFIG.timeEntriesUrl, {
       adds: [{ attributes: {
         name: Auth.fullName,
-        task_idx: taskIdx,
-        project_id: task.project_id || null,
+        task_number: taskIdx,
+        project_number: task.project_id || null,
         start_time: now.getTime(),
         end_time: null,
         hours: null,

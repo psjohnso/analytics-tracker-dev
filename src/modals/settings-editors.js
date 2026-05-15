@@ -569,7 +569,13 @@ async function addStatusHistoryRecord() {
 
   try {
     const result = await agolApplyEdits(ARCGIS_CONFIG.statusHistoryUrl, {
-      adds: [{ attributes: record }]
+      adds: [{ attributes: {
+        project_number: Editor.shProjectId,
+        project_title: projTitle,
+        status: status,
+        changed_date: dateVal,
+        changed_by: who,
+      }}]
     });
     if (result && result.addResults && result.addResults[0] && result.addResults[0].objectId) {
       record.objectId = result.addResults[0].objectId;
