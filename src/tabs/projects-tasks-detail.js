@@ -724,7 +724,7 @@ function buildProjectTimeline(p, relTasks) {
   var html = '<div class="detail-section">';
   html += '<div class="detail-section-label detail-section-label-flex">';
   html += '<span>Project Timeline</span>';
-  if (Auth.devMode) html += '<button onclick="toggleStatusHistoryEditor(' + p.id + ',' + p.objectId + ')" class="btn-navy-sm">\ud83d\udcc5 Edit History</button>';
+  if (Auth.devMode) html += '<button onclick="toggleStatusHistoryEditor(\'' + p.id + '\',' + p.objectId + ')" class="btn-navy-sm">\ud83d\udcc5 Edit History</button>';
   html += '</div>';
 
   html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;padding:0 2px;">';

@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.28.0.0003">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.32.0.0009"></script>
+<script src="src/constants.js?v=1.32.0.0010"></script>
 <script src="src/agol.js?v=1.32.0.0007"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
 <script src="src/render.js?v=1.27.0.0001"></script>
@@ -25,7 +25,7 @@
 <script src="src/tabs/resources.js?v=1.17.6.0039"></script>
 <script src="src/tabs/my-work.js?v=1.28.2.0002"></script>
 <script src="src/tabs/projects-tasks.js?v=1.27.0.0003"></script>
-<script src="src/tabs/projects-tasks-detail.js?v=1.32.0.0002"></script>
+<script src="src/tabs/projects-tasks-detail.js?v=1.32.0.0010"></script>
 <script src="src/tabs/slideshow.js?v=1.16.0.0009"></script>
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
 <script src="src/modals/idea.js?v=1.16.1.0025"></script>
@@ -3643,7 +3643,7 @@ function buildTimeEntryRowHTML(e, opts) {
   html += '</div>';
   html += '<div class="te-row-hours">' + hrs + '</div>';
   if (opts.canResume) {
-    html += '<button onclick="startTimer(' + e.task_idx + ')" class="btn-timer-resume" title="Resume this task">▶</button>';
+    html += '<button onclick="startTimer(\'' + e.task_idx + '\')" class="btn-timer-resume" title="Resume this task">▶</button>';
   }
   html += '<button onclick="toggleEditTimeEntry(' + e.oid + ')" class="btn-te-icon">✏️</button>';
   html += '<button onclick="deleteTimeEntry(' + e.oid + ')" class="btn-te-del">🗑</button>';
@@ -3685,7 +3685,7 @@ function buildActiveTimersHTML(activeTimers) {
     html += '<div class="text-muted-sm">Started ' + formatTimeShort(e.start_time) + (cumulHrs > 0 ? ' · Total: ' + cumulHrs + 'h' : '') + '</div>';
     html += '</div>';
     html += '<div class="timer-elapsed" id="timer-elapsed-' + e.oid + '">' + elapsed + '</div>';
-    html += '<button onclick="pauseTimer(' + e.oid + ',' + e.task_idx + ')" class="btn-timer-pause">⏸ Pause</button>';
+    html += '<button onclick="pauseTimer(' + e.oid + ',\'' + e.task_idx + '\')" class="btn-timer-pause">⏸ Pause</button>';
     html += '<button onclick="stopTimer(' + e.oid + ')" class="btn-timer-stop">⏹ Stop</button>';
     html += '</div>';
   });
@@ -3725,7 +3725,7 @@ function buildTimeTrackingPanel() {
     html += '<option value="' + t.idx + '">' + esc(t.title + projLabel) + '</option>';
   });
   html += '</select>';
-  html += '<button onclick="var s=document.getElementById(\'te-task-select\');if(s.value)startTimer(parseInt(s.value));else showToast(\'Select a task first.\',\'warn\');" class="btn-navy-lg">▶ Start</button>';
+  html += '<button onclick="var s=document.getElementById(\'te-task-select\');if(s.value)startTimer(s.value);else showToast(\'Select a task first.\',\'warn\');" class="btn-navy-lg">▶ Start</button>';
   html += '</div>';
 
   // Today's summary
