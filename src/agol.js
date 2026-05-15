@@ -186,33 +186,40 @@ async function agolApplyEdits(serviceUrl, edits) {
 // ══════════════════════════════════════════════════════════════════════
 //  FIELD MAPPING: ArcGIS Feature Service Fields ↔ Local JS Field Names
 //  ─────────────────────────────────────────────────────────────────
-//  Projects layer fields (ArcGIS):
-//    ObjectId, id, pid, title, status, priority, contact,
-//    other_members, partner_dept, category, start, end_ (alias: end),
-//    actual_end, description, problem_statement, itd_team, project_number,
+//  Projects layer fields (ArcGIS, datateam_portfolio/0):
+//    ObjectId, project_number, title, status, priority, contact,
+//    other_members, partner_dept, category, start_date, end_date,
+//    actual_end, description, problem_statement, itd_team,
 //    is_data_program, it_initiative, city_initiative, it_priority_project,
-//    dp_goal, wwc_practice, wwc_criteria
+//    dp_goal, wwc_practice, wwc_criteria, data_program_team,
+//    leadership_title, leadership_summary, primary_dp_goal, public_visibility
 //
-//  Tasks layer fields (ArcGIS):
-//    ObjectId, idx, id, title, status, priority, assignee,
-//    project_id, project, category, start, due,
-//    actual_end, tool, description, hours, hours_worked, resolution, task_number
+//  Tasks layer fields (ArcGIS, datateam_portfolio/1):
+//    ObjectId, task_number, project_number, title, status, priority,
+//    assignee, category, start_date, due_date, working_due, actual_end,
+//    tool, description, hours, hours_worked, resolution
 //
-//  KEY JOIN: Task.project_id = Project.id
+//  KEY JOIN: Task.project_number = Project.project_number  (Strings)
 //
-//  NOTE: ArcGIS fields are nearly 1:1 with local field names.
-//        The only difference is the project date field 'end_' in
-//        ArcGIS maps to 'end' locally (since 'end' is a reserved word).
-//        DateOnly fields are returned as string values (YYYY-MM-DD).
+//  LEGACY ALIASES: the projection functions also expose:
+//    Project: local.id          ← project_number    (consumer compat)
+//    Task:    local.project_id  ← project_number    (consumer compat)
+//             local.idx         ← task_number       (consumer compat)
+//  These exist so the rest of the codebase can continue reading the
+//  legacy names while consumer code is migrated to the new names. The
+//  reverse-translation in localToAgolTask() ensures writes still go
+//  to the real schema fields.
+//
+//  NOTE: 'start_date'/'end_date'/'due_date' on the wire; some consumer
+//        code still uses the legacy 'start'/'end'/'due' shorthand —
+//        will be addressed in a follow-up commit.
 // ══════════════════════════════════════════════════════════════════════
 
 // Maps: localFieldName → ArcGIS field name (only where they differ)
-const PROJECT_FIELD_MAP = {
-  end: 'end_',  // 'end' is reserved; ArcGIS stores it as 'end_'
-};
+const PROJECT_FIELD_MAP = {};
 
 // Reverse map for projects: ArcGIS field → local field
-const PROJECT_AGOL_TO_LOCAL = { 'end_': 'end' };
+const PROJECT_AGOL_TO_LOCAL = {};
 
 // For tasks, all field names are identical — no mapping needed.
 
@@ -225,10 +232,10 @@ function agolProjectToLocal(feature) {
     const localKey = PROJECT_AGOL_TO_LOCAL[key] || key;
     local[localKey] = attrs[key];
   }
-  // Generate pid if missing
-  if (!local.pid) {
-    local.pid = (local.title || '').replace(/\s+/g, '').slice(0, 40) + local.id;
-  }
+  // Legacy alias: many consumers read p.id; new schema uses
+  // project_number as the canonical PK (String). Will be removed once
+  // consumer code migrates to p.project_number.
+  if (local.project_number != null) local.id = local.project_number;
   // Normalize boolean fields from ArcGIS Short Integer (0/1) to JS truthy.
   // Data Program status is derived: true if data_program_team is set
   // (the explicit way), OR if any Data Program Goal is set on a DI
@@ -247,6 +254,10 @@ function agolTaskToLocal(feature) {
     if (key === 'ObjectId') continue;
     local[key] = attrs[key];
   }
+  // Legacy aliases (see agolProjectToLocal). Consumers read t.project_id
+  // and t.idx; new schema uses project_number and task_number (Strings).
+  if (local.project_number != null) local.project_id = local.project_number;
+  if (local.task_number    != null) local.idx        = local.task_number;
   // Ensure hours_worked is numeric (this is the primary hours field for calculations)
   local.hours_worked = parseFloat(local.hours_worked) || 0;
   return local;
@@ -257,7 +268,8 @@ function localToAgolProject(fields) {
   const attrs = {};
   for (const key of Object.keys(fields)) {
     const val = fields[key];
-    if (key === 'objectId' || key === 'pid' || val === undefined) continue;
+    // Skip transient/local-only/alias-only keys that have no schema field.
+    if (key === 'objectId' || key === 'pid' || key === 'id' || val === undefined) continue;
     const agolKey = PROJECT_FIELD_MAP[key] || key;
     attrs[agolKey] = val;
   }
@@ -269,6 +281,10 @@ function localToAgolTask(fields) {
   for (const key of Object.keys(fields)) {
     const val = fields[key];
     if (key === 'objectId' || val === undefined) continue;
+    // Translate legacy alias keys back to real schema field names.
+    if (key === 'project_id') { attrs.project_number = val; continue; }
+    if (key === 'idx')        { attrs.task_number    = val; continue; }
+    if (key === 'id')         continue;  // alias-only on projects, but skip if ever passed
     attrs[key] = val;
   }
   return attrs;
