@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.28.0.0003">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.32.0.0005"></script>
+<script src="src/constants.js?v=1.32.0.0006"></script>
 <script src="src/agol.js?v=1.32.0.0003"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
 <script src="src/render.js?v=1.27.0.0001"></script>
@@ -1965,9 +1965,7 @@ const DataStore = {
 
   async createProject(fields) {
     try {
-      const id = Math.max(0, ...PROJECTS.map(function(p) { return p.id; })) + 1;
-      fields.id = id;
-      // Auto-assign project number
+      // Auto-assign project_number (the canonical PK in the new schema)
       if (!fields.project_number) fields.project_number = getNextProjectNumber();
       // Auto-set working_due to match original end date on creation
       if (fields.end && !fields.working_due) fields.working_due = fields.end;
@@ -1977,20 +1975,19 @@ const DataStore = {
       });
       const addResult = (result.addResults || [])[0];
       if (!addResult || !addResult.success) throw new Error('Add failed: ' + JSON.stringify(addResult));
-      const pid = (fields.title || '').replace(/\s+/g, '').slice(0, 40) + id;
-      const proj = Object.assign({ pid: pid, objectId: addResult.objectId }, fields);
+      // Build local project object; alias 'id' → project_number for consumer compat.
+      const proj = Object.assign({ id: fields.project_number, objectId: addResult.objectId }, fields);
       PROJECTS.push(proj);
       markSynced('Project created');
-      // Log initial status to history
-      if (fields.status) logStatusChange(fields.id, fields.title, fields.status);
+      // Log initial status to history (FK is project_number)
+      if (fields.status) logStatusChange(fields.project_number, fields.title, fields.status);
       return proj;
     } catch (err) {
       console.error('ArcGIS createProject failed:', err);
       showToast('Failed to create project: ' + err.message, 'error');
-      if (!fields.id) fields.id = Math.max(0, ...PROJECTS.map(function(p) { return p.id; })) + 1;
-      const pid = (fields.title || '').replace(/\s+/g, '').slice(0, 40) + Date.now();
+      if (!fields.project_number) fields.project_number = getNextProjectNumber();
       const tempOid = 'temp_' + Date.now();
-      const proj = Object.assign({ pid: pid, objectId: tempOid }, fields);
+      const proj = Object.assign({ id: fields.project_number, objectId: tempOid }, fields);
       PROJECTS.push(proj);
       markDirty();
       return proj;
