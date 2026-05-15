@@ -526,7 +526,7 @@ async function lpSaveProject() {
   };
   if (_lpEditingId) {
     // Edit: don't change data_program_team (preserve project's owning team).
-    attrs.OBJECTID = _lpEditingId;
+    attrs.ObjectId = _lpEditingId;
   } else {
     // New: stamp data_program_team based on role/filter.
     attrs.data_program_team = (_lpRole === 'lead') ? _lpMyTeam : _lpFilterTeam;

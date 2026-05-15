@@ -1166,7 +1166,7 @@ function renderTaskDetail(idx) {
           <div class="detail-meta-item"><label>Working Due Date</label><p>${t.working_due ? t.working_due + (t.due && t.working_due !== t.due ? ' <span style="font-size:10px;color:#EF4444;">(moved)</span>' : '') : '—'}</p></div>
           <div class="detail-meta-item"><label>Hours Logged</label><p>${getTaskHours(t.idx) > 0 ? hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx)) : '—'}</p></div>
           ${t.actual_end ? `<div class="detail-meta-item"><label>Actual End</label><p>${t.actual_end}</p></div>` : ''}
-          ${t.Hours_Worked ? `<div class="detail-meta-item"><label>Hours Worked</label><p>${t.Hours_Worked}</p></div>` : ''}
+          ${t.hours_worked ? `<div class="detail-meta-item"><label>Hours Worked</label><p>${t.hours_worked}</p></div>` : ''}
         </div>
       </div>
 

@@ -196,7 +196,7 @@ async function agolApplyEdits(serviceUrl, edits) {
 //  Tasks layer fields (ArcGIS):
 //    ObjectId, idx, id, title, status, priority, assignee,
 //    project_id, project, category, start, due,
-//    actual_end, tool, description, hours, Hours_Worked, resolution, task_number
+//    actual_end, tool, description, hours, hours_worked, resolution, task_number
 //
 //  KEY JOIN: Task.project_id = Project.id
 //
@@ -247,8 +247,8 @@ function agolTaskToLocal(feature) {
     if (key === 'ObjectId') continue;
     local[key] = attrs[key];
   }
-  // Ensure Hours_Worked is numeric (this is the primary hours field for calculations)
-  local.Hours_Worked = parseFloat(local.Hours_Worked) || 0;
+  // Ensure hours_worked is numeric (this is the primary hours field for calculations)
+  local.hours_worked = parseFloat(local.hours_worked) || 0;
   return local;
 }
 

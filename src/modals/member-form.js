@@ -161,7 +161,7 @@ async function toggleTimeTracking(name, enabled) {
     const existing = await agolQuery(ARCGIS_CONFIG.teamMembersUrl, "name='" + name.replace(/'/g, "''") + "'");
     if (existing.length === 0) { showToast('Could not find record for ' + name, 'error'); return; }
     const oid = existing[0].attributes.OBJECTID || existing[0].attributes.ObjectId || existing[0].attributes.objectid;
-    const attrs = { OBJECTID: oid };
+    const attrs = { ObjectId: oid };
     // Use case-insensitive field name detection
     if (RESOURCES_DATA && RESOURCES_DATA._memberFieldNames) {
       const fieldNames = RESOURCES_DATA._memberFieldNames;
@@ -214,7 +214,7 @@ async function cascadeRename(oldName, newName) {
       if (features.length === 0) return;
       const updates = features.map(function(f) {
         const oid = f.attributes.OBJECTID || f.attributes.ObjectId || f.attributes.objectid || f.attributes.FID;
-        const upd = Object.assign({ OBJECTID: oid }, attrs);
+        const upd = Object.assign({ ObjectId: oid }, attrs);
         return { attributes: upd };
       });
       await agolApplyEdits(url, { updates: updates });
@@ -237,7 +237,7 @@ async function cascadeRename(oldName, newName) {
         const om = f.attributes.other_members || '';
         // Replace the name in the comma-separated list
         const parts = om.split(',').map(function(s) { return s.trim() === oldName ? newName : s.trim(); });
-        return { attributes: { OBJECTID: oid, other_members: parts.join(', ') } };
+        return { attributes: { ObjectId: oid, other_members: parts.join(', ') } };
       });
       await agolApplyEdits(ARCGIS_CONFIG.projectsUrl, { updates: updates });
       log.push('other_members: ' + projFeatures.length + ' records');
@@ -297,7 +297,7 @@ async function toggleMemberActive(name) {
     const existing = await agolQuery(ARCGIS_CONFIG.teamMembersUrl, "name='" + name.replace(/'/g, "''") + "'");
     if (existing.length === 0) { showToast('Could not find record for ' + name, 'error'); return; }
     const oid = existing[0].attributes.OBJECTID || existing[0].attributes.ObjectId || existing[0].attributes.objectid;
-    const attrs = { OBJECTID: oid, active: newActive ? 'true' : 'false' };
+    const attrs = { ObjectId: oid, active: newActive ? 'true' : 'false' };
     await agolApplyEdits(ARCGIS_CONFIG.teamMembersUrl, { updates: [{ attributes: attrs }] });
     console.log('[Settings] Member active for', name, ':', newActive);
     p.active = newActive;
@@ -409,7 +409,7 @@ async function saveMemberForm() {
       const existing = await agolQuery(ARCGIS_CONFIG.teamMembersUrl, "name='" + origName.replace(/'/g, "''") + "'");
       if (existing.length === 0) { showToast('Could not find existing record for ' + origName, 'error'); return; }
       const oid = existing[0].attributes.OBJECTID || existing[0].attributes.ObjectId || existing[0].attributes.objectid || existing[0].attributes.FID;
-      memberAttrs.OBJECTID = oid;
+      memberAttrs.ObjectId = oid;
       console.log('[Settings] Saving member update:', JSON.stringify(memberAttrs));
       result = await agolApplyEdits(ARCGIS_CONFIG.teamMembersUrl, {
         updates: [{ attributes: memberAttrs }]
@@ -618,7 +618,7 @@ async function absValueChanged(input) {
       if (hrs > 0) {
         // Update existing
         await agolApplyEdits(ARCGIS_CONFIG.absencesUrl, {
-          updates: [{ attributes: { OBJECTID: oid, absence_hours: hrs } }]
+          updates: [{ attributes: { ObjectId: oid, absence_hours: hrs } }]
         });
       } else {
         // Delete if zero

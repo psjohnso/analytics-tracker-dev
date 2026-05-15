@@ -29,9 +29,9 @@ async function loadIssues() {
     ISSUES = features.map(function(f) {
       var a = f.attributes;
       return {
-        objectId: a.OBJECTID || a.ObjectID,
+        objectId: a.OBJECTID || a.ObjectId || a.objectid,
         title: a.title || '',
-        type: a.type_ || a.type || 'Bug',
+        type: a.issue_type || 'Bug',
         description: a.description || '',
         steps_to_reproduce: a.steps_to_reproduce || '',
         status: a.status || 'Submitted',
@@ -291,7 +291,7 @@ async function submitIssueForm() {
 
   var attrs = {
     title: title,
-    type_: type,
+    issue_type: type,
     description: (document.getElementById('issue-desc').value || '').trim(),
     steps_to_reproduce: type === 'Bug' ? (document.getElementById('issue-steps').value || '').trim() : '',
     priority: document.getElementById('issue-priority').value,
@@ -299,7 +299,7 @@ async function submitIssueForm() {
 
   if (_editingIssueId) {
     // Edit existing
-    attrs.OBJECTID = _editingIssueId;
+    attrs.ObjectId = _editingIssueId;
     if (statusEl) {
       attrs.status = statusEl.value;
       if (statusEl.value === 'Done') attrs.resolved_date = todayStr;
@@ -336,7 +336,7 @@ async function changeIssueStatus(issueId, newStatus) {
   var iss = ISSUES.find(function(i) { return i.objectId == issueId; });
   if (!iss || iss.status === newStatus) return;
 
-  var attrs = { OBJECTID: issueId, status: newStatus };
+  var attrs = { ObjectId: issueId, status: newStatus };
   if (newStatus === 'Done') {
     var today = new Date();
     attrs.resolved_date = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
@@ -359,7 +359,7 @@ async function deleteIssue(issueId) {
   try {
     var stamp = { deleted_at: Date.now(), deleted_by: (Auth && Auth.fullName) || 'Unknown' };
     await agolApplyEdits(ARCGIS_CONFIG.issuesUrl, {
-      updates: [{ attributes: { OBJECTID: issueId, deleted_at: stamp.deleted_at, deleted_by: stamp.deleted_by } }]
+      updates: [{ attributes: { ObjectId: issueId, deleted_at: stamp.deleted_at, deleted_by: stamp.deleted_by } }]
     });
     showToast('Issue moved to trash.', 'success');
     await loadIssues();

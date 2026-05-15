@@ -1063,7 +1063,7 @@ async function prSaveLog() {
       // Update
       var existing = PROJECT_REVIEWS.find(function(r) { return r.objectId === _prModalState.editObjectId; });
       var updateAttrs = {
-        OBJECTID: _prModalState.editObjectId,
+        ObjectId: _prModalState.editObjectId,
         meeting_date: meetingEpoch,
         attendees: attendees,
         notes: notes,
