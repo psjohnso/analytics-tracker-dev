@@ -24,8 +24,8 @@ async function loadProjectNotes() {
         note_id: a.note_id,
         project_number: a.project_number,
         note_text: a.note_text || '',
-        created_by: a.created_by || '',
-        created_at: a.created_at
+        created_by: a.created_by || a.Creator || '',
+        created_at: a.created_at || a.CreationDate
       };
     });
     _projectNotesLoaded = true;
@@ -57,12 +57,11 @@ async function addProjectNote(projectNumber, noteText) {
   if (!text) return;
   var newId = _newNoteId();
   var nowEpoch = Date.now();
+  // Creator/CreationDate auto-populated by AGO via editor tracking.
   var attrs = {
     note_id: newId,
     project_number: projectNumber,
     note_text: text.slice(0, 4000),
-    created_by: Auth.fullName || Auth.username || 'Unknown',
-    created_at: nowEpoch
   };
   try {
     var result = await agolApplyEdits(ARCGIS_CONFIG.projectNotesUrl, {
@@ -74,7 +73,7 @@ async function addProjectNote(projectNumber, noteText) {
       note_id: newId,
       project_number: projectNumber,
       note_text: attrs.note_text,
-      created_by: attrs.created_by,
+      created_by: Auth.fullName || Auth.username || 'Unknown',
       created_at: nowEpoch
     });
     showToast('Note added.', 'success');

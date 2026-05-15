@@ -568,13 +568,14 @@ async function addStatusHistoryRecord() {
   STATUS_HISTORY.push(record);
 
   try {
+    // Creator/CreationDate auto-populated by AGO via editor tracking.
+    // (We send the user-chosen dateVal as a separate field IF the schema
+    // ever needs it; for now CreationDate captures "when entered".)
     const result = await agolApplyEdits(ARCGIS_CONFIG.statusHistoryUrl, {
       adds: [{ attributes: {
         project_number: Editor.shProjectId,
         project_title: projTitle,
         status: status,
-        changed_date: dateVal,
-        changed_by: who,
       }}]
     });
     if (result && result.addResults && result.addResults[0] && result.addResults[0].objectId) {

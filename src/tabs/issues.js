@@ -36,8 +36,8 @@ async function loadIssues() {
         steps_to_reproduce: a.steps_to_reproduce || '',
         status: a.status || 'Submitted',
         priority: a.priority || 'Medium',
-        submitted_by: a.submitted_by || '',
-        submitted_date: a.submitted_date || '',
+        submitted_by: a.submitted_by || a.Creator || '',
+        submitted_date: epochToDateStr(a.submitted_date || a.CreationDate),
         resolved_date: a.resolved_date || '',
       };
     });
@@ -312,10 +312,8 @@ async function submitIssueForm() {
       return;
     }
   } else {
-    // New issue
+    // New issue. Creator/CreationDate auto-populated by AGO via editor tracking.
     attrs.status = 'Submitted';
-    attrs.submitted_by = Auth.fullName || 'Anonymous';
-    attrs.submitted_date = todayStr;
     try {
       await agolApplyEdits(ARCGIS_CONFIG.issuesUrl, { adds: [{ attributes: attrs }] });
       showToast('Issue submitted! Thank you for the feedback.', 'success');

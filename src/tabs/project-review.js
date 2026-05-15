@@ -103,8 +103,8 @@ async function loadProjectReviews() {
         notes: a.notes || '',
         decisions: a.decisions || '',
         action_items: a.action_items || '',
-        created_by: a.created_by || '',
-        created_at: a.created_at
+        created_by: a.created_by || a.Creator || '',
+        created_at: a.created_at || a.CreationDate
       };
     });
     _projectReviewsLoaded = true;
@@ -1087,8 +1087,9 @@ async function prSaveLog() {
     } else {
       // Add
       var newReviewId = nextReviewId();
+      // review_id was dropped from the schema. Creator/CreationDate
+      // auto-populated by AGO via editor tracking.
       var addAttrs = {
-        review_id: newReviewId,
         review_type_id: _prModalState.reviewTypeId,
         project_number: _prModalState.projectNumber,
         meeting_date: meetingEpoch,
@@ -1096,8 +1097,6 @@ async function prSaveLog() {
         notes: notes,
         decisions: decisions,
         action_items: actionItems,
-        created_by: Auth.fullName || (Auth.username || ''),
-        created_at: nowEpoch
       };
       var result2 = await agolApplyEdits(ARCGIS_CONFIG.projectReviewsUrl, { adds: [{ attributes: addAttrs }] });
       if (result2.addResults && result2.addResults[0] && !result2.addResults[0].success) {
@@ -1107,7 +1106,7 @@ async function prSaveLog() {
       var newOid = result2.addResults && result2.addResults[0] ? result2.addResults[0].objectId : null;
       PROJECT_REVIEWS.push({
         objectId: newOid,
-        review_id: newReviewId,
+        review_id: newReviewId,  // local-only; field dropped from schema
         review_type_id: addAttrs.review_type_id,
         project_number: addAttrs.project_number,
         meeting_date: addAttrs.meeting_date,
@@ -1115,8 +1114,8 @@ async function prSaveLog() {
         notes: addAttrs.notes,
         decisions: addAttrs.decisions,
         action_items: addAttrs.action_items,
-        created_by: addAttrs.created_by,
-        created_at: addAttrs.created_at
+        created_by: Auth.fullName || (Auth.username || ''),
+        created_at: nowEpoch
       });
       showToast('Review entry saved.', 'success');
     }
