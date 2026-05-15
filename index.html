@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.28.0.0003">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.32.0.0008"></script>
+<script src="src/constants.js?v=1.32.0.0009"></script>
 <script src="src/agol.js?v=1.32.0.0007"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
 <script src="src/render.js?v=1.27.0.0001"></script>
@@ -1699,8 +1699,8 @@ async function loadResourcesData() {
       wk1_thu: dailyHours.wk1_thu, wk1_fri: dailyHours.wk1_fri,
       wk2_mon: dailyHours.wk2_mon, wk2_tue: dailyHours.wk2_tue, wk2_wed: dailyHours.wk2_wed,
       wk2_thu: dailyHours.wk2_thu, wk2_fri: dailyHours.wk2_fri,
-      time_tracking:    (ci('time_tracking') === 'true' || ci('time_tracking') === true) ? true : false,
-      active:           (ci('active') === 'false' || ci('active') === false) ? false : true,
+      time_tracking:    (ci('time_tracking') === 'true' || ci('time_tracking') === true || ci('time_tracking') === 1) ? true : false,
+      active:           (ci('active') === 'false' || ci('active') === false || ci('active') === 0) ? false : true,
       tracking_level:   ci('tracking_level') || 'full',
       member_group:     ci('member_group') || 'Data Intelligence',
       data_program_lead_team: ci('data_program_lead_team') || null,

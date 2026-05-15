@@ -97,7 +97,7 @@ async function lpBootstrap() {
     var allMembers = await agolQuery(ARCGIS_CONFIG.teamMembersUrl, "1=1");
     var activeMembers = (allMembers || []).filter(function(f) {
       var a = f.attributes || {};
-      return a.active !== 'false' && a.active !== false;
+      return a.active !== 'false' && a.active !== false && a.active !== 0;
     });
     _lpMembers = activeMembers
       .map(function(f) { return (f.attributes || {}).name; })
