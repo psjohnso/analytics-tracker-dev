@@ -632,17 +632,11 @@ function renderProjectReview(area) {
     var emptyMsg = _reviewSearchQuery ? 'Nothing matches "' + esc(_reviewSearchQuery) + '" with the current filters.' : 'No projects match the current filter.';
     html += '<div class="pr-empty-state">' + emptyMsg + '</div>';
   } else {
-    // Sort: Active first, then Scheduled, then On Hold, then others; within each, by overdue cycle desc
-    var statusRank = { 'Active': 0, 'Scheduled': 1, 'On Hold': 2, 'Future': 3, 'Complete': 4, 'Canceled': 5 };
+    // Sort alphabetically by project title within each fiscal-quarter bucket.
+    // Stable order keeps just-reviewed projects in place rather than sinking
+    // them to the bottom (which made it look like they had disappeared).
     projects.sort(function(a, b) {
-      var sa = statusRank[a.status] != null ? statusRank[a.status] : 9;
-      var sb = statusRank[b.status] != null ? statusRank[b.status] : 9;
-      if (sa !== sb) return sa - sb;
-      var la = getLastReviewForProject(a.project_number, rt.id);
-      var lb = getLastReviewForProject(b.project_number, rt.id);
-      var da = la ? prDaysSince(la.meeting_date) : 9999;
-      var db = lb ? prDaysSince(lb.meeting_date) : 9999;
-      return db - da; // most overdue first within status
+      return String(a.title || '').localeCompare(String(b.title || ''));
     });
     if (rt.filter && rt.filter.group_by_quarter) {
       var buckets = prGroupByFiscalQuarter(projects);
