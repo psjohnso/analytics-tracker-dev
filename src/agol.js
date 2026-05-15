@@ -202,26 +202,31 @@ async function agolApplyEdits(serviceUrl, edits) {
 //  KEY JOIN: Task.project_number = Project.project_number  (Strings)
 //
 //  LEGACY ALIASES: the projection functions also expose:
-//    Project: local.id          ← project_number    (consumer compat)
-//    Task:    local.project_id  ← project_number    (consumer compat)
-//             local.idx         ← task_number       (consumer compat)
-//  These exist so the rest of the codebase can continue reading the
-//  legacy names while consumer code is migrated to the new names. The
-//  reverse-translation in localToAgolTask() ensures writes still go
-//  to the real schema fields.
-//
-//  NOTE: 'start_date'/'end_date'/'due_date' on the wire; some consumer
-//        code still uses the legacy 'start'/'end'/'due' shorthand —
-//        will be addressed in a follow-up commit.
+//    Project: local.id     ← project_number   (consumer compat)
+//             local.start  ← start_date       (consumer compat)
+//             local.end    ← end_date         (consumer compat)
+//    Task:    local.project_id ← project_number   (consumer compat)
+//             local.idx        ← task_number      (consumer compat)
+//             local.start      ← start_date       (consumer compat)
+//             local.due        ← due_date         (consumer compat)
+//  These exist so consumer code can continue reading the legacy names
+//  while it's migrated to the new schema. localToAgolProject /
+//  localToAgolTask reverse-translate so writes hit the real fields.
 // ══════════════════════════════════════════════════════════════════════
 
 // Maps: localFieldName → ArcGIS field name (only where they differ)
-const PROJECT_FIELD_MAP = {};
+const PROJECT_FIELD_MAP = {
+  start: 'start_date',
+  end:   'end_date',
+};
 
 // Reverse map for projects: ArcGIS field → local field
-const PROJECT_AGOL_TO_LOCAL = {};
+const PROJECT_AGOL_TO_LOCAL = {
+  'start_date': 'start',
+  'end_date':   'end',
+};
 
-// For tasks, all field names are identical — no mapping needed.
+// For tasks, no map — date aliases are added inline in agolTaskToLocal.
 
 // ── Convert ArcGIS feature → local object ──────────────────────────
 function agolProjectToLocal(feature) {
@@ -254,10 +259,13 @@ function agolTaskToLocal(feature) {
     if (key === 'ObjectId') continue;
     local[key] = attrs[key];
   }
-  // Legacy aliases (see agolProjectToLocal). Consumers read t.project_id
-  // and t.idx; new schema uses project_number and task_number (Strings).
+  // Legacy aliases (see agolProjectToLocal). Consumers read t.project_id,
+  // t.idx, t.start, t.due; new schema uses project_number, task_number,
+  // start_date, due_date.
   if (local.project_number != null) local.project_id = local.project_number;
   if (local.task_number    != null) local.idx        = local.task_number;
+  if (local.start_date     != null) local.start      = local.start_date;
+  if (local.due_date       != null) local.due        = local.due_date;
   // Ensure hours_worked is numeric (this is the primary hours field for calculations)
   local.hours_worked = parseFloat(local.hours_worked) || 0;
   return local;
@@ -284,6 +292,8 @@ function localToAgolTask(fields) {
     // Translate legacy alias keys back to real schema field names.
     if (key === 'project_id') { attrs.project_number = val; continue; }
     if (key === 'idx')        { attrs.task_number    = val; continue; }
+    if (key === 'start')      { attrs.start_date     = val; continue; }
+    if (key === 'due')        { attrs.due_date       = val; continue; }
     if (key === 'id')         continue;  // alias-only on projects, but skip if ever passed
     attrs[key] = val;
   }
