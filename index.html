@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.28.0.0003">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.32.0.0007"></script>
+<script src="src/constants.js?v=1.32.0.0008"></script>
 <script src="src/agol.js?v=1.32.0.0007"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
 <script src="src/render.js?v=1.27.0.0001"></script>
@@ -1788,21 +1788,28 @@ function computeCapacityAndAllocations(people, weeks, weekIdx, allocFeatures, N)
     }
   });
 
-  // Build allocations grouped by person+project
-  const allocMap = {}; // key: "name|project"
+  // Build allocations grouped by person+project. The denormalized fields
+  // (project, project_status, project_type, hours) were dropped from
+  // allocations in the migration (decisions AL1=a, AL2=a). Look up the
+  // project metadata by project_number FK and recompute hours from
+  // fraction × proj_cap.
+  const allocMap = {}; // key: "name|project_title"
   allocFeatures.forEach(function(f) {
     const a = f.attributes;
-    const key = a.name + '|' + a.project;
+    const projNum = a.project_number || a.analytics_id || '';
+    const proj = projNum ? PROJECTS.find(function(p) { return p.project_number === projNum; }) : null;
+    const projTitle = proj ? proj.title : (a.project || '(unknown project)');
+    const key = a.name + '|' + projTitle;
     const wk = epochToDateStr(a.week_date);
     const wi = weekIdx[wk];
     if (wi === undefined) return;
 
     if (!allocMap[key]) {
       allocMap[key] = {
-        project:      a.project,
-        status:       a.project_status || '',
-        type:         a.project_type || '',
-        analytics_id: a.project_number || a.analytics_id || null,
+        project:      projTitle,
+        status:       proj ? (proj.status || '') : (a.project_status || ''),
+        type:         proj ? (proj.category || '') : (a.project_type || ''),
+        analytics_id: projNum || null,
         role:         a.project_role || '',
         fracs:        new Array(N).fill(0),
         hours:        new Array(N).fill(0),
@@ -1812,7 +1819,9 @@ function computeCapacityAndAllocations(people, weeks, weekIdx, allocFeatures, N)
     // If role wasn't set on earlier record but is on this one, capture it
     if (!allocMap[key].role && a.project_role) allocMap[key].role = a.project_role;
     allocMap[key].fracs[wi] = a.fraction || 0;
-    allocMap[key].hours[wi] = a.hours || 0;
+    // Recompute hours from fraction × this person's proj_cap for the week.
+    const personProjCap = (people[a.name] && people[a.name].proj_cap && people[a.name].proj_cap[wi]) || 0;
+    allocMap[key].hours[wi] = (a.fraction || 0) * personProjCap;
   });
 
   // Attach allocations to people
