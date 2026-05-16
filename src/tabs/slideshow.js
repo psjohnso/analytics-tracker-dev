@@ -120,6 +120,10 @@ function renderSlideshow(area) {
 function _slideshowStartDataRefresh() {
   _slideshowStopDataRefresh();
   _slideshowDataRefreshTimer = setInterval(_slideshowRefreshTick, _slideshowDataRefreshMs);
+  // Fire one tick immediately so the "Data: HH:MM" indicator appears
+  // within a couple seconds of opening the tab instead of after the
+  // first 5-minute interval. Async — doesn't block the initial render.
+  _slideshowRefreshTick();
 }
 
 function _slideshowStopDataRefresh() {
