@@ -1898,7 +1898,8 @@ async function handleFormDelete() {
   const isProject = Editor.mode.indexOf('project') >= 0;
   if (isProject) {
     var proj = PROJECTS.find(function(p) { return p.objectId == Editor.editId; });
-    var taskCount = proj ? TASKS.filter(function(t) { return t.project === proj.title; }).length : 0;
+    var projNum = proj && proj.project_number != null ? String(proj.project_number) : null;
+    var taskCount = projNum ? TASKS.filter(function(t) { return t.project_number != null && String(t.project_number) === projNum; }).length : 0;
     var msg = 'Delete this project?';
     if (taskCount > 0) msg += '\n\nThis will also delete ' + taskCount + ' associated task(s) and all allocation records.';
     msg += '\n\nThis cannot be undone.';

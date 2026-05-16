@@ -340,8 +340,9 @@ async function backfillProjectTaskNumbers() {
 
   for (var j = 0; j < unnumberedTasks.length; j++) {
     var t = unnumberedTasks[j];
-    var parentProj = t.project ? PROJECTS.find(function(p) { return p.title === t.project; }) : null;
-    if (!parentProj) parentProj = t.project_id ? PROJECTS.find(function(p) { return p.id == t.project_id; }) : null;
+    var parentProj = t.project_number != null
+      ? (typeof getProjectByNumber === 'function' ? getProjectByNumber(t.project_number) : null)
+      : null;
     if (!parentProj || !parentProj.project_number) continue;
 
     var tNum = getNextTaskNumber(parentProj.project_number);
@@ -501,18 +502,13 @@ function showCalcPopup(evt, key) {
   popup.style.top = top + 'px';
 }
 
-// Resolve the correct project title for a task. Uses the index built by
-// rebuildProjectIndexes() to avoid a PROJECTS.find scan per call — this
-// runs once per task in filterTasks, sortData, and every row render, so
-// the previous linear scan made the hot path O(T × P).
+// Resolve the correct project title for a task via the project_number
+// FK (the canonical link in the new schema). Uses _PROJECTS_BY_NUMBER
+// built by rebuildProjectIndexes() to avoid a PROJECTS.find scan per
+// call — this runs once per task in filterTasks, sortData, and every
+// row render.
 function resolveProjectTitle(t) {
-  if (t.project) {
-    var p = _PROJECTS_BY_TITLE && _PROJECTS_BY_TITLE[String(t.project).toLowerCase()];
-    if (p) return p.title;
-  }
-  if (t.project_id != null) {
-    var p2 = _PROJECTS_BY_ID && _PROJECTS_BY_ID[String(t.project_id)];
-    if (p2) return p2.title;
-  }
-  return t.project || '';
+  if (!t || t.project_number == null) return '';
+  var p = _PROJECTS_BY_NUMBER && _PROJECTS_BY_NUMBER[String(t.project_number)];
+  return p ? (p.title || '') : '';
 }

@@ -731,8 +731,10 @@ function sortData(data, key, dir) {
     if (key === 'project_number') return d * (a.project_number||'').localeCompare(b.project_number||'');
     if (key === 'category') return d * (a.category||'').localeCompare(b.category||'');
     if (key === 'tasks') {
-      var ac = TASKS.filter(function(t) { return t.project === a.title; }).length;
-      var bc = TASKS.filter(function(t) { return t.project === b.title; }).length;
+      var aNum = a.project_number != null ? String(a.project_number) : null;
+      var bNum = b.project_number != null ? String(b.project_number) : null;
+      var ac = aNum ? TASKS.filter(function(t) { return t.project_number != null && String(t.project_number) === aNum; }).length : 0;
+      var bc = bNum ? TASKS.filter(function(t) { return t.project_number != null && String(t.project_number) === bNum; }).length : 0;
       return d * (ac - bc);
     }
     return 0;
