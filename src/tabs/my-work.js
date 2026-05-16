@@ -1034,8 +1034,29 @@ function renderMyWork(area) {
   }
 
   // ── My Week — spans both columns ───────────────────────────
+  // Current week bounds (Mon..Sun) — computed once and reused for both
+  // the header date label and the "Recently done" filter below.
+  var _today = new Date();
+  var _dow = _today.getDay() || 7; // treat Sunday (0) as 7
+  var _mon = new Date(_today); _mon.setDate(_today.getDate() - (_dow - 1));
+  var _sun = new Date(_mon); _sun.setDate(_mon.getDate() + 6);
+  function _ymd(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  var weekStartYmd = _ymd(_mon);
+  var weekEndYmd = _ymd(_sun);
+  var _months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var _weekLabel;
+  if (_mon.getFullYear() === _sun.getFullYear() && _mon.getMonth() === _sun.getMonth()) {
+    _weekLabel = _months[_mon.getMonth()] + ' ' + _mon.getDate() + '–' + _sun.getDate() + ', ' + _mon.getFullYear();
+  } else if (_mon.getFullYear() === _sun.getFullYear()) {
+    _weekLabel = _months[_mon.getMonth()] + ' ' + _mon.getDate() + ' – ' + _months[_sun.getMonth()] + ' ' + _sun.getDate() + ', ' + _mon.getFullYear();
+  } else {
+    _weekLabel = _months[_mon.getMonth()] + ' ' + _mon.getDate() + ', ' + _mon.getFullYear() + ' – ' + _months[_sun.getMonth()] + ' ' + _sun.getDate() + ', ' + _sun.getFullYear();
+  }
+
   html += '<div class="mywork-section mywork-full-width" id="mw-my-week">';
-  html += '<div class="mywork-section-header">📅 My Week</div>';
+  html += '<div class="mywork-section-header">📅 My Week';
+  html +=   '<span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:none;letter-spacing:0.02em;margin-left:8px;">' + esc(_weekLabel) + '</span>';
+  html += '</div>';
   if (!RESOURCES_DATA || !RESOURCES_DATA.people[name]) {
     html += '<div class="mywork-empty">Resource data not available. Sign in and ensure your name matches the team roster.</div>';
   } else {
@@ -1090,17 +1111,9 @@ function renderMyWork(area) {
       html += ' · <strong style="color:' + (availableHours > 0 ? '#22C55E' : '#EF4444') + ';">' + Math.round(availableHours * 10) / 10 + 'h</strong> available' + calcInfoIcon('availableHours');
       html += '</div>';
 
-      // Bounds of the current week as YYYY-MM-DD (Mon..Sun) — used to
-      // narrow the "Recently done" subheader to only tasks completed
-      // during this week, not all-time. Computed once outside the
-      // allocation loop since every row shares the same week.
-      var _today = new Date();
-      var _dow = _today.getDay() || 7; // treat Sunday (0) as 7
-      var _mon = new Date(_today); _mon.setDate(_today.getDate() - (_dow - 1));
-      var _sun = new Date(_mon); _sun.setDate(_mon.getDate() + 6);
-      function _ymd(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
-      var weekStartYmd = _ymd(_mon);
-      var weekEndYmd = _ymd(_sun);
+      // weekStartYmd / weekEndYmd are computed once at the top of the
+      // section (header label needs them too) and used here to narrow
+      // the "Recently done" filter to tasks completed in this week only.
 
     weekAllocations.forEach(function(a) {
       const pct = weekCapHours > 0 ? (a.hours / weekCapHours * 100) : 0;
