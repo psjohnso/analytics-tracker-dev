@@ -2660,6 +2660,47 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   background:#fff;
 }
 .mw-missing-tasks-helpline a:hover { background:var(--navy); color:#fff; }
+
+/* Project-group container — wraps a My Week allocation row together
+   with its helpline / pending tasks / completed tasks so each project
+   reads as one bordered card with a clear gap between cards. The
+   inner allocation row sheds its own border and tints slightly so it
+   reads as the card's header. The orange .mw-missing-tasks treatment
+   still wins when applicable. */
+.mw-project-group {
+  background:#fff;
+  border:1px solid #E8E6DF;
+  border-radius:8px;
+  margin-bottom:14px;
+  overflow:hidden;
+  box-shadow:0 1px 2px rgba(0, 38, 105, 0.04);
+}
+.mw-project-group .mywork-compact-row {
+  border:none;
+  border-radius:0;
+  margin-bottom:0;
+  background:#FAFBFD;
+  border-bottom:1px solid #E8E6DF;
+}
+.mw-project-group .mywork-compact-row:hover { background:#F0F4FF; }
+.mw-project-group .mywork-compact-row.mw-missing-tasks {
+  background:#FFFBEB;
+  border-left:3px solid #F59E0B !important;
+  border-bottom:1px solid #FCE7B5;
+  border-radius:0 !important;
+}
+.mw-project-group .mywork-compact-row.mw-missing-tasks:hover { background:#FEF3C7; }
+.mw-project-group .mw-missing-tasks-helpline {
+  border-radius:0;
+  margin-bottom:0;
+}
+
+/* Green-tinted "all done" variant of the done-header — shown when
+   every task for the week is complete, so the row reads as a win
+   rather than neutral history. */
+.mw-done-header.all-done { color:#166534; }
+.mw-done-header.all-done::after { background:#BBF7D0; }
+
 .mw-att-row { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
 .mw-att-badge { font-size:11px; font-weight:700; padding:3px 8px; border-radius:4px; }
 .mw-att-red { background:#FCEBEB; color:#791F1F; }

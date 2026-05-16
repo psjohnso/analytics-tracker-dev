@@ -484,6 +484,15 @@ function applyEditorChanges() {
 
   Editor.draft[name].forEach(function(da) {
     const origArr = origByCanon[da.project] || [];
+    // Resolve the project once up front. project_number (aliased as
+    // proj.id) is NOT-NULL on the ALLOCATIONS table, so brand-new
+    // allocations need this lookup — origArr[0] doesn't exist yet to
+    // borrow it from. Fall back to PROJECTS lookup, then bail if even
+    // that can't resolve it, rather than sending NULL to the server.
+    const projForDa = PROJECTS.find(function(x) { return x.title === da.project; });
+    const analyticsIdForDa = origArr.length > 0
+      ? origArr[0].analytics_id
+      : (projForDa ? projForDa.id : null);
 
     // Compute the original merged fracs (same merge logic as openAllocEditor)
     const mergedOrigFracs = new Array(N).fill(0);
@@ -496,13 +505,20 @@ function applyEditorChanges() {
       const oldFrac = Math.round(mergedOrigFracs[i] * 10000) / 10000;
       const newFrac = Math.round((da.fracs[i] || 0) * 10000) / 10000;
       if (newFrac !== oldFrac) {
+        if (newFrac > 0 && analyticsIdForDa == null) {
+          // Can't insert without project_number — surface a clear
+          // error rather than the cryptic SQL NOT-NULL violation.
+          console.error('[Allocations] Cannot save allocation for "' + da.project + '" — project_number not resolvable. Is the project in PROJECTS?');
+          showToast('Cannot save allocation for "' + da.project + '" — project not found.', 'error');
+          continue;
+        }
         const newHrs = newFrac * (p.proj_cap[i] || 0);
         editsToSave.push({
           name:           name,
           project:        da.project,
           project_status: da.status || '',
           project_type:   origArr.length > 0 ? (origArr[0].type || '') : '',
-          analytics_id:   origArr.length > 0 ? origArr[0].analytics_id : null,
+          analytics_id:   analyticsIdForDa,
           project_role:   da.role || null,
           week_date:      weeks[i],
           fraction:       newFrac,
@@ -524,15 +540,14 @@ function applyEditorChanges() {
       }
     } else {
       // Brand new allocation
-      const proj = PROJECTS.find(function(x) { return x.title === da.project; });
       p.allocations.push({
         project:      da.project,
-        status:       proj ? proj.status : da.status,
+        status:       projForDa ? projForDa.status : da.status,
         type:         '',
         role:         da.role || '',
         fracs:        da.fracs.slice(),
         hours:        da.fracs.map(function(f, i) { return f * (p.proj_cap[i] || 0); }),
-        analytics_id: proj ? proj.id : null,
+        analytics_id: projForDa ? projForDa.id : null,
       });
     }
   });

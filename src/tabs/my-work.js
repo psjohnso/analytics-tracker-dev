@@ -1109,12 +1109,11 @@ function renderMyWork(area) {
       const onclick = proj ? ' onclick="openProject(' + proj.objectId + ')"' : '';
       const cursor = proj ? 'pointer' : 'default';
 
-      // Filter the user's recent tasks for this project. Split the list
-      // into pending (Active / On Hold / Waiting) and completed up
-      // front: the display shows both groups, but only the pending
-      // count drives the "missing tasks" warning. A project where all
-      // your work is done isn't actionable, so it counts as missing
-      // pending work — same as a project with no tasks at all.
+      // Filter the user's recent tasks for this project. Split into
+      // pending (Active / On Hold / Waiting) and completed-this-week.
+      // The "missing tasks" warning fires only when BOTH lists are
+      // empty — a project where everything is done this week isn't
+      // missing work, it's a win, and we surface the done list instead.
       var weekTaskStatuses = ['Active', 'On Hold', 'Waiting for Response', 'Complete'];
       var weekTasks = TASKS.filter(function(t) {
         return t.project === a.project && t.assignee === name && weekTaskStatuses.indexOf(t.status) >= 0;
@@ -1134,8 +1133,13 @@ function renderMyWork(area) {
         if (!t.actual_end) return false;
         return t.actual_end >= weekStartYmd && t.actual_end <= weekEndYmd;
       });
-      var isMissingTasks = pendingTasks.length === 0;
+      var allDoneThisWeek = pendingTasks.length === 0 && doneTasks.length > 0;
+      var isMissingTasks = pendingTasks.length === 0 && doneTasks.length === 0;
       var rowCls = 'mywork-compact-row' + (isMissingTasks ? ' mw-missing-tasks' : '');
+      // Wrap the allocation row + helpline + task lines in a single
+      // .mw-project-group card so adjacent projects read as clearly
+      // separated units rather than a flat list of rows.
+      html += '<div class="mw-project-group">';
       html += '<div class="' + rowCls + '" style="cursor:' + cursor + ';"' + onclick + '>';
       html += '<span class="mywork-compact-title"><span style="font-size:10px;font-weight:700;color:var(--text-muted);margin-right:4px;">Project:</span>' + esc(a.project) + '</span>';
       html += '<span style="font-size:12px;font-weight:700;color:var(--navy);white-space:nowrap;min-width:50px;text-align:right;">' + a.hours + 'h</span>';
@@ -1160,10 +1164,16 @@ function renderMyWork(area) {
       if (pendingTasks.length > 0 || doneTasks.length > 0) {
         pendingTasks.forEach(function(t) { html += _mwTaskLineHtml(t); });
         if (doneTasks.length > 0) {
-          html += '<div class="mw-done-header"><span>✓ Completed this Week</span></div>';
+          // When every task is done for the week, the header tints
+          // green so the row reads as a win instead of a neutral
+          // "here's some history" subhead.
+          var doneHdrCls = allDoneThisWeek ? 'mw-done-header all-done' : 'mw-done-header';
+          var doneHdrLabel = allDoneThisWeek ? '✓ All tasks completed this week' : '✓ Completed this Week';
+          html += '<div class="' + doneHdrCls + '"><span>' + doneHdrLabel + '</span></div>';
           doneTasks.forEach(function(t) { html += _mwTaskLineHtml(t); });
         }
       }
+      html += '</div>'; // close .mw-project-group
     });
     } // close else (has allocations)
   } // close else (has RESOURCES_DATA)

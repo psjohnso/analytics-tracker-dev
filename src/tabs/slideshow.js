@@ -20,6 +20,16 @@ var _slideshowIdx = 0;
 var _slideshowResizeObserver = null;
 var _slideshowFullscreenListenerAttached = false;
 
+// Silent data refresh — keeps the slideshow showing fresh numbers when
+// it's left running on a lobby display. Re-fetches PROJECTS, TASKS, and
+// resources from ArcGIS every N minutes and re-renders the current slide
+// in place (without resetting the rotation timer or flashing the loading
+// overlay). Tears down automatically when the user leaves the tab.
+var _slideshowDataRefreshTimer = null;
+var _slideshowDataRefreshMs = 5 * 60 * 1000;
+var _slideshowLastRefreshAt = null;
+var _slideshowRefreshInFlight = false;
+
 // Default config used until the admin-managed app_config.display_config
 // is loaded. All overview slides on, 15s each.
 var _slideshowDefaultConfig = {
@@ -97,7 +107,68 @@ function renderSlideshow(area) {
 
   _slideshowRenderCurrent();
   _slideshowStartTimer();
+  _slideshowStartDataRefresh();
   _slideshowAttachFitObserver();
+}
+
+// ─── Silent data refresh ─────────────────────────────────────────────
+// Re-fetch PROJECTS, TASKS, and resources every _slideshowDataRefreshMs
+// while the slideshow is mounted. Quietly updates in-place — no loading
+// overlay, no rotation interruption. If the slideshow stage is gone
+// (user switched tabs) the next tick tears the timer down.
+
+function _slideshowStartDataRefresh() {
+  _slideshowStopDataRefresh();
+  _slideshowDataRefreshTimer = setInterval(_slideshowRefreshTick, _slideshowDataRefreshMs);
+}
+
+function _slideshowStopDataRefresh() {
+  if (_slideshowDataRefreshTimer) {
+    clearInterval(_slideshowDataRefreshTimer);
+    _slideshowDataRefreshTimer = null;
+  }
+}
+
+async function _slideshowRefreshTick() {
+  // User switched tabs — tear down. The next renderSlideshow() restarts us.
+  if (!document.getElementById('slideshow-stage')) {
+    _slideshowStopDataRefresh();
+    return;
+  }
+  // Guard against overlapping ticks if the network is slow.
+  if (_slideshowRefreshInFlight) return;
+  _slideshowRefreshInFlight = true;
+  try {
+    var projectFeatures = await agolQuery(ARCGIS_CONFIG.projectsUrl, 'deleted_at IS NULL');
+    PROJECTS.length = 0;
+    projectFeatures.forEach(function(f) { PROJECTS.push(agolProjectToLocal(f)); });
+
+    var taskFeatures = await agolQuery(ARCGIS_CONFIG.tasksUrl, 'deleted_at IS NULL');
+    TASKS.length = 0;
+    taskFeatures.forEach(function(f) { TASKS.push(agolTaskToLocal(f)); });
+
+    if (typeof loadResourcesData === 'function') {
+      await loadResourcesData();
+      if (typeof initResourcesWeekIndices === 'function') initResourcesWeekIndices();
+    }
+
+    _slideshowLastRefreshAt = new Date();
+    console.log('[Slideshow] Data refreshed at', _slideshowLastRefreshAt.toLocaleTimeString());
+
+    // Re-render the current slide in place — picks up new data via
+    // getOverviewSlides(). The rotation timer keeps running on its own.
+    if (document.getElementById('slideshow-stage')) _slideshowRenderCurrent();
+  } catch (e) {
+    console.warn('[Slideshow] Data refresh failed (will retry next tick):', e);
+  } finally {
+    _slideshowRefreshInFlight = false;
+  }
+}
+
+function _slideshowFormatRefreshTime(d) {
+  if (!d) return '';
+  try { return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+  catch (e) { return d.toLocaleTimeString(); }
 }
 
 // Measure the fit-inner's natural (unscaled) size at width=1600 and apply
@@ -153,7 +224,11 @@ function _slideshowRenderCurrent() {
   // Fit the freshly-rendered slide on the next frame, once layout has settled
   requestAnimationFrame(_slideshowFit);
   if (descEl) {
-    descEl.textContent = 'Viewing: ' + slide.title + ' · Slide ' + (_slideshowIdx + 1) + ' of ' + slides.length;
+    var desc = 'Viewing: ' + slide.title + ' · Slide ' + (_slideshowIdx + 1) + ' of ' + slides.length;
+    if (_slideshowLastRefreshAt) {
+      desc += ' · Data: ' + _slideshowFormatRefreshTime(_slideshowLastRefreshAt);
+    }
+    descEl.textContent = desc;
   }
   if (progressEl) {
     var dots = slides.map(function(s, i) {
