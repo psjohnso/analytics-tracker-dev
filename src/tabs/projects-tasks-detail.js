@@ -35,7 +35,9 @@ function resolveReqInfo(rId) {
 }
 
 function getProjectLifecycleStatus(projectTitle) {
-  var relTasks = TASKS.filter(function(t) { return t.project === projectTitle; });
+  var p = _PROJECTS_BY_TITLE && _PROJECTS_BY_TITLE[String(projectTitle || '').toLowerCase()];
+  var pNum = p && p.project_number != null ? String(p.project_number) : null;
+  var relTasks = pNum ? TASKS.filter(function(t) { return t.project_number != null && String(t.project_number) === pNum; }) : [];
   var metReqs = {};
   relTasks.forEach(function(t) {
     if (t.status !== 'Complete') return;
@@ -55,7 +57,9 @@ function getProjectLifecycleStatus(projectTitle) {
 }
 
 function getTasksByPhase(projectTitle) {
-  var relTasks = TASKS.filter(function(t) { return t.project === projectTitle; });
+  var p = _PROJECTS_BY_TITLE && _PROJECTS_BY_TITLE[String(projectTitle || '').toLowerCase()];
+  var pNum = p && p.project_number != null ? String(p.project_number) : null;
+  var relTasks = pNum ? TASKS.filter(function(t) { return t.project_number != null && String(t.project_number) === pNum; }) : [];
   var groups = {};
   var ungrouped = [];
   LIFECYCLE_PHASES.forEach(function(ph) { groups[ph.id] = []; });
@@ -137,7 +141,8 @@ function togglePhaseDetail(phaseIndex) {
   if (!p) return;
   var lcs = getProjectLifecycleStatus(p.title);
   var metReqs = lcs.metReqs;
-  var relTasks = TASKS.filter(function(t) { return t.project === p.title; });
+  var _pNum = p.project_number != null ? String(p.project_number) : null;
+  var relTasks = _pNum ? TASKS.filter(function(t) { return t.project_number != null && String(t.project_number) === _pNum; }) : [];
   var html = '<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">Phase ' + phase.id + ' — ' + esc(phase.name) + '</div>';
   html += '<div style="font-size:11px;color:#6B7280;margin-bottom:10px;">Default duration: ' + phase.defaultDuration + '</div>';
   phase.requirements.forEach(function(req) {
@@ -386,7 +391,8 @@ function copyProjectSummary(objectId) {
   var p = PROJECTS.find(function(pr) { return pr.objectId == objectId; });
   if (!p) { showToast('Project not found.', 'error'); return; }
 
-  var relTasks = TASKS.filter(function(t) { return t.project === p.title || (!t.project && t.project_id == p.id); });
+  var _pNum = p.project_number != null ? String(p.project_number) : null;
+  var relTasks = _pNum ? TASKS.filter(function(t) { return t.project_number != null && String(t.project_number) === _pNum; }) : [];
   relTasks.sort(function(a, b) { return (a.id || 0) - (b.id || 0); });
 
   // Build team list
@@ -770,12 +776,9 @@ function buildProjectTimeline(p, relTasks) {
 function renderProjectDetail(id) {
   const p = PROJECTS.find(x => x.objectId == id);
   if (!p) return '<div class="empty-state">Project not found.</div>';
-  const relTasks = TASKS.filter(function(t) {
-    // Primary: match on project title (unique, most reliable)
-    if (t.project && t.project === p.title) return true;
-    // Fallback: match on project_id only if task has no project title
-    if (!t.project && t.project_id != null && t.project_id == p.id) return true;
-    return false;
+  const _pNum = p.project_number != null ? String(p.project_number) : null;
+  const relTasks = !_pNum ? [] : TASKS.filter(function(t) {
+    return t.project_number != null && String(t.project_number) === _pNum;
   });
   const statusColor = STATUS_COLOR(p.status) || '#9CA3AF';
   const returnTab = currentDetail._returnTab || 'projects';
@@ -1097,7 +1100,7 @@ function renderTaskDetail(idx) {
   const t = TASKS.find(x => x.objectId == idx);
   if (!t) return '<div class="empty-state">Task not found.</div>';
   const statusColor = STATUS_COLOR(t.status) || '#9CA3AF';
-  const proj = t.project ? PROJECTS.find(function(x) { return x.title === t.project; }) : PROJECTS.find(function(x) { return x.id == t.project_id; });
+  const proj = typeof getProjectByNumber === 'function' ? getProjectByNumber(t.project_number) : null;
   const taskReturnTab = currentDetail._returnTab || 'tasks';
   const taskFromProject = currentDetail._fromProject;
   // Labels for every tab that can link to a task. Same comprehensive map
@@ -1157,7 +1160,7 @@ function renderTaskDetail(idx) {
         <div class="detail-meta-grid">
           <div class="detail-meta-item"><label>Assignee</label><p>${esc(t.assignee||'—')}</p></div>
           <div class="detail-meta-item"><label>Project</label>
-            <p>${proj ? `<span onclick="openProject(${proj.objectId})" style="color:var(--navy);cursor:pointer;text-decoration:underline;">${esc(proj.title)}</span>` : esc(t.project||'—')}</p>
+            <p>${proj ? `<span onclick="openProject(${proj.objectId})" style="color:var(--navy);cursor:pointer;text-decoration:underline;">${esc(proj.title)}</span>` : '—'}</p>
           </div>
           <div class="detail-meta-item"><label>Category</label><p>${esc(t.category||'—')}</p></div>
           <div class="detail-meta-item"><label>Tool</label><p>${esc(t.tool||'—')}</p></div>

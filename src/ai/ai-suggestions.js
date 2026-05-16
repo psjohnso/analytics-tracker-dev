@@ -25,7 +25,10 @@ async function suggestTasksForProject(projectObjectId) {
   _suggestProjectId = projectObjectId;
 
   // Gather existing tasks for this project
-  var existingTasks = TASKS.filter(function(t) { return t.project === p.title; }).map(function(t) { return t.title; });
+  var pNum = p.project_number != null ? String(p.project_number) : null;
+  var existingTasks = pNum
+    ? TASKS.filter(function(t) { return t.project_number != null && String(t.project_number) === pNum; }).map(function(t) { return t.title; })
+    : [];
 
   // Gather available categories and tools
   var categories = (FM_TASK_CATEGORIES || []).join(', ');

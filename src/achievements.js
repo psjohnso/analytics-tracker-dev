@@ -304,13 +304,14 @@ function longestDay(name) {
 
 function biggestProject(name) {
   if (typeof TIME_ENTRIES === 'undefined' || typeof TASKS === 'undefined' || !name) return null;
-  // Sum hours per project_id for tasks the user logged time on.
+  // Sum hours per project_number for tasks the user logged time on,
+  // then resolve to a title for display via getProjectByNumber.
   var byProj = {};
   var taskIdxToProj = {};
   for (var i = 0; i < TASKS.length; i++) {
     var t = TASKS[i];
     if (!t || t.idx == null) continue;
-    var key = t.project || (t.project_id != null ? String(t.project_id) : 'Unassigned');
+    var key = t.project_number != null ? String(t.project_number) : 'Unassigned';
     taskIdxToProj[t.idx] = key;
   }
   for (var j = 0; j < TIME_ENTRIES.length; j++) {
@@ -320,12 +321,18 @@ function biggestProject(name) {
     if (!proj) continue;
     byProj[proj] = (byProj[proj] || 0) + (e.hours || 0);
   }
-  var bestProj = null, bestHrs = 0;
+  var bestKey = null, bestHrs = 0;
   Object.keys(byProj).forEach(function(p) {
-    if (byProj[p] > bestHrs) { bestHrs = byProj[p]; bestProj = p; }
+    if (byProj[p] > bestHrs) { bestHrs = byProj[p]; bestKey = p; }
   });
-  if (!bestProj) return null;
-  return { name: bestProj, hours: Math.round(bestHrs * 10) / 10 };
+  if (!bestKey) return null;
+  var displayName = 'Unassigned';
+  if (bestKey !== 'Unassigned' && typeof getProjectByNumber === 'function') {
+    var proj = getProjectByNumber(bestKey);
+    if (proj && proj.title) displayName = proj.title;
+    else displayName = bestKey; // fall back to the number itself if not resolvable
+  }
+  return { name: displayName, hours: Math.round(bestHrs * 10) / 10 };
 }
 
 function categoriesExplored(name) {

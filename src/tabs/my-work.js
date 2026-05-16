@@ -578,13 +578,13 @@ function refreshBlockerList(projectTitle, currentTaskNumber, currentBlockedBy) {
 
   var tasksByProject = {};
   availTasks.forEach(function(t) {
-    var proj = t.project || '(no project)';
+    var proj = getTaskProjectTitle(t) || '(no project)';
     if (!tasksByProject[proj]) tasksByProject[proj] = [];
     tasksByProject[proj].push(t);
   });
 
   Object.keys(tasksByProject).sort().forEach(function(projName) {
-    var projObj = PROJECTS.find(function(p) { return p.title === projName; });
+    var projObj = _PROJECTS_BY_TITLE && _PROJECTS_BY_TITLE[projName.toLowerCase()];
     var projNum = projObj ? projObj.project_number : '';
     html += '<div class="dep-group-hdr" data-search-group="' + esc(projName.toLowerCase()) + '" style="font-size:10px;font-weight:700;color:var(--text-muted);padding:5px 8px;background:var(--bg-surface,#F3F1EB);border-bottom:0.5px solid #E8E6DF;letter-spacing:0.04em;position:sticky;top:0;z-index:1;">TASKS — ' + esc(projName) + (projNum ? ' (' + projNum + ')' : '') + '</div>';
     tasksByProject[projName].forEach(function(t) {
@@ -735,7 +735,8 @@ function buildMyWorkTaskRow(t, statusColor, status, todayStr, hrsLabelFn) {
   });
   out += '</select>';
   out += '<span class="mywork-compact-title" onclick="openTask(' + t.objectId + ')" style="cursor:pointer;">' + projectNumChip(t.task_number) + esc(t.title);
-  if (t.project) out += '<span style="display:block;font-size:11px;font-weight:400;color:var(--text-muted);margin-top:1px;">' + esc(t.project) + '</span>';
+  var _projTitle = getTaskProjectTitle(t);
+  if (_projTitle) out += '<span style="display:block;font-size:11px;font-weight:400;color:var(--text-muted);margin-top:1px;">' + esc(_projTitle) + '</span>';
   out += renderAttBadges(taskAlerts);
   out += '</span>';
   if (tHrs > 0) {
@@ -1128,8 +1129,16 @@ function renderMyWork(area) {
       // empty — a project where everything is done this week isn't
       // missing work, it's a win, and we surface the done list instead.
       var weekTaskStatuses = ['Active', 'On Hold', 'Waiting for Response', 'Complete'];
-      var weekTasks = TASKS.filter(function(t) {
-        return t.project === a.project && t.assignee === name && weekTaskStatuses.indexOf(t.status) >= 0;
+      // Match tasks to the allocation by project_number (the canonical FK).
+      // a.analytics_id was populated from project_number when the allocation
+      // was loaded; proj.project_number is the source of truth if it disagrees.
+      var allocProjNum = (proj && proj.project_number != null)
+        ? String(proj.project_number)
+        : (a.analytics_id != null ? String(a.analytics_id) : null);
+      var weekTasks = (!allocProjNum) ? [] : TASKS.filter(function(t) {
+        if (t.assignee !== name) return false;
+        if (weekTaskStatuses.indexOf(t.status) < 0) return false;
+        return t.project_number != null && String(t.project_number) === allocProjNum;
       }).sort(function(ta, tb) {
         var sa = ta.status === 'Complete' ? 1 : 0;
         var sb = tb.status === 'Complete' ? 1 : 0;
@@ -1254,7 +1263,8 @@ function renderMyWork(area) {
     const statusColor = STATUS_COLOR(status);
     let out = '<div class="mywork-status-header" style="color:' + statusColor + ';">' + esc(status) + ' (' + filtered.length + ')</div>';
     filtered.forEach(function(p) {
-      const taskCount = TASKS.filter(function(t) { return t.project === p.title || (!t.project && t.project_id == p.id); });
+      const pNum = p.project_number != null ? String(p.project_number) : null;
+      const taskCount = pNum ? TASKS.filter(function(t) { return t.project_number != null && String(t.project_number) === pNum; }) : [];
       const doneCount = taskCount.filter(function(t) { return t.status === 'Complete'; }).length;
       const totalCount = taskCount.length;
       const taskLabel = totalCount > 0 ? doneCount + '/' + totalCount + ' tasks done' : 'No tasks';
@@ -1332,8 +1342,10 @@ function renderMyWork(area) {
     const pEnd = p.actual_end || p.working_due || p.end || null;
     if (!pStart && !pEnd) return;
     // Include tasks based on preference: all project tasks or just the signed-in user's
-    const projTasks = TASKS.filter(function(t) {
-      if (!((t.project === p.title || (!t.project && t.project_id == p.id)) && t.status !== 'Complete' && t.status !== 'Canceled')) return false;
+    const pNum = p.project_number != null ? String(p.project_number) : null;
+    const projTasks = !pNum ? [] : TASKS.filter(function(t) {
+      if (!(t.project_number != null && String(t.project_number) === pNum)) return false;
+      if (t.status === 'Complete' || t.status === 'Canceled') return false;
       if (!UserPrefs.timelineShowAll) return t.assignee === name;
       return true;
     });
