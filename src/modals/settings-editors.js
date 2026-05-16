@@ -28,7 +28,7 @@ async function saveConfigKey(key, valueArray) {
     if (oid) {
       // Update existing record
       const result = await agolApplyEdits(ARCGIS_CONFIG.appConfigUrl, {
-        updates: [{ attributes: { OBJECTID: oid, config_value: jsonValue } }]
+        updates: [{ attributes: { ObjectId: oid, config_value: jsonValue } }]
       });
       // Check for per-record failure
       if (result && result.updateResults && result.updateResults[0] && !result.updateResults[0].success) {
@@ -163,7 +163,7 @@ async function migrateAllocationHours() {
       var newHours = Math.round(fraction * (p.proj_cap[wi] || 0) * 100) / 100;
       var oldHours = Math.round((a.hours || 0) * 100) / 100;
       if (Math.abs(newHours - oldHours) < 0.01) return; // no meaningful change
-      updates.push({ attributes: { OBJECTID: oid, hours: newHours } });
+      updates.push({ attributes: { ObjectId: oid, hours: newHours } });
     });
 
     if (updates.length === 0) {
@@ -568,8 +568,15 @@ async function addStatusHistoryRecord() {
   STATUS_HISTORY.push(record);
 
   try {
+    // Creator/CreationDate auto-populated by AGO via editor tracking.
+    // (We send the user-chosen dateVal as a separate field IF the schema
+    // ever needs it; for now CreationDate captures "when entered".)
     const result = await agolApplyEdits(ARCGIS_CONFIG.statusHistoryUrl, {
-      adds: [{ attributes: record }]
+      adds: [{ attributes: {
+        project_number: Editor.shProjectId,
+        project_title: projTitle,
+        status: status,
+      }}]
     });
     if (result && result.addResults && result.addResults[0] && result.addResults[0].objectId) {
       record.objectId = result.addResults[0].objectId;
@@ -756,7 +763,7 @@ async function restoreFromTrash(type, oid) {
 
   try {
     await agolApplyEdits(url, {
-      updates: [{ attributes: { OBJECTID: oid, deleted_at: null, deleted_by: null } }]
+      updates: [{ attributes: { ObjectId: oid, deleted_at: null, deleted_by: null } }]
     });
     showToast(label + ' restored.', 'success');
     if (reloadFn) {

@@ -97,7 +97,7 @@ async function lpBootstrap() {
     var allMembers = await agolQuery(ARCGIS_CONFIG.teamMembersUrl, "1=1");
     var activeMembers = (allMembers || []).filter(function(f) {
       var a = f.attributes || {};
-      return a.active !== 'false' && a.active !== false;
+      return a.active !== 'false' && a.active !== false && a.active !== 0;
     });
     _lpMembers = activeMembers
       .map(function(f) { return (f.attributes || {}).name; })
@@ -372,6 +372,38 @@ function lpRender() {
 }
 
 // ─── Modal: New / Edit / Save / Delete ────────────────────────────────
+
+// Assign the next P-NNN project_number on create. Queries AGO globally
+// rather than computing from _lpProjects, which typically holds only
+// one team's subset — local max would collide with numbers in teams
+// the Lite app hasn't loaded. Mirrors getNextProjectNumber() in
+// src/tabs/projects-tasks.js.
+async function lpGetNextProjectNumber() {
+  var features = await agolQuery(ARCGIS_CONFIG.projectsUrl, "project_number LIKE 'P-%'");
+  var maxNum = 0;
+  (features || []).forEach(function(f) {
+    var pn = f.attributes && f.attributes.project_number;
+    if (!pn) return;
+    var m = String(pn).match(/^P-(\d+)$/);
+    if (m) {
+      var n = parseInt(m[1], 10);
+      if (n > maxNum) maxNum = n;
+    }
+  });
+  return 'P-' + String(maxNum + 1).padStart(3, '0');
+}
+
+function lpClearFieldErrors() {
+  document.querySelectorAll('#lp-modal-backdrop .err').forEach(function(el) {
+    el.classList.remove('err');
+  });
+}
+
+function lpMarkFieldError(id) {
+  var el = document.getElementById(id);
+  if (el) el.classList.add('err');
+}
+
 // Build the dp_goal checkbox group. currentVal is the comma-separated
 // string from the project record (e.g. "Establish Data Governance,
 // Build Data Literacy and Culture") or null.
@@ -430,7 +462,7 @@ function lpPopulateSelects(currentStatus, currentDept, currentContact) {
 // leads looking at another team's project) shows the same form but
 // with all inputs disabled and only Cancel available.
 function lpSetModalEditability(editable) {
-  ['lp-f-title','lp-f-status','lp-f-contact','lp-f-partner-dept','lp-f-start','lp-f-end','lp-f-working-due','lp-f-actual-end','lp-f-description','lp-f-definition-of-done','lp-f-key-results'].forEach(function(id) {
+  ['lp-f-title','lp-f-status','lp-f-contact','lp-f-partner-dept','lp-f-start','lp-f-end','lp-f-working-due','lp-f-actual-end','lp-f-problem-statement','lp-f-description','lp-f-definition-of-done','lp-f-key-results'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.disabled = !editable;
   });
@@ -463,9 +495,11 @@ function lpOpenNew() {
   document.getElementById('lp-f-end').value = '';
   document.getElementById('lp-f-working-due').value = '';
   document.getElementById('lp-f-actual-end').value = '';
+  document.getElementById('lp-f-problem-statement').value = '';
   document.getElementById('lp-f-description').value = '';
   document.getElementById('lp-f-definition-of-done').value = '';
   document.getElementById('lp-f-key-results').value = '';
+  lpClearFieldErrors();
   lpPopulateDpGoals(null);
   document.getElementById('lp-f-actual-end-wrap').style.display = 'none';
   lpSetModalEditability(true);
@@ -489,9 +523,11 @@ function lpOpenEdit(objectId) {
   document.getElementById('lp-f-end').value = p.end || '';
   document.getElementById('lp-f-working-due').value = p.working_due || '';
   document.getElementById('lp-f-actual-end').value = p.actual_end || '';
+  document.getElementById('lp-f-problem-statement').value = p.problem_statement || '';
   document.getElementById('lp-f-description').value = p.description || '';
   document.getElementById('lp-f-definition-of-done').value = p.definition_of_done || '';
   document.getElementById('lp-f-key-results').value = p.key_results || '';
+  lpClearFieldErrors();
   lpPopulateDpGoals(p.dp_goal);
   document.getElementById('lp-f-actual-end-wrap').style.display = (p.status === 'Complete') ? '' : 'none';
   lpSetModalEditability(canEdit);
@@ -506,31 +542,67 @@ function lpCloseModal() {
 async function lpSaveProject() {
   if (_lpRole === 'viewer') return;
   if (typeof ensureValidSession === 'function' && !ensureValidSession(function() { lpSaveProject(); })) return;
+  // Required-field validation — mirrors the idea-submission form
+  // (modals/idea.js openSimpleIdeaForm): Title, Project lead, Problem statement.
+  lpClearFieldErrors();
   var title = document.getElementById('lp-f-title').value.trim();
-  if (!title) { lpToast('Title is required.', 'error'); return; }
+  var contact = document.getElementById('lp-f-contact').value;
+  var problemStmt = document.getElementById('lp-f-problem-statement').value.trim();
+  var missing = [];
+  if (!title)       { missing.push('Title');             lpMarkFieldError('lp-f-title'); }
+  if (!contact)     { missing.push('Project lead');      lpMarkFieldError('lp-f-contact'); }
+  if (!problemStmt) { missing.push('Problem statement'); lpMarkFieldError('lp-f-problem-statement'); }
+  if (missing.length) {
+    lpToast('Required: ' + missing.join(', '), 'error');
+    return;
+  }
   var status = document.getElementById('lp-f-status').value;
   var actualEndVal = document.getElementById('lp-f-actual-end').value;
-  var attrs = {
+  // Build using local field names (start, end) — localToAgolProject
+  // routes them through PROJECT_FIELD_MAP to the schema names
+  // (start_date, end_date). Same pattern the main app uses.
+  var local = {
     title: title,
     status: status,
-    contact: document.getElementById('lp-f-contact').value || null,
+    contact: contact,
     start: document.getElementById('lp-f-start').value || null,
-    end_: document.getElementById('lp-f-end').value || null,  // ArcGIS field is end_ (end is reserved)
+    end: document.getElementById('lp-f-end').value || null,
     working_due: document.getElementById('lp-f-working-due').value || null,
     actual_end: status === 'Complete' ? (actualEndVal || new Date().toISOString().slice(0, 10)) : null,
     partner_dept: document.getElementById('lp-f-partner-dept').value || null,
+    problem_statement: problemStmt,
     description: document.getElementById('lp-f-description').value.trim() || null,
     definition_of_done: document.getElementById('lp-f-definition-of-done').value.trim() || null,
     key_results: document.getElementById('lp-f-key-results').value.trim() || null,
     dp_goal: lpCollectDpGoals(),
   };
-  if (_lpEditingId) {
-    // Edit: don't change data_program_team (preserve project's owning team).
-    attrs.OBJECTID = _lpEditingId;
-  } else {
-    // New: stamp data_program_team based on role/filter.
-    attrs.data_program_team = (_lpRole === 'lead') ? _lpMyTeam : _lpFilterTeam;
+  if (!_lpEditingId) {
+    // New: stamp data_program_team based on role/filter, and assign the
+    // next project_number. We query AGO directly because _lpProjects
+    // typically holds only one team's subset — computing the max locally
+    // would collide with numbers in teams we haven't loaded.
+    local.data_program_team = (_lpRole === 'lead') ? _lpMyTeam : _lpFilterTeam;
+    try {
+      local.project_number = await lpGetNextProjectNumber();
+    } catch (err) {
+      console.error('[Lite] Project-number assignment failed:', err);
+      lpToast('Could not assign a project number: ' + (err.message || 'unknown error'), 'error');
+      return;
+    }
   }
+  // Lite only manages Data Program projects: stamp is_data_program so
+  // the lpReload "All teams" query (is_data_program=1) finds the record.
+  // Mirrors forms.js: team set → 1, else dp_goal set → 1, else 0. On
+  // edits, data_program_team is preserved server-side; fall back to the
+  // loaded project's value so editing doesn't accidentally unset the flag.
+  var existing = _lpEditingId ? _lpProjects.find(function(x) { return x.objectId === _lpEditingId; }) : null;
+  var dpTeamForFlag = local.data_program_team || (existing && existing.data_program_team) || '';
+  var dpGoalForFlag = local.dp_goal || '';
+  local.is_data_program =
+    (dpTeamForFlag && dpTeamForFlag.trim().length > 0) ? 1 :
+    (dpGoalForFlag && dpGoalForFlag.trim().length > 0 && dpGoalForFlag.trim() !== 'None') ? 1 : 0;
+  var attrs = localToAgolProject(local);
+  if (_lpEditingId) attrs.ObjectId = _lpEditingId;  // capital-O is the real schema PK; projection only skips lowercase aliases
   try {
     var result;
     if (_lpEditingId) {

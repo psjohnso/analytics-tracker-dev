@@ -724,7 +724,7 @@ function buildProjectTimeline(p, relTasks) {
   var html = '<div class="detail-section">';
   html += '<div class="detail-section-label detail-section-label-flex">';
   html += '<span>Project Timeline</span>';
-  if (Auth.devMode) html += '<button onclick="toggleStatusHistoryEditor(' + p.id + ',' + p.objectId + ')" class="btn-navy-sm">\ud83d\udcc5 Edit History</button>';
+  if (Auth.devMode) html += '<button onclick="toggleStatusHistoryEditor(\'' + p.id + '\',' + p.objectId + ')" class="btn-navy-sm">\ud83d\udcc5 Edit History</button>';
   html += '</div>';
 
   html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;padding:0 2px;">';
@@ -1166,7 +1166,7 @@ function renderTaskDetail(idx) {
           <div class="detail-meta-item"><label>Working Due Date</label><p>${t.working_due ? t.working_due + (t.due && t.working_due !== t.due ? ' <span style="font-size:10px;color:#EF4444;">(moved)</span>' : '') : '—'}</p></div>
           <div class="detail-meta-item"><label>Hours Logged</label><p>${getTaskHours(t.idx) > 0 ? hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx)) : '—'}</p></div>
           ${t.actual_end ? `<div class="detail-meta-item"><label>Actual End</label><p>${t.actual_end}</p></div>` : ''}
-          ${t.Hours_Worked ? `<div class="detail-meta-item"><label>Hours Worked</label><p>${t.Hours_Worked}</p></div>` : ''}
+          ${t.hours_worked ? `<div class="detail-meta-item"><label>Hours Worked</label><p>${t.hours_worked}</p></div>` : ''}
         </div>
       </div>
 

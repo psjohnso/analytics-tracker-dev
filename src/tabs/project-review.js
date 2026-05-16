@@ -98,13 +98,15 @@ async function loadProjectReviews() {
         review_id: a.review_id,
         review_type_id: a.review_type_id,
         project_number: a.project_number,
-        meeting_date: a.meeting_date,   // epoch ms (DateOnly) — keep raw for sort
+        // meeting_date on the wire is DateOnly (YYYY-MM-DD string in new
+        // schema). Local model uses epoch ms for sort/date math. Normalize.
+        meeting_date: (typeof a.meeting_date === 'string') ? prDateToEpoch(a.meeting_date) : a.meeting_date,
         attendees: a.attendees || '',
         notes: a.notes || '',
         decisions: a.decisions || '',
         action_items: a.action_items || '',
-        created_by: a.created_by || '',
-        created_at: a.created_at
+        created_by: a.created_by || a.Creator || '',
+        created_at: a.created_at || a.CreationDate
       };
     });
     _projectReviewsLoaded = true;
@@ -630,17 +632,11 @@ function renderProjectReview(area) {
     var emptyMsg = _reviewSearchQuery ? 'Nothing matches "' + esc(_reviewSearchQuery) + '" with the current filters.' : 'No projects match the current filter.';
     html += '<div class="pr-empty-state">' + emptyMsg + '</div>';
   } else {
-    // Sort: Active first, then Scheduled, then On Hold, then others; within each, by overdue cycle desc
-    var statusRank = { 'Active': 0, 'Scheduled': 1, 'On Hold': 2, 'Future': 3, 'Complete': 4, 'Canceled': 5 };
+    // Sort alphabetically by project title within each fiscal-quarter bucket.
+    // Stable order keeps just-reviewed projects in place rather than sinking
+    // them to the bottom (which made it look like they had disappeared).
     projects.sort(function(a, b) {
-      var sa = statusRank[a.status] != null ? statusRank[a.status] : 9;
-      var sb = statusRank[b.status] != null ? statusRank[b.status] : 9;
-      if (sa !== sb) return sa - sb;
-      var la = getLastReviewForProject(a.project_number, rt.id);
-      var lb = getLastReviewForProject(b.project_number, rt.id);
-      var da = la ? prDaysSince(la.meeting_date) : 9999;
-      var db = lb ? prDaysSince(lb.meeting_date) : 9999;
-      return db - da; // most overdue first within status
+      return String(a.title || '').localeCompare(String(b.title || ''));
     });
     if (rt.filter && rt.filter.group_by_quarter) {
       var buckets = prGroupByFiscalQuarter(projects);
@@ -1063,8 +1059,8 @@ async function prSaveLog() {
       // Update
       var existing = PROJECT_REVIEWS.find(function(r) { return r.objectId === _prModalState.editObjectId; });
       var updateAttrs = {
-        OBJECTID: _prModalState.editObjectId,
-        meeting_date: meetingEpoch,
+        ObjectId: _prModalState.editObjectId,
+        meeting_date: meetingDate,  // DateOnly: send YYYY-MM-DD string
         attendees: attendees,
         notes: notes,
         decisions: decisions,
@@ -1087,17 +1083,16 @@ async function prSaveLog() {
     } else {
       // Add
       var newReviewId = nextReviewId();
+      // review_id was dropped from the schema. Creator/CreationDate
+      // auto-populated by AGO via editor tracking.
       var addAttrs = {
-        review_id: newReviewId,
         review_type_id: _prModalState.reviewTypeId,
         project_number: _prModalState.projectNumber,
-        meeting_date: meetingEpoch,
+        meeting_date: meetingDate,  // DateOnly: send YYYY-MM-DD string
         attendees: attendees,
         notes: notes,
         decisions: decisions,
         action_items: actionItems,
-        created_by: Auth.fullName || (Auth.username || ''),
-        created_at: nowEpoch
       };
       var result2 = await agolApplyEdits(ARCGIS_CONFIG.projectReviewsUrl, { adds: [{ attributes: addAttrs }] });
       if (result2.addResults && result2.addResults[0] && !result2.addResults[0].success) {
@@ -1107,16 +1102,16 @@ async function prSaveLog() {
       var newOid = result2.addResults && result2.addResults[0] ? result2.addResults[0].objectId : null;
       PROJECT_REVIEWS.push({
         objectId: newOid,
-        review_id: newReviewId,
+        review_id: newReviewId,  // local-only; field dropped from schema
         review_type_id: addAttrs.review_type_id,
         project_number: addAttrs.project_number,
-        meeting_date: addAttrs.meeting_date,
+        meeting_date: meetingEpoch,  // local model uses epoch ms (sort/date math)
         attendees: addAttrs.attendees,
         notes: addAttrs.notes,
         decisions: addAttrs.decisions,
         action_items: addAttrs.action_items,
-        created_by: addAttrs.created_by,
-        created_at: addAttrs.created_at
+        created_by: Auth.fullName || (Auth.username || ''),
+        created_at: nowEpoch
       });
       showToast('Review entry saved.', 'success');
     }

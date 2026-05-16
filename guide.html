@@ -107,7 +107,7 @@ li strong { color: var(--navy); }
 <header class="guide-header">
   <div>
     <h1>Analytics Project Tracker <span class="subtitle">User Guide</span></h1>
-    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">Updated for v1.15.0.0005</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">Updated for v1.32.0.0014</div>
   </div>
   <a href="javascript:void(0)" onclick="window.close();" class="back-btn">← Back to Tracker</a>
 </header>
@@ -427,7 +427,7 @@ li strong { color: var(--navy); }
 <h4>Step 5 — Calculate Availability</h4>
 <p>For each person, for each week:</p>
 <div class="formula">Availability = Project Capacity − Total Allocated Hours</div>
-<p>Where Project Capacity uses the standard formula: <code>(40 − Absence Hours) × 0.75 × Project Time %</code>.</p>
+<p>Where Project Capacity uses the standard formula: <code>(40 − Absence Hours) × Productivity Factor × Project Time %</code>. The Productivity Factor is currently 0.9 (configurable in Settings → System).</p>
 <p>Utilization is then: <code>Total Allocated Hours ÷ Project Capacity</code>, capped at 125% for display purposes.</p>
 
 <h4>Worked Example</h4>
@@ -723,14 +723,14 @@ li strong { color: var(--navy); }
 <table class="guide-table">
   <tr><th>Assumption</th><th>Value / Explanation</th></tr>
   <tr><td><strong>Scheduled Work Hours</strong></td><td>Computed from each employee's daily start/end times and lunch duration: <code>daily_hours = (end − start) − lunch</code>, summed for the week. A 5/8 schedule (8am–5pm, 1hr lunch) yields 40 hours/week. A 9/80 schedule alternates between ~44 hours (Week A) and ~36 hours (Week B) across a 2-week pay period starting on Sundays.</td></tr>
-  <tr><td><strong>Productivity Factor</strong></td><td><strong>75%</strong> — Only 75% of available work hours are assumed to be productive project time. The remaining 25% accounts for meetings, email, administrative tasks, context-switching, and breaks. This is based on workplace productivity research showing the average knowledge worker is productively focused for roughly 6 of 8 hours per day.</td></tr>
+  <tr><td><strong>Productivity Factor</strong></td><td>Configurable, currently <strong>90%</strong>. Discounts non-project time — personal breaks, brief interruptions, and other unavoidable human overhead — but not meetings or admin work, which count as productive. Editable in Settings → System; stored as <code>productivity_ratio</code> in <code>app_config</code>.</td></tr>
   <tr><td><strong>Project Time %</strong></td><td>Each team member has a configurable percentage of their productive time dedicated to project work (e.g., 63% for a Lead Data Analyst). The remainder goes to operational duties, support, and overhead not tracked as projects.</td></tr>
   <tr><td><strong>Absences</strong></td><td>Hours off per week (vacation, sick, holidays) are entered in the Settings tab. These reduce the scheduled hours before the productivity factor is applied.</td></tr>
 </table>
 
 <h3>The Capacity Formula</h3>
 <p>For each person, for each week:</p>
-<div class="formula">Project Capacity = (Scheduled Hours − Absence Hours) × 0.75 × Project Time %</div>
+<div class="formula">Project Capacity = (Scheduled Hours − Absence Hours) × Productivity Factor × Project Time %</div>
 <p>Where Scheduled Hours is determined by the employee's work schedule and which week of the pay period it is (Week A or Week B for 9/80 employees).</p>
 
 <h4>Worked Example — 5/8 Schedule, No Absences</h4>
@@ -739,8 +739,8 @@ li strong { color: var(--navy); }
   <tr><th>Step</th><th>Calculation</th></tr>
   <tr><td>Scheduled hours</td><td>40 hours (5/8 schedule)</td></tr>
   <tr><td>Subtract absences</td><td>40 − 0 = 40 hours available</td></tr>
-  <tr><td>Apply 75% productivity</td><td>40 × 0.75 = 30 productive hours</td></tr>
-  <tr><td>Apply 63% project time</td><td>30 × 0.63 = <strong>18.9 project hours</strong></td></tr>
+  <tr><td>Apply 90% productivity</td><td>40 × 0.90 = 36 productive hours</td></tr>
+  <tr><td>Apply 63% project time</td><td>36 × 0.63 = <strong>22.68 project hours</strong></td></tr>
 </table>
 
 <h4>Worked Example — 9/80 Schedule, Week B</h4>
@@ -749,8 +749,8 @@ li strong { color: var(--navy); }
   <tr><th>Step</th><th>Calculation</th></tr>
   <tr><td>Scheduled hours</td><td>36 hours (9/80 Week B)</td></tr>
   <tr><td>Subtract absences</td><td>36 − 0 = 36 hours available</td></tr>
-  <tr><td>Apply 75% productivity</td><td>36 × 0.75 = 27 productive hours</td></tr>
-  <tr><td>Apply 63% project time</td><td>27 × 0.63 = <strong>17.01 project hours</strong></td></tr>
+  <tr><td>Apply 90% productivity</td><td>36 × 0.90 = 32.4 productive hours</td></tr>
+  <tr><td>Apply 63% project time</td><td>32.4 × 0.63 = <strong>20.41 project hours</strong></td></tr>
 </table>
 
 <h4>Worked Example — With 1 Day Off</h4>
@@ -759,14 +759,14 @@ li strong { color: var(--navy); }
   <tr><th>Step</th><th>Calculation</th></tr>
   <tr><td>Scheduled hours</td><td>40 hours</td></tr>
   <tr><td>Subtract absences</td><td>40 − 8 = 32 hours available</td></tr>
-  <tr><td>Apply 75% productivity</td><td>32 × 0.75 = 24 productive hours</td></tr>
-  <tr><td>Apply 63% project time</td><td>24 × 0.63 = <strong>15.12 project hours</strong></td></tr>
+  <tr><td>Apply 90% productivity</td><td>32 × 0.90 = 28.8 productive hours</td></tr>
+  <tr><td>Apply 63% project time</td><td>28.8 × 0.63 = <strong>18.14 project hours</strong></td></tr>
 </table>
 
 <h3>Allocated Hours</h3>
 <p>When a team member is allocated a percentage to a project for a given week:</p>
 <div class="formula">Allocated Hours = Allocation % × Project Capacity</div>
-<p>For example, if James is allocated 50% to a project with 18.9 hours capacity: 0.50 × 18.9 = <strong>9.45 hours</strong>. The total allocated hours for a person is the sum across all their project allocations for that week.</p>
+<p>For example, if James is allocated 50% to a project with 22.68 hours capacity: 0.50 × 22.68 = <strong>11.34 hours</strong>. The total allocated hours for a person is the sum across all their project allocations for that week.</p>
 
 <h3>Utilization</h3>
 <p>Utilization measures how much of a person's available project capacity is actually allocated:</p>
@@ -789,17 +789,21 @@ li strong { color: var(--navy); }
 <h3>Feature Services</h3>
 <table class="guide-table">
   <tr><th>Service</th><th>Purpose</th><th>Key Fields</th></tr>
-  <tr><td><strong>projects</strong></td><td>Analytics project records with metadata, dates, status, and assignments</td><td>title, status, priority, category, contact, start, end</td></tr>
-  <tr><td><strong>tasks</strong></td><td>Individual work items linked to projects</td><td>title, status, assignee, due_date, project_id, blocked_by</td></tr>
-  <tr><td><strong>team_members</strong></td><td>Team roster with roles, capacity, schedule, and time tracking opt-in</td><td>name, role, team, member_group, proj_pct, schedule_type, week1_hours, week2_hours, rdo_day, time_tracking, user_preferences</td></tr>
+  <tr><td><strong>projects</strong></td><td>Analytics project records with metadata, dates, status, and assignments</td><td>project_number, title, status, priority, category, contact, start_date, end_date</td></tr>
+  <tr><td><strong>tasks</strong></td><td>Individual work items linked to projects</td><td>task_number, project_number, title, status, assignee, due_date</td></tr>
+  <tr><td><strong>team_members</strong></td><td>Team roster with roles, capacity, schedule, and time tracking opt-in</td><td>name, role, team, member_group, proj_pct, schedule_type, rdo_day, time_tracking, active, user_preferences</td></tr>
   <tr><td><strong>absences</strong></td><td>Per-person, per-week time off records</td><td>name, week_date, absence_hours</td></tr>
-  <tr><td><strong>allocations</strong></td><td>Per-person, per-project, per-week allocation records</td><td>name, project, week_date, fraction, hours</td></tr>
-  <tr><td><strong>app_config</strong></td><td>Shared key-value config store for dropdown lists</td><td>config_key, config_value</td></tr>
-  <tr><td><strong>time_entries</strong></td><td>Employee time tracking records (start/stop per task per day)</td><td>name, task_idx, project_id, start_time, end_time, hours, work_date, notes</td></tr>
+  <tr><td><strong>allocations</strong></td><td>Per-person, per-project, per-week allocation records</td><td>name, project_number, week_date, fraction, project_role</td></tr>
+  <tr><td><strong>time_entries</strong></td><td>Employee time tracking records (start/stop per task per day)</td><td>name, task_number, project_number, start_time, end_time, hours, work_date, notes</td></tr>
+  <tr><td><strong>app_config</strong></td><td>Shared key-value config store for dropdown lists, defaults, and tunables (including <code>productivity_ratio</code>)</td><td>config_key, config_value</td></tr>
+  <tr><td><strong>issues</strong></td><td>User-submitted bugs and improvement requests</td><td>title, issue_type, status, priority, description</td></tr>
+  <tr><td><strong>project_notes</strong></td><td>Append-only project journal entries</td><td>note_id, project_number, note_text</td></tr>
+  <tr><td><strong>project_reviews</strong></td><td>Recurring portfolio review entries (for the Project Review tab)</td><td>review_type_id, project_number, meeting_date, attendees, notes, decisions, action_items</td></tr>
+  <tr><td><strong>status_history</strong></td><td>History of status changes per project</td><td>project_number, project_title, status</td></tr>
 </table>
 
 <div class="note-box">
-  <strong>Note:</strong> A <em>weekly_capacity</em> service also exists but is no longer queried by the application. All capacity values are computed dynamically from absences and team member settings.
+  <strong>Architecture (consolidated 2026-05):</strong> The eleven tables above are physically grouped into three multi-table FeatureServers for easier administration: <code>datateam_portfolio</code> (projects, tasks, project_notes, project_reviews, status_history), <code>datateam_capacity</code> (team_members, absences, time_entries, allocations), and <code>datateam_tracker_admin</code> (app_config, issues). Editor tracking (Creator, CreationDate, Editor, EditDate) is enabled on every table — auto-populated by ArcGIS, no longer stored in ad-hoc <code>created_by</code>/<code>changed_by</code> fields.
 </div>
 
 <h3>Week Structure</h3>

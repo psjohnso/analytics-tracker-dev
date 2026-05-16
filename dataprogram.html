@@ -221,6 +221,11 @@ body {
   text-transform: uppercase; color: var(--navy);
   margin-bottom: 4px;
 }
+.lp-req { color: var(--danger); margin-left: 3px; }
+.lp-field-input.err, .lp-field-select.err, .lp-field-textarea.err {
+  border-color: var(--danger);
+  background: #FEF2F2;
+}
 .lp-field-input, .lp-field-select, .lp-field-textarea {
   width: 100%;
   padding: 8px 12px;
@@ -368,7 +373,7 @@ body {
     </div>
     <div class="lp-modal-body">
       <div class="lp-field">
-        <label class="lp-field-label" for="lp-f-title">Title</label>
+        <label class="lp-field-label" for="lp-f-title">Title<span class="lp-req">*</span></label>
         <input id="lp-f-title" class="lp-field-input" type="text" placeholder="Project title…">
       </div>
       <div class="lp-field-row">
@@ -377,7 +382,7 @@ body {
           <select id="lp-f-status" class="lp-field-select"></select>
         </div>
         <div class="lp-field">
-          <label class="lp-field-label" for="lp-f-contact">Project lead</label>
+          <label class="lp-field-label" for="lp-f-contact">Project lead<span class="lp-req">*</span></label>
           <select id="lp-f-contact" class="lp-field-select"></select>
         </div>
       </div>
@@ -404,6 +409,10 @@ body {
           <label class="lp-field-label" for="lp-f-actual-end">Completion date</label>
           <input id="lp-f-actual-end" class="lp-field-input" type="date">
         </div>
+      </div>
+      <div class="lp-field">
+        <label class="lp-field-label" for="lp-f-problem-statement">Problem statement<span class="lp-req">*</span></label>
+        <textarea id="lp-f-problem-statement" class="lp-field-textarea" placeholder="What problem does this solve? Why does it matter?"></textarea>
       </div>
       <div class="lp-field">
         <label class="lp-field-label" for="lp-f-description">Description</label>
@@ -444,9 +453,9 @@ body {
 
 <!-- Shared libraries — cache-bust ?v= bumped on each deploy (mirrors index.html pattern) -->
 <script src="src/util.js?v=1.16.0.0021"></script>
-<script src="src/constants.js?v=1.31.0.0002"></script>
-<script src="src/agol.js?v=1.16.1.0023"></script>
+<script src="src/constants.js?v=1.32.0.0017"></script>
+<script src="src/agol.js?v=1.32.0.0007"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
-<script src="src/dataprogram-lite.js?v=1.16.0.0021"></script>
+<script src="src/dataprogram-lite.js?v=1.32.0.0017"></script>
 </body>
 </html>

@@ -1,20 +1,20 @@
 <html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Analytics Project Tracker — Tucson Data Team</title>
+<title>Analytics Project Tracker — Tucson Data Team [LOCAL TEST]</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;family=Cardo:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <!-- ArcGIS REST API integration (no external auth library needed) -->
-<link rel="stylesheet" href="src/app.css?v=1.28.0.0003">
+<link rel="stylesheet" href="src/app.css?v=1.28.0.0004">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.31.0.0002"></script>
-<script src="src/agol.js?v=1.16.1.0023"></script>
+<script src="src/constants.js?v=1.32.2.0002"></script>
+<script src="src/agol.js?v=1.32.2.0001"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
 <script src="src/render.js?v=1.27.0.0001"></script>
-<script src="src/tabs/issues.js?v=1.29.0.0001"></script>
-<script src="src/tabs/project-review.js?v=1.16.0.0020"></script>
-<script src="src/project-notes.js?v=1.16.1.0023"></script>
+<script src="src/tabs/issues.js?v=1.32.0.0011"></script>
+<script src="src/tabs/project-review.js?v=1.32.0.0013"></script>
+<script src="src/project-notes.js?v=1.32.0.0011"></script>
 <script src="src/confetti.js?v=1.17.2.0033"></script>
 <script src="src/achievements.js?v=1.27.0.0004"></script>
 <script src="src/saved-views.js?v=1.26.1.0001"></script>
@@ -23,15 +23,15 @@
 <script src="src/tabs/overview.js?v=1.17.6.0039"></script>
 <script src="src/tabs/settings.js?v=1.31.0.0001"></script>
 <script src="src/tabs/resources.js?v=1.17.6.0039"></script>
-<script src="src/tabs/my-work.js?v=1.28.2.0002"></script>
+<script src="src/tabs/my-work.js?v=1.28.2.0003"></script>
 <script src="src/tabs/projects-tasks.js?v=1.27.0.0003"></script>
-<script src="src/tabs/projects-tasks-detail.js?v=1.28.2.0001"></script>
-<script src="src/tabs/slideshow.js?v=1.16.0.0009"></script>
+<script src="src/tabs/projects-tasks-detail.js?v=1.32.0.0010"></script>
+<script src="src/tabs/slideshow.js?v=1.16.2.0002"></script>
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
 <script src="src/modals/idea.js?v=1.16.1.0025"></script>
-<script src="src/modals/member-form.js?v=1.31.0.0001"></script>
-<script src="src/modals/alloc-editor.js?v=1.10.0.0001"></script>
-<script src="src/modals/settings-editors.js?v=1.16.0.0007"></script>
+<script src="src/modals/member-form.js?v=1.32.0.0002"></script>
+<script src="src/modals/alloc-editor.js?v=1.32.0.0006"></script>
+<script src="src/modals/settings-editors.js?v=1.32.0.0011"></script>
 <script src="src/modals/forms.js?v=1.17.5.0036"></script>
 <script src="src/ai/prompts.js?v=1.12.0.0001"></script>
 <script src="src/ai/ai-suggestions.js?v=1.16.0.0015"></script>
@@ -1512,23 +1512,18 @@ async function saveUserPrefs() {
 // Load just projects and tasks without authentication (read-only mode)
 // Resolves Item IDs to REST URLs, then queries without a token.
 async function loadPublicData() {
-  var projItemId = ARCGIS_CONFIG.publicProjectsItemId;
-  var taskItemId = ARCGIS_CONFIG.publicTasksItemId;
-  var configItemId = ARCGIS_CONFIG.publicConfigItemId;
+  var projUrl = ARCGIS_CONFIG.publicProjectsUrl;
+  var taskUrl = ARCGIS_CONFIG.publicTasksUrl;
+  var configUrl = ARCGIS_CONFIG.publicConfigUrl;
 
-  // If no public Item IDs are configured, don't attempt public load
-  if (!projItemId && !taskItemId) {
-    console.log('No public view Item IDs configured. Skipping public data load.');
+  // If no public view URLs are configured, don't attempt public load
+  if (!projUrl && !taskUrl) {
+    console.log('No public view URLs configured. Skipping public data load.');
     return false;
   }
 
-  showLoadingOverlay('Resolving public data sources...');
+  showLoadingOverlay('Loading public data sources...');
   try {
-    // Resolve Item IDs to REST URLs
-    var projUrl = projItemId ? await resolveItemId(projItemId) : null;
-    var taskUrl = taskItemId ? await resolveItemId(taskItemId) : null;
-    var configUrl = configItemId ? await resolveItemId(configItemId) : null;
-
     if (projUrl) {
       updateLoadingOverlay('Loading projects...');
       // Don't filter deleted_at in the WHERE clause — public view layers may
@@ -1699,8 +1694,8 @@ async function loadResourcesData() {
       wk1_thu: dailyHours.wk1_thu, wk1_fri: dailyHours.wk1_fri,
       wk2_mon: dailyHours.wk2_mon, wk2_tue: dailyHours.wk2_tue, wk2_wed: dailyHours.wk2_wed,
       wk2_thu: dailyHours.wk2_thu, wk2_fri: dailyHours.wk2_fri,
-      time_tracking:    (ci('time_tracking') === 'true' || ci('time_tracking') === true) ? true : false,
-      active:           (ci('active') === 'false' || ci('active') === false) ? false : true,
+      time_tracking:    (ci('time_tracking') === 'true' || ci('time_tracking') === true || ci('time_tracking') === 1) ? true : false,
+      active:           (ci('active') === 'false' || ci('active') === false || ci('active') === 0) ? false : true,
       tracking_level:   ci('tracking_level') || 'full',
       member_group:     ci('member_group') || 'Data Intelligence',
       data_program_lead_team: ci('data_program_lead_team') || null,
@@ -1788,21 +1783,28 @@ function computeCapacityAndAllocations(people, weeks, weekIdx, allocFeatures, N)
     }
   });
 
-  // Build allocations grouped by person+project
-  const allocMap = {}; // key: "name|project"
+  // Build allocations grouped by person+project. The denormalized fields
+  // (project, project_status, project_type, hours) were dropped from
+  // allocations in the migration (decisions AL1=a, AL2=a). Look up the
+  // project metadata by project_number FK and recompute hours from
+  // fraction × proj_cap.
+  const allocMap = {}; // key: "name|project_title"
   allocFeatures.forEach(function(f) {
     const a = f.attributes;
-    const key = a.name + '|' + a.project;
+    const projNum = a.project_number || a.analytics_id || '';
+    const proj = projNum ? PROJECTS.find(function(p) { return p.project_number === projNum; }) : null;
+    const projTitle = proj ? proj.title : (a.project || '(unknown project)');
+    const key = a.name + '|' + projTitle;
     const wk = epochToDateStr(a.week_date);
     const wi = weekIdx[wk];
     if (wi === undefined) return;
 
     if (!allocMap[key]) {
       allocMap[key] = {
-        project:      a.project,
-        status:       a.project_status || '',
-        type:         a.project_type || '',
-        analytics_id: a.analytics_id || null,
+        project:      projTitle,
+        status:       proj ? (proj.status || '') : (a.project_status || ''),
+        type:         proj ? (proj.category || '') : (a.project_type || ''),
+        analytics_id: projNum || null,
         role:         a.project_role || '',
         fracs:        new Array(N).fill(0),
         hours:        new Array(N).fill(0),
@@ -1812,7 +1814,9 @@ function computeCapacityAndAllocations(people, weeks, weekIdx, allocFeatures, N)
     // If role wasn't set on earlier record but is on this one, capture it
     if (!allocMap[key].role && a.project_role) allocMap[key].role = a.project_role;
     allocMap[key].fracs[wi] = a.fraction || 0;
-    allocMap[key].hours[wi] = a.hours || 0;
+    // Recompute hours from fraction × this person's proj_cap for the week.
+    const personProjCap = (people[a.name] && people[a.name].proj_cap && people[a.name].proj_cap[wi]) || 0;
+    allocMap[key].hours[wi] = (a.fraction || 0) * personProjCap;
   });
 
   // Attach allocations to people
@@ -1965,9 +1969,7 @@ const DataStore = {
 
   async createProject(fields) {
     try {
-      const id = Math.max(0, ...PROJECTS.map(function(p) { return p.id; })) + 1;
-      fields.id = id;
-      // Auto-assign project number
+      // Auto-assign project_number (the canonical PK in the new schema)
       if (!fields.project_number) fields.project_number = getNextProjectNumber();
       // Auto-set working_due to match original end date on creation
       if (fields.end && !fields.working_due) fields.working_due = fields.end;
@@ -1977,20 +1979,19 @@ const DataStore = {
       });
       const addResult = (result.addResults || [])[0];
       if (!addResult || !addResult.success) throw new Error('Add failed: ' + JSON.stringify(addResult));
-      const pid = (fields.title || '').replace(/\s+/g, '').slice(0, 40) + id;
-      const proj = Object.assign({ pid: pid, objectId: addResult.objectId }, fields);
+      // Build local project object; alias 'id' → project_number for consumer compat.
+      const proj = Object.assign({ id: fields.project_number, objectId: addResult.objectId }, fields);
       PROJECTS.push(proj);
       markSynced('Project created');
-      // Log initial status to history
-      if (fields.status) logStatusChange(fields.id, fields.title, fields.status);
+      // Log initial status to history (FK is project_number)
+      if (fields.status) logStatusChange(fields.project_number, fields.title, fields.status);
       return proj;
     } catch (err) {
       console.error('ArcGIS createProject failed:', err);
       showToast('Failed to create project: ' + err.message, 'error');
-      if (!fields.id) fields.id = Math.max(0, ...PROJECTS.map(function(p) { return p.id; })) + 1;
-      const pid = (fields.title || '').replace(/\s+/g, '').slice(0, 40) + Date.now();
+      if (!fields.project_number) fields.project_number = getNextProjectNumber();
       const tempOid = 'temp_' + Date.now();
-      const proj = Object.assign({ pid: pid, objectId: tempOid }, fields);
+      const proj = Object.assign({ id: fields.project_number, objectId: tempOid }, fields);
       PROJECTS.push(proj);
       markDirty();
       return proj;
@@ -2050,7 +2051,7 @@ const DataStore = {
             if (allocFeatures.length > 0) {
               const allocUpdates = allocFeatures.map(function(f) {
                 const oid = f.attributes.OBJECTID || f.attributes.ObjectId || f.attributes.objectid;
-                return { attributes: { OBJECTID: oid, project: newTitle } };
+                return { attributes: { ObjectId: oid, project: newTitle } };
               });
               for (var ab = 0; ab < allocUpdates.length; ab += 100) {
                 await agolApplyEdits(ARCGIS_CONFIG.allocationsUrl, { updates: allocUpdates.slice(ab, ab + 100) });
@@ -2065,7 +2066,7 @@ const DataStore = {
             if (timeFeatures.length > 0) {
               const timeUpdates = timeFeatures.map(function(f) {
                 const oid = f.attributes.OBJECTID || f.attributes.ObjectId || f.attributes.objectid;
-                return { attributes: { OBJECTID: oid, project: newTitle } };
+                return { attributes: { ObjectId: oid, project: newTitle } };
               });
               for (var tb = 0; tb < timeUpdates.length; tb += 100) {
                 await agolApplyEdits(ARCGIS_CONFIG.timeEntriesUrl, { updates: timeUpdates.slice(tb, tb + 100) });
@@ -2080,7 +2081,7 @@ const DataStore = {
             if (histFeatures.length > 0) {
               const histUpdates = histFeatures.map(function(f) {
                 const oid = f.attributes.OBJECTID || f.attributes.ObjectId || f.attributes.objectid;
-                return { attributes: { OBJECTID: oid, project_title: newTitle } };
+                return { attributes: { ObjectId: oid, project_title: newTitle } };
               });
               for (var hb = 0; hb < histUpdates.length; hb += 100) {
                 await agolApplyEdits(ARCGIS_CONFIG.statusHistoryUrl, { updates: histUpdates.slice(hb, hb + 100) });
@@ -2886,7 +2887,7 @@ async function loadTaskHours() {
 
     features.forEach(function(f) {
       const a = f.attributes;
-      const idx = a.task_idx;
+      const idx = a.task_number || a.task_idx;
       const hrs = a.hours || 0;
       const who = a.name || '';
       if (idx != null && hrs > 0) {
@@ -2942,11 +2943,11 @@ async function loadStatusHistory() {
       const a = f.attributes;
       return {
         objectId: a.ObjectId || a.OBJECTID || a.objectid,
-        project_id: a.project_id,
+        project_id: a.project_number || a.project_id,
         project_title: a.project_title,
         status: a.status,
-        changed_date: a.changed_date,
-        changed_by: a.changed_by,
+        changed_date: epochToDateStr(a.changed_date || a.CreationDate),
+        changed_by: a.changed_by || a.Creator || '',
       };
     });
     console.log('[StatusHistory] Loaded', STATUS_HISTORY.length, 'records');
@@ -2968,10 +2969,15 @@ async function logStatusChange(projectId, projectTitle, newStatus) {
   };
   // Add to local array immediately
   STATUS_HISTORY.push(record);
-  // Save to ArcGIS Online
+  // Save to ArcGIS Online (record uses alias key project_id; AGO needs project_number).
+  // Creator/CreationDate auto-populated by AGO via editor tracking.
   try {
     const result = await agolApplyEdits(ARCGIS_CONFIG.statusHistoryUrl, {
-      adds: [{ attributes: record }]
+      adds: [{ attributes: {
+        project_number: projectId,
+        project_title: projectTitle,
+        status: newStatus,
+      }}]
     });
     if (result && result.addResults && result.addResults[0] && result.addResults[0].objectId) {
       record.objectId = result.addResults[0].objectId;
@@ -3234,8 +3240,8 @@ async function loadTimeEntries() {
       return {
         oid: a.OBJECTID || a.ObjectId || a.objectid,
         name: a.name,
-        task_idx: a.task_idx,
-        project_id: a.project_id,
+        task_idx: a.task_number || a.task_idx,
+        project_id: a.project_number || a.project_id,
         start_time: a.start_time, // epoch ms
         end_time: a.end_time,     // epoch ms or null
         hours: a.hours,
@@ -3290,8 +3296,8 @@ async function startTimer(taskIdx) {
     const result = await agolApplyEdits(ARCGIS_CONFIG.timeEntriesUrl, {
       adds: [{ attributes: {
         name: Auth.fullName,
-        task_idx: taskIdx,
-        project_id: task.project_id || null,
+        task_number: taskIdx,
+        project_number: task.project_id || null,
         start_time: now.getTime(),
         end_time: null,
         hours: null,
@@ -3320,7 +3326,7 @@ async function stopTimer(oid) {
   try {
     await agolApplyEdits(ARCGIS_CONFIG.timeEntriesUrl, {
       updates: [{ attributes: {
-        OBJECTID: oid,
+        ObjectId: oid,
         end_time: now.getTime(),
         hours: hours,
       }}]
@@ -3452,7 +3458,7 @@ async function saveTimeEntryEdit(oid) {
   const startD = new Date(startVal);
   const workDateStr = startD.getFullYear() + '-' + String(startD.getMonth()+1).padStart(2,'0') + '-' + String(startD.getDate()).padStart(2,'0');
   const attrs = {
-    OBJECTID: oid,
+    ObjectId: oid,
     start_time: startMs,
     end_time: endMs,
     hours: hours,
@@ -3631,7 +3637,7 @@ function buildTimeEntryRowHTML(e, opts) {
   html += '</div>';
   html += '<div class="te-row-hours">' + hrs + '</div>';
   if (opts.canResume) {
-    html += '<button onclick="startTimer(' + e.task_idx + ')" class="btn-timer-resume" title="Resume this task">▶</button>';
+    html += '<button onclick="startTimer(\'' + e.task_idx + '\')" class="btn-timer-resume" title="Resume this task">▶</button>';
   }
   html += '<button onclick="toggleEditTimeEntry(' + e.oid + ')" class="btn-te-icon">✏️</button>';
   html += '<button onclick="deleteTimeEntry(' + e.oid + ')" class="btn-te-del">🗑</button>';
@@ -3673,7 +3679,7 @@ function buildActiveTimersHTML(activeTimers) {
     html += '<div class="text-muted-sm">Started ' + formatTimeShort(e.start_time) + (cumulHrs > 0 ? ' · Total: ' + cumulHrs + 'h' : '') + '</div>';
     html += '</div>';
     html += '<div class="timer-elapsed" id="timer-elapsed-' + e.oid + '">' + elapsed + '</div>';
-    html += '<button onclick="pauseTimer(' + e.oid + ',' + e.task_idx + ')" class="btn-timer-pause">⏸ Pause</button>';
+    html += '<button onclick="pauseTimer(' + e.oid + ',\'' + e.task_idx + '\')" class="btn-timer-pause">⏸ Pause</button>';
     html += '<button onclick="stopTimer(' + e.oid + ')" class="btn-timer-stop">⏹ Stop</button>';
     html += '</div>';
   });
@@ -3713,7 +3719,7 @@ function buildTimeTrackingPanel() {
     html += '<option value="' + t.idx + '">' + esc(t.title + projLabel) + '</option>';
   });
   html += '</select>';
-  html += '<button onclick="var s=document.getElementById(\'te-task-select\');if(s.value)startTimer(parseInt(s.value));else showToast(\'Select a task first.\',\'warn\');" class="btn-navy-lg">▶ Start</button>';
+  html += '<button onclick="var s=document.getElementById(\'te-task-select\');if(s.value)startTimer(s.value);else showToast(\'Select a task first.\',\'warn\');" class="btn-navy-lg">▶ Start</button>';
   html += '</div>';
 
   // Today's summary

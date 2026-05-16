@@ -14,25 +14,30 @@
 const ARCGIS_CONFIG = {
   portalUrl:        'https://cotgis.maps.arcgis.com',
   clientId:         'H8cR2cAUoy0fVrJF',
-  projectsUrl:      'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/projects/FeatureServer/0',
-  tasksUrl:         'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/tasks/FeatureServer/0',
-  teamMembersUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/team_members/FeatureServer/0',
-  absencesUrl:      'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/absences/FeatureServer/0',
-  allocationsUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/allocations/FeatureServer/0',
-  weeklyCapacityUrl:'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/weekly_capacity/FeatureServer/0',
-  appConfigUrl:     'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/app_config/FeatureServer/0',
-  timeEntriesUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/time_series/FeatureServer/0',
-  statusHistoryUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/status_history/FeatureServer/0',
-  issuesUrl:        'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/issues/FeatureServer/0',
-  projectReviewsUrl:'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/Project_Reviews/FeatureServer/0',
-  projectNotesUrl:  'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/Project_Notes/FeatureServer/0',
-  // Public views — ArcGIS Online Item IDs for read-only feature layer views.
-  // Create views in ArcGIS Online: Content → source layer → Manage → Create View Layer.
-  // Share the views publicly or org-wide. Find the Item ID in the URL bar of the item page.
-  // Leave empty to disable read-only public access.
-  publicProjectsItemId: '8d28b20af78d4e01bffbac8abd9dd8ed',
-  publicTasksItemId:    '1b24f6c11021452e938747ff18cd5340',
-  publicConfigItemId:   '693882a97ea84c92ad2b41f7d35fa529',
+
+  // Three consolidated FeatureServers replace the previous twelve.
+  // Layer indices verified 2026-05-15 against ?f=json output.
+  projectsUrl:       'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/0',
+  tasksUrl:          'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/1',
+  projectNotesUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/2',
+  projectReviewsUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/3',
+  statusHistoryUrl:  'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/4',
+
+  teamMembersUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/0',
+  absencesUrl:       'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/1',
+  timeEntriesUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/2',
+  allocationsUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/3',
+
+  appConfigUrl:      'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin/FeatureServer/0',
+  issuesUrl:         'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin/FeatureServer/1',
+
+  // Public read-only views over the consolidated FeatureServers. Used
+  // for anonymous browsing and the slideshow's auto-refresh. Direct URLs
+  // (not Item IDs) because tasks_ro_view exposes tasks at layer /1, not
+  // /0, and the old resolveItemId() helper would have defaulted to /0.
+  publicProjectsUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/arcgis/rest/services/projects_ro_view/FeatureServer/0',
+  publicTasksUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/arcgis/rest/services/tasks_ro_view/FeatureServer/1',
+  publicConfigUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/arcgis/rest/services/app_configuration_ro_view/FeatureServer/0',
 };
 
 // ── Token error handler ────────────────────────────────────────────
@@ -182,35 +187,47 @@ async function agolApplyEdits(serviceUrl, edits) {
 // ══════════════════════════════════════════════════════════════════════
 //  FIELD MAPPING: ArcGIS Feature Service Fields ↔ Local JS Field Names
 //  ─────────────────────────────────────────────────────────────────
-//  Projects layer fields (ArcGIS):
-//    ObjectId, id, pid, title, status, priority, contact,
-//    other_members, partner_dept, category, start, end_ (alias: end),
-//    actual_end, description, problem_statement, itd_team, project_number,
+//  Projects layer fields (ArcGIS, datateam_portfolio/0):
+//    ObjectId, project_number, title, status, priority, contact,
+//    other_members, partner_dept, category, start_date, end_date,
+//    actual_end, description, problem_statement, itd_team,
 //    is_data_program, it_initiative, city_initiative, it_priority_project,
-//    dp_goal, wwc_practice, wwc_criteria
+//    dp_goal, wwc_practice, wwc_criteria, data_program_team,
+//    leadership_title, leadership_summary, primary_dp_goal, public_visibility
 //
-//  Tasks layer fields (ArcGIS):
-//    ObjectId, idx, id, title, status, priority, assignee,
-//    project_id, project, category, start, due,
-//    actual_end, tool, description, hours, Hours_Worked, resolution, task_number
+//  Tasks layer fields (ArcGIS, datateam_portfolio/1):
+//    ObjectId, task_number, project_number, title, status, priority,
+//    assignee, category, start_date, due_date, working_due, actual_end,
+//    tool, description, hours, hours_worked, resolution
 //
-//  KEY JOIN: Task.project_id = Project.id
+//  KEY JOIN: Task.project_number = Project.project_number  (Strings)
 //
-//  NOTE: ArcGIS fields are nearly 1:1 with local field names.
-//        The only difference is the project date field 'end_' in
-//        ArcGIS maps to 'end' locally (since 'end' is a reserved word).
-//        DateOnly fields are returned as string values (YYYY-MM-DD).
+//  LEGACY ALIASES: the projection functions also expose:
+//    Project: local.id     ← project_number   (consumer compat)
+//             local.start  ← start_date       (consumer compat)
+//             local.end    ← end_date         (consumer compat)
+//    Task:    local.project_id ← project_number   (consumer compat)
+//             local.idx        ← task_number      (consumer compat)
+//             local.start      ← start_date       (consumer compat)
+//             local.due        ← due_date         (consumer compat)
+//  These exist so consumer code can continue reading the legacy names
+//  while it's migrated to the new schema. localToAgolProject /
+//  localToAgolTask reverse-translate so writes hit the real fields.
 // ══════════════════════════════════════════════════════════════════════
 
 // Maps: localFieldName → ArcGIS field name (only where they differ)
 const PROJECT_FIELD_MAP = {
-  end: 'end_',  // 'end' is reserved; ArcGIS stores it as 'end_'
+  start: 'start_date',
+  end:   'end_date',
 };
 
 // Reverse map for projects: ArcGIS field → local field
-const PROJECT_AGOL_TO_LOCAL = { 'end_': 'end' };
+const PROJECT_AGOL_TO_LOCAL = {
+  'start_date': 'start',
+  'end_date':   'end',
+};
 
-// For tasks, all field names are identical — no mapping needed.
+// For tasks, no map — date aliases are added inline in agolTaskToLocal.
 
 // ── Convert ArcGIS feature → local object ──────────────────────────
 function agolProjectToLocal(feature) {
@@ -221,10 +238,10 @@ function agolProjectToLocal(feature) {
     const localKey = PROJECT_AGOL_TO_LOCAL[key] || key;
     local[localKey] = attrs[key];
   }
-  // Generate pid if missing
-  if (!local.pid) {
-    local.pid = (local.title || '').replace(/\s+/g, '').slice(0, 40) + local.id;
-  }
+  // Legacy alias: many consumers read p.id; new schema uses
+  // project_number as the canonical PK (String). Will be removed once
+  // consumer code migrates to p.project_number.
+  if (local.project_number != null) local.id = local.project_number;
   // Normalize boolean fields from ArcGIS Short Integer (0/1) to JS truthy.
   // Data Program status is derived: true if data_program_team is set
   // (the explicit way), OR if any Data Program Goal is set on a DI
@@ -243,8 +260,15 @@ function agolTaskToLocal(feature) {
     if (key === 'ObjectId') continue;
     local[key] = attrs[key];
   }
-  // Ensure Hours_Worked is numeric (this is the primary hours field for calculations)
-  local.Hours_Worked = parseFloat(local.Hours_Worked) || 0;
+  // Legacy aliases (see agolProjectToLocal). Consumers read t.project_id,
+  // t.idx, t.start, t.due; new schema uses project_number, task_number,
+  // start_date, due_date.
+  if (local.project_number != null) local.project_id = local.project_number;
+  if (local.task_number    != null) local.idx        = local.task_number;
+  if (local.start_date     != null) local.start      = local.start_date;
+  if (local.due_date       != null) local.due        = local.due_date;
+  // Ensure hours_worked is numeric (this is the primary hours field for calculations)
+  local.hours_worked = parseFloat(local.hours_worked) || 0;
   return local;
 }
 
@@ -253,7 +277,8 @@ function localToAgolProject(fields) {
   const attrs = {};
   for (const key of Object.keys(fields)) {
     const val = fields[key];
-    if (key === 'objectId' || key === 'pid' || val === undefined) continue;
+    // Skip transient/local-only/alias-only keys that have no schema field.
+    if (key === 'objectId' || key === 'pid' || key === 'id' || val === undefined) continue;
     const agolKey = PROJECT_FIELD_MAP[key] || key;
     attrs[agolKey] = val;
   }
@@ -265,6 +290,12 @@ function localToAgolTask(fields) {
   for (const key of Object.keys(fields)) {
     const val = fields[key];
     if (key === 'objectId' || val === undefined) continue;
+    // Translate legacy alias keys back to real schema field names.
+    if (key === 'project_id') { attrs.project_number = val; continue; }
+    if (key === 'idx')        { attrs.task_number    = val; continue; }
+    if (key === 'start')      { attrs.start_date     = val; continue; }
+    if (key === 'due')        { attrs.due_date       = val; continue; }
+    if (key === 'id')         continue;  // alias-only on projects, but skip if ever passed
     attrs[key] = val;
   }
   return attrs;
