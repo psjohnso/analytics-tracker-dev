@@ -961,39 +961,53 @@ let ISSUES = [];  // { objectId, title, type, description, steps_to_reproduce, s
 // Lookup indexes rebuilt from PROJECTS / TASKS on every data-dirty render.
 // Avoids per-task PROJECTS.find() scans (the old O(T × P) hot path inside
 // resolveProjectTitle / filterTasks / sortData / row renderers).
-let _PROJECTS_BY_TITLE = {};    // title (lowercased) → project
-let _PROJECTS_BY_ID = {};       // id (string) → project
-let _TASK_COUNTS_BY_PROJ_TITLE = {}; // project title → { total, done }
-let _TASK_COUNTS_BY_PROJ_ID = {};    // project id (string) → { total, done }
+let _PROJECTS_BY_TITLE  = {};   // title (lowercased) → project (legacy display helper)
+let _PROJECTS_BY_ID     = {};   // p.id (which is aliased from project_number) → project
+let _PROJECTS_BY_NUMBER = {};   // project_number (string) → project — CANONICAL FK lookup
+let _TASK_COUNTS_BY_PROJ_NUMBER = {}; // project_number (string) → { total, done }
 function rebuildProjectIndexes() {
-  _PROJECTS_BY_TITLE = {};
-  _PROJECTS_BY_ID = {};
+  _PROJECTS_BY_TITLE  = {};
+  _PROJECTS_BY_ID     = {};
+  _PROJECTS_BY_NUMBER = {};
   for (var i = 0; i < PROJECTS.length; i++) {
     var p = PROJECTS[i];
-    if (p.title) _PROJECTS_BY_TITLE[String(p.title).toLowerCase()] = p;
-    if (p.id != null) _PROJECTS_BY_ID[String(p.id)] = p;
+    if (p.title)               _PROJECTS_BY_TITLE[String(p.title).toLowerCase()] = p;
+    if (p.id != null)          _PROJECTS_BY_ID[String(p.id)] = p;
+    if (p.project_number != null) _PROJECTS_BY_NUMBER[String(p.project_number)] = p;
   }
-  _TASK_COUNTS_BY_PROJ_TITLE = {};
-  _TASK_COUNTS_BY_PROJ_ID = {};
+  _TASK_COUNTS_BY_PROJ_NUMBER = {};
   for (var j = 0; j < TASKS.length; j++) {
     var t = TASKS[j];
-    var bucket = null;
-    if (t.project) {
-      bucket = _TASK_COUNTS_BY_PROJ_TITLE[t.project] || (_TASK_COUNTS_BY_PROJ_TITLE[t.project] = { total: 0, done: 0 });
-    } else if (t.project_id != null) {
-      var key = String(t.project_id);
-      bucket = _TASK_COUNTS_BY_PROJ_ID[key] || (_TASK_COUNTS_BY_PROJ_ID[key] = { total: 0, done: 0 });
-    }
-    if (bucket) {
-      bucket.total++;
-      if (t.status === 'Complete') bucket.done++;
-    }
+    if (t.project_number == null) continue;
+    var key = String(t.project_number);
+    var bucket = _TASK_COUNTS_BY_PROJ_NUMBER[key] || (_TASK_COUNTS_BY_PROJ_NUMBER[key] = { total: 0, done: 0 });
+    bucket.total++;
+    if (t.status === 'Complete') bucket.done++;
   }
 }
+
+// Canonical project lookup by the FK every task carries (project_number).
+// Use this instead of PROJECTS.find or _PROJECTS_BY_TITLE for any join.
+function getProjectByNumber(num) {
+  if (num == null) return null;
+  return _PROJECTS_BY_NUMBER[String(num)] || null;
+}
+
+// Resolve a task's project title for DISPLAY ONLY. Looks up the project
+// by project_number (the canonical FK) so we don't rely on the legacy
+// t.project (title) field. Returns '' if the task isn't linked or the
+// project can't be found.
+function getTaskProjectTitle(t) {
+  if (!t) return '';
+  var p = getProjectByNumber(t.project_number);
+  return p ? (p.title || '') : '';
+}
+
 function getTaskCountsForProject(p) {
   if (!p) return { total: 0, done: 0 };
-  if (p.title && _TASK_COUNTS_BY_PROJ_TITLE[p.title]) return _TASK_COUNTS_BY_PROJ_TITLE[p.title];
-  if (p.id != null && _TASK_COUNTS_BY_PROJ_ID[String(p.id)]) return _TASK_COUNTS_BY_PROJ_ID[String(p.id)];
+  if (p.project_number != null && _TASK_COUNTS_BY_PROJ_NUMBER[String(p.project_number)]) {
+    return _TASK_COUNTS_BY_PROJ_NUMBER[String(p.project_number)];
+  }
   return { total: 0, done: 0 };
 }
 
