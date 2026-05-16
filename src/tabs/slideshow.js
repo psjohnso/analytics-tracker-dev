@@ -20,6 +20,25 @@ var _slideshowIdx = 0;
 var _slideshowResizeObserver = null;
 var _slideshowFullscreenListenerAttached = false;
 
+// Anonymous-only auto-refresh — keeps lobby-display TVs showing current
+// numbers without a token (and therefore without the OAuth-loop and
+// data-corruption failure modes the previous authenticated-refresh
+// attempt suffered). See [[auto-refresh-lesson]] in memory.
+//
+// Hard rules:
+//   • Only runs when Auth.loggedIn is false (no risk of downgrading an
+//     authenticated user's full PROJECTS to a public-view subset).
+//   • Uses agolQueryPublic (no token = no 498 redirect possible).
+//   • Never wipes PROJECTS/TASKS if the new fetch returns empty —
+//     prevents network blips from nuking the slide.
+//   • Tears down when the slideshow tab is unmounted.
+var _slideshowDataRefreshTimer = null;
+var _slideshowDataRefreshMs = 5 * 60 * 1000;
+var _slideshowLastRefreshAt = null;
+var _slideshowRefreshInFlight = false;
+var _slideshowPublicProjectsUrl = null;
+var _slideshowPublicTasksUrl = null;
+
 // Default config used until the admin-managed app_config.display_config
 // is loaded. All overview slides on, 15s each.
 var _slideshowDefaultConfig = {
@@ -97,7 +116,111 @@ function renderSlideshow(area) {
 
   _slideshowRenderCurrent();
   _slideshowStartTimer();
+  _slideshowStartDataRefresh();
   _slideshowAttachFitObserver();
+}
+
+// ─── Anonymous-only data refresh ─────────────────────────────────────
+// Auto-refresh PROJECTS/TASKS from the PUBLIC view layer every
+// _slideshowDataRefreshMs while the slideshow tab is mounted, but only
+// when the viewer is anonymous (lobby display). See the rules at the
+// top of the file for why this is gated tightly.
+
+function _slideshowCanAutoRefresh() {
+  if (typeof Auth !== 'undefined' && Auth && Auth.loggedIn) return false;
+  if (typeof ARCGIS_CONFIG === 'undefined' || !ARCGIS_CONFIG) return false;
+  return !!(ARCGIS_CONFIG.publicProjectsItemId || ARCGIS_CONFIG.publicTasksItemId);
+}
+
+function _slideshowStartDataRefresh() {
+  _slideshowStopDataRefresh();
+  if (!_slideshowCanAutoRefresh()) return;
+  _slideshowDataRefreshTimer = setInterval(_slideshowRefreshTick, _slideshowDataRefreshMs);
+  // Fire one tick immediately so the "Data: HH:MM" indicator appears
+  // within a few seconds of opening the tab instead of waiting 5 min.
+  // Safe to do up-front here because the public path needs no token.
+  _slideshowRefreshTick();
+}
+
+function _slideshowStopDataRefresh() {
+  if (_slideshowDataRefreshTimer) {
+    clearInterval(_slideshowDataRefreshTimer);
+    _slideshowDataRefreshTimer = null;
+  }
+}
+
+async function _slideshowRefreshTick() {
+  // User switched tabs — tear down. The next renderSlideshow() restarts us.
+  if (!document.getElementById('slideshow-stage')) {
+    _slideshowStopDataRefresh();
+    return;
+  }
+  // Re-check gating each tick — if the user signs in mid-session, stop
+  // auto-refreshing so we don't downgrade their full PROJECTS.
+  if (!_slideshowCanAutoRefresh()) { _slideshowStopDataRefresh(); return; }
+  if (_slideshowRefreshInFlight) return;
+  _slideshowRefreshInFlight = true;
+  try {
+    // Resolve public Item IDs to REST URLs once and cache them.
+    if (!_slideshowPublicProjectsUrl && ARCGIS_CONFIG.publicProjectsItemId) {
+      _slideshowPublicProjectsUrl = await resolveItemId(ARCGIS_CONFIG.publicProjectsItemId);
+    }
+    if (!_slideshowPublicTasksUrl && ARCGIS_CONFIG.publicTasksItemId) {
+      _slideshowPublicTasksUrl = await resolveItemId(ARCGIS_CONFIG.publicTasksItemId);
+    }
+
+    // PROJECTS — build into a temp array, only swap if the response
+    // had something. An empty fetch (network blip, AGO hiccup) must
+    // NOT clobber existing data; that's how this feature corrupted
+    // PROJECTS last time.
+    if (_slideshowPublicProjectsUrl) {
+      var projectFeatures = await agolQueryPublic(_slideshowPublicProjectsUrl);
+      var newProjects = [];
+      projectFeatures.forEach(function(f) {
+        var p = agolProjectToLocal(f);
+        if (!p.deleted_at) newProjects.push(p);
+      });
+      if (newProjects.length > 0) {
+        PROJECTS.length = 0;
+        newProjects.forEach(function(p) { PROJECTS.push(p); });
+      } else {
+        console.warn('[Slideshow] Public projects fetch returned 0 — keeping existing data.');
+      }
+    }
+
+    // TASKS — same temp-then-swap pattern.
+    if (_slideshowPublicTasksUrl) {
+      var taskFeatures = await agolQueryPublic(_slideshowPublicTasksUrl);
+      var newTasks = [];
+      taskFeatures.forEach(function(f) {
+        var t = agolTaskToLocal(f);
+        if (!t.deleted_at) newTasks.push(t);
+      });
+      if (newTasks.length > 0) {
+        TASKS.length = 0;
+        newTasks.forEach(function(t) { TASKS.push(t); });
+      } else {
+        console.warn('[Slideshow] Public tasks fetch returned 0 — keeping existing data.');
+      }
+    }
+
+    _slideshowLastRefreshAt = new Date();
+    console.log('[Slideshow] Public data refreshed at', _slideshowLastRefreshAt.toLocaleTimeString());
+
+    // Re-render the current slide in place — picks up new data via
+    // getOverviewSlides(). Rotation timer keeps running on its own.
+    if (document.getElementById('slideshow-stage')) _slideshowRenderCurrent();
+  } catch (e) {
+    console.warn('[Slideshow] Public data refresh failed (will retry next tick):', e);
+  } finally {
+    _slideshowRefreshInFlight = false;
+  }
+}
+
+function _slideshowFormatRefreshTime(d) {
+  if (!d) return '';
+  try { return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+  catch (e) { return d.toLocaleTimeString(); }
 }
 
 // Measure the fit-inner's natural (unscaled) size at width=1600 and apply
@@ -153,7 +276,11 @@ function _slideshowRenderCurrent() {
   // Fit the freshly-rendered slide on the next frame, once layout has settled
   requestAnimationFrame(_slideshowFit);
   if (descEl) {
-    descEl.textContent = 'Viewing: ' + slide.title + ' · Slide ' + (_slideshowIdx + 1) + ' of ' + slides.length;
+    var desc = 'Viewing: ' + slide.title + ' · Slide ' + (_slideshowIdx + 1) + ' of ' + slides.length;
+    if (_slideshowLastRefreshAt) {
+      desc += ' · Data: ' + _slideshowFormatRefreshTime(_slideshowLastRefreshAt);
+    }
+    descEl.textContent = desc;
   }
   if (progressEl) {
     var dots = slides.map(function(s, i) {
