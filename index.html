@@ -8,8 +8,8 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.28.0.0004">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.32.2.0001"></script>
-<script src="src/agol.js?v=1.32.0.0007"></script>
+<script src="src/constants.js?v=1.32.2.0002"></script>
+<script src="src/agol.js?v=1.32.2.0001"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
 <script src="src/render.js?v=1.27.0.0001"></script>
 <script src="src/tabs/issues.js?v=1.32.0.0011"></script>
@@ -26,7 +26,7 @@
 <script src="src/tabs/my-work.js?v=1.28.2.0003"></script>
 <script src="src/tabs/projects-tasks.js?v=1.27.0.0003"></script>
 <script src="src/tabs/projects-tasks-detail.js?v=1.32.0.0010"></script>
-<script src="src/tabs/slideshow.js?v=1.16.2.0001"></script>
+<script src="src/tabs/slideshow.js?v=1.16.2.0002"></script>
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
 <script src="src/modals/idea.js?v=1.16.1.0025"></script>
 <script src="src/modals/member-form.js?v=1.32.0.0002"></script>
@@ -1512,23 +1512,18 @@ async function saveUserPrefs() {
 // Load just projects and tasks without authentication (read-only mode)
 // Resolves Item IDs to REST URLs, then queries without a token.
 async function loadPublicData() {
-  var projItemId = ARCGIS_CONFIG.publicProjectsItemId;
-  var taskItemId = ARCGIS_CONFIG.publicTasksItemId;
-  var configItemId = ARCGIS_CONFIG.publicConfigItemId;
+  var projUrl = ARCGIS_CONFIG.publicProjectsUrl;
+  var taskUrl = ARCGIS_CONFIG.publicTasksUrl;
+  var configUrl = ARCGIS_CONFIG.publicConfigUrl;
 
-  // If no public Item IDs are configured, don't attempt public load
-  if (!projItemId && !taskItemId) {
-    console.log('No public view Item IDs configured. Skipping public data load.');
+  // If no public view URLs are configured, don't attempt public load
+  if (!projUrl && !taskUrl) {
+    console.log('No public view URLs configured. Skipping public data load.');
     return false;
   }
 
-  showLoadingOverlay('Resolving public data sources...');
+  showLoadingOverlay('Loading public data sources...');
   try {
-    // Resolve Item IDs to REST URLs
-    var projUrl = projItemId ? await resolveItemId(projItemId) : null;
-    var taskUrl = taskItemId ? await resolveItemId(taskItemId) : null;
-    var configUrl = configItemId ? await resolveItemId(configItemId) : null;
-
     if (projUrl) {
       updateLoadingOverlay('Loading projects...');
       // Don't filter deleted_at in the WHERE clause — public view layers may

@@ -31,12 +31,13 @@ const ARCGIS_CONFIG = {
   appConfigUrl:      'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin/FeatureServer/0',
   issuesUrl:         'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin/FeatureServer/1',
 
-  // Public views — ArcGIS Online Item IDs for read-only feature layer views.
-  // These still wrap the LEGACY services (frozen but online). New public
-  // views over the consolidated services are a follow-on task.
-  publicProjectsItemId: '8d28b20af78d4e01bffbac8abd9dd8ed',
-  publicTasksItemId:    '1b24f6c11021452e938747ff18cd5340',
-  publicConfigItemId:   '693882a97ea84c92ad2b41f7d35fa529',
+  // Public read-only views over the consolidated FeatureServers. Used
+  // for anonymous browsing and the slideshow's auto-refresh. Direct URLs
+  // (not Item IDs) because tasks_ro_view exposes tasks at layer /1, not
+  // /0, and the old resolveItemId() helper would have defaulted to /0.
+  publicProjectsUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/arcgis/rest/services/projects_ro_view/FeatureServer/0',
+  publicTasksUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/arcgis/rest/services/tasks_ro_view/FeatureServer/1',
+  publicConfigUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/arcgis/rest/services/app_configuration_ro_view/FeatureServer/0',
 };
 
 // ── Token error handler ────────────────────────────────────────────

@@ -27,11 +27,14 @@ Capture anything you don't want to lose when you build the replacements. For eac
 
 | New view | Source FeatureServer (layer) | Constant in code |
 |---|---|---|
-| projects view (v2) | `datateam_portfolio/FeatureServer/0` | `publicProjectsItemId` |
-| tasks view (v2) | `datateam_portfolio/FeatureServer/1` | `publicTasksItemId` |
-| App Configuration view (v2) | `datateam_tracker_admin/FeatureServer/0` | `publicConfigItemId` |
+| projects_ro_view | `datateam_portfolio/FeatureServer/0` | `publicProjectsUrl` |
+| tasks_ro_view | `datateam_portfolio/FeatureServer/1` | `publicTasksUrl` |
+| app_configuration_ro_view | `datateam_tracker_admin/FeatureServer/0` | `publicConfigUrl` |
 
 Apply the filter you captured in Step 1 (if any) when defining the view.
+
+**Done 2026-05-16** — the three views above were created by pjohnson and the
+code switched from Item-ID resolution to direct URLs in `ARCGIS_CONFIG`.
 
 ---
 
@@ -80,17 +83,15 @@ Public-facing:
 
 ## Step 4 — Update the code
 
-Edit [src/agol.js:37-39](src/agol.js#L37-L39):
+Edit the three URL constants in [src/agol.js:34-39](src/agol.js#L34-L39):
 
 ```js
-publicProjectsItemId: '<NEW_PROJECTS_VIEW_ITEM_ID>',
-publicTasksItemId:    '<NEW_TASKS_VIEW_ITEM_ID>',
-publicConfigItemId:   '<NEW_CONFIG_VIEW_ITEM_ID>',
+publicProjectsUrl: '<NEW PROJECTS VIEW URL — must include layer index>',
+publicTasksUrl:    '<NEW TASKS VIEW URL — must include layer index>',
+publicConfigUrl:   '<NEW CONFIG VIEW URL — must include layer index>',
 ```
 
-Also update the comment block at [agol.js:34-36](src/agol.js#L34-L36) to remove the "still wrap the LEGACY services" note.
-
-Bump cache-bust on `agol.js` in [index.html](index.html), and bump `APP_VERSION` in [src/constants.js](src/constants.js).
+Bump cache-bust on `agol.js` in [index.html](index.html), and bump `APP_VERSION` in [src/constants.js](src/constants.js). If you also touched [index.html's loadPublicData](index.html#L1514) or [slideshow.js's refresh tick](src/tabs/slideshow.js), bump those cache-busts too.
 
 ---
 

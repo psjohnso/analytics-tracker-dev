@@ -36,8 +36,6 @@ var _slideshowDataRefreshTimer = null;
 var _slideshowDataRefreshMs = 5 * 60 * 1000;
 var _slideshowLastRefreshAt = null;
 var _slideshowRefreshInFlight = false;
-var _slideshowPublicProjectsUrl = null;
-var _slideshowPublicTasksUrl = null;
 
 // Default config used until the admin-managed app_config.display_config
 // is loaded. All overview slides on, 15s each.
@@ -129,7 +127,7 @@ function renderSlideshow(area) {
 function _slideshowCanAutoRefresh() {
   if (typeof Auth !== 'undefined' && Auth && Auth.loggedIn) return false;
   if (typeof ARCGIS_CONFIG === 'undefined' || !ARCGIS_CONFIG) return false;
-  return !!(ARCGIS_CONFIG.publicProjectsItemId || ARCGIS_CONFIG.publicTasksItemId);
+  return !!(ARCGIS_CONFIG.publicProjectsUrl || ARCGIS_CONFIG.publicTasksUrl);
 }
 
 function _slideshowStartDataRefresh() {
@@ -161,20 +159,16 @@ async function _slideshowRefreshTick() {
   if (_slideshowRefreshInFlight) return;
   _slideshowRefreshInFlight = true;
   try {
-    // Resolve public Item IDs to REST URLs once and cache them.
-    if (!_slideshowPublicProjectsUrl && ARCGIS_CONFIG.publicProjectsItemId) {
-      _slideshowPublicProjectsUrl = await resolveItemId(ARCGIS_CONFIG.publicProjectsItemId);
-    }
-    if (!_slideshowPublicTasksUrl && ARCGIS_CONFIG.publicTasksItemId) {
-      _slideshowPublicTasksUrl = await resolveItemId(ARCGIS_CONFIG.publicTasksItemId);
-    }
+    // Public-view URLs come from ARCGIS_CONFIG directly now — no
+    // resolveItemId round-trip needed. Direct URLs let us point at
+    // non-/0 layers (e.g. tasks_ro_view exposes tasks at /1).
 
     // PROJECTS — build into a temp array, only swap if the response
     // had something. An empty fetch (network blip, AGO hiccup) must
     // NOT clobber existing data; that's how this feature corrupted
     // PROJECTS last time.
-    if (_slideshowPublicProjectsUrl) {
-      var projectFeatures = await agolQueryPublic(_slideshowPublicProjectsUrl);
+    if (ARCGIS_CONFIG.publicProjectsUrl) {
+      var projectFeatures = await agolQueryPublic(ARCGIS_CONFIG.publicProjectsUrl);
       var newProjects = [];
       projectFeatures.forEach(function(f) {
         var p = agolProjectToLocal(f);
@@ -189,8 +183,8 @@ async function _slideshowRefreshTick() {
     }
 
     // TASKS — same temp-then-swap pattern.
-    if (_slideshowPublicTasksUrl) {
-      var taskFeatures = await agolQueryPublic(_slideshowPublicTasksUrl);
+    if (ARCGIS_CONFIG.publicTasksUrl) {
+      var taskFeatures = await agolQueryPublic(ARCGIS_CONFIG.publicTasksUrl);
       var newTasks = [];
       taskFeatures.forEach(function(f) {
         var t = agolTaskToLocal(f);
