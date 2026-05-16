@@ -121,9 +121,24 @@ function _slideshowStartDataRefresh() {
   _slideshowStopDataRefresh();
   _slideshowDataRefreshTimer = setInterval(_slideshowRefreshTick, _slideshowDataRefreshMs);
   // Fire one tick immediately so the "Data: HH:MM" indicator appears
-  // within a couple seconds of opening the tab instead of after the
-  // first 5-minute interval. Async — doesn't block the initial render.
-  _slideshowRefreshTick();
+  // within a couple seconds of opening the tab — but ONLY if the user
+  // has a valid session. Without a token, agolQuery would call
+  // ensureAgolToken, which redirects to OAuth — that creates a
+  // forced-login loop on the slideshow tab.
+  if (_slideshowSessionOk()) {
+    _slideshowRefreshTick();
+  } else if (!_slideshowLastRefreshAt && typeof Auth !== 'undefined' && Auth && Auth.dataLoaded) {
+    // No valid session, but data was loaded at app start. Stamp the
+    // indicator so the user sees SOMETHING right away; interval ticks
+    // remain gated on session and will update it later.
+    _slideshowLastRefreshAt = new Date();
+  }
+}
+
+function _slideshowSessionOk() {
+  if (typeof Auth === 'undefined' || !Auth || !Auth.loggedIn || !Auth.dataLoaded) return false;
+  if (typeof isTokenValid !== 'function') return false;
+  return isTokenValid();
 }
 
 function _slideshowStopDataRefresh() {
@@ -139,6 +154,10 @@ async function _slideshowRefreshTick() {
     _slideshowStopDataRefresh();
     return;
   }
+  // Skip silently if the user is signed out or their token has expired.
+  // Calling agolQuery in this state would trigger a redirect to AGO
+  // OAuth — we must never force a sign-in from the slideshow tab.
+  if (!_slideshowSessionOk()) return;
   // Guard against overlapping ticks if the network is slow.
   if (_slideshowRefreshInFlight) return;
   _slideshowRefreshInFlight = true;
