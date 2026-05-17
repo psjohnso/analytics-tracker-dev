@@ -15,29 +15,29 @@ const ARCGIS_CONFIG = {
   portalUrl:        'https://cotgis.maps.arcgis.com',
   clientId:         'H8cR2cAUoy0fVrJF',
 
-  // Three consolidated FeatureServers replace the previous twelve.
-  // Layer indices verified 2026-05-15 against ?f=json output.
-  projectsUrl:       'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/0',
-  tasksUrl:          'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/1',
-  projectNotesUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/2',
-  projectReviewsUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/3',
-  statusHistoryUrl:  'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/4',
+  // Three consolidated FeatureServers (v2 — replicated 2026-05-17).
+  // Layer indices identical to v1.
+  projectsUrl:       'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/0',
+  tasksUrl:          'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/1',
+  projectNotesUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/2',
+  projectReviewsUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/3',
+  statusHistoryUrl:  'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/4',
 
-  teamMembersUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/0',
-  absencesUrl:       'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/1',
-  timeEntriesUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/2',
-  allocationsUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/3',
+  teamMembersUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity_v2/FeatureServer/0',
+  absencesUrl:       'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity_v2/FeatureServer/1',
+  timeEntriesUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity_v2/FeatureServer/2',
+  allocationsUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity_v2/FeatureServer/3',
 
-  appConfigUrl:      'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin/FeatureServer/0',
-  issuesUrl:         'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin/FeatureServer/1',
+  appConfigUrl:      'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin_v2/FeatureServer/0',
+  issuesUrl:         'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin_v2/FeatureServer/1',
 
-  // Public read-only views over the consolidated FeatureServers. Used
-  // for anonymous browsing and the slideshow's auto-refresh. Direct URLs
-  // (not Item IDs) because tasks_ro_view exposes tasks at layer /1, not
-  // /0, and the old resolveItemId() helper would have defaulted to /0.
-  publicProjectsUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/arcgis/rest/services/projects_ro_view/FeatureServer/0',
-  publicTasksUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/arcgis/rest/services/tasks_ro_view/FeatureServer/1',
-  publicConfigUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/arcgis/rest/services/app_configuration_ro_view/FeatureServer/0',
+  // Public read-only views were removed when the v1 services were replaced.
+  // Consumers that check these (e.g. slideshow auto-refresh) guard on
+  // truthiness and fall back to the authenticated path. New v2 RO views can
+  // be added back here once they are created.
+  publicProjectsUrl: null,
+  publicTasksUrl:    null,
+  publicConfigUrl:   null,
 };
 
 // ── Token error handler ────────────────────────────────────────────
@@ -187,7 +187,7 @@ async function agolApplyEdits(serviceUrl, edits) {
 // ══════════════════════════════════════════════════════════════════════
 //  FIELD MAPPING: ArcGIS Feature Service Fields ↔ Local JS Field Names
 //  ─────────────────────────────────────────────────────────────────
-//  Projects layer fields (ArcGIS, datateam_portfolio/0):
+//  Projects layer fields (ArcGIS, datateam_portfolio_v2/0):
 //    ObjectId, project_number, title, status, priority, contact,
 //    other_members, partner_dept, category, start_date, end_date,
 //    actual_end, description, problem_statement, itd_team,
@@ -195,7 +195,7 @@ async function agolApplyEdits(serviceUrl, edits) {
 //    dp_goal, wwc_practice, wwc_criteria, data_program_team,
 //    leadership_title, leadership_summary, primary_dp_goal, public_visibility
 //
-//  Tasks layer fields (ArcGIS, datateam_portfolio/1):
+//  Tasks layer fields (ArcGIS, datateam_portfolio_v2/1):
 //    ObjectId, task_number, project_number, title, status, priority,
 //    assignee, category, start_date, due_date, working_due, actual_end,
 //    tool, description, hours, hours_worked, resolution
