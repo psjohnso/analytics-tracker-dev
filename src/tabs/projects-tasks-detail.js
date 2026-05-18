@@ -411,7 +411,7 @@ function copyProjectSummary(objectId) {
   md += '\n';
   if (p.category) md += '**Category:** ' + p.category + '\n';
   if (p.partner_dept) md += '**Partner:** ' + p.partner_dept + '\n';
-  if (p.itd_team) md += '**ITD Team:** ' + p.itd_team + '\n';
+  if (p.itd_team) md += '**Unit:** ' + p.itd_team + '\n';
   if (p.is_data_program) md += '**Data Program:** Yes\n';
   if (p.it_initiative) md += '**IT Initiative:** ' + p.it_initiative + '\n';
   if (p.city_initiative) md += '**City Initiative:** ' + p.city_initiative + '\n';
@@ -934,7 +934,7 @@ function renderProjectDetail(id) {
         <div class="detail-meta-grid">
           <div class="detail-meta-item"><label>Project Lead</label><p>${esc(p.contact||'—')}</p></div>
           <div class="detail-meta-item"><label>Partner Department</label><p>${esc(p.partner_dept||'—')}</p></div>
-          <div class="detail-meta-item"><label>ITD Team</label><p>${esc(p.itd_team||'—')}</p></div>
+          <div class="detail-meta-item"><label>Unit</label><p>${esc(p.itd_team||'—')}</p></div>
           <div class="detail-meta-item"><label>Category</label><p>${esc(p.category||'—')}</p></div>
           <div class="detail-meta-item"><label>Project Size</label><p>${esc(p.project_size||'—')}</p></div>
           <div class="detail-meta-item"><label>Data Program</label><p>${p.is_data_program ? '<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:#FFF7ED;color:#9A3412;">Yes</span>' : '—'}</p></div>

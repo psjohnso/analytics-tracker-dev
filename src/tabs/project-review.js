@@ -788,7 +788,7 @@ function renderProjectReviewCard(p, rt) {
   html += '<div class="pr-card-meta-row">';
   if (p.partner_dept) html += '<span><strong>Partner:</strong>' + esc(p.partner_dept) + '</span>';
   if (p.category) html += '<span><strong>Category:</strong>' + esc(p.category) + '</span>';
-  if (p.itd_team) html += '<span><strong>ITD Team:</strong>' + esc(p.itd_team) + '</span>';
+  if (p.itd_team) html += '<span><strong>Unit:</strong>' + esc(p.itd_team) + '</span>';
   if (p.project_size) html += '<span><strong>Size:</strong>' + esc(p.project_size) + '</span>';
   if (p.start || p.end) {
     html += '<span><strong>Window:</strong>' + (p.start ? prFmtDate(p.start) : '—') + ' &mdash; ' + (p.end ? prFmtDate(p.end) : '—') + '</span>';
@@ -1151,7 +1151,7 @@ function renderReviewTypesTable() {
     return;
   }
   var html = '<table class="pr-rt-table">';
-  html += '<thead><tr><th>Name</th><th>Cadence</th><th>ITD Teams in scope</th><th>Default attendees</th><th style="text-align:right;">Actions</th></tr></thead><tbody>';
+  html += '<thead><tr><th>Name</th><th>Cadence</th><th>Units in scope</th><th>Default attendees</th><th style="text-align:right;">Actions</th></tr></thead><tbody>';
   _reviewTypes.forEach(function(rt, i) {
     var cadenceLabel = (rt.cadence_days === 7) ? 'Weekly' :
                        (rt.cadence_days === 14) ? 'Biweekly' :
@@ -1214,10 +1214,10 @@ function prRtOpenForm(index) {
   html += '<input type="number" id="pr-rt-input-cadence" min="1" max="365" value="' + (data.cadence_days || 14) + '">';
   html += '<div class="pr-field-help">7 = weekly, 14 = biweekly, 30 = monthly.</div></div>';
 
-  html += '<div class="pr-field"><label class="pr-field-label">ITD Teams in scope</label>';
+  html += '<div class="pr-field"><label class="pr-field-label">Units in scope</label>';
   html += '<div class="pr-itd-checkboxes">';
   if (!teamsList.length) {
-    html += '<div style="font-style:italic;color:var(--text-muted);font-family:Cardo,serif;font-size:13px;">No ITD teams defined yet. Add some in Dropdown lists first.</div>';
+    html += '<div style="font-style:italic;color:var(--text-muted);font-family:Cardo,serif;font-size:13px;">No units defined yet. Add some in Dropdown lists first.</div>';
   } else {
     teamsList.forEach(function(t) {
       var checked = (data.filter && data.filter.itd_teams && data.filter.itd_teams.indexOf(t) >= 0) ? ' checked' : '';

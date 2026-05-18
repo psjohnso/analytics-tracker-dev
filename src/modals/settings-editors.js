@@ -295,7 +295,7 @@ async function addListItem(listKey) {
   // Re-render the editor immediately (optimistic UI)
   renderListEditor(
     listKey === 'dept' ? 'list-editor-dept' : 'list-editor-team',
-    listKey === 'dept' ? 'Partner Departments' : 'ITD Teams',
+    listKey === 'dept' ? 'Partner Departments' : 'Units',
     list, listKey
   );
 
@@ -315,7 +315,7 @@ async function removeListItem(listKey, idx) {
   // Re-render the editor immediately (optimistic UI)
   renderListEditor(
     listKey === 'dept' ? 'list-editor-dept' : 'list-editor-team',
-    listKey === 'dept' ? 'Partner Departments' : 'ITD Teams',
+    listKey === 'dept' ? 'Partner Departments' : 'Units',
     list, listKey
   );
 

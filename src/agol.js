@@ -31,12 +31,13 @@ const ARCGIS_CONFIG = {
   appConfigUrl:      'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin_v2/FeatureServer/0',
   issuesUrl:         'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin_v2/FeatureServer/1',
 
-  // Public read-only views were removed when the v1 services were replaced.
-  // Consumers that check these (e.g. slideshow auto-refresh) guard on
-  // truthiness and fall back to the authenticated path. New v2 RO views can
-  // be added back here once they are created.
-  publicProjectsUrl: null,
-  publicTasksUrl:    null,
+  // Public, read-only copy of the slideshow-only project + task fields.
+  // Maintained by notebooks/refresh_public_slideshow.ipynb (truncate-and-reload
+  // every 15 min). Lets the lobby-display TV/anonymous browsing render without
+  // an AGO token. Schema is intentionally narrow — see PROJECT_FIELDS /
+  // TASK_FIELDS in that notebook for what is and isn't exposed.
+  publicProjectsUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_public/FeatureServer/0',
+  publicTasksUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_public/FeatureServer/1',
   publicConfigUrl:   null,
 };
 
@@ -242,6 +243,11 @@ function agolProjectToLocal(feature) {
   // project_number as the canonical PK (String). Will be removed once
   // consumer code migrates to p.project_number.
   if (local.project_number != null) local.id = local.project_number;
+  // Legacy alias for the org-rename: consumer code still reads p.itd_team
+  // even though the AGO storage column has been renamed to owning_unit.
+  // Remove this once consumers migrate to p.owning_unit (and AGO drops
+  // itd_team in Phase 4 of the rename).
+  if (local.owning_unit != null) local.itd_team = local.owning_unit;
   // Normalize boolean fields from ArcGIS Short Integer (0/1) to JS truthy.
   // Data Program status is derived: true if data_program_team is set
   // (the explicit way), OR if any Data Program Goal is set on a DI
@@ -279,6 +285,10 @@ function localToAgolProject(fields) {
     const val = fields[key];
     // Skip transient/local-only/alias-only keys that have no schema field.
     if (key === 'objectId' || key === 'pid' || key === 'id' || val === undefined) continue;
+    // Org-rename: form code still writes fields.itd_team; reroute to the
+    // new owning_unit column on AGO. Remove once form code uses owning_unit
+    // directly and itd_team is dropped from AGO in Phase 4 of the rename.
+    if (key === 'itd_team') { attrs.owning_unit = val; continue; }
     const agolKey = PROJECT_FIELD_MAP[key] || key;
     attrs[agolKey] = val;
   }

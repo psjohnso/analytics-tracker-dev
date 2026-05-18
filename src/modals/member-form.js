@@ -350,8 +350,13 @@ async function saveMemberForm() {
 
   const memberAttrs = {
     name: name,
+    // Org-rename: dual-write to old role/team and new owning_unit/owning_team
+    // so the change is non-breaking. Drop role/team after Phase 4 retires them
+    // from the AGO schema.
     role: role,
     team: team,
+    owning_unit: role,
+    owning_team: team,
     member_group: memberGroup,
     skill: skill,
     proj_pct: projPct / 100,

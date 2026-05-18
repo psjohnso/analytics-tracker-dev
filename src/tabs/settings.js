@@ -648,7 +648,7 @@ function renderSettingsPage(area) {
 
   else if (_settingsSection === 'lists') {
     panelHtml = '<div class="settings-panel-title">Dropdown lists</div>' +
-      '<div class="settings-panel-desc">Manage Partner Departments and ITD Teams that appear in project forms.</div>' +
+      '<div class="settings-panel-desc">Manage Partner Departments and Units that appear in project forms.</div>' +
       '<div class="list-editor-grid">' +
         '<div id="list-editor-dept"></div>' +
         '<div id="list-editor-team"></div>' +
@@ -725,7 +725,7 @@ function renderSettingsPage(area) {
   // Post-render initializations for active section
   if (_settingsSection === 'lists') {
     renderListEditor('list-editor-dept', 'Partner Departments', _customPartnerDepts, 'dept');
-    renderListEditor('list-editor-team', 'ITD Teams', _customItdTeams, 'team');
+    renderListEditor('list-editor-team', 'Units', _customItdTeams, 'team');
   }
   if (_settingsSection === 'categories') {
     renderDescListEditor('proj_cat');

@@ -8,12 +8,12 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.28.0.0004">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.34.0.0001"></script>
-<script src="src/agol.js?v=1.34.0.0001"></script>
+<script src="src/constants.js?v=1.34.0.0002"></script>
+<script src="src/agol.js?v=1.34.0.0002"></script>
 <script src="src/auth.js?v=1.25.0.0001"></script>
 <script src="src/render.js?v=1.27.0.0002"></script>
 <script src="src/tabs/issues.js?v=1.32.0.0011"></script>
-<script src="src/tabs/project-review.js?v=1.32.0.0013"></script>
+<script src="src/tabs/project-review.js?v=1.32.0.0014"></script>
 <script src="src/project-notes.js?v=1.32.0.0011"></script>
 <script src="src/confetti.js?v=1.17.2.0033"></script>
 <script src="src/achievements.js?v=1.27.0.0005"></script>
@@ -21,18 +21,18 @@
 <script src="src/tabs/insights.js?v=1.9.1.0009"></script>
 <script src="src/tabs/forecast.js?v=1.30.0.0002"></script>
 <script src="src/tabs/overview.js?v=1.17.6.0039"></script>
-<script src="src/tabs/settings.js?v=1.34.0.0002"></script>
+<script src="src/tabs/settings.js?v=1.34.0.0003"></script>
 <script src="src/tabs/resources.js?v=1.17.6.0039"></script>
 <script src="src/tabs/my-work.js?v=1.28.2.0005"></script>
 <script src="src/tabs/projects-tasks.js?v=1.27.0.0004"></script>
-<script src="src/tabs/projects-tasks-detail.js?v=1.32.0.0011"></script>
+<script src="src/tabs/projects-tasks-detail.js?v=1.32.0.0012"></script>
 <script src="src/tabs/slideshow.js?v=1.16.2.0002"></script>
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
 <script src="src/modals/idea.js?v=1.16.1.0025"></script>
-<script src="src/modals/member-form.js?v=1.32.0.0002"></script>
+<script src="src/modals/member-form.js?v=1.32.0.0003"></script>
 <script src="src/modals/alloc-editor.js?v=1.32.0.0006"></script>
-<script src="src/modals/settings-editors.js?v=1.32.0.0011"></script>
-<script src="src/modals/forms.js?v=1.17.5.0037"></script>
+<script src="src/modals/settings-editors.js?v=1.32.0.0012"></script>
+<script src="src/modals/forms.js?v=1.17.5.0038"></script>
 <script src="src/ai/prompts.js?v=1.12.0.0001"></script>
 <script src="src/ai/ai-suggestions.js?v=1.16.0.0016"></script>
 <script src="src/test-harness.js?v=1.9.1.0026"></script>
@@ -235,7 +235,7 @@
       </div>
 
       <div class="sidebar-section">
-        <div class="sidebar-label">ITD Team</div>
+        <div class="sidebar-label">Unit</div>
         <div class="filter-group" id="team-filters"></div>
       </div>
 
@@ -1694,8 +1694,12 @@ async function loadResourcesData() {
       objectId:         ci('objectid') || a.objectid || a.OBJECTID || a.ObjectId,
       user_preferences: ci('user_preferences') || null,
       position_title:   ci('position_title') || '',
-      role:             a.role || '',
-      team:             a.team || '',
+      // Org-rename: prefer the new owning_unit / owning_team columns; fall
+      // back to legacy role / team for any records not yet backfilled.
+      // Local model keeps the role / team key names so existing consumers
+      // (settings table, my-work header, etc.) keep working without edits.
+      role:             a.owning_unit || a.role || '',
+      team:             a.owning_team || a.team || '',
       skill:            a.skill || ci('skill') || '',
       proj_pct:         a.proj_pct || 0,
       schedule_type:    ci('schedule_type') || '5/8',

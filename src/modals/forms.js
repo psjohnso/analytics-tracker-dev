@@ -1208,9 +1208,9 @@ function buildProjectForm(p) {
   fmSec('Classification', '<div class="fm-grid">' +
       fmCategoryField(v('category'), true) +
       fmField('Partner Department', fmSelect('fm-partner-dept', FM_PARTNER_DEPTS, v('partner_dept'), 'Select department…')) +
-      fmField('ITD Team', fmSelect('fm-itd-team', FM_ITD_TEAMS, v('itd_team'), 'Select team…'),
+      fmField('Unit', fmSelect('fm-itd-team', FM_ITD_TEAMS, v('itd_team'), 'Select unit…'),
         false, false,
-        'Which IT sub-team is implementing this project. Used by the Project Review tab to scope reviews and by the Portfolio sidebar filter.') +
+        'Which IT unit is implementing this project. Used by the Project Review tab to scope reviews and by the Portfolio sidebar filter.') +
       fmField('Data Program Team',
         fmSelect('fm-data-program-team',
           ((typeof getDataProgramTeams === 'function') ? getDataProgramTeams() : []).map(function(t) { return t.name; }),
@@ -1218,7 +1218,7 @@ function buildProjectForm(p) {
           '— Not in Data Program —',
           false),
         false, false,
-        'Which Data Program parent team owns this project. Drives the cross-team Data Program portfolio view, the Slideshow team tile, and edit permissions for non-DI leads. Often the same as ITD Team but can differ when one team does the work for another.') +
+        'Which Data Program parent team owns this project. Drives the cross-team Data Program portfolio view, the Slideshow team tile, and edit permissions for non-DI leads. Often the same as Unit but can differ when one team does the work for another.') +
     '</div>') +
   fmSec('Details', '<div class="fm-grid">' +
       fmField('Problem Statement', fmMdTextarea('fm-problem', v('problem_statement'), 'Describe the problem this project solves…', 3, 4000), false, true) +
