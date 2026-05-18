@@ -562,8 +562,39 @@ function collectCheckboxGroup(name) {
 function fmField(label, inputHtml, required, span2, hint) {
   const cls = 'fm-field' + (span2 ? ' span2' : '');
   const req  = required ? '<span class="req">*</span>' : '';
-  const h    = hint ? '<div class="fm-hint">' + hint + '</div>' : '';
-  return '<div class="' + cls + '"><label class="fm-label">' + label + req + '</label>' + inputHtml + h + '</div>';
+  const info = hint ? fmInfoIcon(hint) : '';
+  return '<div class="' + cls + '"><label class="fm-label">' + label + req + info + '</label>' + inputHtml + '</div>';
+}
+
+// Inline "i" icon that, on click, shows the field's hint text in a popup.
+// Reuses the .calc-info visual style. Hint text travels via a data attribute
+// so arbitrary strings (quotes, ampersands, etc.) don't have to be escaped
+// into the onclick handler.
+function fmInfoIcon(text) {
+  var safe = String(text).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  return ' <span class="calc-info" onclick="showFmHint(event)" data-hint="' + safe + '" title="Click for details">i</span>';
+}
+
+function showFmHint(evt) {
+  evt.stopPropagation();
+  var text = evt.target.getAttribute('data-hint');
+  if (!text) return;
+  var popup = document.getElementById('fm-hint-popup');
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'fm-hint-popup';
+    document.body.appendChild(popup);
+    document.addEventListener('click', function(e) {
+      if (!popup.contains(e.target) && !e.target.classList.contains('calc-info')) {
+        popup.style.display = 'none';
+      }
+    });
+  }
+  popup.textContent = text;
+  var rect = evt.target.getBoundingClientRect();
+  popup.style.top  = (rect.bottom + 6) + 'px';
+  popup.style.left = Math.max(8, rect.left - 8) + 'px';
+  popup.style.display = 'block';
 }
 
 // Special category field: label has wizard link inline, content area can transform
@@ -1220,8 +1251,8 @@ function buildProjectForm(p) {
           })(),
           'Select unit…'),
         false, false,
-        'The smallest organizational grouping doing the work — typically a sub-team within an Owning Team (e.g. GIS within Data Intelligence). Pick "Not in Unit" for team-wide work that doesn\'t fit a specific sub-team. Defaults to your own unit on new projects. Used by Project Review scoping and the Portfolio sidebar filter.') +
-      fmField('Owning Team',
+        'The smallest organizational grouping doing the work — typically a sub-team within a Team (e.g. GIS within Data Intelligence). Pick "Not in Unit" for team-wide work that doesn\'t fit a specific sub-team. Defaults to your own unit on new projects. Used by Project Review scoping and the Portfolio sidebar filter.') +
+      fmField('Team',
         fmSelect('fm-owning-team',
           ['Architects','Data Intelligence','Emerging Data Infrastructure','Office of Equity','Project Portfolio Management','Special Assignments','Not on a Team'],
           v('owning_team') || (function() {

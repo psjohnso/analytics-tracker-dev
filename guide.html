@@ -639,7 +639,7 @@ li strong { color: var(--navy); }
 <h2 id="data-program-fields">Data Program field model</h2>
 <p>The project record carries a small constellation of fields for tagging Data Program participation, team ownership, and strategic alignment. These overlap in confusing ways, so here&rsquo;s a single reference for what each one means and which tab uses it.</p>
 
-<h3>The two ownership fields — Unit vs Owning Team</h3>
+<h3>The two ownership fields — Unit vs Team</h3>
 <p>Both appear next to each other in the project edit form&rsquo;s Classification section. They answer different questions and are both set on every project.</p>
 <table class="guide-table">
   <thead>
@@ -653,14 +653,14 @@ li strong { color: var(--navy); }
       <td>Project Review tab (review types filter projects by unit); Portfolio sidebar filter chip.</td>
     </tr>
     <tr>
-      <td><code>owning_team</code><br><strong>Owning Team</strong></td>
+      <td><code>owning_team</code><br><strong>Team</strong></td>
       <td>Which team <strong>owns</strong> the project &mdash; the middle org grouping. Universal, set on every project.</td>
       <td>Coarse. <em>Architects</em>, <em>Data Intelligence</em>, <em>Emerging Data Infrastructure</em>, <em>Office of Equity</em>, <em>Project Portfolio Management</em>, <em>Special Assignments</em>, or <em>Not on a Team</em>.</td>
       <td>Overview &ldquo;Data Program&rdquo; section (filtered by <code>is_data_program</code>), Slideshow Data Program slide, the lite app at <code>dataprogram.html</code>, lead-team edit permissions.</td>
     </tr>
   </tbody>
 </table>
-<p>For most projects, the unit rolls up to the team naturally (a GIS-led project has Unit = <em>Geographic Information Systems</em> and Owning Team = <em>Data Intelligence</em>). They&rsquo;re distinct because not every team has units (Architects, Office of Equity, PPM are single-unit teams) and team-wide work (Unit = <em>Not in Unit</em>) still needs a team assignment.</p>
+<p>For most projects, the unit rolls up to the team naturally (a GIS-led project has Unit = <em>Geographic Information Systems</em> and Team = <em>Data Intelligence</em>). They&rsquo;re distinct because not every team has units (Architects, Office of Equity, PPM are single-unit teams) and team-wide work (Unit = <em>Not in Unit</em>) still needs a team assignment.</p>
 
 <h3>Data Program flag fields</h3>
 <table class="guide-table">

@@ -2093,6 +2093,14 @@ tr.ae-group-contrib td:hover { background:#E8E6DF; }
   cursor:pointer; background:none; border:none; font-family:Lato,sans-serif; line-height:1; }
 #calc-popup .calc-popup-close:hover { color:#374151; }
 
+/* Field-hint popup — shown by the .calc-info "i" icons rendered next to
+   fmField labels. Cousin of #calc-popup but plain-text only (no formula,
+   no link, no title block). */
+#fm-hint-popup { display:none; position:fixed; z-index:10001; background:#fff;
+  border:1px solid #E8E6DF; border-radius:8px; padding:10px 14px; font-size:13px;
+  line-height:1.45; color:#374151; font-family:Cardo,serif; max-width:340px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.12); }
+
 /* ── Capacity Planner ────────────────────────────── */
 .cp-section { margin-bottom: 28px; }
 .cp-controls { display:flex; gap:12px; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; }
