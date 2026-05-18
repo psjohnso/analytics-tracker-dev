@@ -1208,17 +1208,34 @@ function buildProjectForm(p) {
   fmSec('Classification', '<div class="fm-grid">' +
       fmCategoryField(v('category'), true) +
       fmField('Partner Department', fmSelect('fm-partner-dept', FM_PARTNER_DEPTS, v('partner_dept'), 'Select department…')) +
-      fmField('Unit', fmSelect('fm-itd-team', FM_ITD_TEAMS, v('itd_team'), 'Select unit…'),
+      fmField('Unit',
+        fmSelect('fm-itd-team', FM_ITD_TEAMS,
+          v('itd_team') || (function() {
+            // Default to the logged-in user's own unit when the project hasn't
+            // been assigned one yet. Local model key is .role (aliased from
+            // team_members.owning_unit on load — see index.html).
+            if (!Auth || !Auth.fullName || typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.people) return '';
+            var me = RESOURCES_DATA.people[Auth.fullName];
+            return (me && me.role) || '';
+          })(),
+          'Select unit…'),
         false, false,
-        'Which IT unit is implementing this project. Used by the Project Review tab to scope reviews and by the Portfolio sidebar filter.') +
+        'Which IT unit is implementing this project. Defaults to your own unit when the project doesn\'t have one assigned yet. Used by the Project Review tab to scope reviews and by the Portfolio sidebar filter.') +
       fmField('Owning Team',
         fmSelect('fm-owning-team',
           ['Architects','Data Intelligence','Emerging Data Infrastructure','Office of Equity','Project Portfolio Management','Special Assignments','Not on a Team'],
-          v('owning_team') || ((!p && typeof getDataProgramLeadTeam === 'function' && getDataProgramLeadTeam()) || ''),
+          v('owning_team') || (function() {
+            // Default to the logged-in user's own team when the project hasn't
+            // been assigned one yet. Local model key is .team (aliased from
+            // team_members.owning_team on load — see index.html).
+            if (!Auth || !Auth.fullName || typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.people) return '';
+            var me = RESOURCES_DATA.people[Auth.fullName];
+            return (me && me.team) || '';
+          })(),
           'Select team…',
           false),
         false, false,
-        'Which team owns this project. Set on every project. Drives the cross-team Data Program portfolio view (when combined with the Data Program checkbox) and lead-team edit permissions.') +
+        'Which team owns this project. Set on every project. Defaults to your own team when the project doesn\'t have one assigned yet. Drives the cross-team Data Program portfolio view (when combined with the Data Program checkbox) and lead-team edit permissions.') +
       fmField('Data Program',
         '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 0;font-family:Cardo,serif;font-size:14px;">' +
           '<input type="checkbox" id="fm-is-data-program" ' + ((v('is_data_program') == 1) ? 'checked' : '') + ' style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy);"> ' +
