@@ -15,15 +15,25 @@
 
 // ─── IDEA SUBMISSION ──────────────────────────────────────────────────
 
-// Resolve the submitter's ITD team from their member record so a new idea
-// inherits it without the submitter having to pick. Returns null if the
-// name doesn't match a known member or the member has no team set.
-function lookupSubmitterTeam(contactName) {
-  if (!contactName) return null;
-  if (!RESOURCES_DATA || !RESOURCES_DATA.people) return null;
+// Resolve the submitter's unit + team from their member record so a new
+// idea inherits both without the submitter having to pick. Returns
+// { unit, team } with null fields when the name doesn't match a known
+// member or the member has the field unset.
+// (Was lookupSubmitterTeam — returned member.team and the caller wrote
+// that into itd_team, which the agol.js alias then sent to owning_unit.
+// After the org rename, team and unit are separate fields so we need
+// both values to populate the project correctly.)
+function lookupSubmitterOwnership(contactName) {
+  var out = { unit: null, team: null };
+  if (!contactName) return out;
+  if (!RESOURCES_DATA || !RESOURCES_DATA.people) return out;
   var member = RESOURCES_DATA.people[contactName];
-  if (!member) return null;
-  return member.team || null;
+  if (!member) return out;
+  // member.role is the local-model alias for owning_unit, member.team for
+  // owning_team (see the team_members load in index.html).
+  out.unit = member.role || null;
+  out.team = member.team || null;
+  return out;
 }
 
 function openIdeaForm() {
@@ -424,7 +434,7 @@ async function submitGuidedIdeaForm() {
   };
 
   var todayStr = new Date().toISOString().slice(0, 10);
-  var submitterTeam = lookupSubmitterTeam(sa.contact);
+  var submitterOwn = lookupSubmitterOwnership(sa.contact);
 
   await DataStore.createProject({
     title:             sa.title,
@@ -433,7 +443,8 @@ async function submitGuidedIdeaForm() {
     contact:           sa.contact,
     other_members:     null,
     partner_dept:      sa.dept || null,
-    itd_team:          submitterTeam,
+    itd_team:          submitterOwn.unit,
+    owning_team:       submitterOwn.team,
     category:          sa.category,
     start:             todayStr,
     end:               null,
@@ -521,7 +532,7 @@ async function submitIdeaForm() {
   const urgency  = (document.getElementById('idea-urgency').value || '').trim();
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const submitterTeam = lookupSubmitterTeam(contact);
+  const submitterOwn = lookupSubmitterOwnership(contact);
 
   await DataStore.createProject({
     title,
@@ -530,7 +541,8 @@ async function submitIdeaForm() {
     contact,
     other_members:     null,
     partner_dept:      dept || null,
-    itd_team:          submitterTeam,
+    itd_team:          submitterOwn.unit,
+    owning_team:       submitterOwn.team,
     category:          null,
     start:             todayStr,
     end:               null,
