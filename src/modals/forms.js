@@ -1211,14 +1211,21 @@ function buildProjectForm(p) {
       fmField('Unit', fmSelect('fm-itd-team', FM_ITD_TEAMS, v('itd_team'), 'Select unit…'),
         false, false,
         'Which IT unit is implementing this project. Used by the Project Review tab to scope reviews and by the Portfolio sidebar filter.') +
-      fmField('Data Program Team',
-        fmSelect('fm-data-program-team',
-          ((typeof getDataProgramTeams === 'function') ? getDataProgramTeams() : []).map(function(t) { return t.name; }),
-          v('data_program_team') || ((!p && typeof getDataProgramLeadTeam === 'function' && getDataProgramLeadTeam()) || ''),
-          '— Not in Data Program —',
+      fmField('Owning Team',
+        fmSelect('fm-owning-team',
+          ['Architects','Data Intelligence','Emerging Data Infrastructure','Office of Equity','Project Portfolio Management','Special Assignments','Not on a Team'],
+          v('owning_team') || ((!p && typeof getDataProgramLeadTeam === 'function' && getDataProgramLeadTeam()) || ''),
+          'Select team…',
           false),
         false, false,
-        'Which Data Program parent team owns this project. Drives the cross-team Data Program portfolio view, the Slideshow team tile, and edit permissions for non-DI leads. Often the same as Unit but can differ when one team does the work for another.') +
+        'Which team owns this project. Set on every project. Drives the cross-team Data Program portfolio view (when combined with the Data Program checkbox) and lead-team edit permissions.') +
+      fmField('Data Program',
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 0;font-family:Cardo,serif;font-size:14px;">' +
+          '<input type="checkbox" id="fm-is-data-program" ' + ((v('is_data_program') == 1) ? 'checked' : '') + ' style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy);"> ' +
+          '<span>This project is part of the Data Program portfolio</span>' +
+        '</label>',
+        false, false,
+        'Check if this project is part of the strategic Data Program initiative (not just owned by a DP-eligible team). Drives the Data Program slide on the Slideshow and the Data Program Lite app.') +
     '</div>') +
   fmSec('Details', '<div class="fm-grid">' +
       fmField('Problem Statement', fmMdTextarea('fm-problem', v('problem_statement'), 'Describe the problem this project solves…', 3, 4000), false, true) +
@@ -1665,34 +1672,7 @@ function collectProjectFields() {
     other_members:     otherMembers,
     partner_dept:      getVal('fm-partner-dept') || null,
     itd_team:          getVal('fm-itd-team')     || null,
-    // Auto-default: if a DP goal is set but no team is picked, default
-    // to "Data Intelligence" — the legacy assumption since dp_goal
-    // predates the data_program_team field. Strategic-alignment editors
-    // typically only see dp_goal, so this saves them an extra click.
-    data_program_team: (function() {
-      var picked = getVal('fm-data-program-team');
-      if (picked) return picked;
-      var dpg = collectCheckboxGroup('fm-dp-goal');
-      var hasGoal = dpg && dpg.trim().length > 0 && dpg.trim() !== 'None';
-      return hasGoal ? 'Data Intelligence' : null;
-    })(),
-    // Transition (Phase 4 of DP-flag refactor): mirror the data_program_team
-    // value to owning_team so the new is_data_program + owning_team consumer
-    // logic in auth.js / dataprogram-lite.js / overview.js can find the
-    // record. Apply the same renames we did in the 2026-05 data migration
-    // (Data Architecture → Architects, Data Librarian → Special Assignments).
-    // Phase 6 replaces this with an explicit "Owning Team" form field.
-    owning_team: (function() {
-      var picked = getVal('fm-data-program-team');
-      if (!picked) {
-        var dpg = collectCheckboxGroup('fm-dp-goal');
-        var hasGoal = dpg && dpg.trim().length > 0 && dpg.trim() !== 'None';
-        if (!hasGoal) return undefined;  // non-DP save — don't overwrite owning_team
-        picked = 'Data Intelligence';
-      }
-      var RENAME = { 'Data Architecture': 'Architects', 'Data Librarian': 'Special Assignments' };
-      return RENAME[picked] || picked;
-    })(),
+    owning_team:       getVal('fm-owning-team')  || null,
     category:          getVal('fm-category')     || null,
     project_size:      getVal('fm-project-size') || null,
     start:             getVal('fm-start')        || null,
@@ -1706,8 +1686,12 @@ function collectProjectFields() {
     technical_requirements: getVal('fm-tech-reqs') || null,
     actual_end:        getVal('fm-actual-end')   || null,
     is_data_program:   (function() {
-      var dpt = getVal('fm-data-program-team');
-      if (dpt && dpt.trim().length > 0) return 1;
+      // Primary signal: the explicit Data Program checkbox.
+      var cb = document.getElementById('fm-is-data-program');
+      if (cb && cb.checked) return 1;
+      // Legacy auto-default: if a Data Program Goal is set but the checkbox
+      // wasn't ticked, still treat as DP (preserves the pre-Phase-6 behavior
+      // where setting dp_goal alone made a project DP).
       var dpg = collectCheckboxGroup('fm-dp-goal');
       return dpg && dpg.trim().length > 0 && dpg.trim() !== 'None' ? 1 : 0;
     })(),
