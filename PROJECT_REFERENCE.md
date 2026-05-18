@@ -126,10 +126,10 @@ Web application for managing analytics projects, tasks, team resources, and capa
 
 All tables are **no-geometry** with **editing enabled** (Add, Update, Delete) and AGO **editor tracking** turned on (Creator, CreationDate, Editor, EditDate auto-populated).
 
-**Architecture (consolidated 2026-05):** Eleven tables are physically grouped into three multi-table FeatureServers:
-- `datateam_portfolio` — projects (0), tasks (1), project_notes (2), project_reviews (3), status_history (4)
-- `datateam_capacity` — team_members (0), absences (1), time_entries (2), allocations (3)
-- `datateam_tracker_admin` — app_config (0), issues (1)
+**Architecture (consolidated 2026-05, rebuilt as v2 on 2026-05-17):** Eleven tables are physically grouped into three multi-table FeatureServers:
+- `datateam_portfolio_v2` — projects (0), tasks (1), project_notes (2), project_reviews (3), status_history (4)
+- `datateam_capacity_v2` — team_members (0), absences (1), time_entries (2), allocations (3)
+- `datateam_tracker_admin_v2` — app_config (0), issues (1)
 
 **URL pattern:**
 ```
@@ -140,7 +140,7 @@ https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/{service}/Fea
 
 ### 3.1 projects
 
-`datateam_portfolio/FeatureServer/0`
+`datateam_portfolio_v2/FeatureServer/0`
 
 | Field | Type | Length | Null | Description |
 |-------|------|--------|------|-------------|
@@ -159,7 +159,8 @@ https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/{service}/Fea
 | `actual_end` | Date Only | — | Yes | Actual completion date |
 | `description` | String | 4000 | Yes | Project description |
 | `problem_statement` | String | 4000 | Yes | Problem statement |
-| `itd_team` | String | 50 | Yes | Domain: 9 values (ITD team) |
+| `owning_unit` | String | 100 | Yes | Domain: Artificial Intelligence, Business & Advanced Analytics, Geographic Information Systems, Not in Unit. Smallest org grouping. Local model aliases as `p.itd_team` for legacy consumers (see [src/agol.js](src/agol.js)). |
+| `owning_team` | String | 100 | Yes | Domain: Architects, Data Intelligence, Emerging Data Infrastructure, Office of Equity, Project Portfolio Management, Not on a Team. Middle org grouping — the team that owns this project. Distinct from `data_program_team` (which is the DP-flag). |
 | `project_size` | String | 5 | Yes | Domain: S, M, L, XL — drives allocation defaults |
 | `is_data_program` | Short | — | Yes | 1 = part of Data Program portfolio |
 | `data_program_team` | String | 50 | Yes | Domain: Data Architecture, Data Intelligence, Data Librarian, Emerging Data Infrastructure |
@@ -178,7 +179,7 @@ https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/{service}/Fea
 
 ### 3.2 tasks
 
-`datateam_portfolio/FeatureServer/1`
+`datateam_portfolio_v2/FeatureServer/1`
 
 | Field | Type | Length | Null | Description |
 |-------|------|--------|------|-------------|
@@ -213,8 +214,9 @@ https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/{service}/Fea
 | Field | Type | Length | Null | Description |
 |-------|------|--------|------|-------------|
 | `name` | String | 100 | No | Full name (**join key** to absences, allocations, time_entries) |
-| `role` | String | 100 | Yes | Job title |
-| `team` | String | 50 | Yes | GIS, Analytics, AI, Server, Management |
+| `owning_unit` | String | 100 | Yes | Unit assignment. Domain matches projects.owning_unit. Local model aliases as `m.role`. |
+| `owning_team` | String | 100 | Yes | Team assignment. Domain matches projects.owning_team. Local model aliases as `m.team`. |
+| `position_title` | String | 100 | Yes | Job title (e.g. "Lead Data Analyst") |
 | `skill` | String | 100 | Yes | Primary skill area |
 | `proj_pct` | Double | — | Yes | Fraction of productive time for projects (e.g., 0.63) |
 | `schedule_type` | String | 10 | Yes | 5/8, 4/10, 9/80 |
@@ -253,7 +255,7 @@ weekly_hours = sum of daily_hours for Mon-Fri of current week type (A or B)
 
 ### 3.5 allocations
 
-`datateam_capacity/FeatureServer/3`
+`datateam_capacity_v2/FeatureServer/3`
 
 | Field | Type | Null | Description |
 |-------|------|------|-------------|
@@ -297,7 +299,7 @@ If the `review_types` row is missing on first load, `ensureReviewTypesSeeded()` 
 
 ### 3.7 time_entries
 
-`datateam_capacity/FeatureServer/2`
+`datateam_capacity_v2/FeatureServer/2`
 
 | Field | Type | Null | Description |
 |-------|------|------|-------------|
@@ -316,7 +318,7 @@ If the `review_types` row is missing on first load, `ensureReviewTypesSeeded()` 
 
 ### 3.8 issues
 
-`datateam_tracker_admin/FeatureServer/1`
+`datateam_tracker_admin_v2/FeatureServer/1`
 
 | Field | Type | Length | Null | Description |
 |-------|------|--------|------|-------------|
@@ -334,11 +336,11 @@ If the `review_types` row is missing on first load, `ensureReviewTypesSeeded()` 
 
 ### 3.9 weekly_capacity (LEGACY — DROPPED IN 2026-05 MIGRATION)
 
-The standalone `weekly_capacity` service was already unused by the application before the 2026-05 service consolidation, and was **not migrated** into `datateam_capacity` (decision SB1). The legacy service remains online but frozen. All capacity values are computed client-side from `team_members` schedules and `absences`.
+The standalone `weekly_capacity` service was already unused by the application before the 2026-05 service consolidation, and was **not migrated** into `datateam_capacity_v2` (decision SB1). The legacy service remains online but frozen. All capacity values are computed client-side from `team_members` schedules and `absences`.
 
 ### 3.10 project_reviews (Project Review tab — beta)
 
-`datateam_portfolio/FeatureServer/3`. Table (no geometry), Create / Update / Delete enabled.
+`datateam_portfolio_v2/FeatureServer/3`. Table (no geometry), Create / Update / Delete enabled.
 
 | Field | Type | Length | Null | Description |
 |-------|------|--------|------|-------------|
@@ -360,7 +362,7 @@ The standalone `weekly_capacity` service was already unused by the application b
 
 ### 3.11 project_notes (Project Journal)
 
-`datateam_portfolio/FeatureServer/2`. Append-only notes attached to a project.
+`datateam_portfolio_v2/FeatureServer/2`. Append-only notes attached to a project.
 
 | Field | Type | Length | Null | Description |
 |-------|------|--------|------|-------------|
@@ -376,7 +378,7 @@ The standalone `weekly_capacity` service was already unused by the application b
 
 ### 3.12 status_history
 
-`datateam_portfolio/FeatureServer/4`. One row per project status change.
+`datateam_portfolio_v2/FeatureServer/4`. One row per project status change.
 
 | Field | Type | Length | Null | Description |
 |-------|------|--------|------|-------------|
@@ -745,22 +747,22 @@ const ARCGIS_CONFIG = {
   portalUrl: 'https://cotgis.maps.arcgis.com',
   clientId: 'H8cR2cAUoy0fVrJF',
 
-  // datateam_portfolio: projects (0), tasks (1), project_notes (2), project_reviews (3), status_history (4)
-  projectsUrl:       'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/0',
-  tasksUrl:          'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/1',
-  projectNotesUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/2',
-  projectReviewsUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/3',
-  statusHistoryUrl:  'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio/FeatureServer/4',
+  // datateam_portfolio_v2: projects (0), tasks (1), project_notes (2), project_reviews (3), status_history (4)
+  projectsUrl:       'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/0',
+  tasksUrl:          'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/1',
+  projectNotesUrl:   'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/2',
+  projectReviewsUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/3',
+  statusHistoryUrl:  'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/4',
 
-  // datateam_capacity: team_members (0), absences (1), time_entries (2), allocations (3)
-  teamMembersUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/0',
-  absencesUrl:       'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/1',
-  timeEntriesUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/2',
-  allocationsUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity/FeatureServer/3',
+  // datateam_capacity_v2: team_members (0), absences (1), time_entries (2), allocations (3)
+  teamMembersUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity_v2/FeatureServer/0',
+  absencesUrl:       'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity_v2/FeatureServer/1',
+  timeEntriesUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity_v2/FeatureServer/2',
+  allocationsUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity_v2/FeatureServer/3',
 
-  // datateam_tracker_admin: app_config (0), issues (1)
-  appConfigUrl:      'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin/FeatureServer/0',
-  issuesUrl:         'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin/FeatureServer/1',
+  // datateam_tracker_admin_v2: app_config (0), issues (1)
+  appConfigUrl:      'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin_v2/FeatureServer/0',
+  issuesUrl:         'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin_v2/FeatureServer/1',
 
   teamLeadsGroupId: '2bd32af20dd745d6bdf3807446761973',
 };

@@ -803,7 +803,7 @@ li strong { color: var(--navy); }
 </table>
 
 <div class="note-box">
-  <strong>Architecture (consolidated 2026-05):</strong> The eleven tables above are physically grouped into three multi-table FeatureServers for easier administration: <code>datateam_portfolio</code> (projects, tasks, project_notes, project_reviews, status_history), <code>datateam_capacity</code> (team_members, absences, time_entries, allocations), and <code>datateam_tracker_admin</code> (app_config, issues). Editor tracking (Creator, CreationDate, Editor, EditDate) is enabled on every table — auto-populated by ArcGIS, no longer stored in ad-hoc <code>created_by</code>/<code>changed_by</code> fields.
+  <strong>Architecture (consolidated 2026-05, rebuilt as v2 on 2026-05-17):</strong> The eleven tables above are physically grouped into three multi-table FeatureServers for easier administration: <code>datateam_portfolio_v2</code> (projects, tasks, project_notes, project_reviews, status_history), <code>datateam_capacity_v2</code> (team_members, absences, time_entries, allocations), and <code>datateam_tracker_admin_v2</code> (app_config, issues). Editor tracking (Creator, CreationDate, Editor, EditDate) is enabled on every table — auto-populated by ArcGIS, no longer stored in ad-hoc <code>created_by</code>/<code>changed_by</code> fields.
 </div>
 
 <h3>Week Structure</h3>
