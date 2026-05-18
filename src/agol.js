@@ -248,14 +248,17 @@ function agolProjectToLocal(feature) {
   // Remove this once consumers migrate to p.owning_unit (and AGO drops
   // itd_team in Phase 4 of the rename).
   if (local.owning_unit != null) local.itd_team = local.owning_unit;
-  // Normalize boolean fields from ArcGIS Short Integer (0/1) to JS truthy.
-  // Data Program status is derived: true if data_program_team is set
-  // (the explicit way), OR if any Data Program Goal is set on a DI
-  // project (the legacy way, preserved for projects created before the
-  // data_program_team field existed).
-  var hasTeam = local.data_program_team && local.data_program_team.trim().length > 0;
-  var hasGoal = local.dp_goal && local.dp_goal.trim().length > 0 && local.dp_goal.trim() !== 'None';
-  local.is_data_program = (hasTeam || hasGoal) ? 1 : 0;
+  // is_data_program is now an explicit stored flag (set by the form / by the
+  // 2026-05 backfill). Read it directly from AGO. For any rows that predate
+  // the explicit-flag migration, fall back to deriving from data_program_team
+  // or dp_goal so legacy records still show up as DP. The fallback can be
+  // removed once data_program_team is dropped from the schema (Phase 9 of the
+  // 2026-05 DP-flag refactor).
+  if (!local.is_data_program) {
+    var hasTeam = local.data_program_team && local.data_program_team.trim().length > 0;
+    var hasGoal = local.dp_goal && local.dp_goal.trim().length > 0 && local.dp_goal.trim() !== 'None';
+    if (hasTeam || hasGoal) local.is_data_program = 1;
+  }
   return local;
 }
 

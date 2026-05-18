@@ -345,7 +345,7 @@ function _buildOverviewSlides() {
   var dpTeamsForSlide = (typeof getDataProgramTeams === 'function') ? getDataProgramTeams() : [];
   var yearStartStr = new Date(today.getFullYear(), 0, 1).toISOString().slice(0, 10);
   var dpStats = dpTeamsForSlide.map(function(t) {
-    var teamProjects = PROJECTS.filter(function(p) { return p.data_program_team === t.name; });
+    var teamProjects = PROJECTS.filter(function(p) { return p.is_data_program && p.owning_team === t.name; });
     var active = teamProjects.filter(function(p) { return p.status === 'Active'; }).length;
     var completedYtd = teamProjects.filter(function(p) {
       return p.status === 'Complete' && p.actual_end && p.actual_end >= yearStartStr;
@@ -451,7 +451,7 @@ function renderOverview(area) {
   // Per-team active counts for the Data Program section
   dpTeams = dpTeams.map(function(t) {
     var active = PROJECTS.filter(function(p) {
-      return p.data_program_team === t.name && p.status === 'Active';
+      return p.is_data_program && p.owning_team === t.name && p.status === 'Active';
     }).length;
     return Object.assign({}, t, { activeCount: active });
   });

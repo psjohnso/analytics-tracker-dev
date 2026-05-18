@@ -207,20 +207,20 @@ function lpUpdateNewButton() {
 
 function lpCanEditProject(p) {
   if (_lpRole === 'admin') return true;
-  if (_lpRole === 'lead' && p && p.data_program_team === _lpMyTeam) return true;
+  if (_lpRole === 'lead' && p && p.is_data_program && p.owning_team === _lpMyTeam) return true;
   return false;
 }
 
 async function lpReload() {
-  // 'all' filter → fetch every Data Program project. Otherwise filter
-  // to the selected team. is_data_program is the derived flag set when
-  // data_program_team is non-empty (or legacy: dp_goal is set).
+  // 'all' filter → fetch every Data Program project. Otherwise filter to
+  // is_data_program=1 AND the selected owning_team. is_data_program is now
+  // an explicit stored flag (set by forms / by the 2026-05 backfill).
   var query;
   if (_lpFilterTeam === 'all') {
     query = "is_data_program=1";
   } else {
     var safeTeam = _lpFilterTeam.replace(/'/g, "''");
-    query = "data_program_team='" + safeTeam + "'";
+    query = "is_data_program=1 AND owning_team='" + safeTeam + "'";
   }
   var [projFeatures, configFeatures] = await Promise.all([
     agolQuery(ARCGIS_CONFIG.projectsUrl, query),
@@ -347,11 +347,11 @@ function lpRender() {
       // When viewing 'all teams', surface each project's team via a small
       // chip (color from the configured team). Helps disambiguate at a glance.
       var teamChip = '';
-      if (_lpFilterTeam === 'all' && p.data_program_team) {
-        var teamCfg = _lpAllTeams.find(function(t) { return t.name === p.data_program_team; });
+      if (_lpFilterTeam === 'all' && p.is_data_program && p.owning_team) {
+        var teamCfg = _lpAllTeams.find(function(t) { return t.name === p.owning_team; });
         var color = (teamCfg && teamCfg.color) || '#6B7280';
-        var shortId = (teamCfg && teamCfg.id) || p.data_program_team;
-        teamChip = ' <span style="font-size:10px;font-weight:800;letter-spacing:0.04em;background:' + color + ';color:white;padding:2px 8px;border-radius:999px;margin-right:6px;" title="' + esc(p.data_program_team) + '">' + esc(shortId) + '</span>';
+        var shortId = (teamCfg && teamCfg.id) || p.owning_team;
+        teamChip = ' <span style="font-size:10px;font-weight:800;letter-spacing:0.04em;background:' + color + ';color:white;padding:2px 8px;border-radius:999px;margin-right:6px;" title="' + esc(p.owning_team) + '">' + esc(shortId) + '</span>';
       }
       // Edit affordance: viewers / leads-on-other-team can still click to view (read-only modal)
       var canEdit = lpCanEditProject(p);
@@ -515,7 +515,7 @@ function lpOpenEdit(objectId) {
   var canEdit = lpCanEditProject(p);
   var titleSuffix = canEdit ? ' — Edit' : ' — View';
   // Show the team in the title when filter is 'all' so it's clear which team owns this
-  var teamPrefix = (_lpFilterTeam === 'all' && p.data_program_team) ? ' (' + p.data_program_team + ')' : '';
+  var teamPrefix = (_lpFilterTeam === 'all' && p.is_data_program && p.owning_team) ? ' (' + p.owning_team + ')' : '';
   document.getElementById('lp-modal-title').textContent = pid + teamPrefix + titleSuffix;
   lpPopulateSelects(p.status, p.partner_dept, p.contact);
   document.getElementById('lp-f-title').value = p.title || '';
@@ -577,11 +577,11 @@ async function lpSaveProject() {
     dp_goal: lpCollectDpGoals(),
   };
   if (!_lpEditingId) {
-    // New: stamp data_program_team based on role/filter, and assign the
-    // next project_number. We query AGO directly because _lpProjects
-    // typically holds only one team's subset — computing the max locally
-    // would collide with numbers in teams we haven't loaded.
-    local.data_program_team = (_lpRole === 'lead') ? _lpMyTeam : _lpFilterTeam;
+    // New: stamp owning_team based on role/filter, and assign the next
+    // project_number. We query AGO directly because _lpProjects typically
+    // holds only one team's subset — computing the max locally would collide
+    // with numbers in teams we haven't loaded.
+    local.owning_team = (_lpRole === 'lead') ? _lpMyTeam : _lpFilterTeam;
     try {
       local.project_number = await lpGetNextProjectNumber();
     } catch (err) {
@@ -590,17 +590,9 @@ async function lpSaveProject() {
       return;
     }
   }
-  // Lite only manages Data Program projects: stamp is_data_program so
-  // the lpReload "All teams" query (is_data_program=1) finds the record.
-  // Mirrors forms.js: team set → 1, else dp_goal set → 1, else 0. On
-  // edits, data_program_team is preserved server-side; fall back to the
-  // loaded project's value so editing doesn't accidentally unset the flag.
-  var existing = _lpEditingId ? _lpProjects.find(function(x) { return x.objectId === _lpEditingId; }) : null;
-  var dpTeamForFlag = local.data_program_team || (existing && existing.data_program_team) || '';
-  var dpGoalForFlag = local.dp_goal || '';
-  local.is_data_program =
-    (dpTeamForFlag && dpTeamForFlag.trim().length > 0) ? 1 :
-    (dpGoalForFlag && dpGoalForFlag.trim().length > 0 && dpGoalForFlag.trim() !== 'None') ? 1 : 0;
+  // Lite only manages Data Program projects, so always stamp is_data_program=1
+  // so the lpReload "All teams" query (is_data_program=1) finds the record.
+  local.is_data_program = 1;
   var attrs = localToAgolProject(local);
   if (_lpEditingId) attrs.ObjectId = _lpEditingId;  // capital-O is the real schema PK; projection only skips lowercase aliases
   try {

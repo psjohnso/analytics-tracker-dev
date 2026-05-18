@@ -49,7 +49,7 @@ function canEditProject(p) {
   if (isAdmin()) return true;
   if (Auth.fullName && p && p.contact === Auth.fullName) return true;
   var leadTeam = getDataProgramLeadTeam();
-  if (leadTeam && p && p.data_program_team === leadTeam) return true;
+  if (leadTeam && p && p.is_data_program && p.owning_team === leadTeam) return true;
   return false;
 }
 

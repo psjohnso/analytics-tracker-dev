@@ -1676,6 +1676,23 @@ function collectProjectFields() {
       var hasGoal = dpg && dpg.trim().length > 0 && dpg.trim() !== 'None';
       return hasGoal ? 'Data Intelligence' : null;
     })(),
+    // Transition (Phase 4 of DP-flag refactor): mirror the data_program_team
+    // value to owning_team so the new is_data_program + owning_team consumer
+    // logic in auth.js / dataprogram-lite.js / overview.js can find the
+    // record. Apply the same renames we did in the 2026-05 data migration
+    // (Data Architecture → Architects, Data Librarian → Special Assignments).
+    // Phase 6 replaces this with an explicit "Owning Team" form field.
+    owning_team: (function() {
+      var picked = getVal('fm-data-program-team');
+      if (!picked) {
+        var dpg = collectCheckboxGroup('fm-dp-goal');
+        var hasGoal = dpg && dpg.trim().length > 0 && dpg.trim() !== 'None';
+        if (!hasGoal) return undefined;  // non-DP save — don't overwrite owning_team
+        picked = 'Data Intelligence';
+      }
+      var RENAME = { 'Data Architecture': 'Architects', 'Data Librarian': 'Special Assignments' };
+      return RENAME[picked] || picked;
+    })(),
     category:          getVal('fm-category')     || null,
     project_size:      getVal('fm-project-size') || null,
     start:             getVal('fm-start')        || null,
