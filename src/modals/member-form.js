@@ -350,11 +350,11 @@ async function saveMemberForm() {
 
   const memberAttrs = {
     name: name,
-    // Org-rename: dual-write to old role/team and new owning_unit/owning_team
-    // so the change is non-breaking. Drop role/team after Phase 4 retires them
-    // from the AGO schema.
-    role: role,
-    team: team,
+    // Org-rename: writes only the new owning_unit/owning_team columns. The
+    // legacy role/team columns are being dropped from team_members in the
+    // same migration cycle. Local model still uses role/team as the JS
+    // field names (see index.html load) — kept that way to avoid churning
+    // all consumers.
     owning_unit: role,
     owning_team: team,
     member_group: memberGroup,
