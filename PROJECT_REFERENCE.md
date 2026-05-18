@@ -160,10 +160,9 @@ https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/{service}/Fea
 | `description` | String | 4000 | Yes | Project description |
 | `problem_statement` | String | 4000 | Yes | Problem statement |
 | `owning_unit` | String | 100 | Yes | Domain: Artificial Intelligence, Business & Advanced Analytics, Geographic Information Systems, Not in Unit. Smallest org grouping. Local model aliases as `p.itd_team` for legacy consumers (see [src/agol.js](src/agol.js)). |
-| `owning_team` | String | 100 | Yes | Domain: Architects, Data Intelligence, Emerging Data Infrastructure, Office of Equity, Project Portfolio Management, Not on a Team. Middle org grouping — the team that owns this project. Distinct from `data_program_team` (which is the DP-flag). |
+| `owning_team` | String | 100 | Yes | Domain: Architects, Data Intelligence, Emerging Data Infrastructure, Office of Equity, Project Portfolio Management, Special Assignments, Not on a Team. Middle org grouping — the team that owns this project. Universal (set on every project). For DP projects, the team that handles them within the program. |
 | `project_size` | String | 5 | Yes | Domain: S, M, L, XL — drives allocation defaults |
-| `is_data_program` | Short | — | Yes | 1 = part of Data Program portfolio |
-| `data_program_team` | String | 50 | Yes | Domain: Data Architecture, Data Intelligence, Data Librarian, Emerging Data Infrastructure |
+| `is_data_program` | Short | — | Yes | 1 = part of Data Program portfolio. Explicit flag — set by the form's "Data Program" checkbox, by `dataprogram-lite.js` (always 1), or by the `dp_goal` auto-fallback. |
 | `primary_dp_goal` | String | 50 | Yes | Domain: 6 values (DP109, DP175, etc.) |
 | `dp_goal` | String | 100 | Yes | Free-text Data Program goal (legacy; superseded by primary_dp_goal) |
 | `it_initiative`, `city_initiative`, `it_priority_project` | Short | — | Yes | Boolean (0/1) flags |

@@ -191,10 +191,10 @@ async function agolApplyEdits(serviceUrl, edits) {
 //  Projects layer fields (ArcGIS, datateam_portfolio_v2/0):
 //    ObjectId, project_number, title, status, priority, contact,
 //    other_members, partner_dept, category, start_date, end_date,
-//    actual_end, description, problem_statement, itd_team,
+//    actual_end, description, problem_statement, owning_unit, owning_team,
 //    is_data_program, it_initiative, city_initiative, it_priority_project,
-//    dp_goal, wwc_practice, wwc_criteria, data_program_team,
-//    leadership_title, leadership_summary, primary_dp_goal, public_visibility
+//    dp_goal, wwc_practice, wwc_criteria, leadership_title,
+//    leadership_summary, primary_dp_goal, public_visibility
 //
 //  Tasks layer fields (ArcGIS, datateam_portfolio_v2/1):
 //    ObjectId, task_number, project_number, title, status, priority,
@@ -248,17 +248,10 @@ function agolProjectToLocal(feature) {
   // Remove this once consumers migrate to p.owning_unit (and AGO drops
   // itd_team in Phase 4 of the rename).
   if (local.owning_unit != null) local.itd_team = local.owning_unit;
-  // is_data_program is now an explicit stored flag (set by the form / by the
-  // 2026-05 backfill). Read it directly from AGO. For any rows that predate
-  // the explicit-flag migration, fall back to deriving from data_program_team
-  // or dp_goal so legacy records still show up as DP. The fallback can be
-  // removed once data_program_team is dropped from the schema (Phase 9 of the
-  // 2026-05 DP-flag refactor).
-  if (!local.is_data_program) {
-    var hasTeam = local.data_program_team && local.data_program_team.trim().length > 0;
-    var hasGoal = local.dp_goal && local.dp_goal.trim().length > 0 && local.dp_goal.trim() !== 'None';
-    if (hasTeam || hasGoal) local.is_data_program = 1;
-  }
+  // is_data_program is an explicit stored flag (Short Integer 0/1). Set
+  // explicitly on save by forms.js (Data Program checkbox, or dp_goal
+  // auto-fallback) and dataprogram-lite.js (always 1). idea.js doesn't
+  // write it, so Idea-stage projects default to 0.
   return local;
 }
 

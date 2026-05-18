@@ -639,29 +639,28 @@ li strong { color: var(--navy); }
 <h2 id="data-program-fields">Data Program field model</h2>
 <p>The project record carries a small constellation of fields for tagging Data Program participation, team ownership, and strategic alignment. These overlap in confusing ways, so here&rsquo;s a single reference for what each one means and which tab uses it.</p>
 
-<h3>The two team fields — ITD Team vs Data Program Team</h3>
-<p>Both appear next to each other in the project edit form&rsquo;s Classification section. They look similar but answer different questions.</p>
+<h3>The two ownership fields — Unit vs Owning Team</h3>
+<p>Both appear next to each other in the project edit form&rsquo;s Classification section. They answer different questions and are both set on every project.</p>
 <table class="guide-table">
   <thead>
     <tr><th style="width:18%;">Field</th><th>What it answers</th><th>Granularity</th><th>Used by</th></tr>
   </thead>
   <tbody>
     <tr>
-      <td><code>itd_team</code><br><strong>ITD Team</strong></td>
-      <td>Which IT sub-team is <strong>implementing</strong> the work.</td>
-      <td>Fine. e.g. <em>Data Intelligence - GIS</em>, <em>Data Intelligence - Business and Advanced Analytics</em>, <em>Data Architecture</em>, <em>Emerging Data Infrastructure - Cloud Data Services</em>.</td>
-      <td>Project Review tab (review types filter projects by <code>itd_teams</code>); Portfolio sidebar filter chip.</td>
+      <td><code>owning_unit</code><br><strong>Unit</strong></td>
+      <td>Which IT unit is <strong>doing the work</strong> &mdash; the smallest org grouping.</td>
+      <td>Fine. <em>Artificial Intelligence</em>, <em>Business &amp; Advanced Analytics</em>, <em>Geographic Information Systems</em>, or <em>Not in Unit</em> for team-wide work that doesn&rsquo;t map to a single unit (e.g. infrastructure / management).</td>
+      <td>Project Review tab (review types filter projects by unit); Portfolio sidebar filter chip.</td>
     </tr>
     <tr>
-      <td><code>data_program_team</code><br><strong>Data Program Team</strong></td>
-      <td>Which Data Program parent team <strong>owns</strong> the project at the program level.</td>
-      <td>Coarse. <em>Data Intelligence</em>, <em>Data Architecture</em>, <em>Data Librarian</em>, <em>Emerging Data Infrastructure</em>.</td>
-      <td>Overview &ldquo;Data Program&rdquo; section, Slideshow Data Program slide, the lite app at <code>dataprogram.html</code>, edit-permissions for non-DI leads.</td>
+      <td><code>owning_team</code><br><strong>Owning Team</strong></td>
+      <td>Which team <strong>owns</strong> the project &mdash; the middle org grouping. Universal, set on every project.</td>
+      <td>Coarse. <em>Architects</em>, <em>Data Intelligence</em>, <em>Emerging Data Infrastructure</em>, <em>Office of Equity</em>, <em>Project Portfolio Management</em>, <em>Special Assignments</em>, or <em>Not on a Team</em>.</td>
+      <td>Overview &ldquo;Data Program&rdquo; section (filtered by <code>is_data_program</code>), Slideshow Data Program slide, the lite app at <code>dataprogram.html</code>, lead-team edit permissions.</td>
     </tr>
   </tbody>
 </table>
-<p>For most projects the two values match at the parent level (a DA-owned project built by DA gets <code>itd_team = "Data Architecture"</code> and <code>data_program_team = "Data Architecture"</code>). They only diverge when one team does the work for another &mdash; e.g. a DA-owned project that DI&rsquo;s GIS sub-team actually builds gets <code>itd_team = "Data Intelligence - GIS"</code> and <code>data_program_team = "Data Architecture"</code>.</p>
-<div class="tip-box"><strong>Rule of thumb:</strong> set both fields. If they match, fine. If they differ, that&rsquo;s on purpose — the project is jointly owned and implemented by different teams.</div>
+<p>For most projects, the unit rolls up to the team naturally (a GIS-led project has Unit = <em>Geographic Information Systems</em> and Owning Team = <em>Data Intelligence</em>). They&rsquo;re distinct because not every team has units (Architects, Office of Equity, PPM are single-unit teams) and team-wide work (Unit = <em>Not in Unit</em>) still needs a team assignment.</p>
 
 <h3>Data Program flag fields</h3>
 <table class="guide-table">
@@ -670,14 +669,9 @@ li strong { color: var(--navy); }
   </thead>
   <tbody>
     <tr>
-      <td><code>is_data_program</code></td>
-      <td>The boolean (<code>1</code>/<code>0</code>) flag that drives Data Program filters and counts. <strong>Derived</strong> &mdash; not directly editable.</td>
-      <td>Auto-set to <code>1</code> if either <code>data_program_team</code> is set OR <code>dp_goal</code> has any value other than <em>None</em>.</td>
-    </tr>
-    <tr>
-      <td><code>data_program_team</code></td>
-      <td>Owning team (above). Setting this is the explicit way to flag a project as Data Program work.</td>
-      <td>Project edit form &mdash; visible to anyone editing the project. Auto-prefills for non-DI leads (their team) and admins editing through <code>dataprogram.html</code>.</td>
+      <td><code>is_data_program</code><br><strong>Data Program</strong></td>
+      <td>The boolean (<code>1</code>/<code>0</code>) flag that drives Data Program filters, counts, and lead-team permissions. Explicit &mdash; set deliberately by the user.</td>
+      <td>The <em>Data Program</em> checkbox in the project edit form (visible to anyone editing). Always <code>1</code> for projects created or edited via <code>dataprogram.html</code>. Auto-set to <code>1</code> when a <code>dp_goal</code> is selected, even without ticking the box (preserves the legacy behavior).</td>
     </tr>
     <tr>
       <td><code>dp_goal</code></td>
@@ -686,7 +680,7 @@ li strong { color: var(--navy); }
     </tr>
   </tbody>
 </table>
-<div class="note-box"><strong>Auto-default when only <code>dp_goal</code> is set:</strong> if you tag a project with a <code>dp_goal</code> in the main app form but leave <code>data_program_team</code> empty, save will set <code>data_program_team = "Data Intelligence"</code> automatically. The legacy assumption is that pre-existing <code>dp_goal</code>-tagged projects are DI projects unless told otherwise.</div>
+<div class="note-box"><strong>How the lead-permission check works:</strong> a non-admin user has edit access to a project if they&rsquo;re the contact, OR if their <code>data_program_lead_team</code> matches <code>owning_team</code> AND <code>is_data_program = 1</code>.</div>
 
 <h3>Strategic alignment fields</h3>
 <p>These are checkbox-group fields in the <strong>Strategic Alignment</strong> section of the project form, visible to strategic-alignment editors only. They tag <em>why</em> the project matters strategically &mdash; orthogonal to "is this a Data Program project" but often correlated.</p>
