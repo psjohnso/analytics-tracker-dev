@@ -1220,7 +1220,7 @@ function buildProjectForm(p) {
           })(),
           'Select unit…'),
         false, false,
-        'Which IT unit is implementing this project. Defaults to your own unit when the project doesn\'t have one assigned yet. Used by the Project Review tab to scope reviews and by the Portfolio sidebar filter.') +
+        'The smallest organizational grouping doing the work — typically a sub-team within an Owning Team (e.g. GIS within Data Intelligence). Pick "Not in Unit" for team-wide work that doesn\'t fit a specific sub-team. Defaults to your own unit on new projects. Used by Project Review scoping and the Portfolio sidebar filter.') +
       fmField('Owning Team',
         fmSelect('fm-owning-team',
           ['Architects','Data Intelligence','Emerging Data Infrastructure','Office of Equity','Project Portfolio Management','Special Assignments','Not on a Team'],
@@ -1235,7 +1235,7 @@ function buildProjectForm(p) {
           'Select team…',
           false),
         false, false,
-        'Which team owns this project. Set on every project. Defaults to your own team when the project doesn\'t have one assigned yet. Drives the cross-team Data Program portfolio view (when combined with the Data Program checkbox) and lead-team edit permissions.') +
+        'The team that owns the project — set on every project regardless of whether it\'s Data Program work. The Unit above (if any) is a sub-team within this team. Defaults to your own team on new projects. Drives the Data Program portfolio view (when combined with the Data Program checkbox below) and lead-team edit permissions.') +
       fmField('Data Program',
         '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 0;font-family:Cardo,serif;font-size:14px;">' +
           '<input type="checkbox" id="fm-is-data-program" ' + ((v('is_data_program') == 1) ? 'checked' : '') + ' style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy);"> ' +
