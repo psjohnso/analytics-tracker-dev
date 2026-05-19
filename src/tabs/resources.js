@@ -65,7 +65,7 @@ function buildResourcePersonCards(people, currentWeekIdx) {
         <div class="name">${esc(name)}</div>
         <div class="role">${esc(p.role)}</div>
       </div>
-      <span class="person-util-badge" style="background:${utilColor}22;color:${utilColor};">${curUtil.toFixed(0)}%</span>
+      <span class="person-util-badge" data-person="${esc(name)}" style="background:${utilColor}22;color:${utilColor};">${curUtil.toFixed(0)}%</span>
     </div>`;
   }).join('');
 }
@@ -185,6 +185,17 @@ function renderResources(area) {
     if (liveProj) allocsByName[projTitle].status = liveProj.status;
   });
   const allocs = Object.values(allocsByName).filter(a => a.status === 'Active' || a.status === 'On Hold');
+  // chartAllocs adds Complete/Canceled allocations that actually have hours,
+  // so every weekly bar reflects all the work that happened that week —
+  // including projects that have since closed. allocs (without closed) is
+  // still used for the KPI "Active Projects" count and the project table.
+  const chartAllocs = Object.values(allocsByName).filter(function(a) {
+    if (a.status === 'Active' || a.status === 'On Hold') return true;
+    if (a.status === 'Complete' || a.status === 'Canceled') {
+      return a.fracs.some(function(f) { return f > 0; });
+    }
+    return false;
+  });
 
   // KPI: current week (uses dataWeekIdx = latest week with data for KPI numbers)
   const cwIdx = dataWeekIdx;
@@ -212,9 +223,12 @@ function renderResources(area) {
   let padB   = 40;
   const chartW = padL + (barW + gap) * (wEnd - wStart) + 20;
 
-  // Build color map for projects
+  // Build color map for projects (chart-wide, so closed projects in the
+  // bars get a consistent color too). The project table uses this same
+  // map but filters its rows independently, so closed colors are harmless
+  // there.
   const projColorMap = {};
-  allocs.forEach((a, i) => { projColorMap[a.project] = PROJECT_COLORS[i % PROJECT_COLORS.length]; });
+  chartAllocs.forEach((a, i) => { projColorMap[a.project] = PROJECT_COLORS[i % PROJECT_COLORS.length]; });
 
   // Build SVG bars
   let bars = '';
@@ -233,16 +247,21 @@ function renderResources(area) {
     const cap = p.proj_cap[wi] || 0;
     const capY = chartH - padB - (cap/maxCap)*(chartH-padB);
 
-    // Stacked bars per project
+    // Stacked bars per project. Closed projects (Complete/Canceled) render
+    // at lower opacity so the bar visually signals "this was historical
+    // work" without changing the totals.
     let stackY = chartH - padB;
-    allocs.forEach(a => {
+    chartAllocs.forEach(a => {
       const hrs = a.hours[wi] || 0;
       if (hrs <= 0) return;
       const barH = (hrs/maxCap)*(chartH-padB);
       stackY -= barH;
       const col = projColorMap[a.project];
-      bars += `<rect x="${x.toFixed(1)}" y="${stackY.toFixed(1)}" width="${barW}" height="${barH.toFixed(1)}" fill="${col}" opacity="0.85" rx="2">
-        <title>${esc(a.project)}: ${hrs.toFixed(1)}h</title></rect>`;
+      const isClosed = a.status === 'Complete' || a.status === 'Canceled';
+      const op = isClosed ? '0.45' : '0.85';
+      const statusSuffix = isClosed ? ' (' + a.status + ')' : '';
+      bars += `<rect x="${x.toFixed(1)}" y="${stackY.toFixed(1)}" width="${barW}" height="${barH.toFixed(1)}" fill="${col}" opacity="${op}" rx="2">
+        <title>${esc(a.project + statusSuffix)}: ${hrs.toFixed(1)}h</title></rect>`;
     });
 
     // Capacity line segment
@@ -291,12 +310,20 @@ function renderResources(area) {
     ${xLabels}
   </svg>`;
 
-  // Legend
-  const legend = Object.entries(projColorMap).map(([proj, col]) =>
-    `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;font-size:11px;color:var(--text-muted);">
-      <span style="width:10px;height:10px;border-radius:2px;background:${col};flex-shrink:0;"></span>${esc(proj.length>35?proj.slice(0,35)+'…':proj)}
-    </span>`
-  ).join('');
+  // Legend — includes closed projects (italicized + status suffix) so the
+  // bar segments shown at reduced opacity can still be identified.
+  const legend = Object.entries(projColorMap).map(function(entry) {
+    const proj = entry[0], col = entry[1];
+    const a = chartAllocs.find(function(x) { return x.project === proj; });
+    const isClosed = a && (a.status === 'Complete' || a.status === 'Canceled');
+    const baseLabel = proj.length > 35 ? proj.slice(0,35)+'…' : proj;
+    const label = isClosed ? baseLabel + ' (' + a.status + ')' : baseLabel;
+    const swatchStyle = 'width:10px;height:10px;border-radius:2px;background:' + col + ';flex-shrink:0;' + (isClosed ? 'opacity:0.5;' : '');
+    const textStyle = 'font-size:11px;color:var(--text-muted);' + (isClosed ? 'font-style:italic;opacity:0.75;' : '');
+    return '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;' + textStyle + '">' +
+      '<span style="' + swatchStyle + '"></span>' + esc(label) +
+      '</span>';
+  }).join('');
 
   // ── Project allocation table ──────────────────────────────────
   const tableRows = buildResourceAllocTableRows(allocs, projColorMap, calWeekIdx);
@@ -307,80 +334,141 @@ function renderResources(area) {
     return `${s.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${e.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
   })();
 
+  // Option 3 rail+pane layout. Member rail stays pinned left; right pane
+  // tabs switch between Summary and Edit Allocations for the current
+  // selectedPerson. Clicking another member in the rail keeps the active
+  // tab so a lead can edit Member A then B then C without leaving.
+  const mode = Editor.resourceMode || 'summary';
+  const teamCount = Object.keys(people).filter(function(n) { return isFullMember(n); }).length;
+
+  const summaryBody = `
+    <div class="res-edit-header">
+      <div>
+        <div class="who-name">${esc(selectedPerson)}</div>
+        <div class="who-sub">${esc(p.role)} · ${esc(p.team)} team · ${(p.proj_pct*100).toFixed(0)}% project-available${calcInfoIcon('projCapacity')}</div>
+      </div>
+    </div>
+    <div class="res-kpi-row">
+      <div class="res-kpi"><div class="kpi-label">Most Recent Week Utilization${calcInfoIcon('utilization')}</div><div class="kpi-value" style="color:${kpiColor};">${cwUtil.toFixed(0)}%</div><div class="kpi-sub">${cwAlloc.toFixed(1)}h of ${cwCap.toFixed(1)}h capacity</div></div>
+      <div class="res-kpi"><div class="kpi-label">Available (Most Recent Week)${calcInfoIcon('availableHours')}</div><div class="kpi-value">${Math.max(0,cwCap-cwAlloc).toFixed(1)}h</div><div class="kpi-sub">unallocated project hours</div></div>
+      <div class="res-kpi"><div class="kpi-label">Active Projects</div><div class="kpi-value">${activeProjects}</div><div class="kpi-sub">with allocations</div></div>
+      <div class="res-kpi"><div class="kpi-label">Hours Logged YTD${calcInfoIcon('ytdHours')}</div><div class="kpi-value">${totalAllocYTD.toFixed(0)}h</div><div class="kpi-sub">through current week</div></div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-header"><h3>Weekly Project Allocation</h3><div class="chart-nav"><button onclick="shiftChart(-20)">◀ Prev</button><span class="period-label">${periodLabel}</span><button onclick="shiftChart(20)">Next ▶</button></div></div>
+      <div style="overflow-x:auto;">${svgChart}</div>
+      <div style="margin-top:12px;line-height:2;">${legend}</div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);"><svg width="20" height="12"><line x1="0" y1="6" x2="20" y2="6" stroke="#002669" stroke-width="2" stroke-dasharray="4,3" opacity="0.6"/></svg>Project capacity (after role ratio &amp; absences)</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><span style="font-size:13px;font-weight:700;color:var(--navy);">Active Project Allocations</span><span class="text-muted-sm">Showing Active &amp; On Hold only</span></div>
+    <div class="proj-alloc-table"><table><thead><tr><th>Project</th><th>Status</th><th>Type</th><th>This Week %</th><th>Recent Trend</th><th>Total Hours</th></tr></thead><tbody>${tableRows || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No allocations found</td></tr>'}</tbody></table></div>
+  `;
+
+  const editBody = `
+    <div class="res-edit-header">
+      <div>
+        <div class="who-name">${esc(selectedPerson)}</div>
+        <div class="who-sub">${esc(p.role)} · ${esc(p.team)} team · ${(p.proj_pct*100).toFixed(0)}% project-available</div>
+      </div>
+      <div class="who-stats">Cap <strong>${cwCap.toFixed(1)}h</strong> · Allocated <strong>${cwAlloc.toFixed(1)}h</strong> · <strong>${cwUtil.toFixed(0)}%</strong></div>
+    </div>
+    <div class="ae-fp-nav">
+      <button class="ae-nav-btn" id="ae-fp-prev-btn" onclick="aeShift(-1)">◀ Prev</button>
+      <div class="ae-fp-nav-mid">
+        <div class="ae-fp-nav-label" id="ae-fp-range-label">—</div>
+        <div class="ae-fp-nav-sub" id="ae-fp-range-sub">—</div>
+      </div>
+      <div class="ae-fp-nav-right">
+        <button class="ae-jump-today" onclick="aeJumpCurrent()">Jump to Current Week</button>
+        <button class="ae-nav-btn" id="ae-fp-next-btn" onclick="aeShift(1)">Next ▶</button>
+      </div>
+    </div>
+    <div class="ae-fp-grid-wrap">
+      <table class="ae-grid" id="ae-fp-grid-table">
+        <thead id="ae-fp-thead"></thead>
+        <tbody id="ae-fp-tbody"></tbody>
+        <tfoot id="ae-fp-tfoot"></tfoot>
+      </table>
+    </div>
+  `;
+
+  const paneBody = mode === 'edit' ? editBody : summaryBody;
+  const actionsHtml = mode === 'edit'
+    ? '<div class="res-pane-actions"><button class="btn-discard" onclick="setResourceMode(\'summary\')">Discard</button><button class="btn-apply" onclick="applyEditorChanges()">✓ Apply changes</button></div>'
+    : '';
+
   area.innerHTML = `
-    <div style="padding:20px 0;">
-      <div style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:10px;margin-top:-4px;">Current Week Project Allocations</div>
-      <div class="person-grid" style="margin-bottom:0;">${personCards}</div>
-
-      <hr style="border:none;border-top:1px solid #E8E6DF;margin:20px 0;">
-
-      <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <div>
-          <span style="font-size:18px;font-weight:800;color:var(--navy);">${esc(selectedPerson)}</span>
-          <span style="margin-left:10px;font-size:13px;color:var(--text-muted);">${esc(p.role)} · ${esc(p.team)} team · ${(p.proj_pct*100).toFixed(0)}% project-available${calcInfoIcon('projCapacity')}</span>
+    <div class="res-layout">
+      <aside class="res-rail">
+        <div class="res-rail-title">Team (${teamCount})</div>
+        <div class="person-grid">${personCards}</div>
+      </aside>
+      <div class="res-pane">
+        <div class="res-pane-tabs">
+          <button class="res-pane-tab ${mode === 'summary' ? 'active' : ''}" onclick="setResourceMode('summary')">👥 Summary</button>
+          <button class="res-pane-tab ${mode === 'edit' ? 'active' : ''}" onclick="setResourceMode('edit')">✏️ Edit Allocations</button>
+          ${actionsHtml}
         </div>
-        <button data-person="${esc(selectedPerson)}" onclick="openAllocEditor(this.dataset.person)" style="padding:8px 18px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;" onmouseover="this.style.background='#1a3a7c'" onmouseout="this.style.background='var(--navy)'">✏️ Edit Allocations</button>
+        <div class="res-pane-body">${paneBody}</div>
       </div>
+    </div>
+  `;
 
-      <div class="res-kpi-row">
-        <div class="res-kpi">
-          <div class="kpi-label">Most Recent Week Utilization${calcInfoIcon('utilization')}</div>
-          <div class="kpi-value" style="color:${kpiColor};">${cwUtil.toFixed(0)}%</div>
-          <div class="kpi-sub">${cwAlloc.toFixed(1)}h of ${cwCap.toFixed(1)}h capacity</div>
-        </div>
-        <div class="res-kpi">
-          <div class="kpi-label">Available (Most Recent Week)${calcInfoIcon('availableHours')}</div>
-          <div class="kpi-value">${Math.max(0,cwCap-cwAlloc).toFixed(1)}h</div>
-          <div class="kpi-sub">unallocated project hours</div>
-        </div>
-        <div class="res-kpi">
-          <div class="kpi-label">Active Projects</div>
-          <div class="kpi-value">${activeProjects}</div>
-          <div class="kpi-sub">with allocations</div>
-        </div>
-        <div class="res-kpi">
-          <div class="kpi-label">Hours Logged YTD${calcInfoIcon('ytdHours')}</div>
-          <div class="kpi-value">${totalAllocYTD.toFixed(0)}h</div>
-          <div class="kpi-sub">through current week</div>
-        </div>
-      </div>
+  // In edit mode, populate the grid into the just-rendered ae-fp-* DOM.
+  if (mode === 'edit' && typeof aeRenderGrid === 'function') {
+    aeRenderGrid();
+  }
+}
 
-      <div class="chart-container">
-        <div class="chart-header">
-          <h3>Weekly Project Allocation</h3>
-          <div class="chart-nav">
-            <button onclick="shiftChart(-20)">◀ Prev</button>
-            <span class="period-label">${periodLabel}</span>
-            <button onclick="shiftChart(20)">Next ▶</button>
-          </div>
-        </div>
-        <div style="overflow-x:auto;">${svgChart}</div>
-        <div style="margin-top:12px;line-height:2;">${legend}</div>
-        <div style="margin-top:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);">
-          <svg width="20" height="12"><line x1="0" y1="6" x2="20" y2="6" stroke="#002669" stroke-width="2" stroke-dasharray="4,3" opacity="0.6"/></svg>
-          Project capacity (after role ratio &amp; absences)
-        </div>
-      </div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span style="font-size:13px;font-weight:700;color:var(--navy);">Active Project Allocations</span>
-          <span class="text-muted-sm">Showing Active &amp; On Hold only</span>
-        </div>
-        <div class="proj-alloc-table">
-        <table>
-          <thead><tr>
-            <th>Project</th><th>Status</th><th>Type</th>
-            <th>This Week %</th><th>Recent Trend</th><th>Total Hours</th>
-          </tr></thead>
-          <tbody>${tableRows || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No allocations found</td></tr>'}</tbody>
-        </table>
-      </div>
-    </div>`;
+// Switch between Summary and Edit modes inside the Resources pane.
+// Entering edit mode rebuilds Editor.draft for the currently-selected
+// person via openAllocEditor (which is now mode-aware and skips the
+// modal-open step when Editor.fullPageEditPerson is set).
+//
+// Async because we verify the AGOL token before allowing edits — if the
+// session has expired we'd rather redirect to re-auth NOW than let the
+// user enter values that get silently lost at save time.
+async function setResourceMode(mode) {
+  if (mode === 'edit') {
+    if (typeof ensureAgolToken === 'function') {
+      const token = await ensureAgolToken();
+      if (!token) {
+        // ensureAgolToken triggers OAuth redirect when the token is
+        // missing/expired; if we got here without a token, the redirect
+        // is in flight. Don't enter edit mode.
+        if (typeof showToast === 'function') {
+          showToast('Sign-in expired — reconnecting before you can edit allocations.', 'warn');
+        }
+        return;
+      }
+    }
+    Editor.resourceMode = 'edit';
+    Editor.fullPageEditPerson = selectedPerson;
+    Editor.person = selectedPerson;
+    if (typeof openAllocEditor === 'function') {
+      openAllocEditor(selectedPerson);
+    }
+  } else {
+    Editor.resourceMode = 'summary';
+    Editor.fullPageEditPerson = null;
+    Editor.person = null;
+  }
+  if (typeof render === 'function') render();
 }
 
 function selectPerson(name) {
   selectedPerson = name;
   chartWindowStart = 0;
+  // If we're in edit mode, rebuild the editor draft for the new person so
+  // the rail-click flow ("edit member A then B then C") just works without
+  // bouncing back to the Summary tab.
+  if (Editor.resourceMode === 'edit') {
+    Editor.fullPageEditPerson = name;
+    Editor.person = name;
+    if (typeof openAllocEditor === 'function') {
+      openAllocEditor(name);
+    }
+  }
   render();
 }
 

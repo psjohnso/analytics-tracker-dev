@@ -17,8 +17,25 @@
 // ══════════════════════════════════════════════════════════════════════
 //  ALLOCATION EDITOR
 // ══════════════════════════════════════════════════════════════════════
-let AE_COLS     = 6;    // weeks visible at once
+let AE_COLS     = 6;    // weeks visible in modal mode
+const AE_COLS_FP = 8;   // weeks visible in full-page mode (wider canvas)
 let aeProjectDates = {}; // { projTitle: { start, end } } — date ranges for highlighting
+
+// Returns the number of week columns to render for the current mode.
+function _aeCols() {
+  return Editor.fullPageEditPerson ? AE_COLS_FP : AE_COLS;
+}
+
+// Looks up a DOM element by suffix, preferring the full-page version
+// (`ae-fp-<suffix>`) when the editor is in full-page mode, otherwise
+// the modal version (`ae-<suffix>`). Lets aeRenderGrid stay agnostic.
+function _aeT(suffix) {
+  if (Editor.fullPageEditPerson) {
+    var fp = document.getElementById('ae-fp-' + suffix);
+    if (fp) return fp;
+  }
+  return document.getElementById('ae-' + suffix);
+}
 
 function openAllocEditor(name) {
   Editor.person = name;
@@ -101,12 +118,135 @@ function openAllocEditor(name) {
     aeProjectDates[proj.title] = { start: proj.start || null, end: proj.actual_end || proj.working_due || proj.end || null };
   });
 
-  aeRenderGrid();
-  document.getElementById('alloc-editor-backdrop').classList.add('open');
+  // In full-page mode, skip the modal render+open. aeEnterFullPage will
+  // call render() which dispatches to aeRenderFullPage; that injects the
+  // page HTML and re-invokes aeRenderGrid against the full-page DOM.
+  if (!Editor.fullPageEditPerson) {
+    aeRenderGrid();
+    document.getElementById('alloc-editor-backdrop').classList.add('open');
+  }
 }
 
 function closeAllocEditor() {
   document.getElementById('alloc-editor-backdrop').classList.remove('open');
+  // If the editor was running in the Resources pane's edit mode (Option 3
+  // rail+pane layout) or the older full-page route, clear both flags so
+  // the next render() returns to the Summary view cleanly. Apply -> save
+  // -> back to summary is the natural flow after a successful commit.
+  if (Editor.fullPageEditPerson || Editor.resourceMode === 'edit') {
+    Editor.fullPageEditPerson = null;
+    Editor.person = null;
+    Editor.resourceMode = 'summary';
+  }
+}
+
+// ── Full-page allocation editor ──────────────────────────────────────
+// Replaces the modal with a full-width page rendered into #content-area.
+// Entry from the Resources "Edit Allocations" button via aeEnterFullPage.
+// Exit via Cancel button (aeExitFullPage) or Apply (applyEditorChanges,
+// which calls closeAllocEditor internally — clears the fullpage flag).
+
+// Kept for backward compatibility — any caller can still ask for the
+// full-page editor and it will route through the new Option 3 rail+pane
+// layout in the Resources tab. The two functions just delegate to
+// setResourceMode now.
+function aeEnterFullPage(name) {
+  if (typeof selectedPerson !== 'undefined') {
+    selectedPerson = name;
+  }
+  if (typeof setResourceMode === 'function') {
+    setResourceMode('edit');
+  } else {
+    // Fallback path if resources.js hasn't loaded yet (shouldn't happen in
+    // practice — the button that triggers this lives inside Resources).
+    Editor.fullPageEditPerson = name;
+    Editor.person = name;
+    openAllocEditor(name);
+    if (typeof render === 'function') render();
+  }
+}
+
+function aeExitFullPage() {
+  if (typeof setResourceMode === 'function') {
+    setResourceMode('summary');
+  } else {
+    Editor.fullPageEditPerson = null;
+    Editor.person = null;
+    if (typeof render === 'function') render();
+  }
+}
+
+function aeRenderFullPage(area) {
+  const name = Editor.fullPageEditPerson;
+  const p = (typeof RESOURCES_DATA !== 'undefined' && RESOURCES_DATA.people) ? RESOURCES_DATA.people[name] : null;
+  if (!p) {
+    area.innerHTML = '<div style="padding:32px;color:var(--text-muted);font-size:13px;">Person not found: ' + esc(name || '(unknown)') + '. <a href="#" onclick="aeExitFullPage();return false;">Back to Resources</a></div>';
+    return;
+  }
+
+  const curIdx   = window.currentWeekIdx || 0;
+  const curCap   = (p.proj_cap         || [])[curIdx] || 0;
+  const curAlloc = (p.weekly_allocated || [])[curIdx] || 0;
+  const curUtil  = (p.utilization      || [])[curIdx] || 0;
+  const ytdHours = (p.weekly_allocated || []).slice(0, curIdx + 1).reduce(function(s, v) { return s + (v || 0); }, 0);
+  const role      = p.role || '';
+  const team      = p.team || '';
+  const projPctStr = Math.round((p.proj_pct || 0) * 100) + '%';
+
+  area.innerHTML =
+    '<div class="ae-fp-page">' +
+      '<div class="ae-fp-subhdr">' +
+        '<div class="ae-fp-crumb">' +
+          '<a onclick="aeExitFullPage()">Resources</a>' +
+          '<span class="sep">›</span>' +
+          '<span class="here">Edit Allocations · ' + esc(name) + '</span>' +
+        '</div>' +
+        '<div class="ae-fp-actions">' +
+          '<button class="ae-fp-btn ae-fp-btn-ghost" onclick="aeExitFullPage()">Cancel</button>' +
+          '<button class="ae-fp-btn ae-fp-btn-primary" onclick="applyEditorChanges()">✓ Apply changes</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ae-fp-body">' +
+        '<aside class="ae-fp-sidebar">' +
+          '<div class="ae-fp-person-name">' + esc(name) + '</div>' +
+          '<div class="ae-fp-person-sub">' + esc(team) + (role ? ' · ' + esc(role) : '') + ' · ' + projPctStr + ' project-available</div>' +
+          '<h3>Current week</h3>' +
+          '<div class="ae-fp-cap-row"><span>Project capacity</span><span>' + (Math.round(curCap * 10) / 10) + 'h</span></div>' +
+          '<div class="ae-fp-cap-row"><span>Allocated</span><span>' + (Math.round(curAlloc * 10) / 10) + 'h</span></div>' +
+          '<div class="ae-fp-cap-row"><span>Utilization</span><span>' + Math.round(curUtil * 100) + '%</span></div>' +
+          '<h3>Year to date</h3>' +
+          '<div class="ae-fp-cap-row"><span>Hours allocated</span><span>' + Math.round(ytdHours) + 'h</span></div>' +
+          '<div class="ae-fp-legend">' +
+            '<strong>Legend</strong><br>' +
+            '▶ project start · ■ effective end<br>' +
+            '<span class="ae-fp-leg-out"></span> outside active span<br>' +
+            '<span class="ae-fp-leg-cur"></span> current week' +
+          '</div>' +
+        '</aside>' +
+        '<div class="ae-fp-main">' +
+          '<div class="ae-fp-nav">' +
+            '<button class="ae-nav-btn" id="ae-fp-prev-btn" onclick="aeShift(-1)">◀ Prev</button>' +
+            '<div class="ae-fp-nav-mid">' +
+              '<div class="ae-fp-nav-label" id="ae-fp-range-label">—</div>' +
+              '<div class="ae-fp-nav-sub" id="ae-fp-range-sub">—</div>' +
+            '</div>' +
+            '<div class="ae-fp-nav-right">' +
+              '<button class="ae-jump-today" onclick="aeJumpCurrent()">Jump to Current Week</button>' +
+              '<button class="ae-nav-btn" id="ae-fp-next-btn" onclick="aeShift(1)">Next ▶</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="ae-fp-grid-wrap">' +
+            '<table class="ae-grid" id="ae-fp-grid-table">' +
+              '<thead id="ae-fp-thead"></thead>' +
+              '<tbody id="ae-fp-tbody"></tbody>' +
+              '<tfoot id="ae-fp-tfoot"></tfoot>' +
+            '</table>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  aeRenderGrid();
 }
 
 function openProjectFromAlloc(el) {
@@ -121,7 +261,7 @@ function openProjectFromAlloc(el) {
 
 function aeShift(dir) {
   const weeks = RESOURCES_DATA.weeks;
-  Editor.aeWindowStart = Math.max(0, Math.min(Editor.aeWindowStart + dir, weeks.length - AE_COLS));
+  Editor.aeWindowStart = Math.max(0, Math.min(Editor.aeWindowStart + dir, weeks.length - _aeCols()));
   aeRenderGrid();
 }
 
@@ -148,16 +288,17 @@ function aeRenderGrid() {
   const allocs = Editor.draft[Editor.person];
   const personRec = RESOURCES_DATA.people[Editor.person] || {};
   const projCap = personRec.proj_cap || [];
-  const wEnd   = Math.min(Editor.aeWindowStart + AE_COLS, weeks.length);
+  const cols = _aeCols();
+  const wEnd   = Math.min(Editor.aeWindowStart + cols, weeks.length);
   const wIdxs  = [];
   for (let i = Editor.aeWindowStart; i < wEnd; i++) wIdxs.push(i);
 
   const startLabel = aeMonLabel(wIdxs[0]);
   const endLabel   = aeMonLabel(wIdxs[wIdxs.length - 1]);
-  document.getElementById('ae-range-label').textContent = startLabel + ' — ' + endLabel;
-  document.getElementById('ae-range-sub').textContent   = 'W' + (wIdxs[0]+1) + ' – W' + (wIdxs[wIdxs.length-1]+1);
-  document.getElementById('ae-prev-btn').disabled = Editor.aeWindowStart === 0;
-  document.getElementById('ae-next-btn').disabled = wEnd >= weeks.length;
+  var _aeRL = _aeT('range-label');     if (_aeRL) _aeRL.textContent = startLabel + ' — ' + endLabel;
+  var _aeRS = _aeT('range-sub');       if (_aeRS) _aeRS.textContent = 'W' + (wIdxs[0]+1) + ' – W' + (wIdxs[wIdxs.length-1]+1);
+  var _aePB = _aeT('prev-btn');        if (_aePB) _aePB.disabled = Editor.aeWindowStart === 0;
+  var _aeNB = _aeT('next-btn');        if (_aeNB) _aeNB.disabled = wEnd >= weeks.length;
 
   // Header
   let thead = '<tr>';
@@ -168,7 +309,7 @@ function aeRenderGrid() {
       aeMonLabel(wi) + '<br><span style="font-size:9px;opacity:.7;">W' + (wi+1) + '</span></th>';
   }
   thead += '</tr>';
-  document.getElementById('ae-thead').innerHTML = thead;
+  _aeT('thead').innerHTML = thead;
 
   // Project rows
   let tbody = '';
@@ -233,10 +374,10 @@ function aeRenderGrid() {
     var emptyMsg = allocs.length === 0
       ? 'No project allocations for this person.'
       : 'No projects with activity in this window. Use ◀ Prev / Next ▶ to navigate to weeks where this person had work.';
-    tbody += '<tr><td colspan="' + (AE_COLS + 1) + '" style="text-align:center;color:var(--text-muted);padding:40px;font-size:13px;">' + emptyMsg + '</td></tr>';
-    document.getElementById('ae-tbody').innerHTML = tbody;
-    document.getElementById('ae-tfoot').innerHTML = '';
-    document.getElementById('ae-totals-bar').style.display = 'none';
+    tbody += '<tr><td colspan="' + (cols + 1) + '" style="text-align:center;color:var(--text-muted);padding:40px;font-size:13px;">' + emptyMsg + '</td></tr>';
+    _aeT('tbody').innerHTML = tbody;
+    var _aeTFE = _aeT('tfoot'); if (_aeTFE) _aeTFE.innerHTML = '';
+    var _aeTBE = _aeT('totals-bar'); if (_aeTBE) _aeTBE.style.display = 'none';
     return;
   }
 
@@ -341,7 +482,7 @@ function aeRenderGrid() {
   // _aeInWindow above), so past-week reflections on them are directly
   // editable.
 
-  document.getElementById('ae-tbody').innerHTML = tbody;
+  _aeT('tbody').innerHTML = tbody;
 
   // Totals row — sums across every visible row (Lead + Contributing).
   // Since closed-project rows are now individually visible when their span
@@ -356,8 +497,8 @@ function aeRenderGrid() {
       '<span class="ae-tot-chip ' + cls + '">' + total + '%</span></td>';
   }
   totHtml += '</tr>';
-  document.getElementById('ae-tfoot').innerHTML = totHtml;
-  document.getElementById('ae-totals-bar').style.display = 'none';
+  _aeT('tfoot').innerHTML = totHtml;
+  var _aeTBE2 = _aeT('totals-bar'); if (_aeTBE2) _aeTBE2.style.display = 'none';
 }
 
 function aeCellChange(ai, wi, input) {
@@ -372,6 +513,39 @@ function aeCellChange(ai, wi, input) {
   const hrsEl = document.getElementById('ae-hrs-' + ai + '-' + wi);
   if (hrsEl) hrsEl.textContent = pct > 0 ? (Math.round((pct / 100) * cap * 10) / 10) + 'h' : '';
   aeTotRefresh(wi);
+  // Live-update the rail badge if this edit affects the current-week total.
+  // The rail badge shows current-week utilization; non-current-week edits
+  // don't change what the badge represents.
+  if (isCur) aeRefreshRailBadge(Editor.person);
+}
+
+// Recompute and update the rail's per-person utilization badge from the
+// live Editor.draft so the team-column percent moves with every edit.
+// Quiet no-op if the badge isn't in the DOM (e.g. modal mode).
+function aeRefreshRailBadge(name) {
+  if (!name) return;
+  const cwIdx = window.currentWeekIdx;
+  if (cwIdx == null) return;
+  const personRec = (RESOURCES_DATA && RESOURCES_DATA.people) ? RESOURCES_DATA.people[name] : null;
+  if (!personRec) return;
+  const cap = (personRec.proj_cap || [])[cwIdx] || 0;
+  // Sum the draft (live values) for this person at the current week.
+  const allocs = (Editor.draft && Editor.draft[name]) || [];
+  let totalFrac = 0;
+  allocs.forEach(function(a) { totalFrac += (a.fracs[cwIdx] || 0); });
+  // Utilization = allocated_hours / project_capacity. Match the formula
+  // used in buildResourcePersonCards (which reads p.utilization[cwIdx]).
+  const allocHrs = totalFrac * cap;
+  const pct = cap > 0 ? (allocHrs / cap) * 100 : 0;
+  const utilColor = pct > 90 ? '#EF4444' : pct > 70 ? '#F59E0B' : '#83AC16';
+  const badges = document.querySelectorAll('.res-rail .person-util-badge');
+  badges.forEach(function(b) {
+    if (b.getAttribute('data-person') === name) {
+      b.textContent = pct.toFixed(0) + '%';
+      b.style.background = utilColor + '22';
+      b.style.color = utilColor;
+    }
+  });
 }
 
 function aeRoleChange(ai, role) {
