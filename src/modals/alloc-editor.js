@@ -37,51 +37,57 @@ function openAllocEditor(name) {
     Editor.aeListenerAdded = true;
   }
 
-  // Filter to only projects in the main PROJECTS list, deduplicate, then keep
-  // only Active and On Hold rows.
+  // Build a single editable allocation set per person, regardless of current
+  // project status. The render step filters by visible-window overlap, so a
+  // closed project's past-week edits are accessible when the user navigates
+  // back to those weeks, but a closed project doesn't clutter the view when
+  // the user is looking at weeks outside its active span.
   const projTitleSet2 = new Set(PROJECTS.map(proj => proj.title));
   function canonicalAllocTitle2(raw) {
     if (projTitleSet2.has(raw)) return raw;
     const stripped = raw.replace(/\s*-\s*[A-Z][A-Za-z .]+$/, '').trim();
     return projTitleSet2.has(stripped) ? stripped : raw;
   }
-  const draftByName = {};
+  const byName = {};
   p.allocations.forEach(function(a) {
     const key = canonicalAllocTitle2(a.project);
-    // Look up the CURRENT project status (not the stale status from allocation records)
     const proj = PROJECTS.find(function(px) { return px.title === key; });
     const currentStatus = proj ? proj.status : a.status;
-    if (currentStatus !== 'Active' && currentStatus !== 'On Hold') return;
-    if (!draftByName[key]) {
-      // If no role stored, infer from project contact
+    if (currentStatus === 'Idea') return; // hypothetical; don't clutter editing
+    if (!byName[key]) {
       var existingRole = a.role || '';
       if (!existingRole && proj) {
         existingRole = proj.contact === name ? 'Lead' : 'Contributor';
       }
-      draftByName[key] = { project: key, status: currentStatus, fracs: [...a.fracs], role: existingRole };
+      byName[key] = { project: key, status: currentStatus, fracs: [...a.fracs], role: existingRole };
     } else {
       // Merge duplicate / person-split rows
-      a.fracs.forEach((f, i) => { draftByName[key].fracs[i] = (draftByName[key].fracs[i] || 0) + f; });
+      a.fracs.forEach((f, i) => { byName[key].fracs[i] = (byName[key].fracs[i] || 0) + f; });
     }
   });
-  // Inject projects where this person is contact or other_members but has no allocation yet
+  // Inject empty rows for forward-state projects (Active / On Hold / Waiting /
+  // Scheduled) where this person is contact or other_members but has no
+  // allocation yet. Complete and Canceled projects don't get empty injection —
+  // if there's no existing allocation, there's nothing to reflect on.
   const N2 = RESOURCES_DATA.weeks.length;
+  const aeForwardStates = { 'Active': 1, 'On Hold': 1, 'Waiting': 1, 'Scheduled': 1 };
   PROJECTS.forEach(function(proj) {
-    if (proj.status !== 'Active' && proj.status !== 'On Hold') return;
-    if (draftByName[proj.title]) return;
+    if (!aeForwardStates[proj.status]) return;
+    if (byName[proj.title]) return;
     const members = (proj.other_members || '').split(',').map(s => s.trim()).filter(Boolean);
     if (proj.contact !== name && !members.includes(name)) return;
     var inferredRole = proj.contact === name ? 'Lead' : 'Contributor';
-    draftByName[proj.title] = { project: proj.title, status: proj.status, fracs: new Array(N2).fill(0), role: inferredRole };
+    byName[proj.title] = { project: proj.title, status: proj.status, fracs: new Array(N2).fill(0), role: inferredRole };
   });
-  Editor.draft[name] = Object.values(draftByName);
-  const aeStatusOrder = { 'Active': 0, 'On Hold': 1, 'Scheduled': 2, 'Future': 3, 'Idea': 4 };
-  Editor.draft[name].sort(function(a, b) {
-    const sa = aeStatusOrder[a.status] != null ? aeStatusOrder[a.status] : 9;
-    const sb = aeStatusOrder[b.status] != null ? aeStatusOrder[b.status] : 9;
-    if (sa !== sb) return sa - sb;
+  // Alphabetical by project title — render then groups into Leading / Contributing.
+  Editor.draft[name] = Object.values(byName).sort(function(a, b) {
     return a.project.localeCompare(b.project);
   });
+  // Editor.closedAllocs is no longer maintained — the render step filters by
+  // window-overlap. Clean up any stale state from previous-version opens.
+  if (Editor.closedAllocs && Editor.closedAllocs[name]) {
+    delete Editor.closedAllocs[name];
+  }
 
   document.getElementById('editor-person-title').textContent = name;
   document.getElementById('editor-person-role').textContent =
@@ -164,26 +170,87 @@ function aeRenderGrid() {
   thead += '</tr>';
   document.getElementById('ae-thead').innerHTML = thead;
 
-  // Split allocs into Lead vs Contributing groups
-  const leadAllocs = [];
-  const contribAllocs = [];
-  allocs.forEach(function(a, ai) {
-    a._origIdx = ai;
-    if (a.role === 'Lead') leadAllocs.push(a);
-    else contribAllocs.push(a);
-  });
-
   // Project rows
   let tbody = '';
-  if (!allocs.length) {
-    tbody = '<tr><td colspan="' + (AE_COLS + 1) + '" style="text-align:center;color:var(--text-muted);padding:40px;font-size:13px;">No active projects for this person.</td></tr>';
+
+  // Hours summary row — shows project-available capacity per week and any
+  // vacation/leave hours taken. Sits between the date header and Leading so
+  // the user has the denominators in view while editing the % allocations.
+  tbody += '<tr class="ae-hours-row"><td class="ae-proj-td ae-hours-label">' +
+    '<span class="ae-hours-cap-lbl">Available hrs</span>' +
+    '<span class="ae-hours-leave-lbl">Vacation / leave</span>' +
+    '</td>';
+  for (let ci = 0; ci < wIdxs.length; ci++) {
+    const wi = wIdxs[ci];
+    const isCur = wi === window.currentWeekIdx;
+    const cap = projCap[wi] || 0;
+    const lv  = (personRec.absences && personRec.absences[wi]) || 0;
+    const capStr = (Math.round(cap * 10) / 10) + 'h';
+    const lvStr  = lv > 0 ? (Math.round(lv * 10) / 10) + 'h' : '—';
+    tbody += '<td class="ae-wk-td ae-hours-cell' + (isCur ? ' ae-cur' : '') + '">' +
+      '<div class="ae-hours-cap">' + capStr + '</div>' +
+      '<div class="ae-hours-leave' + (lv > 0 ? ' has-leave' : '') + '">' + lvStr + '</div>' +
+      '</td>';
+  }
+  tbody += '</tr>';
+
+  // ── Window-overlap filter ─────────────────────────────────────────
+  // Show a project's row only if its active span [start, effective_end]
+  // overlaps the visible week window, OR the person has a non-zero
+  // allocation on it within the visible weeks (insurance against missing
+  // date metadata). End date = actual_end / working_due / end_date, in
+  // that priority — already baked into aeProjectDates.
+  const winStartDate = weeks[wIdxs[0]];
+  const _aeLastWkDt = new Date(weeks[wIdxs[wIdxs.length - 1]] + 'T12:00:00');
+  _aeLastWkDt.setDate(_aeLastWkDt.getDate() + 6);
+  const winEndDate = _aeLastWkDt.toISOString().slice(0, 10);
+  function _aeInWindow(a) {
+    // (b) any non-zero allocation in visible weeks — always include
+    for (var i = 0; i < wIdxs.length; i++) {
+      if ((a.fracs[wIdxs[i]] || 0) > 0) return true;
+    }
+    // (a) project active span overlaps the visible window
+    const dates = aeProjectDates[a.project] || {};
+    const pStart = dates.start || '';
+    const pEnd   = dates.end   || '';
+    if (!pStart && !pEnd) {
+      // No date metadata: only show if status is forward-looking so an
+      // empty row for an active project doesn't disappear.
+      return a.status === 'Active' || a.status === 'On Hold' ||
+             a.status === 'Waiting' || a.status === 'Scheduled';
+    }
+    if (pStart && winEndDate   < pStart) return false; // project starts after window ends
+    if (pEnd   && winStartDate > pEnd)   return false; // project ended before window starts
+    return true;
+  }
+  // _origIdx must reference position in the full draft array (cell change
+  // handlers use it to look up Editor.draft[person][ai].fracs). Set BEFORE
+  // filtering so the indices stay correct for hidden rows too.
+  allocs.forEach(function(a, ai) { a._origIdx = ai; });
+  const visibleAllocs = allocs.filter(_aeInWindow);
+
+  if (!visibleAllocs.length) {
+    var emptyMsg = allocs.length === 0
+      ? 'No project allocations for this person.'
+      : 'No projects with activity in this window. Use ◀ Prev / Next ▶ to navigate to weeks where this person had work.';
+    tbody += '<tr><td colspan="' + (AE_COLS + 1) + '" style="text-align:center;color:var(--text-muted);padding:40px;font-size:13px;">' + emptyMsg + '</td></tr>';
     document.getElementById('ae-tbody').innerHTML = tbody;
     document.getElementById('ae-tfoot').innerHTML = '';
     document.getElementById('ae-totals-bar').style.display = 'none';
     return;
   }
 
-  const numRows = allocs.length;
+  const numRows = visibleAllocs.length;
+
+  // Split VISIBLE allocs into Lead vs Contributing groups. _origIdx was
+  // already set above (against the full draft array) so cell-change handlers
+  // resolve correctly even though we're iterating the filtered subset here.
+  const leadAllocs = [];
+  const contribAllocs = [];
+  visibleAllocs.forEach(function(a) {
+    if (a.role === 'Lead') leadAllocs.push(a);
+    else contribAllocs.push(a);
+  });
 
   function renderAllocRow(a) {
     const ai = a._origIdx;
@@ -268,12 +335,21 @@ function aeRenderGrid() {
     }
   }
 
+  // Closed work no longer renders as a separate section. Complete and
+  // Canceled projects now appear in their proper Leading/Contributing
+  // group when their active span overlaps the visible window (handled by
+  // _aeInWindow above), so past-week reflections on them are directly
+  // editable.
+
   document.getElementById('ae-tbody').innerHTML = tbody;
 
-  // Totals row (inside table tfoot for guaranteed column alignment)
+  // Totals row — sums across every visible row (Lead + Contributing).
+  // Since closed-project rows are now individually visible when their span
+  // overlaps the window, their values are naturally included; no separate
+  // closed rollup contribution needed.
   let totHtml = '<tr class="ae-total-row"><td class="ae-proj-td ae-total-label">Total allocated' + calcInfoIcon('allocTotal') + '</td>';
   for (const wi of wIdxs) {
-    const total = allocs.reduce(function(s, a) { return s + Math.round((a.fracs[wi] || 0) * 100); }, 0);
+    const total = visibleAllocs.reduce(function(s, a) { return s + Math.round((a.fracs[wi] || 0) * 100); }, 0);
     const cls   = total === 0 ? 'zero' : total > 100 ? 'over' : 'ok';
     const isCur = wi === window.currentWeekIdx;
     totHtml += '<td class="ae-wk-td' + (isCur ? ' ae-cur' : '') + '" id="ae-tot-' + wi + '">' +
@@ -450,8 +526,12 @@ async function autoFillAllocationsForNewProject(fields) {
 
 function aeTotRefresh(wi) {
   const allocs = Editor.draft[Editor.person];
-  const total  = allocs.reduce(function(s, a) { return s + Math.round((a.fracs[wi] || 0) * 100); }, 0);
-  const cell   = document.getElementById('ae-tot-' + wi);
+  // Sum across the whole draft for this week — rows that are window-filtered
+  // out have zero in this week by definition (the (b) inclusion rule
+  // captures any row with non-zero in any visible week), so summing all is
+  // equivalent to summing only visible rows but cheaper.
+  const total = allocs.reduce(function(s, a) { return s + Math.round((a.fracs[wi] || 0) * 100); }, 0);
+  const cell  = document.getElementById('ae-tot-' + wi);
   if (!cell) return;
   const cls  = total === 0 ? 'zero' : total > 100 ? 'over' : 'ok';
   const isCur = wi === window.currentWeekIdx;
