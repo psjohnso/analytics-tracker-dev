@@ -450,6 +450,12 @@ const CALC_EXPLANATIONS = {
     body: 'Tasks where the Working Due Date has passed and the status is not Complete or Canceled.',
     formula: 'Working Due Date < Today AND Status is not Complete/Canceled',
     guide: null
+  },
+  calibMultiplier: {
+    title: 'Schedule multiplier',
+    body: 'Typical overrun for projects in this row. Computed as a per-project ratio first, then median-aggregated, so one runaway project does not skew the row. Note: this will NOT equal Median Actual ÷ Median Planned from the adjacent columns — those are independent medians of the underlying values, not inputs to this calculation.',
+    formula: 'For each project: ratio = actual_weeks ÷ planned_weeks. Multiplier = median(ratios) across projects in this row.',
+    guide: null
   }
 };
 
