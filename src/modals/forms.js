@@ -1254,7 +1254,7 @@ function buildProjectForm(p) {
         'The smallest organizational grouping doing the work — typically a sub-team within a Team (e.g. GIS within Data Intelligence). Pick "Not in Unit" for team-wide work that doesn\'t fit a specific sub-team. Defaults to your own unit on new projects. Used by Project Review scoping and the Portfolio sidebar filter.') +
       fmField('Team',
         fmSelect('fm-owning-team',
-          ['Architects','Data Intelligence','Emerging Data Infrastructure','Office of Equity','Project Portfolio Management','Special Assignments','Not on a Team'],
+          FM_OWNING_TEAMS,
           v('owning_team') || (function() {
             // Default to the logged-in user's own team when the project hasn't
             // been assigned one yet. Local model key is .team (aliased from

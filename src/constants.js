@@ -10,7 +10,7 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.40.2.0003';
+const APP_VERSION = '1.41.0.0001';
 
 // ArcGIS Online group whose members are authorized to change a project's
 // status from "Idea" to any other status (also gates admin / Team Lead UI
@@ -35,6 +35,29 @@ const DATA_PROGRAM_DEFAULT_CONFIG = {
     { id: 'EDI', name: 'Emerging Data Infrastructure', color: '#6D28D9', description: 'Snowflake, modern orchestration, infrastructure modernization.',    order: 4 }
   ]
 };
+
+// ══════════════════════════════════════════════════════════════════════
+//  OWNING TEAMS — canonical project.owning_team domain
+//  ─────────────────────────────────────────────────────────────────
+//  The exact coded-value domain stored in projects.owning_team (and
+//  team_members.owning_team). This is DISTINCT from
+//  DATA_PROGRAM_DEFAULT_CONFIG.teams above — that list is the narrower
+//  set of Data-Program groups (with colors/descriptions for the portfolio
+//  view), whereas this is every team a project can be assigned to.
+//  Single source of truth: referenced by the project form's Team picker
+//  AND the Project Review type editor's "Teams in scope" filter, so the
+//  filter strings always match what projects actually store (avoids the
+//  unit-name-drift class of bug). Keep in sync with the AGOL domain.
+// ══════════════════════════════════════════════════════════════════════
+const FM_OWNING_TEAMS = [
+  'Architects',
+  'Data Intelligence',
+  'Emerging Data Infrastructure',
+  'Office of Equity',
+  'Project Portfolio Management',
+  'Special Assignments',
+  'Not on a Team'
+];
 
 // ══════════════════════════════════════════════════════════════════════
 //  TEAM INTRODUCTION — fallback default

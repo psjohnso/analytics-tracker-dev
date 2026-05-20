@@ -27,11 +27,7 @@ const _defaultReviewTypes = [
     name: 'Data Intelligence Review',
     description: 'Weekly task-level review for the Data Intelligence team (GIS, Analytics, AI sub-teams).',
     filter: {
-      itd_teams: [
-        'Geographic Information Systems',
-        'Business & Advanced Analytics',
-        'Artificial Intelligence'
-      ],
+      teams: ['Data Intelligence'],
       review_mode: 'task',
       default_statuses: ['Active', 'On Hold', 'Waiting for Response']
     },
@@ -47,12 +43,10 @@ const _defaultReviewTypes = [
     name: 'Data Team Review',
     description: 'Biweekly cross-team review covering the broader Data Team — Data Intelligence, Architecture, DBA, and Cloud Engineering (Snowflake).',
     filter: {
-      itd_teams: [
-        'Data Program',
-        'Emerging Data Infrastructure - Cloud Data Services',
-        'Geographic Information Systems',
-        'Business & Advanced Analytics',
-        'Artificial Intelligence'
+      teams: [
+        'Data Intelligence',
+        'Emerging Data Infrastructure',
+        'Architects'
       ],
       require_data_program: true,
       group_by_quarter: true,
@@ -311,13 +305,41 @@ function prProjectInvolves(p, name) {
 //   in task mode a project is in scope only if it has ≥1 task assigned to this person.
 // query: optional free-text search (case-insensitive). Project mode matches title/number/contact/members;
 //   task mode matches task title/assignee plus the parent project's title/number.
+// Map a set of legacy unit names (filter.itd_teams) to the parent teams
+// (owning_team) of the projects currently in those units. Used only to
+// pre-fill / display legacy review types that predate team-based scoping.
+function prDeriveTeamsFromUnits(units) {
+  if (!Array.isArray(units) || !units.length || typeof PROJECTS === 'undefined') return [];
+  var seen = {};
+  PROJECTS.forEach(function(p) {
+    if (p.itd_team && units.indexOf(p.itd_team) >= 0 && p.owning_team) seen[p.owning_team] = true;
+  });
+  return Object.keys(seen).sort();
+}
+
+// The teams a review type is scoped to, for display + editor pre-fill.
+// New configs store team names in filter.teams; legacy configs stored unit
+// names in filter.itd_teams, which we map up to their parent teams.
+function prRtScopeTeams(rt) {
+  if (!rt || !rt.filter) return [];
+  if (Array.isArray(rt.filter.teams) && rt.filter.teams.length) return rt.filter.teams.slice();
+  if (Array.isArray(rt.filter.itd_teams) && rt.filter.itd_teams.length) return prDeriveTeamsFromUnits(rt.filter.itd_teams);
+  return [];
+}
+
 function prGetProjectsForReview(rt, statuses, assignee, query) {
-  if (!rt || !rt.filter || !Array.isArray(rt.filter.itd_teams)) return [];
-  var teams = rt.filter.itd_teams;
+  if (!rt || !rt.filter) return [];
+  // New configs scope by team (owning_team). Legacy configs scope by unit
+  // (itd_team) — keep matching those by unit so their scope is unchanged
+  // until the admin re-saves the review type, which migrates it to teams.
+  var useTeams = Array.isArray(rt.filter.teams) && rt.filter.teams.length > 0;
+  var scope = useTeams ? rt.filter.teams : (Array.isArray(rt.filter.itd_teams) ? rt.filter.itd_teams : []);
+  if (!scope.length) return [];
   var requireDataProgram = !!(rt.filter && rt.filter.require_data_program);
   var inScope = PROJECTS.filter(function(p) {
-    if (!p.itd_team) return false;
-    if (teams.indexOf(p.itd_team) < 0) return false;
+    var scopeVal = useTeams ? p.owning_team : p.itd_team;
+    if (!scopeVal) return false;
+    if (scope.indexOf(scopeVal) < 0) return false;
     // Exclude Idea (not yet promoted). Show others — reviewers decide what to skip.
     if (p.status === 'Idea') return false;
     if (requireDataProgram && !p.is_data_program) return false;
@@ -1151,12 +1173,12 @@ function renderReviewTypesTable() {
     return;
   }
   var html = '<table class="pr-rt-table">';
-  html += '<thead><tr><th>Name</th><th>Cadence</th><th>Units in scope</th><th>Default attendees</th><th style="text-align:right;">Actions</th></tr></thead><tbody>';
+  html += '<thead><tr><th>Name</th><th>Cadence</th><th>Teams in scope</th><th>Default attendees</th><th style="text-align:right;">Actions</th></tr></thead><tbody>';
   _reviewTypes.forEach(function(rt, i) {
     var cadenceLabel = (rt.cadence_days === 7) ? 'Weekly' :
                        (rt.cadence_days === 14) ? 'Biweekly' :
                        (rt.cadence_days ? rt.cadence_days + ' days' : '—');
-    var teams = (rt.filter && rt.filter.itd_teams) ? rt.filter.itd_teams : [];
+    var teams = prRtScopeTeams(rt);
     var attendees = rt.default_attendees || [];
     var teamsLabel = teams.length ? teams.length + ' team' + (teams.length === 1 ? '' : 's') : '—';
     var teamsTitle = teams.join('\n');
@@ -1184,12 +1206,13 @@ function prRtOpenForm(index) {
   var existing = isNew ? null : _reviewTypes[index];
   var data = existing ? JSON.parse(JSON.stringify(existing)) : {
     id: '', name: '', description: '',
-    filter: { itd_teams: [] },
+    filter: { teams: [] },
     cadence_days: 14,
     default_attendees: []
   };
 
-  var teamsList = (_customItdTeams && _customItdTeams.length) ? _customItdTeams : [];
+  var teamsList = (typeof FM_OWNING_TEAMS !== 'undefined') ? FM_OWNING_TEAMS.slice() : [];
+  var scopeTeams = prRtScopeTeams(data);
   var memberNames = (RESOURCES_DATA && RESOURCES_DATA.people) ?
     Object.keys(RESOURCES_DATA.people).filter(function(n) { return RESOURCES_DATA.people[n].active !== false; }).sort() : [];
 
@@ -1214,17 +1237,18 @@ function prRtOpenForm(index) {
   html += '<input type="number" id="pr-rt-input-cadence" min="1" max="365" value="' + (data.cadence_days || 14) + '">';
   html += '<div class="pr-field-help">7 = weekly, 14 = biweekly, 30 = monthly.</div></div>';
 
-  html += '<div class="pr-field"><label class="pr-field-label">Units in scope</label>';
+  html += '<div class="pr-field"><label class="pr-field-label">Teams in scope</label>';
   html += '<div class="pr-itd-checkboxes">';
   if (!teamsList.length) {
-    html += '<div style="font-style:italic;color:var(--text-muted);font-family:Cardo,serif;font-size:13px;">No units defined yet. Add some in Dropdown lists first.</div>';
+    html += '<div style="font-style:italic;color:var(--text-muted);font-family:Cardo,serif;font-size:13px;">No teams defined.</div>';
   } else {
     teamsList.forEach(function(t) {
-      var checked = (data.filter && data.filter.itd_teams && data.filter.itd_teams.indexOf(t) >= 0) ? ' checked' : '';
+      var checked = (scopeTeams.indexOf(t) >= 0) ? ' checked' : '';
       html += '<label><input type="checkbox" class="pr-rt-team-cb" value="' + esc(t) + '"' + checked + '> ' + esc(t) + '</label>';
     });
   }
-  html += '</div></div>';
+  html += '</div>';
+  html += '<div class="pr-field-help">Projects are matched by their <strong>Team</strong> (owning_team).</div></div>';
 
   var rdpChecked = (data.filter && data.filter.require_data_program) ? ' checked' : '';
   var gbqChecked = (data.filter && data.filter.group_by_quarter) ? ' checked' : '';
@@ -1302,7 +1326,7 @@ async function prRtSaveForm(index) {
       if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Add Review Type'; }
       return;
     }
-    _reviewTypes.push({ id: id, name: name, description: desc, filter: { itd_teams: teams, require_data_program: requireDp, group_by_quarter: groupQ }, cadence_days: cadence, default_attendees: attendees });
+    _reviewTypes.push({ id: id, name: name, description: desc, filter: { teams: teams, require_data_program: requireDp, group_by_quarter: groupQ }, cadence_days: cadence, default_attendees: attendees });
   } else {
     var existing = _reviewTypes[index];
     // Preserve any existing filter fields (default_statuses, review_mode) that aren't surfaced in this form.
@@ -1310,7 +1334,9 @@ async function prRtSaveForm(index) {
     var preservedMode = (existing.filter && existing.filter.review_mode) || null;
     existing.name = name;
     existing.description = desc;
-    existing.filter = { itd_teams: teams, require_data_program: requireDp, group_by_quarter: groupQ };
+    // Wholesale reassign drops the legacy itd_teams field, migrating this
+    // record from unit-based to team-based scoping.
+    existing.filter = { teams: teams, require_data_program: requireDp, group_by_quarter: groupQ };
     if (preservedDefaults) existing.filter.default_statuses = preservedDefaults;
     if (preservedMode) existing.filter.review_mode = preservedMode;
     existing.cadence_days = cadence;

@@ -3609,7 +3609,11 @@ tr.ae-closed-row td.ae-wk-td.ae-cur { background:#E8EDF5; }
 .pr-field { margin-bottom:16px; }
 .pr-field-label { font-family:'Lato',sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-body);margin-bottom:6px;display:block; }
 .pr-field-help { font-family:'Cardo',serif;font-style:italic;font-size:14px;color:var(--text-muted);margin-top:4px; }
-.pr-field input, .pr-field textarea, .pr-field select { width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:var(--radius-btn);font-family:'Cardo',serif;font-size:15px;background:#fff;color:var(--text-body); }
+.pr-field input:not([type="checkbox"]):not([type="radio"]), .pr-field textarea, .pr-field select { width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:var(--radius-btn);font-family:'Cardo',serif;font-size:15px;background:#fff;color:var(--text-body); }
+/* Checkboxes/radios render at native size next to their label (the broad
+   input rule above would otherwise stretch them to full row width and shove
+   the label text to the far right). */
+.pr-field input[type="checkbox"], .pr-field input[type="radio"] { width:auto;flex:0 0 auto;margin:0; }
 .pr-field textarea { min-height:70px;resize:vertical; }
 .pr-field input:focus, .pr-field textarea:focus, .pr-field select:focus { outline:none;border-color:var(--orange); }
 .pr-suggestions { display:flex;flex-wrap:wrap;gap:4px;margin-top:6px; }
