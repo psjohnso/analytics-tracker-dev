@@ -28,9 +28,9 @@ const _defaultReviewTypes = [
     description: 'Weekly task-level review for the Data Intelligence team (GIS, Analytics, AI sub-teams).',
     filter: {
       itd_teams: [
-        'Data Intelligence - GIS',
-        'Data Intelligence - Business and Advanced Analytics',
-        'Data Intelligence - Artificial Intelligence'
+        'Geographic Information Systems',
+        'Business & Advanced Analytics',
+        'Artificial Intelligence'
       ],
       review_mode: 'task',
       default_statuses: ['Active', 'On Hold', 'Waiting for Response']
@@ -50,9 +50,9 @@ const _defaultReviewTypes = [
       itd_teams: [
         'Data Program',
         'Emerging Data Infrastructure - Cloud Data Services',
-        'Data Intelligence - GIS',
-        'Data Intelligence - Business and Advanced Analytics',
-        'Data Intelligence - Artificial Intelligence'
+        'Geographic Information Systems',
+        'Business & Advanced Analytics',
+        'Artificial Intelligence'
       ],
       require_data_program: true,
       group_by_quarter: true,
