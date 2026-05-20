@@ -37,6 +37,18 @@ function _aeT(suffix) {
   return document.getElementById('ae-' + suffix);
 }
 
+// A Scheduled project "hasn't started yet" when its start date is in the
+// future (or unset). These are excluded from the allocation editor — there's
+// no point planning or logging time against work that hasn't begun. Once the
+// project actually starts (status flips to Active, or the start date passes),
+// it shows up normally.
+function _aeScheduledNotStarted(status, startStr) {
+  if (status !== 'Scheduled') return false;
+  if (!startStr) return true;
+  var todayStr = new Date().toISOString().slice(0, 10);
+  return startStr > todayStr;
+}
+
 function openAllocEditor(name) {
   Editor.person = name;
   const p = RESOURCES_DATA.people[name];
@@ -90,6 +102,7 @@ function openAllocEditor(name) {
   const aeForwardStates = { 'Active': 1, 'On Hold': 1, 'Waiting': 1, 'Scheduled': 1 };
   PROJECTS.forEach(function(proj) {
     if (!aeForwardStates[proj.status]) return;
+    if (_aeScheduledNotStarted(proj.status, proj.start)) return; // skip not-yet-started Scheduled
     if (byName[proj.title]) return;
     const members = (proj.other_members || '').split(',').map(s => s.trim()).filter(Boolean);
     if (proj.contact !== name && !members.includes(name)) return;
@@ -346,19 +359,24 @@ function aeRenderGrid() {
   _aeLastWkDt.setDate(_aeLastWkDt.getDate() + 6);
   const winEndDate = _aeLastWkDt.toISOString().slice(0, 10);
   function _aeInWindow(a) {
+    const dates = aeProjectDates[a.project] || {};
+    // Exclude Scheduled projects that haven't started yet — regardless of
+    // window position or any stray allocation. Can't plan/log time against
+    // work that hasn't begun.
+    if (_aeScheduledNotStarted(a.status, dates.start)) return false;
     // (b) any non-zero allocation in visible weeks — always include
     for (var i = 0; i < wIdxs.length; i++) {
       if ((a.fracs[wIdxs[i]] || 0) > 0) return true;
     }
     // (a) project active span overlaps the visible window
-    const dates = aeProjectDates[a.project] || {};
     const pStart = dates.start || '';
     const pEnd   = dates.end   || '';
     if (!pStart && !pEnd) {
       // No date metadata: only show if status is forward-looking so an
-      // empty row for an active project doesn't disappear.
+      // empty row for an active project doesn't disappear. (Scheduled is
+      // handled above, so it's intentionally not listed here.)
       return a.status === 'Active' || a.status === 'On Hold' ||
-             a.status === 'Waiting' || a.status === 'Scheduled';
+             a.status === 'Waiting';
     }
     if (pStart && winEndDate   < pStart) return false; // project starts after window ends
     if (pEnd   && winStartDate > pEnd)   return false; // project ended before window starts

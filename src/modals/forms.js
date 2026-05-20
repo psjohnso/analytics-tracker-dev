@@ -1560,7 +1560,17 @@ var _prefillTaskProject = null;
 
 function buildTaskForm(t) {
   const v = function(k) {
-    if (t) return t[k] || '';
+    if (t) {
+      // The tasks layer stores project_number (the FK), not a title. Tasks
+      // loaded from AGOL therefore have no t.project — resolve the title
+      // from the canonical FK so the dropdown defaults correctly. Falls back
+      // to the legacy t.project only if the lookup can't resolve it.
+      if (k === 'project') {
+        var resolved = (typeof getTaskProjectTitle === 'function') ? getTaskProjectTitle(t) : '';
+        return resolved || t.project || '';
+      }
+      return t[k] || '';
+    }
     if (k === 'assignee') return Auth.fullName || '';
     if (k === 'project' && _prefillTaskProject) {
       var pv = _prefillTaskProject;
