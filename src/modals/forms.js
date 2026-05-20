@@ -1553,10 +1553,20 @@ function applyAlignmentSuggestions() {
   showToast(applied + ' alignment' + (applied !== 1 ? 's' : '') + ' applied. Review and save when ready.', 'success');
 }
 
+// Set transiently by addTaskToProject so a new task opened from a project
+// detail page pre-selects that project. Consumed (read once and cleared)
+// inside buildTaskForm so it can't leak into a later manually-opened form.
+var _prefillTaskProject = null;
+
 function buildTaskForm(t) {
   const v = function(k) {
     if (t) return t[k] || '';
     if (k === 'assignee') return Auth.fullName || '';
+    if (k === 'project' && _prefillTaskProject) {
+      var pv = _prefillTaskProject;
+      _prefillTaskProject = null; // consume once
+      return pv;
+    }
     return '';
   };
   const projTitles = PROJECTS.filter(function(p) {

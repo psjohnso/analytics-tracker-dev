@@ -269,14 +269,14 @@ function openTaskFromProject(taskIdx) {
 }
 
 function addTaskToProject(projectObjectId, projectTitle) {
+  // Pre-seed the project so buildTaskForm selects it from the start. This
+  // replaces a brittle post-render DOM poke that (a) raced a 50ms timeout
+  // and (b) failed to match the <option> value for any title containing
+  // HTML special characters (&, <, >, ', "), which left the task with no
+  // project on save. fmSelect adds the value as an option if it's not in
+  // the active-project list, so closed/on-hold projects pre-select too.
+  _prefillTaskProject = projectTitle;
   openFormModal('new-task');
-  // Pre-fill the project dropdown after the form renders
-  setTimeout(function() {
-    const projSelect = document.getElementById('fm-project');
-    if (projSelect) {
-      projSelect.value = projectTitle;
-    }
-  }, 50);
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1025,7 +1025,7 @@ function renderProjectDetail(id) {
           <span>Tasks (${relTasks.length})${relTasks.length ? ` · <span style="font-weight:400;font-size:12px;color:var(--text-muted);">${getProjectHours(p.title)}h logged</span>` : ''}</span>
           <div style="display:flex;gap:6px;">
             <button onclick="openSuggestPicker(${p.objectId})" class="btn-navy-md" style="background:#FFDB22;color:#92400E;border-color:#FFDB22;" onmouseover="this.style.background='#F0CC00'" onmouseout="this.style.background='#FFDB22'">✨ Suggest Tasks</button>
-            <button onclick="addTaskToProject(${p.objectId}, '${esc(p.title).replace(/'/g, "\\'")}')" class="btn-navy-md">＋ Add Task</button>
+            <button data-project-id="${p.objectId}" data-project-title="${esc(p.title)}" onclick="addTaskToProject(this.dataset.projectId, this.dataset.projectTitle)" class="btn-navy-md">＋ Add Task</button>
           </div>
         </div>
         <div id="batch-action-bar" style="display:none;background:#EEF2FF;border:1px solid #BFDBFE;border-radius:10px;padding:10px 16px;margin-bottom:10px;display:none;align-items:center;gap:10px;flex-wrap:nowrap;">
