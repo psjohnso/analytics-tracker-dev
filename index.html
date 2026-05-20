@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.40.0.0002">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.40.1.0001"></script>
+<script src="src/constants.js?v=1.40.1.0002"></script>
 <script src="src/agol.js?v=1.34.0.0004"></script>
 <script src="src/auth.js?v=1.25.0.0003"></script>
 <script src="src/render.js?v=1.27.2.0002"></script>
@@ -2301,6 +2301,10 @@ const DataStore = {
       if (fields.project) {
         const proj = PROJECTS.find(function(p) { return p.title === fields.project; });
         fields.project_id = proj ? proj.id : null;
+        // Also set the canonical FK. The local task object pushed to TASKS
+        // below is read by detail-page filters that key on project_number;
+        // without this it lacks the field and won't appear until a reload.
+        fields.project_number = proj ? proj.project_number : null;
       }
       const attrs = localToAgolTask(fields);
       const result = await agolApplyEdits(ARCGIS_CONFIG.tasksUrl, {
@@ -2320,6 +2324,7 @@ const DataStore = {
       if (fields.project && !fields.project_id) {
         const proj = PROJECTS.find(function(p) { return p.title === fields.project; });
         fields.project_id = proj ? proj.id : null;
+        fields.project_number = proj ? proj.project_number : null;
       }
       const task = Object.assign({}, fields);
       TASKS.push(task);
@@ -2344,6 +2349,7 @@ const DataStore = {
     if (fields.project) {
       const proj = PROJECTS.find(function(p) { return p.title === fields.project; });
       fields.project_id = proj ? proj.id : null;
+      fields.project_number = proj ? proj.project_number : null;
     }
     const snapshot = Object.assign({}, TASKS[i]);
     Object.assign(TASKS[i], fields);
