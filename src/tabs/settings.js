@@ -305,6 +305,7 @@ function buildPreferencesPanel() {
   html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px 20px;">';
   if (showCapToggle) {
     html += prefToggle('showCapacity', 'Show Capacity tabs', 'Reveals Resources (capacity chart + allocation table), Forecast (utilization grid + capacity planner), and Insights (retrospective charts on completed projects).', UserPrefs.showCapacity);
+    html += prefToggle('showAnalytics', 'Show Analytics tab', 'Reveals retrospective Team Load analytics — partner-department hours, lead vs contributor split by category, and per-person workload concentration over the last 12 months.', UserPrefs.showAnalytics);
   }
   html += prefToggle('showSlideshow', 'Show Slideshow tab', 'Cycle through the Overview dashboard panels on a timer — designed for unattended display on a TV or large monitor in a shared space. Includes a fullscreen toggle.', UserPrefs.showSlideshow);
   html += '</div></div>';
@@ -396,7 +397,7 @@ function updatePref(key, value) {
     else if (!/^#[0-9a-fA-F]{6}$/.test(String(value))) return;
   }
   if (key === 'sidebarCollapsed' || key === 'completedCollapsed' || key === 'timelineShowAll' || key === 'compactRows' ||
-      key === 'showCapacity' || key === 'showSlideshow' || key === 'confetti' || key === 'showAchievements' ||
+      key === 'showCapacity' || key === 'showAnalytics' || key === 'showSlideshow' || key === 'confetti' || key === 'showAchievements' ||
       key === 'colorBlindMode') {
     value = value === true || value === 'true';
   }
@@ -411,7 +412,7 @@ function updatePref(key, value) {
     var sidebar = document.querySelector('.sidebar');
     if (sidebar) sidebar.classList.toggle('collapsed', value);
   }
-  if (key === 'showCapacity' || key === 'showSlideshow') {
+  if (key === 'showCapacity' || key === 'showAnalytics' || key === 'showSlideshow') {
     if (typeof applyOptionalTabVisibility === 'function') applyOptionalTabVisibility();
   }
   // Re-render the preferences panel to update toggle visuals

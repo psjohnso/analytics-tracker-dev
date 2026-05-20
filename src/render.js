@@ -494,6 +494,7 @@ const TAB_GROUPS = {
   mywork:    { label: '👤 My Work', subs: ['mywork'] },                                    // single-destination, auth-only
   portfolio: { label: 'Portfolio',  subs: ['projects', 'tasks', 'projectReview'] },
   capacity:  { label: 'Capacity',   subs: ['resources', 'forecast', 'insights'] },
+  analytics: { label: '📈 Analytics', subs: ['teamload', 'effortshape'] },                    // retrospective analytics over allocation data
   slideshow: { label: '📺 Slideshow', subs: ['slideshow'] },                                // single-destination, opt-in
   issues:    { label: '🐛 Issues',  subs: ['issues'] },                                    // single-destination
   achievements: { label: '🏆 Achievements', subs: ['achievements'] },                       // single-destination, auth-only
@@ -504,7 +505,7 @@ Object.keys(TAB_GROUPS).forEach(function(g) { TAB_GROUPS[g].subs.forEach(functio
 
 // Per-group memory of last-visited sub-tab so returning to a primary lands on the same place.
 // Only multi-sub groups need entries; single-destination groups route directly via switchTab.
-var _groupLastSub = { portfolio: 'projects', capacity: 'resources' };
+var _groupLastSub = { portfolio: 'projects', capacity: 'resources', analytics: 'teamload' };
 
 function tabIdToElementId(tab) {
   // Sub-tab buttons use lowercase ids (tab-projectreview, not tab-projectReview).
@@ -525,13 +526,54 @@ function applyPrimaryTabVisibility() {
     var subBar = document.querySelector('.sub-bar-group[data-group="' + g + '"]');
     if (subBar && !anyVisible) subBar.style.display = 'none';
   });
+  // Hide the "More" overflow trigger when none of its dropdown items are visible.
+  // Items live inside .more-menu which uses visibility (not display:none), so
+  // getComputedStyle on each item reports its own display state regardless of
+  // dropdown open/closed.
+  var moreTrigger = document.getElementById('tab-more');
+  if (moreTrigger) {
+    var moreGroups = ['issues', 'achievements', 'settings'];
+    var anyMoreVisible = moreGroups.some(function(g) {
+      return TAB_GROUPS[g] && TAB_GROUPS[g].subs.some(function(tab) {
+        var el = document.getElementById(tabIdToElementId(tab));
+        if (!el || el.style.display === 'none') return false;
+        return window.getComputedStyle(el).display !== 'none';
+      });
+    });
+    moreTrigger.style.display = anyMoreVisible ? '' : 'none';
+  }
   // Sub-bar wrapper visibility: hide entirely on single-destination groups (Issues, Settings).
   var wrapper = document.getElementById('sub-bar');
   if (wrapper) {
     var curGroup = TAB_TO_GROUP[currentTab];
-    var hasSubBar = curGroup && TAB_GROUPS[curGroup] && TAB_GROUPS[curGroup].subs.length > 1;
+    var hasSubBar = curGroup && TAB_GROUPS[curGroup] && (TAB_GROUPS[curGroup].subs.length > 1 || TAB_GROUPS[curGroup].alwaysShowSubBar);
     wrapper.style.display = hasSubBar ? '' : 'none';
   }
+}
+
+// "More" overflow menu — open/close and click-outside handling.
+function toggleMoreMenu(ev) {
+  if (ev) ev.stopPropagation();
+  var menu = document.getElementById('more-menu');
+  var trigger = document.getElementById('tab-more');
+  if (!menu || !trigger) return;
+  var willOpen = !menu.classList.contains('open');
+  menu.classList.toggle('open', willOpen);
+  trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  if (willOpen) {
+    setTimeout(function() { document.addEventListener('click', _closeMoreMenuOnOutside); }, 0);
+  }
+}
+function closeMoreMenu() {
+  var menu = document.getElementById('more-menu');
+  var trigger = document.getElementById('tab-more');
+  if (menu) menu.classList.remove('open');
+  if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  document.removeEventListener('click', _closeMoreMenuOnOutside);
+}
+function _closeMoreMenuOnOutside(ev) {
+  var wrapper = document.getElementById('more-menu-wrapper');
+  if (wrapper && !wrapper.contains(ev.target)) closeMoreMenu();
 }
 
 // Toggle tabs that are gated behind a beta feature flag.
@@ -543,6 +585,7 @@ function applyBetaTabVisibility() {
 
 // Click handler for primary tabs: route to the last-visited (or first visible) sub-tab in the group.
 function switchPrimaryGroup(groupId) {
+  closeMoreMenu();
   var group = TAB_GROUPS[groupId];
   if (!group) return;
   if (group.subs.length === 1) {
@@ -563,7 +606,7 @@ function switchTab(tab, preserveFilters) {
   // Guard: auth-only tabs require sign-in
   // Slideshow is intentionally NOT in this list — it's designed to run on
   // unattended lobby displays without an authenticated session.
-  var authOnlyTabs = ['mywork', 'resources', 'forecast', 'insights', 'issues', 'achievements', 'settings', 'projectReview'];
+  var authOnlyTabs = ['mywork', 'resources', 'forecast', 'insights', 'issues', 'achievements', 'settings', 'projectReview', 'teamload', 'effortshape'];
   if (!Auth.loggedIn && authOnlyTabs.indexOf(tab) >= 0) {
     showToast('Sign in to access ' + tab + '.', 'warn');
     return;
@@ -593,18 +636,26 @@ function switchTab(tab, preserveFilters) {
   document.querySelectorAll('.primary-tab').forEach(function(b) {
     b.classList.toggle('active', b.dataset.group === groupId);
   });
+  // Overflow "More" menu: highlight the trigger when the active group lives inside it,
+  // and mark the matching menu item as active too.
+  var moreGroups = ['issues', 'achievements', 'settings'];
+  var moreTriggerEl = document.getElementById('tab-more');
+  if (moreTriggerEl) moreTriggerEl.classList.toggle('active', moreGroups.indexOf(groupId) >= 0);
+  document.querySelectorAll('.more-menu-item').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.group === groupId);
+  });
   document.querySelectorAll('.sub-bar-group').forEach(function(g) {
     g.style.display = (g.dataset.group === groupId) ? '' : 'none';
   });
   if (groupId && TAB_GROUPS[groupId].subs.length > 1) _groupLastSub[groupId] = tab;
   applyPrimaryTabVisibility();
-  document.getElementById('view-toggle').style.display = (tab === 'overview' || tab === 'mywork' || tab === 'resources' || tab === 'settings' || tab === 'forecast' || tab === 'insights' || tab === 'issues' || tab === 'projectReview') ? 'none' : 'flex';
+  document.getElementById('view-toggle').style.display = (tab === 'overview' || tab === 'mywork' || tab === 'resources' || tab === 'settings' || tab === 'forecast' || tab === 'insights' || tab === 'issues' || tab === 'projectReview' || tab === 'teamload' || tab === 'effortshape') ? 'none' : 'flex';
   // Sync toggle button highlight with current view preference
   document.getElementById('view-grid').classList.toggle('active', currentView === 'grid');
   document.getElementById('view-list').classList.toggle('active', currentView === 'list');
   document.getElementById('sort-select').style.display = (tab === 'projects' || tab === 'tasks') ? '' : 'none';
   // Hide entire toolbar on tabs that don't need it
-  document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'achievements' || tab === 'projectReview') ? 'none' : '';
+  document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'achievements' || tab === 'projectReview' || tab === 'teamload' || tab === 'effortshape') ? 'none' : '';
   const addBtn = document.getElementById('btn-add-new');
   if (tab === 'tasks') { addBtn.style.display='flex'; addBtn.textContent='＋ New Task'; }
   else if (tab === 'projects' && typeof isAdmin === 'function' && isAdmin()) {
@@ -623,7 +674,7 @@ function switchTab(tab, preserveFilters) {
     const badge = document.getElementById('idea-count-badge');
     if (badge) badge.textContent = ideaCount > 0 ? ideaCount : '';
   }
-  if (tab === 'forecast' || tab === 'settings' || tab === 'mywork' || tab === 'insights' || tab === 'issues' || tab === 'projectReview') {
+  if (tab === 'forecast' || tab === 'settings' || tab === 'mywork' || tab === 'insights' || tab === 'issues' || tab === 'projectReview' || tab === 'teamload' || tab === 'effortshape') {
     document.getElementById('view-toggle').style.display = 'none';
     document.getElementById('btn-add-new').style.display = 'none';
   }

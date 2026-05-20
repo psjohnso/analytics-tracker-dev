@@ -51,8 +51,12 @@ async function loadIssues() {
 
 function updateIssuesTabCount() {
   var openCount = ISSUES.filter(function(iss) { return iss.status !== 'Done'; }).length;
+  var text = openCount > 0 ? String(openCount) : '';
   var badge = document.getElementById('issues-tab-count');
-  if (badge) badge.textContent = openCount > 0 ? openCount : '';
+  if (badge) badge.textContent = text;
+  // Mirror onto the "More" trigger so the count stays visible without opening the dropdown.
+  var moreBadge = document.getElementById('more-tab-count');
+  if (moreBadge) moreBadge.textContent = text;
 }
 
 function setIssuesFilter(type) {

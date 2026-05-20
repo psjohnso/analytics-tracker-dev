@@ -295,8 +295,8 @@ function toggleAuth() {
     if (myWorkTab) myWorkTab.style.display = 'none';
     const achievementsTab = document.getElementById('tab-achievements');
     if (achievementsTab) achievementsTab.style.display = 'none';
-    ['tab-resources', 'tab-forecast', 'tab-insights', 'tab-projectreview', 'tab-slideshow'].forEach(function(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; });
-    if (currentTab === 'settings' || currentTab === 'mywork' || currentTab === 'achievements' || currentTab === 'resources' || currentTab === 'forecast' || currentTab === 'insights' || currentTab === 'projectReview' || currentTab === 'slideshow') switchTab('overview');
+    ['tab-resources', 'tab-forecast', 'tab-insights', 'tab-projectreview', 'tab-slideshow', 'tab-teamload', 'tab-effortshape'].forEach(function(id) { var el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    if (currentTab === 'settings' || currentTab === 'mywork' || currentTab === 'achievements' || currentTab === 'resources' || currentTab === 'forecast' || currentTab === 'insights' || currentTab === 'projectReview' || currentTab === 'slideshow' || currentTab === 'teamload' || currentTab === 'effortshape') switchTab('overview');
     if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();
     applyAuthState();
   } else {
