@@ -480,6 +480,7 @@ function renderSettingsPage(area) {
       navItem('lists', 'Dropdown lists') +
       navItem('categories', 'Categories and tools') +
       navItem('reviewtypes', 'Review types') +
+      navItem('risk', 'Project Risk') +
     '</div>' +
     '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">System</div>' +
@@ -677,6 +678,12 @@ function renderSettingsPage(area) {
       '<div class="pr-modal-backdrop" id="pr-rt-modal-backdrop" onclick="if(event.target===this)prRtCloseForm()"><div class="pr-modal" id="pr-rt-modal"></div></div>';
   }
 
+  else if (_settingsSection === 'risk') {
+    panelHtml = '<div class="settings-panel-title">Project Risk</div>' +
+      '<div class="settings-panel-desc">Tune the in-flight risk score: factor weights, severity thresholds, band cutoffs, and the calibration set of reference projects (one per way a project goes sideways). Adjust weights until each calibration project lands in its expected band — the preview updates live. Surfaces on Insights → At-Risk Projects.</div>' +
+      '<div id="risk-config-panel"></div>';
+  }
+
   else if (_settingsSection === 'ai') {
     var aiPhaseChecked = _aiPhaseAssignment ? ' checked' : '';
     panelHtml = '<div class="settings-panel-title">AI features</div>' +
@@ -738,6 +745,9 @@ function renderSettingsPage(area) {
   }
   if (_settingsSection === 'reviewtypes') {
     renderReviewTypesTable();
+  }
+  if (_settingsSection === 'risk' && typeof renderRiskConfigPanel === 'function') {
+    renderRiskConfigPanel();
   }
   if (_settingsSection === 'team' && Editor.selectedMember && people[Editor.selectedMember]) {
     renderAbsenceEditor(Editor.selectedMember);

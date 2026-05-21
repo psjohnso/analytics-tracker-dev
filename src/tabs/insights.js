@@ -464,6 +464,8 @@ function buildInsightsPage() {
   html += '<div style="font-size:13px;color:var(--text-muted);">Retrospective data from completed projects. As you log more time, this becomes your reference library for future estimation.</div></div>';
   html += kpis;
   html += calibSection;
+  html += (typeof buildRiskSection === 'function' ? buildRiskSection() : '');
+  html += buildPlannedActualSection();
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px;">';
   html += '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:16px;padding:16px 20px;"><div style="display:flex;align-items:center;margin-bottom:12px;"><div style="font-size:15px;font-weight:800;color:var(--navy);">Effort by project size <span style="font-size:11px;font-weight:600;color:var(--text-muted);margin-left:6px;">B · Size calibration in Table view</span></div>' + insToggleBtns('size') + '</div><div id="ins-size-chart" style="padding:8px 0;">' + sizeSvg + '</div><div id="ins-size-table" style="display:none;">' + bySizeTable + '</div></div>';
   html += '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:16px;padding:16px 20px;"><div style="display:flex;align-items:center;margin-bottom:12px;"><div style="font-size:15px;font-weight:800;color:var(--navy);">Effort by category</div>' + insToggleBtns('cat') + '</div><div id="ins-cat-chart" style="padding:8px 0;">' + catSvg + '</div><div id="ins-cat-table" style="display:none;">' + byCatTable + '</div></div>';
@@ -473,4 +475,228 @@ function buildInsightsPage() {
   html += '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:16px;padding:16px 20px;"><div style="display:flex;align-items:center;margin-bottom:12px;"><div style="font-size:15px;font-weight:800;color:var(--navy);">Hours by team member</div>' + insToggleBtns('team') + '</div><div id="ins-team-chart" style="padding:8px 0;">' + (donutSvg || '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:12px;">No time entries recorded yet</div>') + '</div><div id="ins-team-table" style="display:none;">' + (teamTable || '') + '</div></div>';
   html += '</div></div>';
   return html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  PLANNED vs ACTUAL — by Employee × Category (admin-only)
+//  ─────────────────────────────────────────────────────────────────────
+//  Planned = the weekly allocation FRACTION captured by the snapshot
+//  pipeline while that week was current (the estimate). Actual = the same
+//  week's fraction in the live table now (updated to reflect reality).
+//  Both are converted to hours with the person's per-week project capacity,
+//  which cancels in the variance ratio. Only past (reflected) weeks count.
+// ═══════════════════════════════════════════════════════════════════════
+var _paState = { loading: false, loaded: false, error: null, rows: null };
+
+// Discover the allocations_snapshots table URL by name (the layer index isn't
+// hardcoded — we only know the service root).
+async function _paDiscoverAllocTableUrl() {
+  var base = (typeof ARCGIS_CONFIG !== 'undefined') ? ARCGIS_CONFIG.snapshotsServiceUrl : null;
+  if (!base) return null;
+  var token = (typeof ensureAgolToken === 'function') ? await ensureAgolToken() : (typeof Auth !== 'undefined' ? Auth.token : null);
+  var url = base + '?f=json' + (token ? '&token=' + encodeURIComponent(token) : '');
+  var resp = await fetch(url);
+  if (!resp.ok) throw new Error('snapshot service metadata ' + resp.status);
+  var meta = await resp.json();
+  if (meta.error) throw new Error(meta.error.message || 'snapshot service error');
+  var all = (meta.layers || []).concat(meta.tables || []);
+  var t = all.find(function(x) { return x.name === 'allocations_snapshots'; });
+  return t ? (base + '/' + t.id) : null;
+}
+
+// Query the snapshot table WITHOUT resultOffset/resultRecordCount. The table
+// is created programmatically (add_to_definition) and doesn't advertise
+// pagination, so the shared agolQuery — which always sends those params —
+// fails with "Invalid query parameters." returnGeometry:false because it's a
+// table. Single request relying on the service maxRecordCount (4000); warns if
+// the snapshot history ever outgrows that so we can add OID-based paging later.
+async function _paQuerySnapshots(tableUrl) {
+  var token = (typeof ensureAgolToken === 'function') ? await ensureAgolToken() : (typeof Auth !== 'undefined' ? Auth.token : null);
+  if (!token) return [];
+  var params = new URLSearchParams({ where: '1=1', outFields: '*', returnGeometry: 'false', f: 'json', token: token });
+  var resp = await fetch(tableUrl + '/query?' + params.toString());
+  if (!resp.ok) throw new Error('ArcGIS query failed: ' + resp.status + ' ' + resp.statusText);
+  var data = await resp.json();
+  if (data.error) throw new Error('ArcGIS query error: ' + (data.error.message || JSON.stringify(data.error)));
+  if (data.exceededTransferLimit) console.warn('[PlannedActual] snapshot query hit the transfer limit — history has outgrown a single request; add pagination.');
+  return data.features || [];
+}
+
+async function loadPlannedActualSnapshots() {
+  if (_paState.loading || _paState.loaded) return;
+  _paState.loading = true;
+  try {
+    var tableUrl = await _paDiscoverAllocTableUrl();
+    if (!tableUrl) {
+      _paState.error = 'allocations_snapshots table not found in the snapshot service.';
+    } else {
+      console.log('[PlannedActual] querying snapshot table:', tableUrl);
+      _paState.rows = await _paQuerySnapshots(tableUrl);
+    }
+  } catch (e) {
+    _paState.error = (e && e.message) ? e.message : String(e);
+  }
+  _paState.loaded = true;
+  _paState.loading = false;
+  // Re-render the page now that data (or an error) is available.
+  if (typeof currentTab !== 'undefined' && currentTab === 'insights') {
+    var area = document.getElementById('content-area');
+    if (area) area.innerHTML = buildInsightsPage();
+  }
+}
+
+// Build the category → employee → project aggregation from the loaded
+// snapshot rows (planned) compared against live allocations (actual).
+function _paComputeAggregation() {
+  if (_paState.error) return { error: _paState.error };
+  var rows = _paState.rows || [];
+  if (typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.weeks) {
+    return { categories: [], hasData: false, weeksCovered: 0 };
+  }
+  var weeks = RESOURCES_DATA.weeks;
+  var weekIdxMap = {};
+  weeks.forEach(function(w, i) { weekIdxMap[w] = i; });
+  var curIdx = (typeof window !== 'undefined' && typeof window.currentWeekIdx === 'number') ? window.currentWeekIdx : (weeks.length - 1);
+  var DAY = 86400000;
+
+  // planned fraction per "name|projNum|weekDateStr", taken from the snapshot
+  // captured contemporaneously with that week (snapshot_week within its 7-day span).
+  var planned = {};
+  rows.forEach(function(f) {
+    var a = f.attributes || {};
+    var snapStr = (typeof epochToDateStr === 'function') ? epochToDateStr(a.snapshot_week) : a.snapshot_week;
+    var wkStr = (typeof epochToDateStr === 'function') ? epochToDateStr(a.week_date) : a.week_date;
+    if (!snapStr || !wkStr) return;
+    var diff = new Date(snapStr + 'T00:00:00') - new Date(wkStr + 'T00:00:00');
+    if (diff < 0 || diff >= 7 * DAY) return; // keep only the contemporaneous (estimate-state) snapshot
+    var projNum = (a.project_number != null) ? a.project_number : a.analytics_id;
+    if (projNum == null) return;
+    planned[a.name + '|' + projNum + '|' + wkStr] = (a.fraction || 0);
+  });
+
+  var byCat = {};
+  var weeksSet = {};
+  Object.keys(planned).forEach(function(key) {
+    var parts = key.split('|');
+    var name = parts[0], projNum = parts[1], wkStr = parts[2];
+    var wi = weekIdxMap[wkStr];
+    if (wi === undefined || wi >= curIdx) return; // past (reflected) weeks only
+    var person = RESOURCES_DATA.people[name];
+    if (!person) return;
+    var projCap = (person.proj_cap && person.proj_cap[wi]) || 0;
+    var liveAlloc = (person.allocations || []).find(function(al) { return String(al.analytics_id) === String(projNum); });
+    var plannedHrs = (planned[key] || 0) * projCap;
+    var actualHrs = (liveAlloc ? (liveAlloc.fracs[wi] || 0) : 0) * projCap;
+    if (plannedHrs === 0 && actualHrs === 0) return;
+    weeksSet[wkStr] = true;
+    var proj = (typeof PROJECTS !== 'undefined') ? PROJECTS.find(function(p) { return String(p.project_number) === String(projNum); }) : null;
+    var cat = (proj && proj.category) || 'Uncategorized';
+    var projTitle = (proj && proj.title) || (liveAlloc && liveAlloc.project) || ('Project #' + projNum);
+    var unit = person.role || '';
+    if (!byCat[cat]) byCat[cat] = { planned: 0, actual: 0, emps: {} };
+    var c = byCat[cat]; c.planned += plannedHrs; c.actual += actualHrs;
+    if (!c.emps[name]) c.emps[name] = { unit: unit, planned: 0, actual: 0, projects: {} };
+    var e = c.emps[name]; e.planned += plannedHrs; e.actual += actualHrs;
+    if (!e.projects[projTitle]) e.projects[projTitle] = { planned: 0, actual: 0 };
+    e.projects[projTitle].planned += plannedHrs;
+    e.projects[projTitle].actual += actualHrs;
+  });
+
+  var categories = Object.keys(byCat).map(function(cat) {
+    var c = byCat[cat];
+    var emps = Object.keys(c.emps).map(function(nm) {
+      var e = c.emps[nm];
+      var projects = Object.keys(e.projects).map(function(t) {
+        return { title: t, planned: e.projects[t].planned, actual: e.projects[t].actual };
+      }).sort(function(a, b) { return b.actual - a.actual; });
+      return { name: nm, unit: e.unit, planned: e.planned, actual: e.actual, projects: projects };
+    }).sort(function(a, b) { return b.actual - a.actual; });
+    return { category: cat, planned: c.planned, actual: c.actual, employees: emps };
+  }).sort(function(a, b) { return b.actual - a.actual; });
+
+  return { categories: categories, hasData: categories.length > 0, weeksCovered: Object.keys(weeksSet).length };
+}
+
+function _paHrs(h) { return Math.round(h) + 'h'; }
+function _paNote(msg) {
+  return '<div style="background:#fff;border:1px dashed #E8E6DF;border-radius:10px;padding:24px;text-align:center;color:var(--text-muted);font-size:13px;line-height:1.5;">' + msg + '</div>';
+}
+function _paVarChip(planned, actual) {
+  if (!planned || planned <= 0) {
+    if (actual > 0) return '<span style="display:inline-block;background:#F3F4F6;color:#6B7280;padding:2px 8px;border-radius:10px;font-weight:700;font-size:11px;">unplanned</span>';
+    return '<span style="color:var(--text-muted);">—</span>';
+  }
+  var r = actual / planned;
+  var c = _calibMultColor(r); // reuse Duration Calibration's color scale
+  var v = Math.round((actual - planned) / planned * 100);
+  return '<span style="display:inline-block;background:' + c.bg + ';color:' + c.fg + ';padding:2px 8px;border-radius:10px;font-weight:800;font-variant-numeric:tabular-nums;font-size:12px;min-width:46px;text-align:center;">' + (v > 0 ? '+' : '') + v + '%</span>';
+}
+
+// Pure-DOM collapse toggle (no page re-render, so it survives independently).
+function paToggleEmp(id) {
+  var rows = document.querySelectorAll('[data-pa-parent="' + id + '"]');
+  var caret = document.getElementById('pa-caret-' + id);
+  var anyHidden = false;
+  rows.forEach(function(r) { if (r.style.display === 'none') anyHidden = true; });
+  rows.forEach(function(r) { r.style.display = anyHidden ? '' : 'none'; });
+  if (caret) caret.textContent = anyHidden ? '▾' : '▸';
+}
+
+function buildPlannedActualSection() {
+  // Admin-only: render nothing for non-admins.
+  if (typeof isAdmin !== 'function' || !isAdmin()) return '';
+
+  var html = '<div style="margin-bottom:28px;">';
+  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;">';
+  html += '<div style="font-size:18px;font-weight:800;color:var(--navy);">Planned vs Actual — by Employee × Category</div>';
+  html += '<span style="font-size:10px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:8px;">🔒 Admin only</span>';
+  html += '</div>';
+  html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Planned = the weekly allocation estimate captured by the snapshot pipeline when each week was current. Actual = that week\'s value after it was updated to reflect what happened. Variance = actual ÷ planned. <strong>Visible to admins only.</strong></div>';
+
+  if (!_paState.loaded) {
+    if (!_paState.loading) setTimeout(loadPlannedActualSnapshots, 0);
+    html += _paNote('Loading snapshot history…');
+    return html + '</div>';
+  }
+  if (_paState.error) {
+    html += _paNote('Couldn\'t load snapshot data: ' + esc(_paState.error));
+    return html + '</div>';
+  }
+
+  var agg = _paComputeAggregation();
+  if (!agg.hasData) {
+    html += _paNote('<strong>Building history.</strong><br>Planned vs actual needs at least one past week that was snapshotted while current and has since been updated to reflect actuals. The weekly snapshot pipeline started recently, so this table will populate automatically as snapshots accrue and past weeks are reflected.');
+    return html + '</div>';
+  }
+
+  html += '<div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Across ' + agg.weeksCovered + ' reflected week' + (agg.weeksCovered === 1 ? '' : 's') + ' (current and future weeks are excluded — not yet reflected). Click an employee to expand their projects in that category.</div>';
+  html += '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:#fff;"><table class="member-table" style="margin:0;"><thead><tr>';
+  html += '<th>Category / Employee</th><th style="text-align:right;">Planned</th><th style="text-align:right;">Actual</th><th style="text-align:center;">Variance</th></tr></thead><tbody>';
+
+  var rowSeq = 0;
+  agg.categories.forEach(function(cat) {
+    html += '<tr style="background:#F8FAFC;"><td style="font-weight:800;color:var(--navy);">' + esc(cat.category) + '</td>'
+      + '<td style="text-align:right;font-weight:700;">' + _paHrs(cat.planned) + '</td>'
+      + '<td style="text-align:right;font-weight:700;">' + _paHrs(cat.actual) + '</td>'
+      + '<td style="text-align:center;">' + _paVarChip(cat.planned, cat.actual) + '</td></tr>';
+    cat.employees.forEach(function(emp) {
+      var id = 'pa' + (rowSeq++);
+      var unitTag = emp.unit ? ' <span style="font-size:10px;color:var(--text-muted);">' + esc(emp.unit) + '</span>' : '';
+      html += '<tr style="cursor:pointer;" onclick="paToggleEmp(\'' + id + '\')">'
+        + '<td style="padding-left:24px;"><span id="pa-caret-' + id + '" style="display:inline-block;width:12px;color:var(--text-muted);">▸</span> ' + esc(emp.name) + unitTag + '</td>'
+        + '<td style="text-align:right;">' + _paHrs(emp.planned) + '</td>'
+        + '<td style="text-align:right;">' + _paHrs(emp.actual) + '</td>'
+        + '<td style="text-align:center;">' + _paVarChip(emp.planned, emp.actual) + '</td></tr>';
+      emp.projects.forEach(function(pr) {
+        html += '<tr data-pa-parent="' + id + '" style="display:none;background:#FCFCFB;">'
+          + '<td style="padding-left:48px;font-size:12px;color:var(--text-body);">' + esc(pr.title) + '</td>'
+          + '<td style="text-align:right;font-size:12px;">' + _paHrs(pr.planned) + '</td>'
+          + '<td style="text-align:right;font-size:12px;">' + _paHrs(pr.actual) + '</td>'
+          + '<td style="text-align:center;">' + _paVarChip(pr.planned, pr.actual) + '</td></tr>';
+      });
+    });
+  });
+  html += '</tbody></table></div>';
+  html += '<div style="font-size:11px;color:var(--text-muted);font-style:italic;margin-top:8px;">Variance color matches Duration Calibration: blue = under plan, green = on plan (±15%), yellow/orange/red = increasing overrun.</div>';
+  return html + '</div>';
 }

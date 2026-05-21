@@ -8,8 +8,8 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.41.0.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.42.0.0001"></script>
-<script src="src/agol.js?v=1.34.0.0004"></script>
+<script src="src/constants.js?v=1.44.0.0001"></script>
+<script src="src/agol.js?v=1.43.0.0001"></script>
 <script src="src/auth.js?v=1.42.0.0001"></script>
 <script src="src/render.js?v=1.42.0.0001"></script>
 <script src="src/tabs/issues.js?v=1.42.0.0001"></script>
@@ -18,12 +18,13 @@
 <script src="src/confetti.js?v=1.17.2.0033"></script>
 <script src="src/achievements.js?v=1.27.0.0005"></script>
 <script src="src/saved-views.js?v=1.26.1.0001"></script>
-<script src="src/tabs/insights.js?v=1.10.0.0002"></script>
+<script src="src/tabs/insights.js?v=1.44.0.0001"></script>
+<script src="src/risk.js?v=1.44.0.0001"></script>
 <script src="src/tabs/team-load.js?v=1.37.1.0001"></script>
 <script src="src/tabs/effort-shape.js?v=1.37.1.0001"></script>
 <script src="src/tabs/forecast.js?v=1.30.0.0002"></script>
 <script src="src/tabs/overview.js?v=1.17.6.0040"></script>
-<script src="src/tabs/settings.js?v=1.42.0.0001"></script>
+<script src="src/tabs/settings.js?v=1.44.0.0001"></script>
 <script src="src/tabs/resources.js?v=1.40.0.0004"></script>
 <script src="src/tabs/my-work.js?v=1.28.2.0005"></script>
 <script src="src/tabs/projects-tasks.js?v=1.27.0.0005"></script>
@@ -2669,7 +2670,7 @@ const _defaultItdTeams = [
 ];
 
 // ObjectIds for the two config records (populated on load from ArcGIS)
-const _configOids = { partner_depts: null, itd_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null, display_config: null, data_program: null, team_intro: null };
+const _configOids = { partner_depts: null, itd_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null, display_config: null, data_program: null, team_intro: null, risk_config: null };
 
 // Slideshow / lobby-display configuration. Team-wide; admin-edited via
 // Settings → System → Slideshow. Loaded by applyAppConfig() from
@@ -2878,6 +2879,14 @@ function applyAppConfig(features) {
           _teamIntroConfig = parsed;
           _configOids.team_intro = oid;
           console.log('[Config] Loaded team_intro');
+        }
+        return;
+      }
+      if (key === 'risk_config') {
+        if (parsed && typeof parsed === 'object' && typeof applyRiskConfig === 'function') {
+          applyRiskConfig(parsed);
+          _configOids.risk_config = oid;
+          console.log('[Config] Loaded risk_config');
         }
         return;
       }
@@ -3363,10 +3372,22 @@ function getWeekEntries() {
   });
 }
 
+var _timerStartInFlight = {}; // task key -> true; blocks duplicate/rapid starts on the same task
+
 async function startTimer(taskIdx) {
   if (!Auth.fullName) return;
   const task = TASKS.find(function(t) { return t.idx === taskIdx; });
   if (!task) { showToast('Task not found.', 'warn'); return; }
+  // One active timer per task: refuse if a timer is already running for this
+  // task, or one is mid-start (covers rapid double-clicks, the resume button,
+  // and the start dropdown). task_idx may load from AGOL as a number, so
+  // compare as strings.
+  var taskKey = String(taskIdx);
+  if (_timerStartInFlight[taskKey] || getActiveTimers().some(function(e) { return String(e.task_idx) === taskKey; })) {
+    showToast('A timer is already running for this task.', 'warn');
+    return;
+  }
+  _timerStartInFlight[taskKey] = true;
   const now = new Date();
   const workDateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
   try {
@@ -3383,11 +3404,26 @@ async function startTimer(taskIdx) {
       }}]
     });
     console.log('[TimeTracking] Started timer for task', taskIdx, result);
+    var newOid = (result && result.addResults && result.addResults[0]) ? result.addResults[0].objectId : null;
     await reloadAllTimeData();
+    // Read-after-write guard: the feature service sometimes hasn't made the
+    // new row queryable by the time reloadAllTimeData re-queries, which would
+    // make the just-started timer invisible until a later refresh. Re-insert
+    // our known copy so the UI reflects the action immediately.
+    if (newOid != null && !TIME_ENTRIES.some(function(e) { return e.oid === newOid; })) {
+      TIME_ENTRIES.push({
+        oid: newOid, name: Auth.fullName, task_idx: taskIdx,
+        project_id: task.project_id || null, start_time: now.getTime(),
+        end_time: null, hours: null, work_date: workDateStr, notes: '',
+      });
+      if (typeof renderTimerChip === 'function') renderTimerChip();
+    }
     renderMyWork(document.getElementById('content-area'));
   } catch (err) {
     console.error('[TimeTracking] Start timer failed:', err);
     showToast('Failed to start timer: ' + err.message, 'error');
+  } finally {
+    delete _timerStartInFlight[taskKey];
   }
 }
 
@@ -3410,6 +3446,15 @@ async function stopTimer(oid) {
     });
     console.log('[TimeTracking] Stopped timer', oid, hours, 'hours');
     await reloadAllTimeData();
+    // Read-after-write guard: if the re-query still shows this entry as
+    // running (end_time null), apply the stop we just persisted so the timer
+    // doesn't keep ticking in the UI until a later refresh.
+    var reloaded = TIME_ENTRIES.find(function(e) { return e.oid === oid; });
+    if (reloaded && !reloaded.end_time) {
+      reloaded.end_time = now.getTime();
+      reloaded.hours = hours;
+      if (typeof renderTimerChip === 'function') renderTimerChip();
+    }
     renderMyWork(document.getElementById('content-area'));
   } catch (err) {
     console.error('[TimeTracking] Stop timer failed:', err);
@@ -3514,6 +3559,14 @@ async function deleteTimeEntry(oid) {
     await agolApplyEdits(ARCGIS_CONFIG.timeEntriesUrl, { deletes: [oid] });
     console.log('[TimeTracking] Deleted entry', oid);
     await reloadAllTimeData();
+    // Read-after-write guard: if the re-query still returns the just-deleted
+    // row (service lag), drop it locally so it disappears immediately instead
+    // of lingering until the next refresh.
+    var dIdx = TIME_ENTRIES.findIndex(function(e) { return e.oid === oid; });
+    if (dIdx >= 0) {
+      TIME_ENTRIES.splice(dIdx, 1);
+      if (typeof renderTimerChip === 'function') renderTimerChip();
+    }
     renderMyWork(document.getElementById('content-area'));
   } catch (err) {
     console.error('[TimeTracking] Delete failed:', err);
@@ -3546,6 +3599,17 @@ async function saveTimeEntryEdit(oid) {
     await agolApplyEdits(ARCGIS_CONFIG.timeEntriesUrl, { updates: [{ attributes: attrs }] });
     console.log('[TimeTracking] Updated entry', oid);
     await reloadAllTimeData();
+    // Read-after-write guard: re-apply the values we just persisted in case
+    // the re-query came back stale, so the edit shows immediately.
+    var reEntry = TIME_ENTRIES.find(function(e) { return e.oid === oid; });
+    if (reEntry) {
+      reEntry.start_time = startMs;
+      reEntry.end_time = endMs;
+      reEntry.hours = hours;
+      reEntry.work_date = workDateStr;
+      if ('notes' in attrs) reEntry.notes = attrs.notes;
+      if (typeof renderTimerChip === 'function') renderTimerChip();
+    }
     renderMyWork(document.getElementById('content-area'));
   } catch (err) {
     console.error('[TimeTracking] Edit failed:', err);
@@ -3778,8 +3842,12 @@ function buildTimeTrackingPanel() {
   // Active timers
   html += buildActiveTimersHTML(activeTimers);
 
-  // Start new timer — task selector
+  // Start new timer — task selector. Exclude tasks that already have a
+  // running timer (one active timer per task).
+  const runningTaskIds = {};
+  activeTimers.forEach(function(e) { runningTaskIds[String(e.task_idx)] = true; });
   const availableTasks = myTasks.filter(function(t) {
+    if (runningTaskIds[String(t.idx)]) return false;
     return t.status === 'Active' || t.status === 'Waiting for Response' || t.status === 'On Hold';
   });
   html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">';

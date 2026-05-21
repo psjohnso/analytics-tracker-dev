@@ -31,6 +31,11 @@ const ARCGIS_CONFIG = {
   appConfigUrl:      'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin_v2/FeatureServer/0',
   issuesUrl:         'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_tracker_admin_v2/FeatureServer/1',
 
+  // Weekly snapshots written by notebooks/snapshot_weekly.ipynb. Service root
+  // only — the allocations_snapshots table index is discovered at runtime by
+  // name (see loadPlannedActualSnapshots in tabs/insights.js).
+  snapshotsServiceUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_snapshots/FeatureServer',
+
   // Public, read-only copy of the slideshow-only project + task fields.
   // Maintained by notebooks/refresh_public_slideshow.ipynb (truncate-and-reload
   // every 15 min). Lets the lobby-display TV/anonymous browsing render without

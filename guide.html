@@ -473,8 +473,45 @@ li strong { color: var(--navy); }
 <p>Each person's row includes a 20-week timeline. Existing utilization renders as green / yellow / red bars (under 80% / 80–100% / over). When a candidate start week is found, a navy overlay shows where the new project's hours would slot in. The current week is highlighted with a subtle navy tint.</p>
 
 <!-- ═══════════════════════════════════════════════════ -->
-<h2 id="insights-tab">Insights Tab (Admin Only)</h2>
-<p>The Insights tab provides strategic reporting and data analysis views for team leadership. It is only visible to admins. Content includes project portfolio summaries, strategic alignment coverage, and trend analysis.</p>
+<h2 id="insights-tab">Insights Tab</h2>
+<p>The Insights tab holds retrospective and forward-looking analytics for team leadership. It lives in the <strong>Capacity</strong> group and is available to admins (and to members who enable <em>Show Capacity tabs</em> in Preferences). A few sections inside it are restricted to team leads and admins — noted below.</p>
+
+<h3>Duration Calibration</h3>
+<p>Compares planned vs actual <em>duration</em> (in weeks) for projects completed in the last 12 months, rolled up by category, size, and partner department. It produces a "schedule multiplier" (median actual ÷ median planned) so you can sanity-check future estimates against how similar work has actually run. A toggle switches whether "planned" means the original committed end date or the latest working target.</p>
+
+<h3>Planned vs Actual — by Employee &times; Category <span style="font-weight:400;color:#6B7280;">(leads &amp; admins)</span></h3>
+<p>Compares each person's planned allocation against what actually happened, grouped by project category, with a collapsible per-project breakdown. "Planned" is the weekly allocation estimate captured by the snapshot pipeline when the week was current; "Actual" is that week's value after it was reflected to reality. Shows a "building history" notice until enough weekly snapshots accrue.</p>
+
+<h3>At-Risk Projects — the in-flight risk score <span style="font-weight:400;color:#6B7280;">(leads &amp; admins)</span></h3>
+<p>An early-warning score (0–100) for every <strong>active or scheduled</strong> project, shown as a 🟢 / 🟡 / 🔴 band. It is built only from data the team already tracks — there is no machine learning and no black box. Every score expands to show exactly which factors drove it.</p>
+
+<h4>How the score is built</h4>
+<p>Each factor produces a severity from 0 (healthy) to 1 (full) based on tunable thresholds, and contributes <code>weight &times; severity</code> points. The score is the weighted average <em>over the factors that have data</em> — a factor with no data is dropped and its weight redistributed, so a project is never penalized for missing information.</p>
+
+<table class="guide-table">
+  <thead><tr><th>Factor</th><th>Default weight</th><th>What it measures</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Schedule drift</strong></td><td>25</td><td>Working target slipping past the committed end date, and elapsed time vs the calibrated expected duration for that category.</td><td>Live</td></tr>
+    <tr><td><strong>Overdue &amp; aging tasks</strong></td><td>20</td><td>Share of open tasks past due, plus the age of the oldest open task.</td><td>Live</td></tr>
+    <tr><td><strong>Stalled work</strong></td><td>15</td><td>Open tasks sitting in <em>Waiting for Response</em> or <em>On Hold</em>.</td><td>Live</td></tr>
+    <tr><td><strong>Pace vs plan</strong></td><td>15</td><td>Percent of tasks done vs percent of the schedule elapsed (behind = risk).</td><td>Live</td></tr>
+    <tr><td><strong>Single-thread staffing</strong></td><td>5</td><td>The lead's concurrent project load <em>relative to the team norm</em> — a bus-factor signal. Because every lead carries many projects, only the tail flags.</td><td>Live</td></tr>
+    <tr><td><strong>Scope churn</strong></td><td>10</td><td>Tasks added after the project started.</td><td>Pending — shows n/a until task-creation history is captured.</td></tr>
+    <tr><td><strong>Plan-vs-actual burn</strong></td><td>10</td><td>Allocation actuals running hot vs the original estimate.</td><td>Pending — shows n/a until snapshot history accrues.</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Bands:</strong> 🟢 Healthy (under 25) &middot; 🟡 Watch (25–49) &middot; 🔴 At risk (50+). The cutoffs are admin-tunable.</p>
+
+<h4>Reading it</h4>
+<ul>
+  <li>Projects are listed worst-first, each with its score badge, its <strong>top driver chips</strong> (the factors contributing most), and the lead.</li>
+  <li>Click any row to expand a <strong>per-factor breakdown</strong> — a severity bar and points for each factor, including which ones came back n/a.</li>
+</ul>
+
+<div class="note-box">
+  <strong>A few design notes.</strong> Schedule drift floors the planned duration at two weeks, so projects created without a real end date don't produce false alarms. Completed projects (used only for calibration) are scored retrospectively on schedule drift + single-thread, since the in-flight task factors no longer apply. Tune everything — weights, thresholds, bands, and the calibration set — in <strong>Settings &rarr; Project Risk</strong>.
+</div>
 
 <!-- ═══════════════════════════════════════════════════ -->
 <h2 id="issues-tab">Issues Tab</h2>
@@ -562,6 +599,16 @@ li strong { color: var(--navy); }
 
 <h3>AI Features</h3>
 <p>Configuration for AI-powered features including task suggestions and strategic alignment recommendations.</p>
+
+<h3>Project Risk</h3>
+<p>Tunes the in-flight risk score that appears on <strong>Insights &rarr; At-Risk Projects</strong>. Three things are configurable, all saved to ArcGIS Online and shared across admins:</p>
+<ul>
+  <li><strong>Factor weights</strong> — the relative weight of each risk factor (see the factor table under the Insights tab). A running total is shown; weights don't need to sum to 100.</li>
+  <li><strong>Thresholds &amp; bands</strong> — the point at which each factor reaches full severity (e.g. "drift full at 1.5&times; expected," "aging full at 60 days," "single-thread full at 20 concurrent") and the score cutoffs for the 🟡 Watch and 🔴 At-risk bands.</li>
+  <li><strong>Calibration set</strong> — a list of reference projects, each tagged with the way it went sideways: <em>schedule blowout</em>, <em>single-thread / overstretched lead</em>, <em>partner-blocked / stalled</em>, <em>scope churn</em>, <em>moderate slip (watch)</em>, or <em>healthy (control)</em>. Each entry shows its <strong>current score</strong>, its <strong>expected band</strong>, and a ✓/✗ match indicator. As you change weights and thresholds the preview re-scores instantly — adjust until each calibration project lands where you'd expect.</li>
+</ul>
+<p>Click <strong>Save risk configuration</strong> to persist. Until you save, changes are live in your session only.</p>
+<div class="note-box"><strong>Why calibrate?</strong> The default weights are a starting point. Anchoring them to a handful of projects you already know went sideways — plus one that went fine, as a control — makes the score agree with your judgment instead of guessing. Tune until known-bad projects go red and the healthy control stays green.</div>
 
 <!-- ═══════════════════════════════════════════════════ -->
 <h2 id="strategic-alignment">Strategic Alignment</h2>
