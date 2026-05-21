@@ -8,7 +8,7 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.41.0.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.44.0.0001"></script>
+<script src="src/constants.js?v=1.45.0.0002"></script>
 <script src="src/agol.js?v=1.43.0.0001"></script>
 <script src="src/auth.js?v=1.42.0.0001"></script>
 <script src="src/render.js?v=1.42.0.0001"></script>
@@ -24,7 +24,7 @@
 <script src="src/tabs/effort-shape.js?v=1.37.1.0001"></script>
 <script src="src/tabs/forecast.js?v=1.30.0.0002"></script>
 <script src="src/tabs/overview.js?v=1.17.6.0040"></script>
-<script src="src/tabs/settings.js?v=1.44.0.0001"></script>
+<script src="src/tabs/settings.js?v=1.45.0.0001"></script>
 <script src="src/tabs/resources.js?v=1.40.0.0004"></script>
 <script src="src/tabs/my-work.js?v=1.28.2.0005"></script>
 <script src="src/tabs/projects-tasks.js?v=1.27.0.0005"></script>
@@ -35,7 +35,7 @@
 <script src="src/modals/member-form.js?v=1.32.0.0004"></script>
 <script src="src/modals/alloc-editor.js?v=1.40.2.0001"></script>
 <script src="src/modals/settings-editors.js?v=1.32.0.0012"></script>
-<script src="src/modals/forms.js?v=1.41.0.0001"></script>
+<script src="src/modals/forms.js?v=1.45.0.0002"></script>
 <script src="src/ai/prompts.js?v=1.12.0.0001"></script>
 <script src="src/ai/ai-suggestions.js?v=1.16.0.0016"></script>
 <script src="src/test-harness.js?v=1.9.1.0026"></script>
@@ -1295,10 +1295,11 @@ const FEATURE_DEPENDENCIES = 'beta';
 const FEATURE_TASK_HISTORY = true;
 const FEATURE_AI_INTAKE = 'beta';
 const FEATURE_PROJECT_REVIEW = 'beta';
+const FEATURE_DURATION_ESTIMATE = 'beta';
 
 // Check if a feature is enabled (global flag OR user beta opt-in)
 function isFeatureOn(featureName) {
-  var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY, aiIntake: FEATURE_AI_INTAKE, projectReview: FEATURE_PROJECT_REVIEW };
+  var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY, aiIntake: FEATURE_AI_INTAKE, projectReview: FEATURE_PROJECT_REVIEW, durationEstimate: FEATURE_DURATION_ESTIMATE };
   var flag = flags[featureName];
   if (flag === true) return true;
   if (flag === false) return false;

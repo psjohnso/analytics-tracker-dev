@@ -312,7 +312,7 @@ function buildPreferencesPanel() {
 
   // Beta Features section — only show features with flag === 'beta'
   var betaKeys = Object.keys(BETA_FEATURES).filter(function(key) {
-    var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY, aiIntake: FEATURE_AI_INTAKE, projectReview: FEATURE_PROJECT_REVIEW };
+    var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY, aiIntake: FEATURE_AI_INTAKE, projectReview: FEATURE_PROJECT_REVIEW, durationEstimate: FEATURE_DURATION_ESTIMATE };
     return flags[key] === 'beta';
   });
 

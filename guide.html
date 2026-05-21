@@ -131,6 +131,7 @@ li strong { color: var(--navy); }
   <a href="#achievements-tab">🏆 Achievements Tab</a>
   <a href="#settings-tab">Settings Tab</a>
   <div class="nav-section">Features</div>
+  <a href="#beta-features">Beta Features</a>
   <a href="#strategic-alignment">Strategic Alignment</a>
   <a href="#dependencies">Task Dependencies</a>
   <a href="#deep-linking">Deep Linking</a>
@@ -585,6 +586,9 @@ li strong { color: var(--navy); }
   <li><strong>Compact rows</strong> — Use tighter row spacing in tables for a denser view.</li>
 </ul>
 
+<h4>Beta features</h4>
+<p>Opt into in-development features (off by default, your setting only). Each shows an orange toggle with a description. Currently includes Task Dependencies, AI-Guided Project Intake, Project Review, and the Project duration estimate — see <a href="#beta-features">Beta Features</a> for details.</p>
+
 <h3>Admin Sections</h3>
 <p>The following sections are only visible to admins. Admins can toggle a <strong>"Preview as member"</strong> button in the header to see the app as a standard user would.</p>
 
@@ -609,6 +613,37 @@ li strong { color: var(--navy); }
 </ul>
 <p>Click <strong>Save risk configuration</strong> to persist. Until you save, changes are live in your session only.</p>
 <div class="note-box"><strong>Why calibrate?</strong> The default weights are a starting point. Anchoring them to a handful of projects you already know went sideways — plus one that went fine, as a control — makes the score agree with your judgment instead of guessing. Tune until known-bad projects go red and the healthy control stays green.</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<h2 id="beta-features">Beta Features</h2>
+<p>Beta features are opt-in additions still being evaluated. They're <strong>off by default</strong> — turn them on per-person under <strong>Settings &rarr; Preferences &rarr; Beta features</strong>, and turn them off again any time. The setting is yours alone; enabling a beta changes nothing for teammates. Some graduate to always-on; a few have their own detailed sections.</p>
+
+<p>Currently available:</p>
+<ul>
+  <li><strong>Task Dependencies</strong> — relationships between tasks (see <a href="#dependencies">Task Dependencies</a>).</li>
+  <li><strong>AI-Guided Project Intake</strong> — a guided idea form that generates follow-up questions and an AI-written summary for reviewers.</li>
+  <li><strong>Project Review</strong> — the recurring portfolio-review tab.</li>
+  <li><strong>Project duration estimate</strong> — described below.</li>
+</ul>
+
+<h3>Project duration estimate</h3>
+<p>When enabled, the <strong>project form switches to a guided four-step layout</strong> (1 · What is it? → 2 · Who &amp; when? → 3 · Target dates → 4 · Details), and a live duration estimate appears in the <em>Who &amp; when?</em> step — right after the start date and just before you set the target dates, so the suggestion is on screen when you decide them. It's a <em>reference-class forecast</em>: it predicts how long the project will take from the actual durations of similar completed projects, rather than from a gut guess. Users without the beta keep the current form layout unchanged.</p>
+
+<h4>What drives it</h4>
+<p>The two project variables that actually correlate with duration in our history: <strong>category</strong> and <strong>partner department</strong>. The estimate takes the median duration of completed projects in the chosen category and blends it with the partner department's median (weighted by how many of each we've done). As you change Category, Partner department, or Start date on the form, it updates instantly. Allocation/effort is intentionally <em>not</em> used — that data isn't recorded consistently enough to predict duration.</p>
+
+<h4>What it shows</h4>
+<ul>
+  <li><strong>Predicted duration</strong> in weeks (and approximate months).</li>
+  <li><strong>Typical range</strong> — the 25th–75th percentile of similar projects, so you see the spread, not just a point.</li>
+  <li><strong>Suggested target end date</strong> with a <strong>Use this date</strong> button that fills the Original End Date (or Working Due Date when the end date is locked). It's an aid — ignore it freely.</li>
+  <li><strong>Confidence</strong> (High / Medium / Low) based on how many similar projects exist. Thin combinations show a "rough anchor, not a commitment" caveat.</li>
+</ul>
+
+<h4>It improves on its own</h4>
+<p>The estimate is computed live from completed projects every time the form opens — there's no model to retrain. As projects are closed (with a real start and completion date) they join the reference set, the medians shift automatically, and confidence climbs as samples grow. The flip side: a project only contributes if it's marked Complete with both dates filled in, so completion discipline makes the estimates better over time.</p>
+
+<div class="note-box"><strong>Why category and partner, not allocation hours?</strong> We tested whether allocation/effort data predicts duration and found it too sparsely recorded to be useful — category and partner department were the only variables with a real, reliable relationship. If allocations start being maintained as a full weekly effort log, effort-based prediction can be revisited.</div>
 
 <!-- ═══════════════════════════════════════════════════ -->
 <h2 id="strategic-alignment">Strategic Alignment</h2>

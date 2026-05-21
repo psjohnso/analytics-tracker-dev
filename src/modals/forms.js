@@ -1199,6 +1199,92 @@ function togglePhaseReq(reqId) {
 }
 function removePhaseReq(reqId) { togglePhaseReq(reqId); }
 
+// ── Beta: live duration estimate on the project form ──────────────────
+// Reference-class forecast — predicts duration from the actual durations of
+// similar completed projects (by category, blended with partner department).
+// Reads PROJECTS live, so it self-updates as projects close. Gated behind the
+// 'durationEstimate' beta flag.
+function _durStats(projects) {
+  var WK = 7 * 86400000;
+  var ds = [];
+  projects.forEach(function(p) {
+    if (p.status !== 'Complete') return;
+    var s = p.start ? new Date(p.start + 'T12:00:00').getTime() : null;
+    var ae = p.actual_end ? new Date(p.actual_end + 'T12:00:00').getTime() : null;
+    if (s == null || ae == null) return;
+    var w = (ae - s) / WK;
+    if (w >= 1) ds.push(w);
+  });
+  if (!ds.length) return null;
+  ds.sort(function(a, b) { return a - b; });
+  var q = function(pc) { var i = (ds.length - 1) * pc, lo = Math.floor(i), hi = Math.ceil(i); return ds[lo] + (ds[hi] - ds[lo]) * (i - lo); };
+  return { n: ds.length, median: q(0.5), p25: q(0.25), p75: q(0.75) };
+}
+
+function durEstUseDate(dateStr) {
+  // Fill the editable target-date field: Original End Date if editable, else Working Due.
+  var end = document.getElementById('fm-end');
+  if (end && !end.readOnly && !end.disabled) { end.value = dateStr; return; }
+  var wd = document.getElementById('fm-working-due');
+  if (wd) wd.value = dateStr;
+}
+
+function updateDurationEstimate() {
+  var box = document.getElementById('fm-duration-est');
+  if (!box) return;
+  if (typeof isFeatureOn === 'function' && !isFeatureOn('durationEstimate')) { box.innerHTML = ''; return; }
+  var cat = ((document.getElementById('fm-category-val') || document.getElementById('fm-category') || {}).value) || '';
+  var partner = ((document.getElementById('fm-partner-dept') || {}).value) || '';
+  var startEl = document.getElementById('fm-start');
+  var startVal = startEl ? startEl.value : '';
+  var all = (typeof PROJECTS !== 'undefined') ? PROJECTS : [];
+  var catStats = cat ? _durStats(all.filter(function(p) { return (p.category || '') === cat; })) : null;
+  var partnerStats = partner ? _durStats(all.filter(function(p) { return (p.partner_dept || '') === partner; })) : null;
+
+  if (!catStats && !partnerStats) {
+    box.innerHTML = '<div style="margin-top:10px;border:1px dashed var(--border);border-radius:8px;background:#F8FAFC;padding:14px;text-align:center;font-size:12px;color:var(--text-muted);">Pick a <strong>category</strong> below (and ideally a partner department) to estimate this project\'s duration from similar completed projects.</div>';
+    return;
+  }
+  var median, n, base, basis;
+  if (catStats && partnerStats) {
+    median = (catStats.median * catStats.n + partnerStats.median * partnerStats.n) / (catStats.n + partnerStats.n);
+    n = Math.min(catStats.n, partnerStats.n); base = catStats;
+    basis = 'Based on ' + catStats.n + ' ' + esc(cat) + ' projects, adjusted for ' + esc(partner) + ' (' + partnerStats.n + ').';
+  } else if (catStats) {
+    median = catStats.median; n = catStats.n; base = catStats;
+    basis = 'Based on ' + catStats.n + ' ' + esc(cat) + ' projects. Add a partner department to sharpen it.';
+  } else {
+    median = partnerStats.median; n = partnerStats.n; base = partnerStats;
+    basis = 'Based on ' + partnerStats.n + ' ' + esc(partner) + ' projects. Add a category to sharpen it.';
+  }
+  var wks = Math.round(median);
+  var scale = base.median > 0 ? median / base.median : 1;
+  var low = Math.max(1, Math.round(base.p25 * scale));
+  var high = Math.round(base.p75 * scale);
+  var months = wks / 4.33;
+  var conf = n >= 10 ? { l: 'High confidence', bg: '#DCFCE7', fg: '#166534' }
+    : n >= 5 ? { l: 'Medium confidence', bg: '#FEF9C3', fg: '#854D0E' }
+    : n >= 3 ? { l: 'Low confidence', bg: '#F3F4F6', fg: '#6B7280' }
+    : { l: 'Too few samples', bg: '#F3F4F6', fg: '#9CA3AF' };
+  var sugg = '';
+  if (startVal) { var d = new Date(startVal + 'T12:00:00'); d.setDate(d.getDate() + wks * 7); sugg = d.toISOString().slice(0, 10); }
+  var suggLabel = sugg ? new Date(sugg + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+  var html = '<div style="margin-top:10px;border:1px solid #D9E2F2;border-radius:10px;background:#F5F8FF;padding:14px 16px;">';
+  html += '<div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">';
+  html += '<div style="flex:0 0 auto;"><div style="font-size:30px;font-weight:900;color:var(--navy);line-height:1;">' + wks + ' wks</div><div style="font-size:11px;color:var(--text-muted);">&asymp; ' + (months >= 2 ? months.toFixed(months < 8 ? 1 : 0) : months.toFixed(1)) + ' months</div></div>';
+  html += '<div style="flex:1;min-width:200px;">';
+  html += '<div style="font-size:12px;margin-bottom:4px;">Typical range <strong style="color:var(--navy);">' + low + '–' + high + ' weeks</strong> <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;background:' + conf.bg + ';color:' + conf.fg + ';padding:2px 7px;border-radius:8px;margin-left:4px;">' + conf.l + '</span></div>';
+  if (sugg) html += '<div style="font-size:12px;">Suggested target end: <strong style="color:var(--navy);">' + suggLabel + '</strong> <button type="button" onclick="durEstUseDate(\'' + sugg + '\')" style="border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:6px;padding:4px 10px;font-weight:700;font-size:11px;cursor:pointer;margin-left:6px;">Use this date</button></div>';
+  else html += '<div style="font-size:11px;color:var(--text-muted);">Set a start date to get a suggested end date.</div>';
+  html += '</div></div>';
+  html += '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">' + basis + '</div>';
+  if (n < 5) html += '<div style="font-size:11px;color:#9A3412;background:#FFF7ED;border-radius:6px;padding:6px 10px;margin-top:6px;">Thin history for this mix — treat as a rough anchor, not a commitment.</div>';
+  html += '<div style="font-size:10px;color:var(--text-muted);font-style:italic;margin-top:6px;">Estimate from completed projects; updates automatically as more close. Beta.</div>';
+  html += '</div>';
+  box.innerHTML = html;
+}
+
 function buildProjectForm(p) {
   const v = function(k) {
     if (p) return p[k] || '';
@@ -1220,6 +1306,89 @@ function buildProjectForm(p) {
     (isAdmin() ? 'Operational fields are available once the idea is reviewed and promoted.' : 'Operational fields like team, timeline, and sizing will become available once this idea is reviewed and promoted.') +
   '</div>' : '';
 
+  var canOps = !(isIdea && !isAdmin());
+
+  // Beta (durationEstimate): guided step-flow layout — groups the estimate's
+  // inputs (category, partner, start) ahead of the target-date fields so the
+  // suggestion informs the end date. Falls through to the classic layout when
+  // the beta is off, or for non-admins editing an Idea (operational fields are
+  // hidden in that case, so the classic conditionals handle it).
+  if (typeof isFeatureOn === 'function' && isFeatureOn('durationEstimate') && canOps) {
+    var gUnit = fmField('Unit',
+      fmSelect('fm-itd-team', FM_ITD_TEAMS,
+        v('itd_team') || (function() {
+          if (!Auth || !Auth.fullName || typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.people) return '';
+          var me = RESOURCES_DATA.people[Auth.fullName];
+          return (me && me.role) || '';
+        })(),
+        'Select unit…'),
+      false, false,
+      'The smallest organizational grouping doing the work — typically a sub-team within a Team (e.g. GIS within Data Intelligence). Pick "Not in Unit" for team-wide work that doesn\'t fit a specific sub-team. Defaults to your own unit on new projects. Used by Project Review scoping and the Portfolio sidebar filter.');
+    var gTeam = fmField('Team',
+      fmSelect('fm-owning-team', FM_OWNING_TEAMS,
+        v('owning_team') || (function() {
+          if (!Auth || !Auth.fullName || typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.people) return '';
+          var me = RESOURCES_DATA.people[Auth.fullName];
+          return (me && me.team) || '';
+        })(),
+        'Select team…', false),
+      false, false,
+      'The team that owns the project — set on every project regardless of whether it\'s Data Program work. The Unit above (if any) is a sub-team within this team. Defaults to your own team on new projects. Drives the Data Program portfolio view (when combined with the Data Program checkbox below) and lead-team edit permissions.');
+    var gDataProgram = fmField('Data Program',
+      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 0;font-family:Cardo,serif;font-size:14px;">' +
+        '<input type="checkbox" id="fm-is-data-program" ' + ((v('is_data_program') == 1) ? 'checked' : '') + ' style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy);"> ' +
+        '<span>This project is part of the Data Program portfolio</span>' +
+      '</label>',
+      false, false,
+      'Check if this project is part of the strategic Data Program initiative (not just owned by a DP-eligible team). Drives the Data Program slide on the Slideshow and the Data Program Lite app.');
+    var gTeamAvail = '<div id="fm-team-avail-list"></div>' +
+      '<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Select team members for this project. Availability' + calcInfoIcon('earliestStart') + ' is based on the project size selected above.</div>';
+    var gDetails = '<div class="fm-grid">' +
+      fmField('Problem Statement', fmMdTextarea('fm-problem', v('problem_statement'), 'Describe the problem this project solves…', 3, 4000), false, true) +
+      fmField('Description', fmMdTextarea('fm-description', v('description'), 'Project description…', 3, 4000), false, true) +
+      fmField('Definition of Done', fmMdTextarea('fm-definition-of-done', v('definition_of_done'), 'What does it mean for this project to be complete? Concrete, observable outcomes.', 3, 4000), false, true, 'When will we know this project is finished?') +
+      fmField('Key Results', fmMdTextarea('fm-key-results', v('key_results'), 'Measurable indicators that this project succeeded.', 3, 4000), false, true, 'How will we measure success?') +
+      fmField('Data Sources', fmMdTextarea('fm-data-sources', v('data_sources'), 'e.g. Hansen, Accela, ArcGIS Enterprise, CSV from partner dept…', 2, 2000), false, true) +
+      fmField('Technical Requirements', fmMdTextarea('fm-tech-reqs', v('technical_requirements'), 'e.g. Must integrate with existing system, ADA compliant, real-time updates…', 2, 4000), false, true) +
+    '</div>';
+    var gAlignment = fmSec('Strategic Alignment',
+      '<div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">' +
+        '<div style="font-size:11px;color:var(--text-muted);">Tag this project with the strategic initiatives, goals, and criteria it supports.</div>' +
+        (isStrategicAlignmentEditor() ? '<button type="button" class="ai-help-btn" onclick="suggestAlignment()" style="font-size:11px;padding:4px 12px;">✨ Suggest Alignment</button>' : '') +
+      '</div>' +
+      '<div id="alignment-suggest-panel" style="display:none;"></div>' +
+      '<div class="fm-grid">' +
+        (isStrategicAlignmentEditor() ? fmField('IT Initiative', fmCheckboxGroup('fm-it-initiative', FM_IT_INITIATIVES, v('it_initiative')), false, true) : '') +
+        fmField('City Initiative', fmCheckboxGroup('fm-city-initiative', FM_CITY_INITIATIVES, v('city_initiative')), false, true) +
+        fmField('IT Priority Project', fmCheckboxGroup('fm-it-priority', FM_IT_PRIORITY_PROJECTS, v('it_priority_project')), false, true) +
+        (isStrategicAlignmentEditor() ? fmField('Data Program Goal', fmCheckboxGroup('fm-dp-goal', FM_DP_GOALS, v('dp_goal')), false, true, 'Which Data Program goals does this project advance?') : '') +
+        (isStrategicAlignmentEditor() ? fmField('WWC Foundational Practice', fmCheckboxGroup('fm-wwc-practice', FM_WWC_PRACTICES, v('wwc_practice')), false, true, 'What Works Cities foundational practice areas') : '') +
+      '</div>' +
+      (isStrategicAlignmentEditor() ? fmField('WWC Criteria', fmWwcCriteriaGrouped(v('wwc_criteria')), false, false, 'Specific What Works Cities certification criteria — grouped by practice area') : ''), true);
+    return ideaNote +
+      fmSec('1 · What is it?', '<div class="fm-grid">' +
+        fmField('Title', fmInput('fm-title-val', v('title'), 'Project title…'), true, true) +
+        fmField('Status', fmSelect('fm-status', FM_PROJ_STATUSES, v('status'), 'Select status…', false)) +
+        fmCategoryField(v('category'), true) +
+        fmField('Partner Department', fmSelect('fm-partner-dept', FM_PARTNER_DEPTS, v('partner_dept'), 'Select department…')) +
+        fmField('Priority', fmSelect('fm-priority', FM_PROJ_PRIORITIES, v('priority'), 'Select priority…', false)) +
+        fmProjectSizeField(v('project_size')) +
+      '</div>') +
+      fmSec('2 · Who &amp; when?', '<div class="fm-grid">' +
+        fmField('Project Lead', fmSelect('fm-contact', FM_ACTIVE_MEMBERS || FM_TASK_ASSIGNEES, v('contact'), 'Select lead…', false)) +
+        gUnit + gTeam +
+      '</div>' + gTeamAvail +
+      '<div class="fm-grid">' + fmField('Start Date', fmInput('fm-start', v('start'), '', 'date')) + '</div>' +
+      '<div id="fm-duration-est"></div>') +
+      fmSec('3 · Target dates', '<div class="fm-grid">' +
+        fmField('Original End Date', endDateField) +
+        fmField('Working Due Date', fmInput('fm-working-due', v('working_due'), '', 'date')) +
+        (p && p.status === 'Complete' ? fmField('Completion Date', fmInput('fm-actual-end', v('actual_end'), '', 'date'), false, false, 'When this project was actually completed') : '') +
+      '</div>') +
+      fmSec('4 · Details', '<div class="fm-grid">' + gDataProgram + '</div>' + gDetails, isEdit) +
+      gAlignment;
+  }
+
   return ideaNote +
   fmSec('Essentials', '<div class="fm-grid">' +
       fmField('Title', fmInput('fm-title-val', v('title'), 'Project title…'), true, true) +
@@ -1235,7 +1404,8 @@ function buildProjectForm(p) {
       fmField('Original End Date', endDateField) +
       fmField('Working Due Date', fmInput('fm-working-due', v('working_due'), '', 'date')) +
       (p && p.status === 'Complete' ? fmField('Completion Date', fmInput('fm-actual-end', v('actual_end'), '', 'date'), false, false, 'When this project was actually completed') : '') +
-    '</div>')) +
+    '</div>' +
+    ((typeof isFeatureOn === 'function' && isFeatureOn('durationEstimate')) ? '<div id="fm-duration-est"></div>' : ''))) +
   fmSec('Classification', '<div class="fm-grid">' +
       fmCategoryField(v('category'), true) +
       fmField('Partner Department', fmSelect('fm-partner-dept', FM_PARTNER_DEPTS, v('partner_dept'), 'Select department…')) +
@@ -1705,6 +1875,14 @@ function openFormModal(mode, id) {
     if (record && record.status === 'Idea' && !isAdmin()) {
       var statusEl = document.getElementById('fm-status');
       if (statusEl) { statusEl.disabled = true; statusEl.style.background = '#F3F1EB'; statusEl.style.color = '#6B7280'; statusEl.style.cursor = 'not-allowed'; }
+    }
+    // Beta: live duration estimate — recompute when category / partner / start change.
+    if (typeof isFeatureOn === 'function' && isFeatureOn('durationEstimate')) {
+      ['fm-category-val', 'fm-partner-dept', 'fm-start'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('change', updateDurationEstimate);
+      });
+      updateDurationEstimate();
     }
   }
 }

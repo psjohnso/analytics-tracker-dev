@@ -10,7 +10,7 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.44.0.0001';
+const APP_VERSION = '1.45.0.0002';
 
 // ArcGIS Online group whose members are authorized to change a project's
 // status from "Idea" to any other status (also gates admin / Team Lead UI
@@ -190,6 +190,7 @@ var BETA_FEATURES = {
   taskHistory:   { flag: 'FEATURE_TASK_HISTORY',   label: 'Notes & Status History', desc: 'Add notes to tasks and automatically track status changes with optional reasons for On Hold, Waiting, and Canceled transitions.' },
   aiIntake:      { flag: 'FEATURE_AI_INTAKE',      label: 'AI-Guided Project Intake', desc: 'Replace the standard idea form with a guided intake that asks starter questions, generates smart follow-up questions based on your responses, and produces an AI-written project summary for reviewers.' },
   projectReview: { flag: 'FEATURE_PROJECT_REVIEW', label: 'Project Review', desc: 'Recurring portfolio review tab — walk through projects with the people assigned, log notes/decisions/action items per cycle. Configurable review types (e.g., Data Intelligence weekly, Data Team biweekly).' },
+  durationEstimate: { flag: 'FEATURE_DURATION_ESTIMATE', label: 'Project duration estimate', desc: 'Adds a live duration estimate to the project form. Predicts how long a project will take from the actual durations of similar completed projects (by category and partner department), with a suggested target end date and a confidence level. Self-updating as projects close.' },
 };
 
 // ── Strategic Alignment Options ──────────────────────────────────────
