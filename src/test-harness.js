@@ -219,6 +219,26 @@
   assert('_calibMultColor well-over (1.8)', _calibMultColor(1.8).fg, '#9A3412');
   assert('_calibMultColor major (2.5)', _calibMultColor(2.5).fg, '#991B1B');
 
+  // ── Estimate-accuracy quarterly trend (insights.js _calibQuarterlyTrend) ──
+  var _qt = _calibQuarterlyTrend([
+    { actualEndStr: '2025-02-15', pl: 10, actualWeeks: 10 }, // Q1 → 1.0×
+    { actualEndStr: '2025-03-01', pl: 10, actualWeeks: 20 }, // Q1 → 2.0×
+    { actualEndStr: '2025-05-10', pl: 10, actualWeeks: 10 }, // Q2 → 1.0×
+    { actualEndStr: '2025-06-01', pl: 0,  actualWeeks: 99 }, // skipped (pl<=0)
+    { actualEndStr: '',          pl: 10, actualWeeks: 10 }  // skipped (no end)
+  ], 'pl', 8);
+  assert('_calibQuarterlyTrend bucket count', _qt.length, 2);
+  assert('_calibQuarterlyTrend first quarter key', _qt[0].q, '2025-Q1');
+  assert('_calibQuarterlyTrend Q1 median (1.0,2.0)', _qt[0].mult, 1.5);
+  assert('_calibQuarterlyTrend Q1 n', _qt[0].n, 2);
+  assert('_calibQuarterlyTrend Q2 n', _qt[1].n, 1);
+  assert('_calibQuarterlyTrend maxQuarters slice', _calibQuarterlyTrend([
+    { actualEndStr: '2024-02-01', pl: 5, actualWeeks: 5 },
+    { actualEndStr: '2024-05-01', pl: 5, actualWeeks: 5 },
+    { actualEndStr: '2024-08-01', pl: 5, actualWeeks: 5 }
+  ], 'pl', 2).length, 2);
+  assert('_calibQLabel format', _calibQLabel('2025-Q1'), "Q1 '25");
+
   // ── Duration predictor stats (forms.js _durStats) ──────────
   var _dpFix = [
     { status: 'Complete', start: '2026-01-01', actual_end: '2026-01-15' }, // 2w

@@ -55,6 +55,74 @@ function _calibMedian(arr) {
   var mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
+// Median schedule multiplier (actual ÷ planned weeks) per completion calendar
+// quarter, oldest → newest. Used by the "are we learning to estimate?" trend tile.
+function _calibQuarterlyTrend(projStats, plannedField, maxQuarters) {
+  var buckets = {};
+  (projStats || []).forEach(function(p) {
+    if (!p.actualEndStr) return;
+    var pl = p[plannedField];
+    if (pl == null || pl <= 0 || p.actualWeeks == null) return;
+    var d = new Date(p.actualEndStr + 'T12:00:00');
+    if (isNaN(d)) return;
+    var q = d.getFullYear() + '-Q' + (Math.floor(d.getMonth() / 3) + 1);
+    (buckets[q] = buckets[q] || []).push(p.actualWeeks / pl);
+  });
+  var series = Object.keys(buckets).sort().map(function(k) {
+    return { q: k, mult: _calibMedian(buckets[k]), n: buckets[k].length };
+  });
+  if (maxQuarters && series.length > maxQuarters) series = series.slice(series.length - maxQuarters);
+  return series;
+}
+function _calibQLabel(q) { var parts = String(q).split('-Q'); return 'Q' + parts[1] + " '" + parts[0].slice(2); }
+// "Are we learning to estimate?" — sparkline of the quarterly median multiplier
+// trending toward 1.0×. Uses the same planned-mode toggle as the rest of the section.
+function _calibTrendTile(projStats, plannedField) {
+  var series = _calibQuarterlyTrend(projStats, plannedField, 8).filter(function(s) { return s.n >= 2; });
+  if (series.length < 2) {
+    return '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:12px;color:var(--text-muted);">Estimate-accuracy trend needs at least two completion quarters with data — it will appear as more projects complete.</div>';
+  }
+  var latest = series[series.length - 1];
+  var earlier = series.slice(0, series.length - 1);
+  var avgEarlierDev = earlier.reduce(function(s, p) { return s + Math.abs(p.mult - 1); }, 0) / earlier.length;
+  var lastDev = Math.abs(latest.mult - 1);
+  var eps = 0.05;
+  var trend = (lastDev < avgEarlierDev - eps) ? 'improving' : (lastDev > avgEarlierDev + eps) ? 'worsening' : 'flat';
+  var trendColor = trend === 'improving' ? '#166534' : trend === 'worsening' ? '#991B1B' : '#6B7280';
+  var trendLabel = trend === 'improving' ? '↘ converging on 1.0×' : trend === 'worsening' ? '↗ drifting from 1.0×' : '→ holding steady';
+
+  var W = 280, H = 70, padL = 8, padR = 26, padT = 12, padB = 18;
+  var vals = series.map(function(s) { return s.mult; }).concat([1]);
+  var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+  if (hi === lo) { hi += 0.5; lo -= 0.5; }
+  var cw = W - padL - padR, ch = H - padT - padB;
+  var x = function(i) { return padL + (series.length === 1 ? cw / 2 : (i / (series.length - 1)) * cw); };
+  var y = function(v) { return padT + ch - ((v - lo) / (hi - lo)) * ch; };
+  var y1 = y(1);
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;max-width:' + W + 'px;display:block;">';
+  svg += '<line x1="' + padL + '" y1="' + y1 + '" x2="' + (W - padR) + '" y2="' + y1 + '" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,3"/>';
+  svg += '<text x="' + (W - padR + 3) + '" y="' + (y1 + 3) + '" font-size="8" fill="#9CA3AF" font-family="Lato,sans-serif">1.0×</text>';
+  svg += '<polyline points="' + series.map(function(s, i) { return x(i) + ',' + y(s.mult); }).join(' ') + '" fill="none" stroke="#002669" stroke-width="1.5"/>';
+  series.forEach(function(s, i) {
+    var c = _calibMultColor(s.mult);
+    svg += '<circle cx="' + x(i) + '" cy="' + y(s.mult) + '" r="' + (i === series.length - 1 ? 4 : 3) + '" fill="' + c.fg + '"><title>' + _calibQLabel(s.q) + ': ' + s.mult.toFixed(2) + '× (n=' + s.n + ')</title></circle>';
+  });
+  svg += '<text x="' + x(0) + '" y="' + (H - 4) + '" text-anchor="start" font-size="8" fill="#9CA3AF" font-family="Lato,sans-serif">' + _calibQLabel(series[0].q) + '</text>';
+  svg += '<text x="' + x(series.length - 1) + '" y="' + (H - 4) + '" text-anchor="end" font-size="8" fill="#9CA3AF" font-family="Lato,sans-serif">' + _calibQLabel(latest.q) + '</text>';
+  svg += '</svg>';
+
+  var html = '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:14px 18px;margin-bottom:16px;">';
+  html += '<div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:8px;">Are we learning to estimate?</div>';
+  html += '<div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap;">';
+  html += '<div style="flex:0 0 auto;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);">Latest quarter</div>';
+  html += '<div style="font-size:26px;font-weight:800;color:var(--navy);line-height:1.1;">' + latest.mult.toFixed(2) + '×</div>';
+  html += '<div style="font-size:11px;font-weight:700;color:' + trendColor + ';">' + trendLabel + '</div></div>';
+  html += '<div style="flex:1;min-width:220px;">' + svg + '</div>';
+  html += '</div>';
+  html += '<div style="font-size:11px;color:var(--text-muted);font-style:italic;margin-top:6px;">Median actual ÷ planned weeks by completion quarter (last ' + series.length + '). Closer to 1.0× = estimates matching reality. Quarters with fewer than 2 completed projects are omitted.</div>';
+  html += '</div>';
+  return html;
+}
 function _calibConf(n) {
   if (n >= 10) return { label: 'High',         bg: '#DCFCE7', fg: '#166534' };
   if (n >=  5) return { label: 'Medium',       bg: '#FEF9C3', fg: '#854D0E' };
@@ -312,6 +380,7 @@ function buildInsightsPage() {
   calibSection += '<span style="font-size:11px;color:var(--text-muted);">' +
     (_durCalibMode === 'end_date' ? 'Original commitment, locked at project creation.' : 'Latest team forecast (working_due).') + '</span>';
   calibSection += '</div>';
+  calibSection += _calibTrendTile(projStats, plannedField);
   calibSection += _calibRenderTable('A · By Category', 'Category', calibByCategory);
   calibSection += _calibRenderTable('C · By Partner Department', 'Partner', calibByPartner);
   calibSection += '<div style="font-size:11px;color:var(--text-muted);font-style:italic;margin-top:-8px;margin-bottom:0;">Departments with fewer than 5 completed projects are grouped into "Other" to avoid misleading small-sample numbers. Rows with fewer than 3 multipliers are dimmed.</div>';
