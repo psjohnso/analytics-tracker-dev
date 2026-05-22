@@ -167,13 +167,14 @@ async function toggleTimeTracking(name, enabled) {
       const fieldNames = RESOURCES_DATA._memberFieldNames;
       const fn = fieldNames.find(function(f) { return f.toLowerCase() === 'time_tracking'; });
       if (fn) {
-        attrs[fn] = enabled ? 'true' : 'false';
+        // time_tracking is an Integer field (1/0) since the 2026-05 migration.
+        attrs[fn] = enabled ? 1 : 0;
       } else {
-        showToast('time_tracking field not found on team_members service. Add it as String(10) in ArcGIS Online.', 'error');
+        showToast('time_tracking field not found on team_members service. Add it as Integer in ArcGIS Online.', 'error');
         return;
       }
     } else {
-      attrs.time_tracking = enabled ? 'true' : 'false';
+      attrs.time_tracking = enabled ? 1 : 0;
     }
     const result = await agolApplyEdits(ARCGIS_CONFIG.teamMembersUrl, { updates: [{ attributes: attrs }] });
     console.log('[Settings] Time tracking for', name, ':', enabled, result);
@@ -392,9 +393,11 @@ async function saveMemberForm() {
   const isEdit = origName !== '';
   const isRename = isEdit && origName !== name;
 
-  // Only set active on new member creation (edits preserve existing value)
+  // Only set active on new member creation (edits preserve existing value).
+  // active is an Integer field (1/0) since the 2026-05 migration — writing the
+  // legacy string 'true' makes the add fail the integer conversion.
   if (!isEdit) {
-    memberAttrs.active = 'true';
+    memberAttrs.active = 1;
   }
 
   if (isRename) {
@@ -454,6 +457,27 @@ async function saveMemberForm() {
         ? function() { return !!(RESOURCES_DATA && RESOURCES_DATA.people && RESOURCES_DATA.people[name] && !RESOURCES_DATA.people[origName]); }
         : null;
     await reloadResourcesUntil(_verify, 'member-save');
+    // Fallback for read-after-write lag: if a newly added member still isn't in
+    // RESOURCES_DATA after the reload+retries, insert a minimal optimistic entry
+    // so they appear immediately. The next refresh fills in computed fields.
+    if (!isEdit && RESOURCES_DATA && RESOURCES_DATA.people && !RESOURCES_DATA.people[name]) {
+      RESOURCES_DATA.people[name] = {
+        objectId: null, position_title: positionTitle || '',
+        role: role || '', team: team || '', skill: skill || '',
+        proj_pct: (projPct || 0) / 100,
+        schedule_type: scheduleType || '5/8',
+        week1_hours: 0, week2_hours: 0,
+        rdo_day: rdoDay || null, lunch_minutes: (lunchMinutes != null ? lunchMinutes : 60),
+        schedule: {},
+        time_tracking: false, active: true,
+        tracking_level: trackingLevel || 'full',
+        member_group: memberGroup || 'Data Intelligence',
+        data_program_lead_team: dpLeadTeam || null,
+        proj_cap: new Array(52).fill(0), absences: new Array(52).fill(0),
+        allocations: [], weekly_allocated: new Array(52).fill(0), utilization: new Array(52).fill(0)
+      };
+      console.log('[Settings] New member not yet in re-query — inserted optimistic entry for', name);
+    }
     hideLoadingOverlay();
     markSynced(isRename ? 'Renamed ' + origName + ' → ' + name : isEdit ? 'Updated ' + name : 'Added ' + name);
     markDataDirty();
