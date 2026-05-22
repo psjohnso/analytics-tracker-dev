@@ -8,11 +8,11 @@
 <!-- ArcGIS REST API integration (no external auth library needed) -->
 <link rel="stylesheet" href="src/app.css?v=1.41.0.0001">
 <script src="src/util.js?v=1.9.1.0025"></script>
-<script src="src/constants.js?v=1.45.0.0004"></script>
+<script src="src/constants.js?v=1.45.0.0006"></script>
 <script src="src/agol.js?v=1.43.0.0001"></script>
 <script src="src/auth.js?v=1.42.0.0001"></script>
 <script src="src/render.js?v=1.42.0.0001"></script>
-<script src="src/tabs/issues.js?v=1.42.0.0001"></script>
+<script src="src/tabs/issues.js?v=1.45.0.0005"></script>
 <script src="src/tabs/project-review.js?v=1.45.0.0004"></script>
 <script src="src/project-notes.js?v=1.32.0.0011"></script>
 <script src="src/confetti.js?v=1.17.2.0033"></script>
@@ -32,8 +32,8 @@
 <script src="src/tabs/slideshow.js?v=1.16.2.0002"></script>
 <script src="src/modals/export.js?v=1.9.1.0017"></script>
 <script src="src/modals/idea.js?v=1.16.1.0026"></script>
-<script src="src/modals/member-form.js?v=1.32.0.0004"></script>
-<script src="src/modals/alloc-editor.js?v=1.40.2.0001"></script>
+<script src="src/modals/member-form.js?v=1.45.0.0006"></script>
+<script src="src/modals/alloc-editor.js?v=1.45.0.0006"></script>
 <script src="src/modals/settings-editors.js?v=1.32.0.0012"></script>
 <script src="src/modals/forms.js?v=1.45.0.0003"></script>
 <script src="src/ai/prompts.js?v=1.12.0.0001"></script>
@@ -1917,6 +1917,25 @@ function computeCapacityAndAllocations(people, weeks, weekIdx, allocFeatures, N)
   });
 }
 
+// Reload RESOURCES_DATA after a write, retrying briefly if the just-written
+// change hasn't propagated yet (AGOL read-after-write lag). verifyFn() returns
+// true once the expected post-condition is visible in RESOURCES_DATA; if it
+// never does, we proceed anyway (the next refresh self-heals). Worst case with
+// no verifyFn = a single reload, identical to the old behavior.
+async function reloadResourcesUntil(verifyFn, label) {
+  await loadResourcesData();
+  if (typeof initResourcesWeekIndices === 'function') initResourcesWeekIndices();
+  if (typeof verifyFn !== 'function' || verifyFn()) return;
+  var delays = [500, 1200];
+  for (var i = 0; i < delays.length && !verifyFn(); i++) {
+    console.log('[Reload] ' + (label || 'resources') + ' not consistent yet — retrying in ' + delays[i] + 'ms');
+    await new Promise(function(r) { setTimeout(r, delays[i]); });
+    await loadResourcesData();
+    if (typeof initResourcesWeekIndices === 'function') initResourcesWeekIndices();
+  }
+  if (!verifyFn()) console.warn('[Reload] ' + (label || 'resources') + ' still inconsistent after retries; will self-heal on next refresh.');
+}
+
 async function loadArcGISData() {
   showLoadingOverlay('Connecting to ArcGIS Online...');
   try {
@@ -2156,8 +2175,15 @@ const DataStore = {
           }
           STATUS_HISTORY.forEach(function(h) { if (h.project_title === oldTitle) h.project_title = newTitle; });
 
-          // Reload resources data so allocations reflect new name
-          try { await loadResourcesData(); initResourcesWeekIndices(); } catch(e) {}
+          // Reload resources data so allocations reflect new name (retry if AGOL lags)
+          try {
+            await reloadResourcesUntil(function() {
+              if (!RESOURCES_DATA || !RESOURCES_DATA.people) return false;
+              return !Object.keys(RESOURCES_DATA.people).some(function(nm) {
+                return (RESOURCES_DATA.people[nm].allocations || []).some(function(a) { return a.project === oldTitle; });
+              });
+            }, 'project-rename');
+          } catch(e) {}
           hideLoadingOverlay();
         }
         markSynced('Project updated');
@@ -2275,8 +2301,15 @@ const DataStore = {
       }
     }
 
-    // Reload resources to reflect removed allocations
-    try { await loadResourcesData(); initResourcesWeekIndices(); } catch(e) {}
+    // Reload resources to reflect removed allocations (retry if AGOL lags)
+    try {
+      await reloadResourcesUntil(function() {
+        if (!RESOURCES_DATA || !RESOURCES_DATA.people) return false;
+        return !Object.keys(RESOURCES_DATA.people).some(function(nm) {
+          return (RESOURCES_DATA.people[nm].allocations || []).some(function(a) { return a.project === projectTitle; });
+        });
+      }, 'project-delete');
+    } catch(e) {}
 
     return true;
   },

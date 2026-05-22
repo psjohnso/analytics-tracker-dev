@@ -707,9 +707,13 @@ async function autoFillAllocationsForNewProject(fields) {
       showToast('Auto-filled allocations for ' + members.length + ' team member(s).', 'success');
     }
 
-    // Reload resources to reflect the new allocations
-    await loadResourcesData();
-    initResourcesWeekIndices();
+    // Reload resources to reflect the new allocations (retry if AGOL lags)
+    await reloadResourcesUntil(function() {
+      if (!RESOURCES_DATA || !RESOURCES_DATA.people) return false;
+      return Object.keys(RESOURCES_DATA.people).some(function(nm) {
+        return (RESOURCES_DATA.people[nm].allocations || []).some(function(a) { return a.project === fields.title; });
+      });
+    }, 'auto-alloc');
   } catch (err) {
     console.error('[AutoAlloc] Failed:', err);
     showToast('Failed to auto-fill allocations: ' + err.message, 'error');

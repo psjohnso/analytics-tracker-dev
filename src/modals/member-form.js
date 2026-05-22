@@ -446,8 +446,14 @@ async function saveMemberForm() {
     closeMemberForm();
     // Reload resources data and re-render
     showLoadingOverlay('Saving team member...');
-    await loadResourcesData();
-    initResourcesWeekIndices();
+    // Verify-and-retry the reload so an added/renamed member shows even if the
+    // team_members re-query lags behind the write. (Plain field edits: no check.)
+    var _verify = (!isEdit)
+      ? function() { return !!(RESOURCES_DATA && RESOURCES_DATA.people && RESOURCES_DATA.people[name]); }
+      : isRename
+        ? function() { return !!(RESOURCES_DATA && RESOURCES_DATA.people && RESOURCES_DATA.people[name] && !RESOURCES_DATA.people[origName]); }
+        : null;
+    await reloadResourcesUntil(_verify, 'member-save');
     hideLoadingOverlay();
     markSynced(isRename ? 'Renamed ' + origName + ' → ' + name : isEdit ? 'Updated ' + name : 'Added ' + name);
     markDataDirty();
@@ -476,8 +482,8 @@ async function deleteMember(name) {
     if (Editor.selectedMember === name) Editor.selectedMember = null;
 
     showLoadingOverlay('Removing team member...');
-    await loadResourcesData();
-    initResourcesWeekIndices();
+    // Verify-and-retry so the removed member is gone even if the re-query lags.
+    await reloadResourcesUntil(function() { return !(RESOURCES_DATA && RESOURCES_DATA.people && RESOURCES_DATA.people[name]); }, 'member-delete');
     hideLoadingOverlay();
     markSynced('Removed ' + name);
     markDataDirty();

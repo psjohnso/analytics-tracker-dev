@@ -310,6 +310,14 @@ async function submitIssueForm() {
     }
     try {
       await agolApplyEdits(ARCGIS_CONFIG.issuesUrl, { updates: [{ attributes: attrs }] });
+      // Optimistic local update — avoids a re-query that can lag behind the write.
+      var _existing = ISSUES.find(function(i) { return i.objectId == _editingIssueId; });
+      if (_existing) {
+        _existing.title = attrs.title; _existing.type = attrs.issue_type;
+        _existing.description = attrs.description; _existing.steps_to_reproduce = attrs.steps_to_reproduce;
+        _existing.priority = attrs.priority;
+        if (statusEl) { _existing.status = attrs.status; if (attrs.resolved_date) _existing.resolved_date = attrs.resolved_date; }
+      }
       showToast('Issue updated.', 'success');
     } catch (err) {
       showToast('Failed to update: ' + err.message, 'error');
@@ -319,7 +327,15 @@ async function submitIssueForm() {
     // New issue. Creator/CreationDate auto-populated by AGO via editor tracking.
     attrs.status = 'Submitted';
     try {
-      await agolApplyEdits(ARCGIS_CONFIG.issuesUrl, { adds: [{ attributes: attrs }] });
+      var _addRes = await agolApplyEdits(ARCGIS_CONFIG.issuesUrl, { adds: [{ attributes: attrs }] });
+      // Optimistic local insert — avoids a re-query that can lag behind the write.
+      var _newOid = (_addRes && _addRes.addResults && _addRes.addResults[0]) ? _addRes.addResults[0].objectId : null;
+      ISSUES.push({
+        objectId: _newOid, title: attrs.title, type: attrs.issue_type, description: attrs.description,
+        steps_to_reproduce: attrs.steps_to_reproduce, status: 'Submitted', priority: attrs.priority,
+        submitted_by: (typeof Auth !== 'undefined' && Auth.fullName) ? Auth.fullName : '',
+        submitted_date: todayStr, resolved_date: ''
+      });
       showToast('Issue submitted! Thank you for the feedback.', 'success');
     } catch (err) {
       showToast('Failed to submit: ' + err.message, 'error');
@@ -328,7 +344,7 @@ async function submitIssueForm() {
   }
 
   closeIssueForm();
-  await loadIssues();
+  updateIssuesTabCount();
   if (currentTab === 'issues') {
     document.getElementById('content-area').innerHTML = buildIssuesPage();
   }
@@ -346,8 +362,11 @@ async function changeIssueStatus(issueId, newStatus) {
 
   try {
     await agolApplyEdits(ARCGIS_CONFIG.issuesUrl, { updates: [{ attributes: attrs }] });
+    // Optimistic local update — avoids a re-query that can lag behind the write.
+    iss.status = newStatus;
+    if (attrs.resolved_date) iss.resolved_date = attrs.resolved_date;
     showToast('Issue moved to ' + newStatus + '.', 'success');
-    await loadIssues();
+    updateIssuesTabCount();
     if (currentTab === 'issues') {
       document.getElementById('content-area').innerHTML = buildIssuesPage();
     }
@@ -364,7 +383,9 @@ async function deleteIssue(issueId) {
       updates: [{ attributes: { ObjectId: issueId, deleted_at: stamp.deleted_at, deleted_by: stamp.deleted_by } }]
     });
     showToast('Issue moved to trash.', 'success');
-    await loadIssues();
+    // Optimistic local removal — loadIssues filters deleted_at IS NULL, so just drop it locally.
+    ISSUES = ISSUES.filter(function(i) { return i.objectId != issueId; });
+    updateIssuesTabCount();
     if (currentTab === 'issues') {
       document.getElementById('content-area').innerHTML = buildIssuesPage();
     }
