@@ -1024,7 +1024,7 @@ function fmProjectSizeField(currentValue) {
   selectHtml += '</select>';
   selectHtml += '<button type="button" class="size-wizard-link" style="margin-left:0;margin-top:6px;" onclick="sizeWizardOpen()">✨ Help me choose a size</button>';
   selectHtml += '<div id="size-wizard-panel" class="size-wizard-panel"></div>';
-  return fmField('Project Size', selectHtml);
+  return fmField('Project Size', selectHtml, true);
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -1383,7 +1383,9 @@ function buildProjectForm(p) {
       fmSec('3 · Target dates', '<div class="fm-grid">' +
         fmField('Original End Date', endDateField) +
         fmField('Working Due Date', fmInput('fm-working-due', v('working_due'), '', 'date')) +
-        (p && p.status === 'Complete' ? fmField('Completion Date', fmInput('fm-actual-end', v('actual_end'), '', 'date'), false, false, 'When this project was actually completed') : '') +
+        '<div id="fm-actual-end-wrap" style="' + ((p && p.status === 'Complete') ? '' : 'display:none;') + '">' +
+        fmField('Completion Date', fmInput('fm-actual-end', v('actual_end'), '', 'date'), true, false, 'When this project was actually completed — required to mark a project Complete') +
+      '</div>' +
       '</div>') +
       fmSec('4 · Details', '<div class="fm-grid">' + gDataProgram + '</div>' + gDetails, isEdit) +
       gAlignment;
@@ -1403,7 +1405,9 @@ function buildProjectForm(p) {
       fmField('Start Date', fmInput('fm-start', v('start'), '', 'date')) +
       fmField('Original End Date', endDateField) +
       fmField('Working Due Date', fmInput('fm-working-due', v('working_due'), '', 'date')) +
-      (p && p.status === 'Complete' ? fmField('Completion Date', fmInput('fm-actual-end', v('actual_end'), '', 'date'), false, false, 'When this project was actually completed') : '') +
+      '<div id="fm-actual-end-wrap" style="' + ((p && p.status === 'Complete') ? '' : 'display:none;') + '">' +
+        fmField('Completion Date', fmInput('fm-actual-end', v('actual_end'), '', 'date'), true, false, 'When this project was actually completed — required to mark a project Complete') +
+      '</div>' +
     '</div>' +
     ((typeof isFeatureOn === 'function' && isFeatureOn('durationEstimate')) ? '<div id="fm-duration-est"></div>' : ''))) +
   fmSec('Classification', '<div class="fm-grid">' +
@@ -1884,6 +1888,19 @@ function openFormModal(mode, id) {
       });
       updateDurationEstimate();
     }
+    // Reveal the Completion Date field when Status is set to Complete (it's
+    // required on save — see handleFormSubmit). Default to today on reveal.
+    var statusSelEl = document.getElementById('fm-status');
+    if (statusSelEl) statusSelEl.addEventListener('change', function() {
+      var wrap = document.getElementById('fm-actual-end-wrap');
+      if (!wrap) return;
+      var isComplete = statusSelEl.value === 'Complete';
+      wrap.style.display = isComplete ? '' : 'none';
+      if (isComplete) {
+        var ae = document.getElementById('fm-actual-end');
+        if (ae && !ae.value) { var t = new Date(); ae.value = t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0'); }
+      }
+    });
   }
 }
 
@@ -2020,11 +2037,19 @@ async function handleFormSubmit(andDownload) {
     }
   }
 
-  // ── Business rule: Active/Scheduled projects require a size ───────────
-  if (isProject && !isEdit && (fields.status === 'Active' || fields.status === 'Scheduled') && !fields.project_size) {
-    showToast('Active and Scheduled projects require a Project Size (S/M/L/XL). Use the wizard if you\'re not sure.', 'warn');
+  // ── Business rule: projects require a size (except Ideas / Canceled) ──
+  if (isProject && fields.status !== 'Idea' && fields.status !== 'Canceled' && !fields.project_size) {
+    showToast('Project Size (S/M/L/XL) is required. Use “Help me choose a size” if you\'re not sure.', 'warn');
     var sizeEl = document.getElementById('fm-project-size');
     if (sizeEl) { sizeEl.style.borderColor = '#EF4444'; sizeEl.focus(); }
+    return;
+  }
+
+  // ── Business rule: completing a project requires a completion date ───
+  if (isProject && fields.status === 'Complete' && !fields.actual_end) {
+    showToast('A Completion Date is required to mark a project Complete.', 'warn');
+    var aeEl = document.getElementById('fm-actual-end');
+    if (aeEl) { aeEl.style.borderColor = '#EF4444'; aeEl.focus(); }
     return;
   }
 

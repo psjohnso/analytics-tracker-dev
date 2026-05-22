@@ -66,6 +66,9 @@ let _reviewTypes = _defaultReviewTypes.map(function(rt) { return JSON.parse(JSON
 // Each entry: { objectId, review_id, review_type_id, project_number, meeting_date, attendees, notes, decisions, action_items, created_by, created_at }
 let PROJECT_REVIEWS = [];
 let _projectReviewsLoaded = false;
+// Risk-scoring context for the review's per-project badges — built once per
+// render (leads/admins only) so each card reuses it instead of rebuilding.
+var _prRiskCtx = null;
 
 // ── Project Review data helpers ──────────────────────────────
 // Seed the default review_types into app_config if no record exists yet.
@@ -648,7 +651,9 @@ function renderProjectReview(area) {
   });
   html += '</div>';
 
-  // Project cards
+  // Project cards — build the risk context once for this render (leads/admins
+  // only) so each card can show its risk badge without recomputing it.
+  _prRiskCtx = (typeof isAdmin === 'function' && isAdmin() && typeof _rkBuildContext === 'function') ? _rkBuildContext() : null;
   var projects = prGetProjectsForReview(rt, _reviewFilterStatuses, _reviewAssigneeFilter, _reviewSearchQuery);
   if (!projects.length) {
     var emptyMsg = _reviewSearchQuery ? 'Nothing matches "' + esc(_reviewSearchQuery) + '" with the current filters.' : 'No projects match the current filter.';
@@ -799,6 +804,10 @@ function renderProjectReviewCard(p, rt) {
   var statusCls = 'pr-status-' + String(p.status || '').replace(/[^A-Za-z]/g, '');
   var last = getLastReviewForProject(pn, rt.id);
   var badge = prCycleBadge(last ? last.meeting_date : null, rt.cadence_days);
+  // Risk badge — leads/admins only, and only for live (not Complete/Canceled) projects.
+  var rkLive = p.status !== 'Complete' && p.status !== 'Canceled';
+  var risk = (_prRiskCtx && rkLive && typeof computeProjectRisk === 'function') ? computeProjectRisk(p, _prRiskCtx) : null;
+  var rkId = 'prr' + (p.objectId || String(pn).replace(/[^A-Za-z0-9]/g, ''));
 
   var html = '<article class="pr-card">';
 
@@ -818,6 +827,12 @@ function renderProjectReviewCard(p, rt) {
   html += '</div>';
   html += '</div>'; // pr-card-header-main
   html += '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;">';
+  if (risk) {
+    html += '<div style="display:flex;align-items:center;gap:6px;">' +
+      (typeof _rkBadge === 'function' ? _rkBadge(risk.score, risk.band) : '') +
+      '<button onclick="event.stopPropagation();rkToggle(\'' + rkId + '\')" style="border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:6px;padding:3px 8px;font-weight:700;font-size:10px;cursor:pointer;font-family:Lato,sans-serif;">Why? <span id="rk-caret-' + rkId + '">▸</span></button>' +
+    '</div>';
+  }
   html += '<span class="pr-status-badge ' + statusCls + '">' + esc(p.status || '—') + '</span>';
   html += '<span class="pr-cycle-badge ' + badge.cls + '">' + esc(badge.label) + '</span>';
   html += '</div>';
@@ -825,6 +840,10 @@ function renderProjectReviewCard(p, rt) {
 
   // Body
   html += '<div class="pr-card-body">';
+  if (risk) {
+    html += '<div data-rk-parent="' + rkId + '" style="display:none;margin-bottom:14px;border:1px solid #E8E6DF;border-radius:8px;background:#FCFCFB;padding:12px 14px;">' +
+      (typeof _rkBreakdownHtml === 'function' ? _rkBreakdownHtml(risk) : '') + '</div>';
+  }
 
   // People (+ Definition of Done underneath when set)
   var roster = prGetRoster(p);
