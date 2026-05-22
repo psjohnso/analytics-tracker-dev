@@ -1591,7 +1591,7 @@ body {
 }
 .team-load-page .tl-tbl-wrap {
   background: #fff; border: 1px solid #E8E6DF; border-radius: 12px;
-  padding: 16px 20px;
+  padding: 16px 20px; overflow-x: auto;
 }
 .team-load-page .tl-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .team-load-page .tl-table th {
@@ -4588,14 +4588,29 @@ tr.ae-closed-row td.ae-wk-td.ae-cur { background:#E8EDF5; }
   .settings-panel { padding: 14px 12px; }
   .settings-panel-title { font-size: 17px; }
   .settings-section-header { font-size: 16px; }
-  /* Member table rows are wide — give them horizontal scroll like project list */
-  .member-table-wrap, .member-table {
-    /* if not already wrapped, the table itself becomes horizontally scrollable */
+  /* ── Wide data tables ──────────────────────────────────────
+     Keep wide tables from forcing the whole page wider than the
+     viewport — each becomes its own horizontal scroller instead. */
+  /* Bare tables (no scroll wrapper): the display:block trick wraps the
+     rows in an anonymous table box that sizes to content and overflows
+     the block, so the block (capped at the viewport) scrolls. No
+     min-width — these classes are reused with varying column counts, so
+     letting content decide avoids forcing scroll on narrow tables. */
+  .member-table-wrap, .member-table,
+  .pr-simple-table, .pr-rt-table {
     display: block;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
-  .member-table { min-width: 640px; }
+  /* Wrapper-style tables (fixed schema, inner table is width:100%):
+     scroll the wrapper and give the inner table a min-width so its
+     columns stay readable rather than crushing to fit. */
+  .proj-alloc-table, .tbl-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .proj-alloc-table table { min-width: 560px; }
+  .tbl-wrap table { min-width: 520px; }
 
   /* ── Project Review page ───────────────────────────────── */
   .pr-page { padding: 12px 12px 60px; }
