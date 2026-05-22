@@ -1325,7 +1325,7 @@ function buildProjectForm(p) {
       false, false,
       'The smallest organizational grouping doing the work — typically a sub-team within a Team (e.g. GIS within Data Intelligence). Pick "Not in Unit" for team-wide work that doesn\'t fit a specific sub-team. Defaults to your own unit on new projects. Used by Project Review scoping and the Portfolio sidebar filter.');
     var gTeam = fmField('Team',
-      fmSelect('fm-owning-team', FM_OWNING_TEAMS,
+      fmSelect('fm-owning-team', (typeof _customOwningTeams !== 'undefined' && _customOwningTeams.length ? _customOwningTeams : FM_OWNING_TEAMS),
         v('owning_team') || (function() {
           if (!Auth || !Auth.fullName || typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.people) return '';
           var me = RESOURCES_DATA.people[Auth.fullName];
@@ -1428,7 +1428,7 @@ function buildProjectForm(p) {
         'The smallest organizational grouping doing the work — typically a sub-team within a Team (e.g. GIS within Data Intelligence). Pick "Not in Unit" for team-wide work that doesn\'t fit a specific sub-team. Defaults to your own unit on new projects. Used by Project Review scoping and the Portfolio sidebar filter.') +
       fmField('Team',
         fmSelect('fm-owning-team',
-          FM_OWNING_TEAMS,
+          (typeof _customOwningTeams !== 'undefined' && _customOwningTeams.length ? _customOwningTeams : FM_OWNING_TEAMS),
           v('owning_team') || (function() {
             // Default to the logged-in user's own team when the project hasn't
             // been assigned one yet. Local model key is .team (aliased from

@@ -1230,7 +1230,8 @@ function prRtOpenForm(index) {
     default_attendees: []
   };
 
-  var teamsList = (typeof FM_OWNING_TEAMS !== 'undefined') ? FM_OWNING_TEAMS.slice() : [];
+  var teamsList = (typeof _customOwningTeams !== 'undefined' && _customOwningTeams.length) ? _customOwningTeams.slice()
+    : ((typeof FM_OWNING_TEAMS !== 'undefined') ? FM_OWNING_TEAMS.slice() : []);
   var scopeTeams = prRtScopeTeams(data);
   var memberNames = (RESOURCES_DATA && RESOURCES_DATA.people) ?
     Object.keys(RESOURCES_DATA.people).filter(function(n) { return RESOURCES_DATA.people[n].active !== false; }).sort() : [];

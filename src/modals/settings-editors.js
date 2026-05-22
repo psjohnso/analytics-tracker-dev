@@ -65,6 +65,8 @@ async function saveCustomLists(listKey) {
     await saveConfigKey('partner_depts', _customPartnerDepts);
   } else if (listKey === 'team') {
     await saveConfigKey('itd_teams', _customItdTeams);
+  } else if (listKey === 'owning_team') {
+    await saveConfigKey('owning_teams', _customOwningTeams);
   } else if (listKey === 'proj_cat') {
     await saveConfigKey('proj_categories', compressDescList(_customProjCategories));
   } else if (listKey === 'task_cat') {
@@ -242,6 +244,8 @@ function renderListEditor(containerId, title, items, listKey) {
     fromData = [...new Set(PROJECTS.map(function(p) { return p.partner_dept; }))].filter(function(v) { return v && !items.includes(v); }).sort();
   } else if (listKey === 'team') {
     fromData = [...new Set(PROJECTS.map(function(p) { return p.itd_team; }))].filter(function(v) { return v && !items.includes(v); }).sort();
+  } else if (listKey === 'owning_team') {
+    fromData = [...new Set(PROJECTS.map(function(p) { return p.owning_team; }))].filter(function(v) { return v && !items.includes(v); }).sort();
   }
 
   const itemsHtml = items.map(function(item, idx) {
@@ -268,7 +272,7 @@ function renderListEditor(containerId, title, items, listKey) {
     '</div>' +
     '<div class="list-editor-items">' + itemsHtml + dataItemsHtml + '</div>' +
     '<div class="list-editor-add">' +
-      '<input type="text" id="list-add-input-' + listKey + '" placeholder="Add new ' + (listKey === 'dept' ? 'department' : 'team') + '…" onkeydown="if(event.key===\'Enter\')addListItem(\'' + listKey + '\')">' +
+      '<input type="text" id="list-add-input-' + listKey + '" placeholder="Add new ' + (listKey === 'dept' ? 'department' : listKey === 'owning_team' ? 'team' : 'unit') + '…" onkeydown="if(event.key===\'Enter\')addListItem(\'' + listKey + '\')">' +
       '<button onclick="addListItem(\'' + listKey + '\')">＋ Add</button>' +
     '</div>' +
   '</div>';
@@ -281,7 +285,7 @@ async function addListItem(listKey) {
   const val = input.value.trim();
   if (!val) return;
 
-  const list = listKey === 'dept' ? _customPartnerDepts : _customItdTeams;
+  const list = listKey === 'dept' ? _customPartnerDepts : listKey === 'owning_team' ? _customOwningTeams : _customItdTeams;
   if (list.includes(val)) {
     showToast('This item already exists in the list.', 'warn');
     return;
@@ -294,8 +298,8 @@ async function addListItem(listKey) {
 
   // Re-render the editor immediately (optimistic UI)
   renderListEditor(
-    listKey === 'dept' ? 'list-editor-dept' : 'list-editor-team',
-    listKey === 'dept' ? 'Partner Departments' : 'Units',
+    listKey === 'dept' ? 'list-editor-dept' : listKey === 'owning_team' ? 'list-editor-owning-team' : 'list-editor-team',
+    listKey === 'dept' ? 'Partner Departments' : listKey === 'owning_team' ? 'Teams' : 'Units',
     list, listKey
   );
 
@@ -304,7 +308,7 @@ async function addListItem(listKey) {
 }
 
 async function removeListItem(listKey, idx) {
-  const list = listKey === 'dept' ? _customPartnerDepts : _customItdTeams;
+  const list = listKey === 'dept' ? _customPartnerDepts : listKey === 'owning_team' ? _customOwningTeams : _customItdTeams;
   const item = list[idx];
   if (!confirm('Remove "' + item + '" from the list?')) return;
   list.splice(idx, 1);
@@ -314,8 +318,8 @@ async function removeListItem(listKey, idx) {
 
   // Re-render the editor immediately (optimistic UI)
   renderListEditor(
-    listKey === 'dept' ? 'list-editor-dept' : 'list-editor-team',
-    listKey === 'dept' ? 'Partner Departments' : 'Units',
+    listKey === 'dept' ? 'list-editor-dept' : listKey === 'owning_team' ? 'list-editor-owning-team' : 'list-editor-team',
+    listKey === 'dept' ? 'Partner Departments' : listKey === 'owning_team' ? 'Teams' : 'Units',
     list, listKey
   );
 

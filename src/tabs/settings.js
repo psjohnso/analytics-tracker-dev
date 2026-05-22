@@ -650,10 +650,11 @@ function renderSettingsPage(area) {
 
   else if (_settingsSection === 'lists') {
     panelHtml = '<div class="settings-panel-title">Dropdown lists</div>' +
-      '<div class="settings-panel-desc">Manage Partner Departments and Units that appear in project forms.</div>' +
+      '<div class="settings-panel-desc">Manage Partner Departments, Units, and Teams that appear in the project and team-member forms.</div>' +
       '<div class="list-editor-grid">' +
         '<div id="list-editor-dept"></div>' +
         '<div id="list-editor-team"></div>' +
+        '<div id="list-editor-owning-team"></div>' +
       '</div>' +
       '<div class="list-editor-note">Changes are saved to ArcGIS Online and shared across all users. Values used in existing projects will always appear in the dropdown even if removed here.</div>';
   }
@@ -734,6 +735,7 @@ function renderSettingsPage(area) {
   if (_settingsSection === 'lists') {
     renderListEditor('list-editor-dept', 'Partner Departments', _customPartnerDepts, 'dept');
     renderListEditor('list-editor-team', 'Units', _customItdTeams, 'team');
+    renderListEditor('list-editor-owning-team', 'Teams', _customOwningTeams, 'owning_team');
   }
   if (_settingsSection === 'categories') {
     renderDescListEditor('proj_cat');

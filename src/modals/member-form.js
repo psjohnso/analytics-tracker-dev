@@ -11,6 +11,18 @@
 // ─────────────────────────────────────────────────────────────────────
 
 // ── Member Form (Add / Edit) ──────────────────────────────────────
+// Fill a <select> with options; preserves the current value even if it's not in
+// the configured list (so editing a member with a legacy Unit/Team doesn't drop it).
+function _mfFillSelect(id, options, current) {
+  var sel = document.getElementById(id);
+  if (!sel) return;
+  var opts = (options || []).slice();
+  if (current && opts.indexOf(current) < 0) opts.unshift(current);
+  sel.innerHTML = '<option value="">— Select —</option>' +
+    opts.map(function(o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('');
+  sel.value = current || '';
+}
+
 function openMemberForm(mode, name) {
   document.getElementById('mf-title').textContent = mode === 'edit' ? 'Edit Team Member' : 'Add Team Member';
   document.getElementById('mf-oid').value = '';
@@ -27,8 +39,8 @@ function openMemberForm(mode, name) {
     document.getElementById('mf-name').value = name;
     document.getElementById('mf-name').dataset.origName = name;
     document.getElementById('mf-position-title').value = p.position_title || '';
-    document.getElementById('mf-role').value = p.role;
-    document.getElementById('mf-team').value = p.team;
+    _mfFillSelect('mf-role', (typeof _customItdTeams !== 'undefined' ? _customItdTeams : []), p.role);
+    _mfFillSelect('mf-team', (typeof _customOwningTeams !== 'undefined' ? _customOwningTeams : []), p.team);
     document.getElementById('mf-member-group').value = p.member_group || 'Data Intelligence';
     document.getElementById('mf-skill').value = p.skill;
     document.getElementById('mf-proj-pct').value = Math.round(p.proj_pct * 100);
@@ -54,8 +66,8 @@ function openMemberForm(mode, name) {
   } else {
     document.getElementById('mf-name').value = '';
     document.getElementById('mf-name').dataset.origName = '';
-    document.getElementById('mf-role').value = '';
-    document.getElementById('mf-team').value = '';
+    _mfFillSelect('mf-role', (typeof _customItdTeams !== 'undefined' ? _customItdTeams : []), '');
+    _mfFillSelect('mf-team', (typeof _customOwningTeams !== 'undefined' ? _customOwningTeams : []), '');
     document.getElementById('mf-member-group').value = 'Data Intelligence';
     document.getElementById('mf-skill').value = '';
     document.getElementById('mf-proj-pct').value = '';
