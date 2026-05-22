@@ -150,10 +150,10 @@ function _rkBuildContext() {
 // Works on active projects (in-flight signals) and completed projects
 // (retrospective signals — schedule drift + single-thread dominate), which
 // is what lets the calibration preview validate the weighting.
-function computeProjectRisk(p, ctx) {
+function computeProjectRisk(p, ctx, tasksOverride) {
   ctx = ctx || _rkBuildContext();
   var th = _riskConfig.thresholds, w = _riskConfig.weights;
-  var tasks = _rkTasksFor(p.project_number != null ? p.project_number : p.id);
+  var tasks = tasksOverride || _rkTasksFor(p.project_number != null ? p.project_number : p.id);
   var openTasks = tasks.filter(function(t) { return t.status !== 'Complete' && t.status !== 'Canceled'; });
   var completed = !!p.actual_end;
   var s = _rkMs(p.start), e = _rkMs(p.end), ae = _rkMs(p.actual_end), wd = _rkMs(p.working_due);

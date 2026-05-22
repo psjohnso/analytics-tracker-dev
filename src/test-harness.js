@@ -204,6 +204,71 @@
     'FEATURE_DEPENDENCIES'
   );
 
+  // ── Calibration helpers (insights.js) ──────────────────────
+  assert('_calibMedian odd', _calibMedian([3, 1, 2]), 2);
+  assert('_calibMedian even', _calibMedian([1, 2, 3, 4]), 2.5);
+  assert('_calibMedian empty → null', _calibMedian([]), null);
+  assert('_calibConf High (n=10)', _calibConf(10).label, 'High');
+  assert('_calibConf Medium (n=5)', _calibConf(5).label, 'Medium');
+  assert('_calibConf Low (n=3)', _calibConf(3).label, 'Low');
+  assert('_calibConf Insufficient (n=2)', _calibConf(2).label, 'Insufficient');
+  assert('_calibMultColor null', _calibMultColor(null).fg, '#9CA3AF');
+  assert('_calibMultColor under (0.8)', _calibMultColor(0.8).fg, '#1E3A8A');
+  assert('_calibMultColor on-plan (1.0)', _calibMultColor(1.0).fg, '#166534');
+  assert('_calibMultColor over (1.3)', _calibMultColor(1.3).fg, '#854D0E');
+  assert('_calibMultColor well-over (1.8)', _calibMultColor(1.8).fg, '#9A3412');
+  assert('_calibMultColor major (2.5)', _calibMultColor(2.5).fg, '#991B1B');
+
+  // ── Duration predictor stats (forms.js _durStats) ──────────
+  var _dpFix = [
+    { status: 'Complete', start: '2026-01-01', actual_end: '2026-01-15' }, // 2w
+    { status: 'Complete', start: '2026-01-01', actual_end: '2026-01-29' }, // 4w
+    { status: 'Complete', start: '2026-01-01', actual_end: '2026-02-12' }, // 6w
+    { status: 'Complete', start: '2026-01-01', actual_end: '2026-02-26' }, // 8w
+    { status: 'Complete', start: '2026-01-01', actual_end: '2026-03-12' }, // 10w
+    { status: 'Active',   start: '2026-01-01', actual_end: '2026-06-01' }, // ignored (not complete)
+    { status: 'Complete', start: '2026-01-01' },                           // ignored (no actual_end)
+    { status: 'Complete', start: '2026-01-01', actual_end: '2026-01-03' }  // ignored (< 1 week)
+  ];
+  var _dpS = _durStats(_dpFix);
+  assert('_durStats n (filters non-Complete / no-end / sub-week)', _dpS.n, 5);
+  assert('_durStats median', _dpS.median, 6);
+  assert('_durStats p25', _dpS.p25, 4);
+  assert('_durStats p75', _dpS.p75, 8);
+  assert('_durStats empty → null', _durStats([]), null);
+
+  // ── Risk scoring engine (risk.js) ──────────────────────────
+  // Pin _riskConfig to defaults so band cutoffs / weights are deterministic.
+  (function () {
+    var _cfgSave = _riskConfig;
+    _riskConfig = JSON.parse(JSON.stringify(RISK_DEFAULT_CONFIG));
+    try {
+      assert('_rkClamp below 0', _rkClamp(-0.5), 0);
+      assert('_rkClamp above 1', _rkClamp(1.7), 1);
+      assert('_rkClamp mid', _rkClamp(0.4), 0.4);
+      var WK = 7 * 86400000;
+      assert('_rkWeeks 2 weeks', _rkWeeks(0, 2 * WK), 2);
+      assert('_rkWeeks null input', _rkWeeks(null, 5), null);
+      assert('_rkBand healthy (<25)', _rkBand(10), 'green');
+      assert('_rkBand watch (25)', _rkBand(25), 'amber');
+      assert('_rkBand watch (49)', _rkBand(49), 'amber');
+      assert('_rkBand at risk (50)', _rkBand(50), 'red');
+
+      // computeProjectRisk on synthetic completed projects (tasks injected = [])
+      var ctx = { catMult: {}, concurrency: function () { return 0; }, norm: 0, now: new Date('2026-06-01T12:00:00').getTime() };
+      var blown = { project_number: 'TEST-1', title: 'Blown', status: 'Complete', start: '2026-01-01', end: '2026-03-12', actual_end: '2026-09-01', contact: 'X' };
+      var rBlown = computeProjectRisk(blown, ctx, []);
+      assert('computeProjectRisk: big overrun → red band', rBlown.band, 'red');
+      var _sd = rBlown.factors.find(function (f) { return f.key === 'schedule_drift'; });
+      assert('computeProjectRisk: schedule_drift maxes at 1', _sd.severity, 1);
+
+      var healthy = { project_number: 'TEST-2', title: 'Healthy', status: 'Complete', start: '2026-01-01', end: '2026-03-12', actual_end: '2026-03-14', contact: 'Y' };
+      assert('computeProjectRisk: on-time finish → green band', computeProjectRisk(healthy, ctx, []).band, 'green');
+    } finally {
+      _riskConfig = _cfgSave;
+    }
+  })();
+
   // ── Render results panel ───────────────────────────────────
   function renderResults() {
     var bg = failed === 0 ? '#0F4C2E' : '#7C2D12';
