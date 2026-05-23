@@ -489,23 +489,26 @@ function renderSettingsPage(area) {
     navHtml += '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">People</div>' +
       navItem('team', 'Team members', activeCount) +
-      navItem('allocations', 'Allocations') +
       navItem('timetracking', 'Time tracking') +
+    '</div>' +
+    '<div class="settings-nav-group">' +
+      '<div class="settings-nav-label">Team setup</div>' +
+      navItem('teamintro', 'Team Introduction') +
+      navItem('reviewtypes', 'Review types') +
+      navItem('intake', 'Project intake') +
     '</div>' +
     '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">Project config</div>' +
       navItem('lists', 'Dropdown lists') +
       navItem('categories', 'Categories and tools') +
-      navItem('reviewtypes', 'Review types') +
-      navItem('intake', 'Project intake') +
       navItem('risk', 'Project Risk') +
+      navItem('allocations', 'Allocations') +
     '</div>' +
     '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">System</div>' +
-      navItem('ai', 'AI features') +
-      navItem('slideshow', 'Slideshow') +
       navItem('dataprogram', 'Data Program teams') +
-      navItem('teamintro', 'Team Introduction') +
+      navItem('slideshow', 'Slideshow') +
+      navItem('ai', 'AI features') +
       navItem('trash', 'Trash') +
       navItem('developer', 'Developer') +
     '</div>';
