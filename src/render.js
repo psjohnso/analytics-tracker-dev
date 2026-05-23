@@ -286,6 +286,12 @@ function buildSidebarFilters() {
 
   // Data Program toggle filter — count projects that would remain if this
   // toggle were ON, given other active filters.
+  // Data Program filter is only relevant to DP teams — hide it (and clear it)
+  // when scoped to a non-DP team.
+  var _dpTeamOk = (typeof isDataProgramTeam !== 'function') || isDataProgramTeam();
+  const dpSection = document.getElementById('dp-filter-section');
+  if (dpSection) dpSection.style.display = _dpTeamOk ? '' : 'none';
+  if (!_dpTeamOk && activeFilters.dataProgram) activeFilters.dataProgram = false;
   const dpCount = projectsExcluding('dataProgram').filter(p => p.is_data_program).length;
   const dpEl = document.getElementById('dp-filter');
   if (dpEl) {

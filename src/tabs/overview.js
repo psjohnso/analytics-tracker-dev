@@ -410,28 +410,66 @@ function getOverviewSlides() {
 // counts and the team roster come from PROJECTS / TASKS /
 // RESOURCES_DATA respectively.
 
+// Derive a team roster from RESOURCES_DATA for non-home teams: active,
+// non-affiliated members of the current team, leads first then alphabetical.
+// Role text is pre-escaped (renderOverview prints roster role as raw HTML so the
+// home team's curated <br> markup works).
+function _ovTeamRoster() {
+  var people = (typeof RESOURCES_DATA !== 'undefined' && RESOURCES_DATA && RESOURCES_DATA.people) ? RESOURCES_DATA.people : {};
+  var names = Object.keys(people).filter(function(n) {
+    var p = people[n];
+    if (!p || p.active === false || p.member_group === 'Affiliated') return false;
+    return (typeof inCurrentTeamPerson !== 'function') || inCurrentTeamPerson(n);
+  });
+  function isLead(n) {
+    var p = people[n];
+    return !!(p && p.data_program_lead_team && typeof CURRENT_TEAM !== 'undefined' &&
+      ((typeof sameTeam === 'function') ? sameTeam(p.data_program_lead_team, CURRENT_TEAM) : p.data_program_lead_team === CURRENT_TEAM));
+  }
+  names.sort(function(a, b) {
+    var la = isLead(a) ? 0 : 1, lb = isLead(b) ? 0 : 1;
+    if (la !== lb) return la - lb;
+    return a.localeCompare(b);
+  });
+  return names.map(function(n) {
+    var p = people[n];
+    var initials = n.split(/\s+/).map(function(w) { return w[0]; }).filter(Boolean).slice(0, 2).join('').toUpperCase();
+    return { initials: initials, name: n, role: esc(p.position_title || p.role || ''), lead: isLead(n) };
+  });
+}
+
 function renderOverview(area) {
+  // Home view = unscoped or scoped to the home team → full configured intro +
+  // curated roster. Non-home scoped team → auto/minimal intro + derived roster.
+  var homeView = (typeof isTeamScopingOn !== 'function' || !isTeamScopingOn()) ||
+    (typeof HOME_TEAM === 'undefined') ||
+    ((typeof sameTeam === 'function') ? sameTeam(CURRENT_TEAM, HOME_TEAM) : CURRENT_TEAM === HOME_TEAM);
   var intro = (typeof getTeamIntro === 'function') ? getTeamIntro() : TEAM_INTRO_DEFAULT_CONFIG;
   var dpTeams = (typeof getDataProgramTeams === 'function') ? getDataProgramTeams() : [];
+  var showDp = (typeof isDataProgramTeam !== 'function') || isDataProgramTeam();
 
-  // ── Live counts ─────────────────────────────────────────────────
-  var totalProjects = PROJECTS.length;
-  var totalTasks = TASKS.length;
+  // ── Live counts (scoped to the current team; no-op when unscoped) ──
+  var _ovProjects = (typeof teamProjects === 'function') ? teamProjects() : PROJECTS;
+  var _ovTasks = (typeof teamTasks === 'function') ? teamTasks() : TASKS;
+  var totalProjects = _ovProjects.length;
+  var totalTasks = _ovTasks.length;
 
   // Core team headcount: active members, excluding "Affiliated" group.
   var teamCount = 0;
-  if (typeof RESOURCES_DATA !== 'undefined' && RESOURCES_DATA && RESOURCES_DATA.people) {
+  var _rdLoaded = (typeof RESOURCES_DATA !== 'undefined' && RESOURCES_DATA && RESOURCES_DATA.people);
+  if (_rdLoaded) {
     Object.keys(RESOURCES_DATA.people).forEach(function(n) {
+      if (typeof inCurrentTeamPerson === 'function' && !inCurrentTeamPerson(n)) return;
       var pp = RESOURCES_DATA.people[n];
       if (pp && pp.active !== false && pp.member_group !== 'Affiliated') teamCount++;
     });
   }
-  if (!teamCount) teamCount = 10; // fallback when RESOURCES_DATA hasn't loaded
+  if (!teamCount && !_rdLoaded) teamCount = 10; // fallback only when RESOURCES_DATA hasn't loaded
 
   // Completions in the last 16 weeks (matches the Slideshow throughput slide window).
   var todayMs = Date.now();
   var sixteenStr = new Date(todayMs - 16 * 7 * 86400000).toISOString().slice(0, 10);
-  var completed16w = PROJECTS.filter(function(p) {
+  var completed16w = _ovProjects.filter(function(p) {
     return p.status === 'Complete' && p.actual_end && p.actual_end >= sixteenStr;
   }).length;
 
@@ -440,7 +478,7 @@ function renderOverview(area) {
   // "Water Department" into the same bucket).
   var partners = (intro.partners || []).map(function(pt) {
     var matchTerms = Array.isArray(pt.match) ? pt.match : (pt.match ? [pt.match] : []);
-    var count = PROJECTS.filter(function(p) {
+    var count = _ovProjects.filter(function(p) {
       if (p.status !== 'Active') return false;
       var dept = (p.partner_dept || '').toLowerCase();
       return matchTerms.some(function(m) { return dept.indexOf(String(m).toLowerCase()) >= 0; });
@@ -456,10 +494,10 @@ function renderOverview(area) {
     return Object.assign({}, t, { activeCount: active });
   });
 
-  // ── Roster (still hardcoded — derived loosely from RESOURCES_DATA could
-  // happen later, but the curated order + initials + lead designation are
-  // worth keeping editable in code for now). ──────────────────────────
-  var roster = [
+  // ── Roster ──────────────────────────────────────────────────────
+  // The home team keeps a curated, hand-ordered list (titles + lead flags worth
+  // keeping in code). Other teams derive theirs from RESOURCES_DATA (_ovTeamRoster).
+  var roster = !homeView ? _ovTeamRoster() : [
     { initials: 'PJ', name: 'Peter Johnson',           role: 'Data Intelligence Manager',          lead: true },
     { initials: 'JF', name: 'Jessica Fraver',          role: 'Lead GIS Analyst',                   lead: true },
     { initials: 'JM', name: 'James McGinnis',          role: 'Lead Data Analyst',                  lead: true },
@@ -478,17 +516,18 @@ function renderOverview(area) {
   // Hero
   html += '<section class="ov-hero">';
   html +=   '<div class="ov-hero-eyebrow">' + esc(intro.eyebrow || '') + '</div>';
-  html +=   '<h1 class="ov-hero-mission">' + esc(intro.mission || '') + '</h1>';
+  if (intro.mission) html += '<h1 class="ov-hero-mission">' + esc(intro.mission) + '</h1>';
   html +=   '<div class="ov-hero-stats">';
   html +=     '<div class="ov-stat"><span class="ov-stat-num">' + teamCount + '</span><span class="ov-stat-lbl">team members</span></div>';
-  html +=     '<div class="ov-stat"><span class="ov-stat-num">' + partners.length + '</span><span class="ov-stat-lbl">top partner departments</span></div>';
+  if (partners.length) html += '<div class="ov-stat"><span class="ov-stat-num">' + partners.length + '</span><span class="ov-stat-lbl">top partner departments</span></div>';
   html +=     '<div class="ov-stat"><span class="ov-stat-num">' + totalProjects.toLocaleString() + '</span><span class="ov-stat-lbl">projects tracked</span></div>';
   html +=     '<div class="ov-stat"><span class="ov-stat-num">' + totalTasks.toLocaleString() + '</span><span class="ov-stat-lbl">tasks tracked</span></div>';
   html +=     '<div class="ov-stat"><span class="ov-stat-num">' + completed16w + '</span><span class="ov-stat-lbl">completed in last 16 weeks</span></div>';
   html +=   '</div>';
   html += '</section>';
 
-  // Services
+  // Services (skipped when the team has no configured services)
+  if ((intro.services || []).length) {
   html += '<section class="ov-section">';
   html +=   '<h2>What we do</h2>';
   html +=   '<p class="ov-lede">' + (intro.services || []).length + ' service areas spanning the data lifecycle &mdash; from policy and standards to the products partner departments use every day.</p>';
@@ -502,8 +541,10 @@ function renderOverview(area) {
   });
   html +=   '</div>';
   html += '</section>';
+  }
 
-  // Data Program section
+  // Data Program section (only for Data Program teams)
+  if (showDp) {
   html += '<section class="ov-section">';
   html +=   '<h2>Part of the broader Data Program</h2>';
   html +=   '<p class="ov-lede">' + dpTeams.length + ' teams, one program. We&rsquo;re the analytics-and-products arm of the City&rsquo;s Data Program.</p>';
@@ -517,8 +558,10 @@ function renderOverview(area) {
   });
   html +=   '</div>';
   html += '</section>';
+  }
 
-  // Goals
+  // Goals (skipped when the team has no configured goals)
+  if ((intro.goals || []).length) {
   html += '<section class="ov-section">';
   html +=   '<h2>' + esc(intro.goalsHeading || 'Goals') + '</h2>';
   html +=   '<p class="ov-lede">' + esc(intro.goalsLede || '') + '</p>';
@@ -534,11 +577,14 @@ function renderOverview(area) {
   });
   html +=   '</div>';
   html += '</section>';
+  }
 
   // Team
   html += '<section class="ov-section">';
   html +=   '<h2>The team</h2>';
-  html +=   '<p class="ov-lede">' + roster.length + ' people doing analytics, GIS, governance, and AI work for the city.</p>';
+  html +=   '<p class="ov-lede">' + (homeView
+    ? roster.length + ' people doing analytics, GIS, governance, and AI work for the city.'
+    : roster.length + ' team member' + (roster.length === 1 ? '' : 's') + '.') + '</p>';
   html +=   '<div class="ov-team">';
   roster.forEach(function(p) {
     html += '<div class="ov-person' + (p.lead ? ' lead' : '') + '">';
@@ -554,7 +600,8 @@ function renderOverview(area) {
   html +=   '</div>';
   html += '</section>';
 
-  // Partners
+  // Partners (skipped when the team has no configured partner departments)
+  if (partners.length) {
   html += '<section class="ov-section">';
   html +=   '<h2>Departments we partner with</h2>';
   html +=   '<p class="ov-lede">Where most of our active work happens &mdash; though we serve every department in the city.</p>';
@@ -568,6 +615,7 @@ function renderOverview(area) {
   });
   html +=   '</div>';
   html += '</section>';
+  }
 
   // About this app
   html += '<section class="ov-about">';
@@ -582,5 +630,5 @@ function renderOverview(area) {
 
   area.innerHTML = html;
   var rc = document.getElementById('result-count');
-  if (rc) rc.textContent = PROJECTS.length + ' projects · ' + TASKS.length + ' tasks';
+  if (rc) rc.textContent = totalProjects + ' projects · ' + totalTasks + ' tasks';
 }

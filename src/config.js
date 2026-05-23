@@ -57,7 +57,18 @@ function getDataProgramTeams() {
 // Team Introduction. Falls back to TEAM_INTRO_DEFAULT_CONFIG until
 // app_config.team_intro loads.
 var _teamIntroConfig = null;
-function getTeamIntro() { return _teamIntroConfig || TEAM_INTRO_DEFAULT_CONFIG; }
+function getTeamIntro(team) {
+  var cfg = _teamIntroConfig || TEAM_INTRO_DEFAULT_CONFIG;
+  // Team scoping (Phase 4): the home team (or unscoped) gets the full configured
+  // intro; other teams get an auto/minimal intro with no home-team prose. The
+  // Overview tab fills in their roster + scoped counts around this.
+  var scopeOn = (typeof isTeamScopingOn === 'function') && isTeamScopingOn();
+  if (typeof team === 'undefined') team = (typeof CURRENT_TEAM !== 'undefined') ? CURRENT_TEAM : null;
+  var isHome = !scopeOn || (typeof HOME_TEAM === 'undefined') ||
+    ((typeof sameTeam === 'function') ? sameTeam(team, HOME_TEAM) : team === HOME_TEAM);
+  if (isHome) return cfg;
+  return { eyebrow: team || '', mission: '', services: [], goals: [], partners: [], about: (cfg && cfg.about) || '', goalsHeading: '', goalsLede: '' };
+}
 
 // Productivity factor applied to per-week project capacity. Admin-tunable via Settings → Allocations.
 // Default 0.75 accounts for non-project overhead (meetings, email, breaks, context-switching).

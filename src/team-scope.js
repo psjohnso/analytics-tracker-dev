@@ -131,6 +131,18 @@ function inCurrentTeamProject(p) { return !isTeamScopingOn() || sameTeam(effecti
 function inCurrentTeamTask(t)    { return !isTeamScopingOn() || sameTeam(taskTeam(t), CURRENT_TEAM); }
 function inCurrentTeamPerson(n)  { return !isTeamScopingOn() || sameTeam(personTeam(n), CURRENT_TEAM); }
 
+// True if the team (default CURRENT_TEAM) is a Data Program team. Used to hide
+// DP-specific views for non-DP teams. Unscoped / All teams → true (show DP).
+function isDataProgramTeam(team) {
+  if (typeof team === 'undefined') team = CURRENT_TEAM;
+  if (!team) return true;
+  var dp = (typeof getDataProgramTeams === 'function') ? getDataProgramTeams() : [];
+  return dp.some(function (t) {
+    var n = (t && t.name) ? t.name : t;
+    return (typeof sameTeam === 'function') ? sameTeam(n, team) : n === team;
+  });
+}
+
 // List builders — return the full set when scoping is off.
 function teamProjects(team) {
   if (typeof PROJECTS === 'undefined' || !PROJECTS) return [];
