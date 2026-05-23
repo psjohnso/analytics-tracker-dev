@@ -670,18 +670,19 @@ function switchTab(tab, preserveFilters) {
   applyPrimaryTabVisibility();
   document.getElementById('view-toggle').style.display = (tab === 'overview' || tab === 'mywork' || tab === 'resources' || tab === 'settings' || tab === 'forecast' || tab === 'insights' || tab === 'issues' || tab === 'projectReview' || tab === 'teamload' || tab === 'effortshape') ? 'none' : 'flex';
   // Sync toggle button highlight with current view preference
+  // Board view is Projects-only — fall back to List on other tabs.
+  if (tab !== 'projects' && currentView === 'board') currentView = 'list';
   document.getElementById('view-grid').classList.toggle('active', currentView === 'grid');
   document.getElementById('view-list').classList.toggle('active', currentView === 'list');
+  var _vboard = document.getElementById('view-board');
+  if (_vboard) { _vboard.style.display = (tab === 'projects') ? '' : 'none'; _vboard.classList.toggle('active', currentView === 'board'); }
   document.getElementById('sort-select').style.display = (tab === 'projects' || tab === 'tasks') ? '' : 'none';
   // Hide entire toolbar on tabs that don't need it
   document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'achievements' || tab === 'projectReview' || tab === 'teamload' || tab === 'effortshape') ? 'none' : '';
   const addBtn = document.getElementById('btn-add-new');
+  // Projects are created from the persistent header button (Submit Idea / New
+  // Project). The toolbar button is only the "＋ New Task" entry on the Tasks tab.
   if (tab === 'tasks') { addBtn.style.display='flex'; addBtn.textContent='＋ New Task'; }
-  else if (tab === 'projects' && typeof canCreateProject === 'function' && canCreateProject()) {
-    // Anyone who can create a project directly — admins, team leads, and members
-    // of a team that opted out of the Submit Idea flow — gets this button.
-    addBtn.style.display='flex'; addBtn.textContent='＋ New Project';
-  }
   else { addBtn.style.display='none'; }
   document.getElementById('open-projects-btn').style.display = (tab === 'projects') ? 'flex' : 'none';
   document.getElementById('open-tasks-btn').style.display = (tab === 'tasks') ? 'flex' : 'none';
@@ -743,6 +744,8 @@ function setView(v) {
   currentView = v;
   document.getElementById('view-grid').classList.toggle('active', v==='grid');
   document.getElementById('view-list').classList.toggle('active', v==='list');
+  var vb = document.getElementById('view-board');
+  if (vb) vb.classList.toggle('active', v==='board');
   render();
 }
 

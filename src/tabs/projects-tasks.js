@@ -72,6 +72,166 @@ function projectCard(p) {
   </div>`;
 }
 
+// ─── PROJECT BOARD (Kanban) ───────────────────────────────────────────
+// Status columns; drag a card to another column to change its status (same
+// rules as the form: edit permission required, Idea→other needs promote rights,
+// a size is required to leave Idea, completion date auto-set on Complete via
+// DataStore). The "＋ Add" control is in the Idea column for everyone (Submit
+// Idea) and in every other column for admins only (full New Project editor).
+var _boardDragId = null;
+var BOARD_STATUS_ORDER = ['Idea', 'Future', 'Scheduled', 'Active', 'On Hold', 'Complete', 'Canceled'];
+
+function boardColumns() {
+  var cols = BOARD_STATUS_ORDER.slice();
+  var enums = (typeof FM_PROJ_STATUSES !== 'undefined' && FM_PROJ_STATUSES) ? FM_PROJ_STATUSES : [];
+  enums.forEach(function(s) { if (s && cols.indexOf(s) < 0) cols.push(s); });
+  return cols;
+}
+
+function _boardToday() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function renderProjectBoard(data) {
+  var cols = boardColumns();
+  var byStatus = {};
+  cols.forEach(function(s) { byStatus[s] = []; });
+  (data || []).forEach(function(p) {
+    var s = p.status || 'Idea';
+    if (!byStatus[s]) { byStatus[s] = []; cols.push(s); }
+    byStatus[s].push(p);
+  });
+  // Sort each column: High→Low priority, then soonest due date.
+  var prRank = { High: 0, Medium: 1, Low: 2 };
+  cols.forEach(function(s) {
+    (byStatus[s] || []).sort(function(a, b) {
+      var pa = prRank[a.priority] == null ? 3 : prRank[a.priority];
+      var pb = prRank[b.priority] == null ? 3 : prRank[b.priority];
+      if (pa !== pb) return pa - pb;
+      var da = a.working_due || a.end || '9999-99-99';
+      var db = b.working_due || b.end || '9999-99-99';
+      return da < db ? -1 : da > db ? 1 : 0;
+    });
+  });
+  var admin = (typeof isAdmin === 'function') && isAdmin();
+  // Admins can add a project at any status. A team lead can too — but only when
+  // their team has opted out of the Submit Idea phase (Settings → Project intake),
+  // since those teams create projects directly. Everyone gets the Idea column.
+  var leadDirect = (typeof isTeamLeadRole === 'function' && isTeamLeadRole()) &&
+    (typeof teamCreatesDirectly === 'function' && teamCreatesDirectly(typeof getLeadTeam === 'function' ? getLeadTeam() : null));
+  var canAddAnyStatus = admin || leadDirect;
+  var html = '<div class="kanban-board">';
+  cols.forEach(function(s) {
+    var list = byStatus[s] || [];
+    var color = STATUS_COLOR(s);
+    var cards = list.map(boardCard).join('') || '<div class="kanban-empty">No projects</div>';
+    var addBtn = '';
+    if (s === 'Idea') {
+      addBtn = '<div class="kanban-add" onclick="boardAddIdea()">＋ Add</div>';
+    } else if (canAddAnyStatus) {
+      addBtn = '<div class="kanban-add" onclick="boardAddProject(\'' + String(s).replace(/'/g, "\\'") + '\')">＋ Add</div>';
+    }
+    html += '<div class="kanban-col" ondragover="boardOver(event)" ondragleave="boardLeave(event)" ondrop="boardDrop(event,\'' + String(s).replace(/'/g, "\\'") + '\')">' +
+      '<div class="kanban-col-head">' +
+        '<span class="kanban-dot" style="background:' + color + ';"></span>' +
+        '<span class="kanban-col-name">' + esc(s) + '</span>' +
+        '<span class="kanban-col-count">' + list.length + '</span>' +
+      '</div>' +
+      '<div class="kanban-col-body">' + cards + addBtn + '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function boardCard(p) {
+  var canEdit = (typeof canEditProject === 'function') ? canEditProject(p) : false;
+  var statusColor = STATUS_COLOR(p.status) || '#9CA3AF';
+  var counts = getTaskCountsForProject(p);
+  var due = (p.status === 'Complete' && p.actual_end) ? p.actual_end : (p.working_due || p.end || '');
+  var overdue = due && p.status !== 'Complete' && p.status !== 'Canceled' && due < _boardToday();
+  var initials = (p.contact || '?').split(' ').map(function(n) { return n[0]; }).join('').slice(0, 2).toUpperCase();
+  var emj = (typeof getMemberAvatarEmoji === 'function') ? getMemberAvatarEmoji(p.contact) : '';
+  var taskChip = counts.total > 0 ? '<span title="Tasks">✓ ' + counts.done + '/' + counts.total + '</span>' : '';
+  var deptStr = p.partner_dept ? (p.partner_dept.length > 24 ? p.partner_dept.slice(0, 24) + '…' : p.partner_dept) : '';
+  return '<div class="kanban-card"' + (canEdit ? ' draggable="true"' : '') +
+      ' onclick="openProject(' + p.objectId + ')"' +
+      (canEdit ? ' ondragstart="boardDragStart(event,' + p.objectId + ')" ondragend="boardDragEnd(event)"' : '') +
+      ' style="border-left-color:' + statusColor + ';"' +
+      (canEdit ? '' : ' title="You don\'t have permission to move this project"') + '>' +
+    '<div class="kanban-card-title">' + (typeof projectNumChip === 'function' ? projectNumChip(p.project_number) : '') + esc(p.title) + '</div>' +
+    '<div class="kanban-meta">' +
+      '<span class="priority-badge priority-' + (p.priority || 'null') + '">' + (p.priority || '—') + '</span>' +
+      (p.project_size ? '<span class="kanban-size">' + esc(p.project_size) + '</span>' : '') +
+      (p.is_data_program ? '<span class="meta-tag" style="background:#FFF7ED;border-color:#FED7AA;color:#9A3412;">DP</span>' : '') +
+    '</div>' +
+    (deptStr ? '<div class="kanban-meta">' + esc(deptStr) + '</div>' : '') +
+    '<div class="kanban-foot">' +
+      '<span class="kanban-ava"' + (emj ? ' style="background:transparent;"' : '') + '>' + (emj || initials) + '</span>' +
+      '<span>' + esc((p.contact || 'Unassigned').split(' ')[0]) + '</span>' +
+      taskChip +
+      (due ? '<span class="' + (overdue ? 'kanban-due--over' : '') + '" style="margin-left:auto;">📅 ' + esc(due) + '</span>' : '<span style="margin-left:auto;"></span>') +
+    '</div>' +
+  '</div>';
+}
+
+// ── Add controls ──
+function boardAddIdea() {
+  if (typeof openIdeaForm === 'function') openIdeaForm();
+}
+function boardAddProject(status) {
+  if (typeof openFormModal !== 'function') return;
+  openFormModal('new-project');
+  var sel = document.getElementById('fm-status');
+  if (sel && status) sel.value = status;
+}
+
+// ── Drag & drop ──
+function boardDragStart(e, oid) {
+  _boardDragId = oid;
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', String(oid)); } catch (_) {}
+  var el = e.currentTarget;
+  setTimeout(function() { el.classList.add('kanban-card--dragging'); }, 0);
+}
+function boardDragEnd(e) { e.currentTarget.classList.remove('kanban-card--dragging'); }
+function boardOver(e) { e.preventDefault(); e.currentTarget.classList.add('kanban-col--drop'); }
+function boardLeave(e) { e.currentTarget.classList.remove('kanban-col--drop'); }
+
+async function boardDrop(e, newStatus) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('kanban-col--drop');
+  var oid = _boardDragId;
+  _boardDragId = null;
+  if (oid == null) return;
+  var p = (typeof PROJECTS !== 'undefined' && PROJECTS) ? PROJECTS.find(function(x) { return x.objectId == oid; }) : null;
+  if (!p || p.status === newStatus) return;
+  if (typeof canEditProject === 'function' && !canEditProject(p)) {
+    showToast('Only the project lead, the team lead, or an admin can change this project.', 'warn');
+    return;
+  }
+  if (p.status === 'Idea' && newStatus !== 'Idea' && !(typeof Auth !== 'undefined' && Auth && Auth.canPromote)) {
+    showToast('Only authorized users can promote an Idea. Contact your administrator.', 'warn');
+    return;
+  }
+  // Business rule (mirrors the form): a size is required before leaving Idea into
+  // an active state. Open the editor so they can set size + status together.
+  if (newStatus !== 'Idea' && newStatus !== 'Canceled' && !p.project_size) {
+    showToast('Set a project size to move “' + p.title + '” to ' + newStatus + '.', 'warn');
+    if (typeof openProject === 'function') openProject(p.objectId);
+    return;
+  }
+  try {
+    await DataStore.updateProject(p.objectId, { status: newStatus });
+    if (typeof markDataDirty === 'function') markDataDirty();
+    render();
+  } catch (err) {
+    console.error('[Board] status change failed:', err);
+    showToast('Could not update status: ' + (err && err.message ? err.message : err), 'error');
+  }
+}
+
 // ─── PROJECT LIST ─────────────────────────────────────────────────────
 function setProjListSort(key) {
   if (projListSortKey === key) projListSortDir = projListSortDir === 'asc' ? 'desc' : 'asc';

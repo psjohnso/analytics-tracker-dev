@@ -1,5 +1,6 @@
 # Local Claude Code config, memory, and machine-specific settings — never commit
 .claude/
+src.zip
 
 # OS / editor cruft
 .DS_Store
