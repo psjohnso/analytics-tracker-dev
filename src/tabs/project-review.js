@@ -340,6 +340,9 @@ function prGetProjectsForReview(rt, statuses, assignee, query) {
   if (!scope.length) return [];
   var requireDataProgram = !!(rt.filter && rt.filter.require_data_program);
   var inScope = PROJECTS.filter(function(p) {
+    // Team scope first (no-op when off): a broad review type must never surface
+    // another team's projects to a scoped user.
+    if (typeof inCurrentTeamProject === 'function' && !inCurrentTeamProject(p)) return false;
     var scopeVal = useTeams ? p.owning_team : p.itd_team;
     if (!scopeVal) return false;
     if (scope.indexOf(scopeVal) < 0) return false;
@@ -523,10 +526,28 @@ function prToggleAllLog(projNum) {
   render();
 }
 
+// Review types relevant to the current team (returns all when scoping is off).
+// A type is relevant if its team scope includes CURRENT_TEAM. Falls back to all
+// if none are configured for the team, so the page never goes blank — inScope
+// still hard-filters projects to the team regardless.
+function _prVisibleReviewTypes() {
+  var all = _reviewTypes || [];
+  if (typeof isTeamScopingOn !== 'function' || !isTeamScopingOn()) return all;
+  var matches = all.filter(function(rt) {
+    var teams = (rt && rt.filter && Array.isArray(rt.filter.teams)) ? rt.filter.teams : [];
+    return teams.some(function(t) { return (typeof sameTeam === 'function') ? sameTeam(t, CURRENT_TEAM) : t === CURRENT_TEAM; });
+  });
+  return matches.length ? matches : all;
+}
+
 function renderProjectReview(area) {
-  // Pick a default review type if none selected (or if previous is gone)
-  if (!_currentReviewTypeId || !getReviewType(_currentReviewTypeId)) {
-    _currentReviewTypeId = (_reviewTypes && _reviewTypes.length) ? _reviewTypes[0].id : null;
+  // Pick a default review type if none selected, the previous is gone, or it's
+  // not visible under the current team scope.
+  var _visRts = _prVisibleReviewTypes();
+  var _curVisible = _currentReviewTypeId && getReviewType(_currentReviewTypeId) &&
+    _visRts.some(function(t) { return t.id === _currentReviewTypeId; });
+  if (!_curVisible) {
+    _currentReviewTypeId = _visRts.length ? _visRts[0].id : null;
     _reviewFilterStatuses = prGetDefaultStatusesFor(getReviewType(_currentReviewTypeId));
     _reviewAssigneeFilter = '';
   }
@@ -540,10 +561,10 @@ function renderProjectReview(area) {
   html += '<div class="pr-title">Project Review <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;background:#FFF7ED;color:#9A3412;border:1px solid #FED7AA;margin-left:8px;vertical-align:middle;letter-spacing:0.06em;text-transform:uppercase;font-family:Lato,sans-serif;">Beta</span></div>';
   html += '<div class="pr-subtitle">Recurring portfolio review &mdash; one card per project, walked through person-by-person.</div>';
   html += '</div>';
-  if (_reviewTypes && _reviewTypes.length) {
+  if (_visRts && _visRts.length) {
     html += '<div class="pr-rt-selector">';
     html += '<span class="pr-rt-label">Review Type</span>';
-    _reviewTypes.forEach(function(t) {
+    _visRts.forEach(function(t) {
       var inScopeCount = prGetProjectsForReview(t).filter(function(p) { return p.status === 'Active' || p.status === 'Scheduled'; }).length;
       var cls = 'pr-rt-pill' + (t.id === _currentReviewTypeId ? ' active' : '');
       html += '<button class="' + cls + '" onclick="prSwitchReviewType(\'' + esc(t.id) + '\')">' +

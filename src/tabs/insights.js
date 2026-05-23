@@ -260,7 +260,8 @@ function _calibRenderSizeTable(data) {
 }
 
 function buildInsightsPage() {
-  var completed = PROJECTS.filter(function(p) { return p.status === 'Complete'; });
+  // Scope to the current team's projects (no-op when team scoping is off).
+  var completed = (typeof teamProjects === 'function' ? teamProjects() : PROJECTS).filter(function(p) { return p.status === 'Complete'; });
 
   // Weeks between two YYYY-MM-DD date strings; null if either missing or non-positive.
   function _weeksBetween(startStr, endStr) {
@@ -652,6 +653,7 @@ function _paComputeAggregation() {
     if (wi === undefined || wi >= curIdx) return; // past (reflected) weeks only
     var person = RESOURCES_DATA.people[name];
     if (!person) return;
+    if (typeof inCurrentTeamPerson === 'function' && !inCurrentTeamPerson(name)) return; // team scope (no-op off)
     var projCap = (person.proj_cap && person.proj_cap[wi]) || 0;
     var liveAlloc = (person.allocations || []).find(function(al) { return String(al.analytics_id) === String(projNum); });
     var plannedHrs = (planned[key] || 0) * projCap;
