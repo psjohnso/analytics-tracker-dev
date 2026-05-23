@@ -449,7 +449,7 @@ function renderSettingsPage(area) {
   // Access: admins see all sections; team leads see Preferences + their own
   // team's members; everyone else sees Preferences only.
   if (!isAdminUser) {
-    var leadOk = isLeadUser && (_settingsSection === 'team' || _settingsSection === 'teamintro');
+    var leadOk = isLeadUser && (_settingsSection === 'team' || _settingsSection === 'teamintro' || _settingsSection === 'reviewtypes');
     if (_settingsSection !== 'preferences' && !leadOk) _settingsSection = 'preferences';
   }
 
@@ -513,6 +513,7 @@ function renderSettingsPage(area) {
       '<div class="settings-nav-label">' + esc(leadTeam) + '</div>' +
       navItem('team', 'Team members', activeCount) +
       navItem('teamintro', 'Team Introduction') +
+      navItem('reviewtypes', 'Review types') +
     '</div>';
   }
   navHtml += '</div>';
@@ -522,7 +523,7 @@ function renderSettingsPage(area) {
 
   if (_settingsSection === 'preferences') {
     panelHtml = buildPreferencesPanel();
-  } else if (!isAdminUser && !(isLeadUser && (_settingsSection === 'team' || _settingsSection === 'teamintro'))) {
+  } else if (!isAdminUser && !(isLeadUser && (_settingsSection === 'team' || _settingsSection === 'teamintro' || _settingsSection === 'reviewtypes'))) {
     panelHtml = '<div class="empty-state">You do not have access to this section.</div>';
   } else {
   if (_settingsSection === 'team') {

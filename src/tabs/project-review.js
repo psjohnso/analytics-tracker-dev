@@ -533,11 +533,14 @@ function prToggleAllLog(projNum) {
 function _prVisibleReviewTypes() {
   var all = _reviewTypes || [];
   if (typeof isTeamScopingOn !== 'function' || !isTeamScopingOn()) return all;
-  var matches = all.filter(function(rt) {
+  // A team sees only the reviews that apply to it (their team is in filter.teams).
+  // No fallback: a team with no applicable reviews sees none — never another
+  // team's reviews. (e.g. Office of Equity sees neither the Data Intelligence nor
+  // the Data Team review; EDI sees the Data Team review since EDI is in its scope.)
+  return all.filter(function(rt) {
     var teams = (rt && rt.filter && Array.isArray(rt.filter.teams)) ? rt.filter.teams : [];
     return teams.some(function(t) { return (typeof sameTeam === 'function') ? sameTeam(t, CURRENT_TEAM) : t === CURRENT_TEAM; });
   });
-  return matches.length ? matches : all;
 }
 
 function renderProjectReview(area) {
@@ -1205,16 +1208,30 @@ async function prDeleteLog(objectId) {
 }
 
 // ── Settings: Review Types editor ────────────────────────────
+// Tier 2: a non-admin Team Lead manages only their own team's review types.
+function _prRtActorLeadTeam() {
+  return (typeof isAdmin === 'function' && !isAdmin() && typeof getLeadTeam === 'function') ? getLeadTeam() : null;
+}
+function _prRtInActorTeam(rt) {
+  var lead = _prRtActorLeadTeam();
+  if (!lead) return true; // admins (and non-leads) see all
+  var teams = prRtScopeTeams(rt) || [];
+  return teams.some(function (t) { return (typeof sameTeam === 'function') ? sameTeam(t, lead) : t === lead; });
+}
+
 function renderReviewTypesTable() {
   var container = document.getElementById('review-types-table');
   if (!container) return;
-  if (!_reviewTypes || !_reviewTypes.length) {
-    container.innerHTML = '<div style="background:#fff;border:1px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-muted);font-style:italic;font-family:Cardo,serif;">No review types defined yet. Click &ldquo;Add review type&rdquo; to create one.</div>';
+  var _visibleRts = (_reviewTypes || []).filter(function(rt) { return _prRtInActorTeam(rt); });
+  if (!_visibleRts.length) {
+    var _forYour = _prRtActorLeadTeam() ? ' for your team' : '';
+    container.innerHTML = '<div style="background:#fff;border:1px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-muted);font-style:italic;font-family:Cardo,serif;">No review types' + _forYour + ' yet. Click &ldquo;Add review type&rdquo; to create one.</div>';
     return;
   }
   var html = '<table class="pr-rt-table">';
   html += '<thead><tr><th>Name</th><th>Cadence</th><th>Teams in scope</th><th>Default attendees</th><th style="text-align:right;">Actions</th></tr></thead><tbody>';
   _reviewTypes.forEach(function(rt, i) {
+    if (!_prRtInActorTeam(rt)) return; // team leads see only their own team's lanes (i stays the real index)
     var cadenceLabel = (rt.cadence_days === 7) ? 'Weekly' :
                        (rt.cadence_days === 14) ? 'Biweekly' :
                        (rt.cadence_days ? rt.cadence_days + ' days' : '—');
@@ -1244,16 +1261,23 @@ function renderReviewTypesTable() {
 function prRtOpenForm(index) {
   var isNew = (index == null);
   var existing = isNew ? null : _reviewTypes[index];
+  var actorLead = _prRtActorLeadTeam();
+  if (!isNew && actorLead && !_prRtInActorTeam(existing)) {
+    showToast('You can only edit your own team\'s review types.', 'warn');
+    return;
+  }
   var data = existing ? JSON.parse(JSON.stringify(existing)) : {
     id: '', name: '', description: '',
-    filter: { teams: [] },
+    filter: { teams: actorLead ? [actorLead] : [] },
     cadence_days: 14,
     default_attendees: []
   };
 
-  var teamsList = (typeof _customOwningTeams !== 'undefined' && _customOwningTeams.length) ? _customOwningTeams.slice()
-    : ((typeof FM_OWNING_TEAMS !== 'undefined') ? FM_OWNING_TEAMS.slice() : []);
-  var scopeTeams = prRtScopeTeams(data);
+  // Team Leads can only scope to their own team; admins choose any.
+  var teamsList = actorLead ? [actorLead]
+    : ((typeof _customOwningTeams !== 'undefined' && _customOwningTeams.length) ? _customOwningTeams.slice()
+      : ((typeof FM_OWNING_TEAMS !== 'undefined') ? FM_OWNING_TEAMS.slice() : []));
+  var scopeTeams = actorLead ? [actorLead] : prRtScopeTeams(data);
   var memberNames = (RESOURCES_DATA && RESOURCES_DATA.people) ?
     Object.keys(RESOURCES_DATA.people).filter(function(n) { return RESOURCES_DATA.people[n].active !== false; }).sort() : [];
 
@@ -1285,7 +1309,8 @@ function prRtOpenForm(index) {
   } else {
     teamsList.forEach(function(t) {
       var checked = (scopeTeams.indexOf(t) >= 0) ? ' checked' : '';
-      html += '<label><input type="checkbox" class="pr-rt-team-cb" value="' + esc(t) + '"' + checked + '> ' + esc(t) + '</label>';
+      var lock = actorLead ? ' disabled title="Team Leads can only scope reviews to their own team"' : '';
+      html += '<label><input type="checkbox" class="pr-rt-team-cb" value="' + esc(t) + '"' + checked + lock + '> ' + esc(t) + '</label>';
     });
   }
   html += '</div>';
@@ -1361,6 +1386,19 @@ async function prRtSaveForm(index) {
   if (!id) { showToast('ID is required.', 'error'); if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = (index < 0 ? 'Add Review Type' : 'Save Changes'); } return; }
 
   var isNew = (index < 0);
+  // Team Lead enforcement: lock scope to their team and block editing others'.
+  var actorLead = _prRtActorLeadTeam();
+  if (actorLead) {
+    if (!isNew) {
+      var _ex = _reviewTypes[index];
+      if (_ex && !_prRtInActorTeam(_ex)) {
+        showToast('You can only edit your own team\'s review types.', 'warn');
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; }
+        return;
+      }
+    }
+    teams = [actorLead];
+  }
   if (isNew) {
     if (_reviewTypes.some(function(rt) { return rt.id === id; })) {
       showToast('A review type with id "' + id + '" already exists.', 'error');
@@ -1399,6 +1437,11 @@ async function prRtSaveForm(index) {
 async function prRtDelete(index) {
   var rt = _reviewTypes[index];
   if (!rt) return;
+  var actorLead = _prRtActorLeadTeam();
+  if (actorLead && !_prRtInActorTeam(rt)) {
+    showToast('You can only delete your own team\'s review types.', 'warn');
+    return;
+  }
   // Check if any reviews exist for this type
   var existingCount = PROJECT_REVIEWS.filter(function(r) { return r.review_type_id === rt.id; }).length;
   var msg = 'Delete review type "' + rt.name + '"?';
