@@ -33,8 +33,83 @@ const _defaultItdTeams = [
   'Data Librarian'
 ];
 
+// ── Org structure (Department → Team → Unit) — Idea 2, Phase A ──────────
+// Single source of truth for the org hierarchy. Admins edit it via Settings →
+// Organization (later phase). Until app_config.org_structure is set, the accessors
+// fall back to this best-effort seed; teams/units not listed here are "unassigned"
+// (departmentOfTeam → null) and still available through the legacy flat lists, so
+// nothing is lost. Data Program is a separate cross-cutting collection, not here.
+const DEFAULT_ORG_STRUCTURE = {
+  departments: [
+    { name: 'Information Technology', short: 'IT', teams: [
+      { name: 'Data Intelligence', units: ['Geographic Information Systems', 'Business & Advanced Analytics', 'Artificial Intelligence'] },
+      { name: 'Architects', units: [] },
+      { name: 'Emerging Data Infrastructure', units: ['Emerging Data Infrastructure - Cloud Data Services'] }
+    ] },
+    { name: "City Manager's Office", short: 'CMO', teams: [
+      { name: 'Office of Equity', units: [] }
+    ] }
+  ]
+};
+var _orgStructure = null; // set from app_config.org_structure; falls back to the seed
+function getOrgStructure() {
+  return (_orgStructure && Array.isArray(_orgStructure.departments)) ? _orgStructure : DEFAULT_ORG_STRUCTURE;
+}
+function orgDepartments() { return getOrgStructure().departments || []; }
+function _orgTeamMatch(a, b) { return (typeof sameTeam === 'function') ? sameTeam(a, b) : a === b; }
+function orgTeams() {
+  var out = [];
+  orgDepartments().forEach(function(d) { (d.teams || []).forEach(function(t) { if (t && t.name) out.push(t.name); }); });
+  return out;
+}
+function orgAllUnits() {
+  var out = [];
+  orgDepartments().forEach(function(d) { (d.teams || []).forEach(function(t) { (t.units || []).forEach(function(u) { if (u) out.push(u); }); }); });
+  return out;
+}
+// Units of a single team (empty if the team isn't in the tree). No team → all units.
+function orgUnits(team) {
+  if (!team) return orgAllUnits();
+  var found = [];
+  orgDepartments().forEach(function(d) { (d.teams || []).forEach(function(t) {
+    if (t && _orgTeamMatch(t.name, team)) found = (t.units || []).slice();
+  }); });
+  return found;
+}
+// The department a team belongs to → { name, short } or null if unassigned.
+function departmentOfTeam(team) {
+  if (!team) return null;
+  var dep = null;
+  orgDepartments().forEach(function(d) { (d.teams || []).forEach(function(t) {
+    if (t && _orgTeamMatch(t.name, team)) dep = { name: d.name, short: d.short || '' };
+  }); });
+  return dep;
+}
+function teamsInDepartment(deptName) {
+  var out = [];
+  orgDepartments().forEach(function(d) {
+    if (_orgTeamMatch(d.name, deptName)) (d.teams || []).forEach(function(t) { if (t && t.name) out.push(t.name); });
+  });
+  return out;
+}
+// When an org_structure is configured, fold its teams/units into the legacy flat
+// lists (union — never drop a legacy value) so existing consumers keep working
+// while the tree becomes the source of truth. No-op until org_structure is set.
+function _deriveOrgLists() {
+  if (!_orgStructure || !Array.isArray(_orgStructure.departments)) return;
+  function union(base, add) {
+    var out = (base || []).slice();
+    (add || []).forEach(function(v) {
+      if (v && !out.some(function(x) { return _orgTeamMatch(x, v); })) out.push(v);
+    });
+    return out;
+  }
+  _customOwningTeams = union(orgTeams(), _customOwningTeams);
+  _customItdTeams = union(orgAllUnits(), _customItdTeams);
+}
+
 // ObjectIds for the two config records (populated on load from ArcGIS)
-const _configOids = { partner_depts: null, itd_teams: null, owning_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null, display_config: null, data_program: null, team_intro: null, risk_config: null, team_scoping: null, direct_project_teams: null };
+const _configOids = { partner_depts: null, itd_teams: null, owning_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null, display_config: null, data_program: null, team_intro: null, risk_config: null, team_scoping: null, direct_project_teams: null, org_structure: null };
 
 // Slideshow / lobby-display configuration. Team-wide; admin-edited via
 // Settings → System → Slideshow. Loaded by applyAppConfig() from
@@ -310,6 +385,16 @@ function applyAppConfig(features) {
         }
         return;
       }
+      if (key === 'org_structure') {
+        // Department → Team → Unit tree (Idea 2). Becomes the source of truth; the
+        // flat team/unit lists are derived from it at the end of applyAppConfig.
+        if (parsed && typeof parsed === 'object' && Array.isArray(parsed.departments)) {
+          _orgStructure = parsed;
+          _configOids.org_structure = oid;
+          console.log('[Config] Loaded org_structure:', parsed.departments.length, 'departments');
+        }
+        return;
+      }
       if (!Array.isArray(parsed)) return;
       if (key === 'partner_depts') {
         _customPartnerDepts = parsed;
@@ -353,6 +438,9 @@ function applyAppConfig(features) {
       console.warn('Could not parse config value for key:', key, e);
     }
   });
+  // Fold a configured org_structure into the flat team/unit lists (no-op until set),
+  // after all keys are processed so it wins regardless of record order.
+  if (typeof _deriveOrgLists === 'function') _deriveOrgLists();
   // Refresh enum aliases so dropdowns reflect loaded config
   if (typeof refreshEnums === 'function') refreshEnums();
   console.log('[Config] Loaded:', _customPartnerDepts.length, 'depts,', _customItdTeams.length, 'teams,',
