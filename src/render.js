@@ -830,6 +830,45 @@ function updateHeaderStats() {
   }
   if (typeof renderTeamSwitcher === 'function') renderTeamSwitcher();
   if (typeof refreshIntakeButton === 'function') refreshIntakeButton();
+  if (typeof refreshHeaderTitle === 'function') refreshHeaderTitle();
+}
+
+// Header title/subtitle reflect the signed-in user's team and its department.
+// Admins follow the team switcher ("All Teams" when unscoped); everyone else uses
+// their own team — independent of the team_scoping flag (this is labeling, not
+// scoping). Generic before login.
+function refreshHeaderTitle() {
+  var titleEl = document.getElementById('header-app-title');
+  var subEl = document.getElementById('header-app-subtitle');
+  if (!titleEl || !subEl) return;
+  var loggedIn = (typeof Auth !== 'undefined' && Auth && Auth.loggedIn);
+  var isRealAdmin = loggedIn && Auth.isTeamLead;
+  var team = null, allTeams = false;
+  if (loggedIn) {
+    var cur = (typeof CURRENT_TEAM !== 'undefined') ? CURRENT_TEAM : null;
+    if (isRealAdmin) {
+      if (cur) team = cur; else allTeams = true; // admin viewing "All teams"
+    } else {
+      team = cur || ((typeof personTeam === 'function') ? personTeam(Auth.fullName) : null);
+    }
+  }
+  var title, subtitle;
+  if (!loggedIn) {
+    title = 'Project Tracker';
+    subtitle = 'City of Tucson · Information Technology';
+  } else if (allTeams) {
+    title = 'All Teams';
+    subtitle = 'Project & Task Tracker · City of Tucson';
+  } else if (team) {
+    title = team;
+    var dep = (typeof departmentOfTeam === 'function') ? departmentOfTeam(team) : null;
+    subtitle = 'Project & Task Tracker · ' + (dep && dep.name ? dep.name : 'City of Tucson');
+  } else {
+    title = 'Project Tracker';
+    subtitle = 'City of Tucson · Information Technology';
+  }
+  titleEl.textContent = title;
+  subEl.textContent = subtitle;
 }
 
 // The header intake button is "💡 Submit Idea" by default, but becomes

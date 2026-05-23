@@ -220,12 +220,39 @@ function renderTeamSwitcher() {
   var cur = CURRENT_TEAM || '';
   var sStyle = 'font-size:11px;font-weight:700;font-family:Lato,sans-serif;color:var(--navy);background:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.5);border-radius:4px;padding:4px 8px;cursor:pointer;';
 
-  // Team lens
-  var opts = '<option value=""' + (cur ? '' : ' selected') + '>All teams</option>';
-  allKnownTeams().forEach(function (t) {
+  // Team lens — grouped by department (optgroups) when an org structure is set.
+  function _tsOption(t) {
     var sel = cur && ((typeof sameTeam === 'function') ? sameTeam(t, cur) : (t === cur));
-    opts += '<option value="' + _tsEsc(t) + '" style="color:#111;background:#fff;"' + (sel ? ' selected' : '') + '>' + _tsEsc(t) + '</option>';
+    return '<option value="' + _tsEsc(t) + '" style="color:#111;background:#fff;"' + (sel ? ' selected' : '') + '>' + _tsEsc(t) + '</option>';
+  }
+  var opts = '<option value=""' + (cur ? '' : ' selected') + '>All teams</option>';
+  var teams = allKnownTeams();
+  var deptOf = (typeof departmentOfTeam === 'function') ? departmentOfTeam : null;
+  var byDept = {}, depOrder = [], ungrouped = [];
+  teams.forEach(function (t) {
+    var d = deptOf ? deptOf(t) : null;
+    if (d && d.name) {
+      if (!byDept[d.name]) { byDept[d.name] = []; depOrder.push(d.name); }
+      byDept[d.name].push(t);
+    } else {
+      ungrouped.push(t);
+    }
   });
+  if (depOrder.length) {
+    depOrder.sort();
+    depOrder.forEach(function (dn) {
+      opts += '<optgroup label="' + _tsEsc(dn) + '">';
+      byDept[dn].forEach(function (t) { opts += _tsOption(t); });
+      opts += '</optgroup>';
+    });
+    if (ungrouped.length) {
+      opts += '<optgroup label="Other">';
+      ungrouped.forEach(function (t) { opts += _tsOption(t); });
+      opts += '</optgroup>';
+    }
+  } else {
+    teams.forEach(function (t) { opts += _tsOption(t); });
+  }
   var html = '<select title="View as team — admin only" onchange="setTeamScope(this.value)" style="' + sStyle + 'max-width:170px;">' + opts + '</select>';
 
   // Act-as role: Admin always; Lead only with a specific team; Member always.
