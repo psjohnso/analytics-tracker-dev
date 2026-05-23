@@ -1237,3 +1237,53 @@ function tiEditDiscard() {
   renderSettingsPage(document.getElementById('content-area'));
   showToast('Changes discarded.', 'info');
 }
+
+// ── Project intake (per-team: Submit Idea review vs. direct full-project create) ──
+function buildProjectIntakePanel() {
+  var isAdminUser = isAdmin();
+  var myLeadTeam = (typeof getLeadTeam === 'function') ? getLeadTeam() : null;
+  if (!isAdminUser && !myLeadTeam) {
+    return '<div class="settings-panel-title">Project intake</div>' +
+      '<div class="settings-panel-desc">Only Team Leads and admins can change this.</div>';
+  }
+  var teams = isAdminUser
+    ? ((typeof allKnownTeams === 'function') ? allKnownTeams() : [])
+    : [myLeadTeam];
+  var html = '<div class="settings-panel-title">Project intake</div>';
+  html += '<div class="settings-panel-desc">How a team starts projects. <strong>Submit Idea</strong> routes new work through the idea-review process; <strong>Create directly</strong> lets the team’s members open the full project editor and skip review.</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:10px;max-width:580px;">';
+  teams.forEach(function(t) {
+    var on = (typeof teamCreatesDirectly === 'function') && teamCreatesDirectly(t);
+    html += '<label style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 16px;cursor:pointer;">' +
+      '<input type="checkbox"' + (on ? ' checked' : '') + ' onchange="toggleDirectProjectTeam(' + JSON.stringify(t).replace(/"/g, '&quot;') + ', this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy);flex-shrink:0;">' +
+      '<div><div style="font-weight:800;color:var(--navy);">' + esc(t) + '</div>' +
+      '<div style="font-size:12px;color:var(--text-muted);">' + (on ? 'Creates projects directly — Submit Idea review skipped' : 'Uses the Submit Idea review process') + '</div></div>' +
+    '</label>';
+  });
+  html += '</div>';
+  html += '<div class="list-editor-note" style="margin-top:14px;">When on, the team’s members get a “＋ New Project” button (full editor) instead of “Submit Idea.” Saved to ArcGIS Online and shared across users.</div>';
+  return html;
+}
+
+async function toggleDirectProjectTeam(team, enabled) {
+  // Leads may only change their own team; admins any team.
+  if (!isAdmin()) {
+    var lead = (typeof getLeadTeam === 'function') ? getLeadTeam() : null;
+    var ok = lead && ((typeof sameTeam === 'function') ? sameTeam(team, lead) : team === lead);
+    if (!ok) { showToast('You can only change your own team.', 'warn'); return; }
+  }
+  var list = (typeof _directProjectTeams !== 'undefined' && Array.isArray(_directProjectTeams)) ? _directProjectTeams.slice() : [];
+  list = list.filter(function(t) { return !((typeof sameTeam === 'function') ? sameTeam(t, team) : t === team); });
+  if (enabled) list.push(team);
+  try {
+    var saved = await saveConfigKey('direct_project_teams', list);
+    if (!saved) throw new Error('Save returned false');
+    _directProjectTeams = list;
+    showToast('Project intake updated for ' + team + '.', 'success');
+    if (typeof markDataDirty === 'function') markDataDirty();
+    render();
+  } catch (e) {
+    console.error('[Intake] Save failed:', e);
+    showToast('Save failed: ' + e.message, 'error');
+  }
+}

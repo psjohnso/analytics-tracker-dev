@@ -52,7 +52,11 @@ function getLeadTeam() {
   return (t && typeof t === 'string' && t.trim()) ? t.trim() : null;
 }
 function isTeamLeadRole() { return getLeadTeam() !== null; }
-function canCreateProject() { return isAdmin() || isTeamLeadRole(); }
+function canCreateProject() {
+  // Admins and team leads always can. Members of a team that opted out of the
+  // Submit Idea flow (Settings → Project intake) also create projects directly.
+  return isAdmin() || isTeamLeadRole() || (typeof teamCreatesDirectly === 'function' && teamCreatesDirectly());
+}
 function canEditProject(p) {
   if (isAdmin()) return true;
   if (Auth.fullName && p && p.contact === Auth.fullName) return true;

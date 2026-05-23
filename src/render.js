@@ -677,10 +677,9 @@ function switchTab(tab, preserveFilters) {
   document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'achievements' || tab === 'projectReview' || tab === 'teamload' || tab === 'effortshape') ? 'none' : '';
   const addBtn = document.getElementById('btn-add-new');
   if (tab === 'tasks') { addBtn.style.display='flex'; addBtn.textContent='＋ New Task'; }
-  else if (tab === 'projects' && typeof isAdmin === 'function' && isAdmin()) {
-    // Admins create projects directly here. Data Program leads use the
-    // simpler dataprogram.html console (linked from the toolbar) — they
-    // don't see this button to avoid confusion about which path to use.
+  else if (tab === 'projects' && typeof canCreateProject === 'function' && canCreateProject()) {
+    // Anyone who can create a project directly — admins, team leads, and members
+    // of a team that opted out of the Submit Idea flow — gets this button.
     addBtn.style.display='flex'; addBtn.textContent='＋ New Project';
   }
   else { addBtn.style.display='none'; }
@@ -830,6 +829,26 @@ function updateHeaderStats() {
     _ideaBadge.textContent = _ic > 0 ? _ic : '';
   }
   if (typeof renderTeamSwitcher === 'function') renderTeamSwitcher();
+  if (typeof refreshIntakeButton === 'function') refreshIntakeButton();
+}
+
+// The header intake button is "💡 Submit Idea" by default, but becomes
+// "＋ New Project" (full editor) for users whose team opted out of the idea
+// review flow (Settings → Project intake).
+function refreshIntakeButton() {
+  var btn = document.getElementById('btn-submit-idea');
+  if (!btn) return;
+  var direct = (typeof teamCreatesDirectly === 'function' && teamCreatesDirectly()) &&
+               (typeof canCreateProject === 'function' && canCreateProject());
+  if (direct) {
+    btn.innerHTML = '＋ New Project';
+    btn.onclick = function() { if (typeof openFormModal === 'function') openFormModal('new-project'); };
+    btn.title = 'Your team creates projects directly (Submit Idea review is skipped)';
+  } else {
+    btn.innerHTML = '💡 Submit Idea';
+    btn.onclick = function() { if (typeof openIdeaForm === 'function') openIdeaForm(); };
+    btn.title = '';
+  }
 }
 
 function updateTabCounts() {

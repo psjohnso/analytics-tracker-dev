@@ -34,7 +34,7 @@ const _defaultItdTeams = [
 ];
 
 // ObjectIds for the two config records (populated on load from ArcGIS)
-const _configOids = { partner_depts: null, itd_teams: null, owning_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null, display_config: null, data_program: null, team_intro: null, risk_config: null, team_scoping: null };
+const _configOids = { partner_depts: null, itd_teams: null, owning_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null, display_config: null, data_program: null, team_intro: null, risk_config: null, team_scoping: null, direct_project_teams: null };
 
 // Slideshow / lobby-display configuration. Team-wide; admin-edited via
 // Settings → System → Slideshow. Loaded by applyAppConfig() from
@@ -81,6 +81,21 @@ function getTeamIntro(team) {
 // Productivity factor applied to per-week project capacity. Admin-tunable via Settings → Allocations.
 // Default 0.75 accounts for non-project overhead (meetings, email, breaks, context-switching).
 let _productivityRatio = 0.75;
+
+// Teams that create projects directly (full editor) instead of the Submit Idea →
+// review flow. Per-team opt-out, set by a team lead/admin in Settings → Project
+// intake. Default empty = every team uses the idea process.
+let _directProjectTeams = [];
+function teamCreatesDirectly(team) {
+  if (team === undefined || team === null) {
+    team = (typeof CURRENT_TEAM !== 'undefined' && CURRENT_TEAM) ? CURRENT_TEAM
+      : ((typeof personTeam === 'function' && typeof Auth !== 'undefined' && Auth && Auth.fullName) ? personTeam(Auth.fullName) : null);
+  }
+  if (!team) return false;
+  return (_directProjectTeams || []).some(function(t) {
+    return (typeof sameTeam === 'function') ? sameTeam(t, team) : t === team;
+  });
+}
 
 // Pay period reference: 2025-12-28 is a Week A (Sunday) start.
 // Every 14 days alternates A/B. Week A = week1_hours, Week B = week2_hours.
@@ -305,6 +320,9 @@ function applyAppConfig(features) {
       } else if (key === 'owning_teams') {
         _customOwningTeams = parsed;
         _configOids.owning_teams = oid;
+      } else if (key === 'direct_project_teams') {
+        _directProjectTeams = parsed;
+        _configOids.direct_project_teams = oid;
       } else if (key === 'review_types') {
         _reviewTypes = parsed;
         _configOids.review_types = oid;

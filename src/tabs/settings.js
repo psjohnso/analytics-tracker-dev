@@ -449,7 +449,7 @@ function renderSettingsPage(area) {
   // Access: admins see all sections; team leads see Preferences + their own
   // team's members; everyone else sees Preferences only.
   if (!isAdminUser) {
-    var leadOk = isLeadUser && (_settingsSection === 'team' || _settingsSection === 'teamintro' || _settingsSection === 'reviewtypes');
+    var leadOk = isLeadUser && (_settingsSection === 'team' || _settingsSection === 'teamintro' || _settingsSection === 'reviewtypes' || _settingsSection === 'intake');
     if (_settingsSection !== 'preferences' && !leadOk) _settingsSection = 'preferences';
   }
 
@@ -497,6 +497,7 @@ function renderSettingsPage(area) {
       navItem('lists', 'Dropdown lists') +
       navItem('categories', 'Categories and tools') +
       navItem('reviewtypes', 'Review types') +
+      navItem('intake', 'Project intake') +
       navItem('risk', 'Project Risk') +
     '</div>' +
     '<div class="settings-nav-group">' +
@@ -514,6 +515,7 @@ function renderSettingsPage(area) {
       navItem('team', 'Team members', activeCount) +
       navItem('teamintro', 'Team Introduction') +
       navItem('reviewtypes', 'Review types') +
+      navItem('intake', 'Project intake') +
     '</div>';
   }
   navHtml += '</div>';
@@ -523,7 +525,7 @@ function renderSettingsPage(area) {
 
   if (_settingsSection === 'preferences') {
     panelHtml = buildPreferencesPanel();
-  } else if (!isAdminUser && !(isLeadUser && (_settingsSection === 'team' || _settingsSection === 'teamintro' || _settingsSection === 'reviewtypes'))) {
+  } else if (!isAdminUser && !(isLeadUser && (_settingsSection === 'team' || _settingsSection === 'teamintro' || _settingsSection === 'reviewtypes' || _settingsSection === 'intake'))) {
     panelHtml = '<div class="empty-state">You do not have access to this section.</div>';
   } else {
   if (_settingsSection === 'team') {
@@ -701,6 +703,10 @@ function renderSettingsPage(area) {
       '<div id="review-types-table"></div>' +
       '<div class="list-editor-note" style="margin-top:14px;">Changes are saved to ArcGIS Online and shared across all users. To make a review type visible to your team, ensure they have opted into the Project Review beta in their Preferences.</div>' +
       '<div class="pr-modal-backdrop" id="pr-rt-modal-backdrop" onclick="if(event.target===this)prRtCloseForm()"><div class="pr-modal" id="pr-rt-modal"></div></div>';
+  }
+
+  else if (_settingsSection === 'intake') {
+    panelHtml = buildProjectIntakePanel();
   }
 
   else if (_settingsSection === 'risk') {
