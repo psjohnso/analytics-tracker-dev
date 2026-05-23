@@ -150,7 +150,9 @@ function buildSidebarFilters() {
     return RESOURCES_DATA.people[name].active !== false;
   };
   const isVisibleMember = function(name) {
-    if (typeof inCurrentTeamPerson === 'function' && !inCurrentTeamPerson(name)) return false;
+    // No team gate here: the member list is built from the team's own scoped
+    // projects/tasks (below), so anyone appearing in the team's work — including
+    // cross-team contributors — is filterable. Still honors the active/affiliated toggles.
     if (!isActiveMember(name)) return false;
     if (includeContributors) return true;
     if (!RESOURCES_DATA || !RESOURCES_DATA.people[name]) return true;
@@ -250,12 +252,19 @@ function buildSidebarFilters() {
       }
     });
   }
-  // Show members with no current matches at 0 so they remain selectable.
+  // Show people in the team's work at 0 so they stay selectable even when other
+  // active filters currently exclude their items. Scoped to the team's own
+  // projects/tasks so other teams' people never leak into the list.
+  var _scopedT = (typeof inCurrentTeamTask === 'function') ? TASKS.filter(inCurrentTeamTask) : TASKS;
+  var _scopedP = (typeof inCurrentTeamProject === 'function') ? PROJECTS.filter(inCurrentTeamProject) : PROJECTS;
   if (showTasks) {
-    TASKS.forEach(t => { if (t.assignee && !(t.assignee in members) && isVisibleMember(t.assignee)) members[t.assignee] = 0; });
+    _scopedT.forEach(t => { if (t.assignee && !(t.assignee in members) && isVisibleMember(t.assignee)) members[t.assignee] = 0; });
   }
   if (showProjects) {
-    PROJECTS.forEach(p => { if (p.contact && !(p.contact in members) && isVisibleMember(p.contact)) members[p.contact] = 0; });
+    _scopedP.forEach(p => {
+      if (p.contact && !(p.contact in members) && isVisibleMember(p.contact)) members[p.contact] = 0;
+      if (p.other_members) String(p.other_members).split(',').forEach(function(n) { n = n.trim(); if (n && !(n in members) && isVisibleMember(n)) members[n] = 0; });
+    });
   }
 
   // Update affiliated toggle label with count
