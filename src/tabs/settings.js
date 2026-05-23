@@ -71,6 +71,9 @@ async function toggleAiPhaseAssignment(enabled) {
 
 var _settingsSection = 'preferences';
 function switchSettingsSection(section) {
+  // Cancel any in-progress inline org edit when navigating away.
+  if (typeof _orgEdit !== 'undefined') _orgEdit = null;
+  if (typeof _orgAdd !== 'undefined') _orgAdd = null;
   _settingsSection = section;
   renderSettingsPage(document.getElementById('content-area'));
 }
@@ -499,7 +502,7 @@ function renderSettingsPage(area) {
     '</div>' +
     '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">Project config</div>' +
-      navItem('lists', 'Dropdown lists') +
+      navItem('organization', 'Organization') +
       navItem('categories', 'Categories and tools') +
       navItem('risk', 'Project Risk') +
       navItem('allocations', 'Allocations') +
@@ -507,6 +510,7 @@ function renderSettingsPage(area) {
     '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">System</div>' +
       navItem('dataprogram', 'Data Program teams') +
+      navItem('partnerdepts', 'Partner departments') +
       navItem('slideshow', 'Slideshow') +
       navItem('ai', 'AI features') +
       navItem('trash', 'Trash') +
@@ -677,13 +681,15 @@ function renderSettingsPage(area) {
       '</div>';
   }
 
-  else if (_settingsSection === 'lists') {
-    panelHtml = '<div class="settings-panel-title">Dropdown lists</div>' +
-      '<div class="settings-panel-desc">Manage Partner Departments, Units, and Teams that appear in the project and team-member forms.</div>' +
+  else if (_settingsSection === 'organization') {
+    panelHtml = buildOrgEditorPanel();
+  }
+
+  else if (_settingsSection === 'partnerdepts') {
+    panelHtml = '<div class="settings-panel-title">Partner departments</div>' +
+      '<div class="settings-panel-desc">City departments your team does work for (e.g. Police, Fire, Tucson Water). These appear as the “Partner Department” option on projects — separate from your own org structure under Project config → Organization.</div>' +
       '<div class="list-editor-grid">' +
         '<div id="list-editor-dept"></div>' +
-        '<div id="list-editor-team"></div>' +
-        '<div id="list-editor-owning-team"></div>' +
       '</div>' +
       '<div class="list-editor-note">Changes are saved to ArcGIS Online and shared across all users. Values used in existing projects will always appear in the dropdown even if removed here.</div>';
   }
@@ -765,10 +771,8 @@ function renderSettingsPage(area) {
   area.innerHTML = '<div class="settings-page">' + navHtml + '<div class="settings-panel">' + panelHtml + '</div></div>';
 
   // Post-render initializations for active section
-  if (_settingsSection === 'lists') {
+  if (_settingsSection === 'partnerdepts') {
     renderListEditor('list-editor-dept', 'Partner Departments', _customPartnerDepts, 'dept');
-    renderListEditor('list-editor-team', 'Units', _customItdTeams, 'team');
-    renderListEditor('list-editor-owning-team', 'Teams', _customOwningTeams, 'owning_team');
   }
   if (_settingsSection === 'categories') {
     renderDescListEditor('proj_cat');

@@ -185,10 +185,11 @@ function getPayPeriodWeek(weekDateStr) {
 // Start with defaults; overwritten by applyAppConfig() after ArcGIS load
 let _customPartnerDepts = [..._defaultPartnerDepts];
 let _customItdTeams = [..._defaultItdTeams];
-// Configurable Team (owning_team) list — edited in Settings → Dropdown lists →
-// Teams, persisted as app_config.owning_teams. Single source of truth for every
-// Team picker (member form, project form, review-type scope). Seeds from the
-// canonical FM_OWNING_TEAMS domain until the config record loads.
+// Configurable Team (owning_team) list — now derived from the org tree (Settings
+// → Project config → Organization) via _deriveOrgLists, unioned with the legacy
+// app_config.owning_teams record. Single source of truth for every Team picker
+// (member form, project form, review-type scope). Seeds from the canonical
+// FM_OWNING_TEAMS domain until the config records load.
 let _customOwningTeams = (typeof FM_OWNING_TEAMS !== 'undefined') ? [...FM_OWNING_TEAMS] : [];
 
 // ── Allocation Defaults by Project Size × Role ──────────────────

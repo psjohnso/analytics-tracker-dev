@@ -1287,3 +1287,312 @@ async function toggleDirectProjectTeam(team, enabled) {
     showToast('Save failed: ' + e.message, 'error');
   }
 }
+
+// ── Organization editor (Department → Team → Unit) — Phase D ───────────
+// Admin-only tree editor. Single source of truth for the org hierarchy; the
+// team list and per-team unit lists everywhere derive from it. Edits an in-memory
+// draft (deep clone of getOrgStructure()); Save persists the draft to the
+// org_structure config, then re-derives the flat lists. Replaces the flat Teams
+// and Units list editors. Renames are vocab-only (soft) — existing projects/
+// members keep their stored value, so a rename can leave drift behind.
+//
+// Editing is inline: clicking a name (or its ✏️) swaps it for a text field in
+// place; "＋ add" controls expand into inline inputs. Only one node is editable
+// at a time, tracked by _orgEdit / _orgAdd. Enter commits, Esc cancels.
+var _orgDraft = null;
+var _orgEdit = null; // { kind:'dept'|'team', di, ti } — node being renamed in place
+var _orgAdd = null;  // { kind:'unit'|'team'|'dept', di, ti } — open inline add input
+
+function _orgNorm(s) { return String(s == null ? '' : s).trim().toLowerCase(); }
+
+function _orgDraftEnsure() {
+  if (!_orgDraft) _orgDraft = JSON.parse(JSON.stringify(getOrgStructure()));
+  if (!_orgDraft || !Array.isArray(_orgDraft.departments)) _orgDraft = { departments: [] };
+  return _orgDraft;
+}
+
+function _orgDraftDirty() {
+  return !!_orgDraft && JSON.stringify(_orgDraft) !== JSON.stringify(getOrgStructure());
+}
+
+function _orgAllTeamNames(d) {
+  var out = [];
+  (d.departments || []).forEach(function(dep) { (dep.teams || []).forEach(function(t) { if (t && t.name) out.push(t.name); }); });
+  return out;
+}
+function _orgAllUnitNames(d) {
+  var out = [];
+  (d.departments || []).forEach(function(dep) { (dep.teams || []).forEach(function(t) { (t.units || []).forEach(function(u) { if (u) out.push(u); }); }); });
+  return out;
+}
+
+// Re-render the settings page, then restore focus to the active inline input
+// (the full settings DOM is rebuilt, so the field would otherwise lose focus).
+function _orgRerender() {
+  renderSettingsPage(document.getElementById('content-area'));
+  var f = document.getElementById('org-ed-name') || document.getElementById('org-ad-input');
+  if (f) { f.focus(); if (f.select) f.select(); }
+}
+
+// Shared inline styles (kept here so the editor needs no app.css changes).
+var _ORG_INP = 'font-family:inherit;font-weight:700;color:var(--navy);border:1.5px solid var(--navy);border-radius:6px;padding:5px 9px;outline:none;background:#fff;';
+
+function buildOrgEditorPanel() {
+  if (typeof isAdmin === 'function' && !isAdmin()) {
+    return '<div class="settings-panel-title">Organization</div>' +
+      '<div class="settings-panel-desc">Only admins can edit the organization structure.</div>';
+  }
+  var d = _orgDraftEnsure();
+  var dirty = _orgDraftDirty();
+
+  function okCancel(commit, cancel) {
+    return '<button class="settings-btn settings-btn-primary" title="Save" onclick="' + commit + '" style="padding:3px 9px;">✓</button>' +
+      '<button class="settings-btn settings-btn-secondary" title="Cancel (Esc)" onclick="' + cancel + '" style="padding:3px 9px;">✕</button>';
+  }
+
+  function unitChip(u, di, ti, ui) {
+    return '<span style="display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--border);border-radius:20px;padding:3px 6px 3px 11px;font-size:12px;font-weight:600;color:var(--navy);">' +
+      esc(u) +
+      '<span title="Remove unit" onclick="orgRemoveUnit(' + di + ',' + ti + ',' + ui + ')" style="width:16px;height:16px;border-radius:50%;background:#F3F1EB;color:#9A3412;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;">✕</span>' +
+    '</span>';
+  }
+
+  function teamHead(t, di, ti, teamCount) {
+    var editing = _orgEdit && _orgEdit.kind === 'team' && _orgEdit.di === di && _orgEdit.ti === ti;
+    if (editing) {
+      return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#FBFAF7;border-bottom:1px solid var(--border);">' +
+        '<input id="org-ed-name" value="' + esc(t.name) + '" placeholder="Team name" onkeydown="orgEditKey(event)" style="' + _ORG_INP + 'font-size:13px;min-width:220px;">' +
+        okCancel('orgCommitEdit()', 'orgCancelEdit()') +
+        '<span style="margin-left:auto;"></span>' +
+      '</div>';
+    }
+    var units = t.units || [];
+    var meta = units.length ? ('· ' + units.length + ' unit' + (units.length === 1 ? '' : 's')) : '· no units';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#FBFAF7;border-bottom:1px solid var(--border);">' +
+      '<span onclick="orgStartEdit(\'team\',' + di + ',' + ti + ')" title="Click to rename" style="font-size:13.5px;font-weight:800;color:var(--navy);cursor:text;">' + esc(t.name) + '</span>' +
+      '<span style="font-size:11px;color:var(--text-muted);">' + meta + '</span>' +
+      '<span style="margin-left:auto;"></span>' +
+      _orgArrows('orgMoveTeam(' + di + ',' + ti + ',-1)', 'orgMoveTeam(' + di + ',' + ti + ',1)', ti, teamCount) +
+      '<button class="settings-btn settings-btn-secondary" title="Rename team" onclick="orgStartEdit(\'team\',' + di + ',' + ti + ')" style="padding:3px 8px;">✏️</button>' +
+      '<button class="settings-btn settings-btn-danger" title="Remove team" onclick="orgRemoveTeam(' + di + ',' + ti + ')" style="padding:3px 8px;">🗑</button>' +
+    '</div>';
+  }
+
+  function teamHtml(t, di, ti, teamCount) {
+    var units = t.units || [];
+    var unitsHtml = '<span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-right:4px;">Units</span>';
+    units.forEach(function(u, ui) { unitsHtml += unitChip(u, di, ti, ui); });
+    var addingUnit = _orgAdd && _orgAdd.kind === 'unit' && _orgAdd.di === di && _orgAdd.ti === ti;
+    if (addingUnit) {
+      unitsHtml += '<input id="org-ad-input" placeholder="unit name… ⏎" onkeydown="orgAddKey(event)" style="' + _ORG_INP + 'font-size:12px;width:160px;border-radius:20px;padding:3px 10px;">' +
+        okCancel('orgCommitAdd()', 'orgCancelAdd()');
+    } else {
+      unitsHtml += '<span onclick="orgStartAdd(\'unit\',' + di + ',' + ti + ')" style="display:inline-flex;align-items:center;gap:4px;border:1px dashed #C7D2FE;background:#F8FAFF;border-radius:20px;padding:3px 11px;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;">＋ add unit</span>';
+    }
+    return '<div style="border:1px solid var(--border);border-radius:9px;margin-bottom:10px;">' +
+      teamHead(t, di, ti, teamCount) +
+      '<div style="padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">' + unitsHtml + '</div>' +
+    '</div>';
+  }
+
+  function deptHead(dep, di, deptCount) {
+    var editing = _orgEdit && _orgEdit.kind === 'dept' && _orgEdit.di === di;
+    if (editing) {
+      return '<div style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:#EEF2FF;border-bottom:1px solid #C7D2FE;">' +
+        '<input id="org-ed-name" value="' + esc(dep.name) + '" placeholder="Department name" onkeydown="orgEditKey(event)" style="' + _ORG_INP + 'font-size:15px;min-width:230px;">' +
+        '<input id="org-ed-short" value="' + esc(dep.short || '') + '" placeholder="SHORT" onkeydown="orgEditKey(event)" style="' + _ORG_INP + 'font-size:11px;width:72px;text-transform:uppercase;">' +
+        okCancel('orgCommitEdit()', 'orgCancelEdit()') +
+        '<span style="margin-left:auto;"></span>' +
+      '</div>';
+    }
+    var shortBadge = dep.short ? '<span style="font-size:10px;font-weight:800;letter-spacing:0.05em;background:var(--navy);color:#fff;border-radius:5px;padding:2px 7px;">' + esc(dep.short) + '</span>' : '';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:#EEF2FF;border-bottom:1px solid #C7D2FE;">' +
+      '<span onclick="orgStartEdit(\'dept\',' + di + ')" title="Click to rename" style="font-size:15px;font-weight:800;color:var(--navy);cursor:text;">' + esc(dep.name) + '</span>' +
+      shortBadge +
+      '<span style="margin-left:auto;"></span>' +
+      _orgArrows('orgMoveDept(' + di + ',-1)', 'orgMoveDept(' + di + ',1)', di, deptCount) +
+      '<button class="settings-btn settings-btn-secondary" title="Edit department name / short code" onclick="orgStartEdit(\'dept\',' + di + ')" style="padding:3px 8px;">✏️</button>' +
+      '<button class="settings-btn settings-btn-danger" title="Remove department" onclick="orgRemoveDept(' + di + ')" style="padding:3px 8px;">🗑</button>' +
+    '</div>';
+  }
+
+  function deptHtml(dep, di, deptCount) {
+    var teams = dep.teams || [];
+    var body = '';
+    teams.forEach(function(t, ti) { body += teamHtml(t, di, ti, teams.length); });
+    var addingTeam = _orgAdd && _orgAdd.kind === 'team' && _orgAdd.di === di;
+    if (addingTeam) {
+      body += '<div style="display:flex;gap:6px;align-items:center;padding:4px 2px 0;">' +
+        '<input id="org-ad-input" placeholder="New team name… ⏎" onkeydown="orgAddKey(event)" style="' + _ORG_INP + 'font-size:13px;min-width:220px;">' +
+        okCancel('orgCommitAdd()', 'orgCancelAdd()') +
+      '</div>';
+    } else {
+      body += '<div style="padding:4px 2px 0;"><button onclick="orgStartAdd(\'team\',' + di + ')" style="border:1px dashed var(--border);background:#fff;color:var(--navy);border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;width:100%;text-align:left;">＋ Add team to ' + esc(dep.name) + '</button></div>';
+    }
+    return '<div style="border:1px solid var(--border);border-radius:11px;margin-bottom:16px;overflow:hidden;">' +
+      deptHead(dep, di, deptCount) +
+      '<div style="padding:12px 14px 14px;">' + body + '</div>' +
+    '</div>';
+  }
+
+  var html = '<div class="settings-panel-title">Organization</div>' +
+    '<div class="settings-panel-desc">Departments → Teams → Units. One source of truth for the org hierarchy — the team switcher, the per-team Unit dropdowns, and the header subtitle all derive from it. Click a name to rename it in place; press Enter to save, Esc to cancel. Units belong to one team; teams belong to one department.</div>';
+
+  d.departments.forEach(function(dep, di) { html += deptHtml(dep, di, d.departments.length); });
+
+  if (_orgAdd && _orgAdd.kind === 'dept') {
+    html += '<div style="display:flex;gap:6px;align-items:center;margin-top:2px;">' +
+      '<input id="org-ad-input" placeholder="New department name… ⏎" onkeydown="orgAddKey(event)" style="' + _ORG_INP + 'font-size:15px;min-width:230px;">' +
+      '<input id="org-ad-short" placeholder="SHORT" onkeydown="orgAddKey(event)" style="' + _ORG_INP + 'font-size:11px;width:72px;text-transform:uppercase;">' +
+      okCancel('orgCommitAdd()', 'orgCancelAdd()') +
+    '</div>';
+  } else {
+    html += '<button onclick="orgStartAdd(\'dept\')" style="border:1px dashed var(--navy);background:#F8FAFF;color:var(--navy);border-radius:9px;padding:11px 14px;font-size:13px;font-weight:800;cursor:pointer;width:100%;text-align:center;">＋ Add department</button>';
+  }
+
+  html += '<div style="display:flex;gap:10px;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">' +
+    '<button class="settings-btn settings-btn-primary" onclick="orgEditorSave()"' + (dirty ? '' : ' disabled style="opacity:0.5;cursor:default;"') + '>Save organization</button>' +
+    '<button class="settings-btn settings-btn-secondary" onclick="orgEditorDiscard()"' + (dirty ? '' : ' disabled style="opacity:0.5;cursor:default;"') + '>Discard</button>' +
+    (dirty ? '<span style="font-size:11px;font-weight:700;color:#9A3412;">Unsaved changes</span>' : '') +
+  '</div>';
+
+  html += '<div class="list-editor-note" style="margin-top:14px;line-height:1.6;">' +
+    '• <strong>Units belong to one team.</strong> Renaming a team or unit changes the canonical name only — existing projects/members keep their stored value, so renames can leave drift behind.<br>' +
+    '• <strong>Data Program</strong> is a separate cross-cutting collection of teams (Settings → System → Data Program teams), not part of this org chart.<br>' +
+    '• <strong>Partner departments</strong> (the city departments you do work for) are managed separately under Settings → System → Partner departments.<br>' +
+    '• Removing a team or unit doesn’t delete history — values already used on records still display; they just stop appearing as new options.' +
+  '</div>';
+  return html;
+}
+
+// Up/down reorder arrows; the relevant arrow is dimmed at the ends.
+function _orgArrows(upCall, downCall, idx, count) {
+  var atTop = idx <= 0, atBottom = idx >= count - 1;
+  return '<button class="settings-btn settings-btn-secondary" title="Move up" onclick="' + upCall + '" style="padding:3px 7px;' + (atTop ? 'opacity:0.3;cursor:default;' : '') + '"' + (atTop ? ' disabled' : '') + '>↑</button>' +
+    '<button class="settings-btn settings-btn-secondary" title="Move down" onclick="' + downCall + '" style="padding:3px 7px;' + (atBottom ? 'opacity:0.3;cursor:default;' : '') + '"' + (atBottom ? ' disabled' : '') + '>↓</button>';
+}
+
+// ── Inline rename (edit) ──
+function orgEditKey(e) {
+  if (e.key === 'Enter') { e.preventDefault(); orgCommitEdit(); }
+  else if (e.key === 'Escape') { e.preventDefault(); orgCancelEdit(); }
+}
+function orgStartEdit(kind, di, ti) { _orgAdd = null; _orgEdit = { kind: kind, di: di, ti: ti }; _orgRerender(); }
+function orgCancelEdit() { _orgEdit = null; _orgRerender(); }
+function orgCommitEdit() {
+  if (!_orgEdit) return;
+  var d = _orgDraftEnsure();
+  var nameEl = document.getElementById('org-ed-name');
+  var name = (nameEl ? nameEl.value : '').trim();
+  if (!name) { showToast('Name can’t be empty.', 'warn'); return; }
+  if (_orgEdit.kind === 'dept') {
+    var dep = d.departments[_orgEdit.di]; if (!dep) { _orgEdit = null; _orgRerender(); return; }
+    if (d.departments.some(function(x, i) { return i !== _orgEdit.di && _orgNorm(x.name) === _orgNorm(name); })) { showToast('A department with that name already exists.', 'warn'); return; }
+    dep.name = name;
+    var shortEl = document.getElementById('org-ed-short');
+    dep.short = (shortEl ? shortEl.value : '').trim();
+  } else {
+    var dep2 = d.departments[_orgEdit.di]; var t = dep2 && dep2.teams ? dep2.teams[_orgEdit.ti] : null;
+    if (!t) { _orgEdit = null; _orgRerender(); return; }
+    if (_orgAllTeamNames(d).some(function(x) { return _orgNorm(x) === _orgNorm(name) && _orgNorm(x) !== _orgNorm(t.name); })) { showToast('A team with that name already exists in the org.', 'warn'); return; }
+    t.name = name;
+  }
+  _orgEdit = null; _orgRerender();
+}
+
+// ── Inline add ──
+function orgAddKey(e) {
+  if (e.key === 'Enter') { e.preventDefault(); orgCommitAdd(); }
+  else if (e.key === 'Escape') { e.preventDefault(); orgCancelAdd(); }
+}
+function orgStartAdd(kind, di, ti) { _orgEdit = null; _orgAdd = { kind: kind, di: di, ti: ti }; _orgRerender(); }
+function orgCancelAdd() { _orgAdd = null; _orgRerender(); }
+function orgCommitAdd() {
+  if (!_orgAdd) return;
+  var d = _orgDraftEnsure();
+  var el = document.getElementById('org-ad-input');
+  var val = (el ? el.value : '').trim();
+  if (!val) { if (_orgAdd.kind === 'unit') { _orgAdd = null; _orgRerender(); } return; }
+  if (_orgAdd.kind === 'dept') {
+    if (d.departments.some(function(x) { return _orgNorm(x.name) === _orgNorm(val); })) { showToast('A department with that name already exists.', 'warn'); return; }
+    var shortEl = document.getElementById('org-ad-short');
+    d.departments.push({ name: val, short: (shortEl ? shortEl.value : '').trim(), teams: [] });
+    _orgAdd = null; _orgRerender();
+  } else if (_orgAdd.kind === 'team') {
+    var dep = d.departments[_orgAdd.di]; if (!dep) { _orgAdd = null; _orgRerender(); return; }
+    if (_orgAllTeamNames(d).some(function(x) { return _orgNorm(x) === _orgNorm(val); })) { showToast('A team with that name already exists in the org.', 'warn'); return; }
+    if (!Array.isArray(dep.teams)) dep.teams = [];
+    dep.teams.push({ name: val, units: [] });
+    _orgAdd = null; _orgRerender();
+  } else { // unit — keep the input open & focused for rapid entry
+    var dep3 = d.departments[_orgAdd.di]; var t = dep3 && dep3.teams ? dep3.teams[_orgAdd.ti] : null;
+    if (!t) { _orgAdd = null; _orgRerender(); return; }
+    if (_orgAllUnitNames(d).some(function(x) { return _orgNorm(x) === _orgNorm(val); })) { showToast('A unit with that name already exists in the org.', 'warn'); return; }
+    if (!Array.isArray(t.units)) t.units = [];
+    t.units.push(val);
+    _orgRerender(); // _orgAdd stays set → a fresh empty input re-focuses
+  }
+}
+
+// ── Reorder / remove ──
+function orgRemoveDept(di) {
+  var d = _orgDraftEnsure(); var dep = d.departments[di]; if (!dep) return;
+  var n = (dep.teams || []).length;
+  if (!confirm('Remove department "' + dep.name + '"' + (n ? ' and its ' + n + ' team' + (n === 1 ? '' : 's') : '') + '? Existing records keep their values.')) return;
+  _orgEdit = null; _orgAdd = null;
+  d.departments.splice(di, 1);
+  _orgRerender();
+}
+function orgMoveDept(di, dir) {
+  var d = _orgDraftEnsure(); var j = di + dir;
+  if (j < 0 || j >= d.departments.length) return;
+  var tmp = d.departments[di]; d.departments[di] = d.departments[j]; d.departments[j] = tmp;
+  _orgRerender();
+}
+function orgRemoveTeam(di, ti) {
+  var d = _orgDraftEnsure(); var dep = d.departments[di]; if (!dep || !dep.teams[ti]) return;
+  var t = dep.teams[ti];
+  var n = (t.units || []).length;
+  if (!confirm('Remove team "' + t.name + '"' + (n ? ' and its ' + n + ' unit' + (n === 1 ? '' : 's') : '') + '? Existing records keep their values.')) return;
+  _orgEdit = null; _orgAdd = null;
+  dep.teams.splice(ti, 1);
+  _orgRerender();
+}
+function orgMoveTeam(di, ti, dir) {
+  var d = _orgDraftEnsure(); var dep = d.departments[di]; if (!dep) return;
+  var j = ti + dir;
+  if (j < 0 || j >= dep.teams.length) return;
+  var tmp = dep.teams[ti]; dep.teams[ti] = dep.teams[j]; dep.teams[j] = tmp;
+  _orgRerender();
+}
+function orgRemoveUnit(di, ti, ui) {
+  var d = _orgDraftEnsure(); var dep = d.departments[di]; if (!dep || !dep.teams) return;
+  var t = dep.teams[ti]; if (!t || !t.units) return;
+  t.units.splice(ui, 1);
+  _orgRerender();
+}
+
+// ── Save / Discard ──
+async function orgEditorSave() {
+  if (!_orgDraftDirty()) return;
+  var d = _orgDraftEnsure();
+  for (var i = 0; i < d.departments.length; i++) {
+    if (!String(d.departments[i].name || '').trim()) { showToast('Every department needs a name.', 'warn'); return; }
+  }
+  var clean = JSON.parse(JSON.stringify(d));
+  _orgStructure = clean;
+  if (typeof _deriveOrgLists === 'function') _deriveOrgLists();
+  if (typeof refreshEnums === 'function') refreshEnums();
+  var ok = await saveConfigKey('org_structure', clean);
+  if (ok) {
+    showToast('Organization saved.', 'success');
+    _orgDraft = null; _orgEdit = null; _orgAdd = null;
+    if (typeof markDataDirty === 'function') markDataDirty();
+    render();
+  }
+}
+function orgEditorDiscard() {
+  if (_orgDraftDirty() && !confirm('Discard unsaved changes to the organization?')) return;
+  _orgDraft = null; _orgEdit = null; _orgAdd = null;
+  _orgRerender();
+}
