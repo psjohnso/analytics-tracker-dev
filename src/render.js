@@ -150,6 +150,7 @@ function buildSidebarFilters() {
     return RESOURCES_DATA.people[name].active !== false;
   };
   const isVisibleMember = function(name) {
+    if (typeof inCurrentTeamPerson === 'function' && !inCurrentTeamPerson(name)) return false;
     if (!isActiveMember(name)) return false;
     if (includeContributors) return true;
     if (!RESOURCES_DATA || !RESOURCES_DATA.people[name]) return true;
@@ -159,6 +160,7 @@ function buildSidebarFilters() {
   // Mirror filterProjects() but skip one named filter so we can group/count by it.
   function projectsExcluding(skip) {
     let data = PROJECTS;
+    if (typeof inCurrentTeamProject === 'function') data = data.filter(inCurrentTeamProject);
     if (skip !== 'status' && activeFilters.status.length)
       data = data.filter(p => activeFilters.status.includes(p.status));
     if (skip !== 'priority' && activeFilters.priority.length)
@@ -188,6 +190,7 @@ function buildSidebarFilters() {
   // Mirror filterTasks() but skip one named filter.
   function tasksExcluding(skip) {
     let data = TASKS;
+    if (typeof inCurrentTeamTask === 'function') data = data.filter(inCurrentTeamTask);
     if (skip !== 'taskStatus' && activeFilters.taskStatus.length)
       data = data.filter(t => activeFilters.taskStatus.includes(t.status));
     if (skip !== 'priority' && activeFilters.priority.length)
@@ -259,6 +262,7 @@ function buildSidebarFilters() {
   var contribCount = 0;
   if (RESOURCES_DATA && RESOURCES_DATA.people) {
     contribCount = Object.keys(RESOURCES_DATA.people).filter(function(n) {
+      if (typeof inCurrentTeamPerson === 'function' && !inCurrentTeamPerson(n)) return false;
       var p = RESOURCES_DATA.people[n];
       return p.active !== false && p.member_group === 'Affiliated';
     }).length;
@@ -731,6 +735,7 @@ function setView(v) {
 // ─── FILTER DATA ──────────────────────────────────────────────────────
 function filterProjects() {
   let data = PROJECTS;
+  if (typeof inCurrentTeamProject === 'function') data = data.filter(inCurrentTeamProject);
   if (activeFilters.status.length)   data = data.filter(p => activeFilters.status.includes(p.status));
   if (activeFilters.priority.length) data = data.filter(p => activeFilters.priority.includes(p.priority || 'Unset'));
   if (activeFilters.category.length) data = data.filter(p => activeFilters.category.includes(p.category));
@@ -751,6 +756,7 @@ function filterProjects() {
 
 function filterTasks() {
   let data = TASKS;
+  if (typeof inCurrentTeamTask === 'function') data = data.filter(inCurrentTeamTask);
   if (activeFilters.taskStatus.length) data = data.filter(t => activeFilters.taskStatus.includes(t.status));
   if (activeFilters.priority.length)   data = data.filter(t => activeFilters.priority.includes(t.priority || 'Unset'));
   if (activeFilters.taskCategory.length) data = data.filter(t => activeFilters.taskCategory.includes(t.category));
@@ -794,16 +800,18 @@ function sortData(data, key, dir) {
 
 // ─── HEADER STATS / TAB COUNTS ──────────────────────────────────────
 function updateHeaderStats() {
-  const active = PROJECTS.filter(p => p.status === 'Active').length;
-  const complete = PROJECTS.filter(p => p.status === 'Complete').length;
-  const openTasks = TASKS.filter(t => ['Active','Pending','Waiting for Response'].includes(t.status)).length;
+  const _P = (typeof teamProjects === 'function') ? teamProjects() : PROJECTS;
+  const _T = (typeof teamTasks === 'function') ? teamTasks() : TASKS;
+  const active = _P.filter(p => p.status === 'Active').length;
+  const complete = _P.filter(p => p.status === 'Complete').length;
+  const openTasks = _T.filter(t => ['Active','Pending','Waiting for Response'].includes(t.status)).length;
   document.getElementById('stat-active').textContent = active;
   document.getElementById('stat-tasks-open').textContent = openTasks;
   document.getElementById('stat-complete').textContent = complete;
-  document.getElementById('stat-total').textContent = PROJECTS.length;
+  document.getElementById('stat-total').textContent = _P.length;
   const _ideaBadge = document.getElementById('idea-count-badge');
   if (_ideaBadge) {
-    const _ic = PROJECTS.filter(p => p.status === 'Idea').length;
+    const _ic = _P.filter(p => p.status === 'Idea').length;
     _ideaBadge.textContent = _ic > 0 ? _ic : '';
   }
 }

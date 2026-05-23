@@ -34,7 +34,7 @@ const _defaultItdTeams = [
 ];
 
 // ObjectIds for the two config records (populated on load from ArcGIS)
-const _configOids = { partner_depts: null, itd_teams: null, owning_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null, display_config: null, data_program: null, team_intro: null, risk_config: null };
+const _configOids = { partner_depts: null, itd_teams: null, owning_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null, display_config: null, data_program: null, team_intro: null, risk_config: null, team_scoping: null };
 
 // Slideshow / lobby-display configuration. Team-wide; admin-edited via
 // Settings → System → Slideshow. Loaded by applyAppConfig() from
@@ -256,6 +256,23 @@ function applyAppConfig(features) {
           applyRiskConfig(parsed);
           _configOids.risk_config = oid;
           console.log('[Config] Loaded risk_config');
+        }
+        return;
+      }
+      if (key === 'team_scoping') {
+        // Multi-team rollout switch. Accepts { enabled, home_team } or a bare boolean.
+        // _teamScopingEnabled / HOME_TEAM live in src/team-scope.js.
+        if (typeof _teamScopingEnabled !== 'undefined') {
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            _teamScopingEnabled = !!parsed.enabled;
+            if (parsed.home_team && typeof parsed.home_team === 'string' && parsed.home_team.trim()) {
+              HOME_TEAM = parsed.home_team.trim();
+            }
+          } else {
+            _teamScopingEnabled = !!parsed;
+          }
+          _configOids.team_scoping = oid;
+          console.log('[Config] Loaded team_scoping: enabled =', _teamScopingEnabled, '| home_team =', (typeof HOME_TEAM !== 'undefined' ? HOME_TEAM : '(unset)'));
         }
         return;
       }
