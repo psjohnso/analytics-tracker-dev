@@ -365,17 +365,48 @@ function fmTaskToolField(currentValue, span2) {
   '</div>';
 }
 
-function fmSelect(id, options, value, placeholder, required) {
+function fmSelect(id, options, value, placeholder, required, onChange) {
   const req = required ? ' class="fm-select err" ' : ' class="fm-select" ';
   // Ensure the current value is always available even if not in the options list
   // (e.g. an old category that was renamed, or a value from an older data upload)
   const opts = (value && !options.includes(value)) ? [...options, value] : options;
-  let html = '<select id="' + id + '"' + req + '>';
+  let html = '<select id="' + id + '"' + req + (onChange ? ' onchange="' + onChange + '"' : '') + '>';
   if (placeholder) html += '<option value="">' + placeholder + '</option>';
   opts.forEach(function(o) {
     html += '<option value="' + o + '"' + (o === value ? ' selected' : '') + '>' + o + '</option>';
   });
   return html + '</select>';
+}
+
+// Units available for a Team. When the team is in the org tree (Department →
+// Team → Unit), returns exactly that team's units (cascading) — even if empty,
+// so a unit-less team like Architects shows only the placeholder. When the team
+// is unassigned (not in the tree), falls back to the full flat unit list so
+// nothing is hidden. Drift (a record's unit not in this list) is preserved by
+// fmSelect/_mfFillSelect, which always keep the current value.
+function fmUnitsForTeam(team) {
+  if (team && typeof departmentOfTeam === 'function' && departmentOfTeam(team)) {
+    return (typeof orgUnits === 'function') ? orgUnits(team) : [];
+  }
+  return (typeof FM_ITD_TEAMS !== 'undefined' && FM_ITD_TEAMS) ? FM_ITD_TEAMS.slice() : [];
+}
+
+// Cascading Unit dropdown for the project form: when the Team select changes,
+// repopulate the Unit options with that team's units. Keeps the current unit if
+// it's still valid for the new team; otherwise resets to the placeholder.
+function fmOnTeamChange() {
+  var teamSel = document.getElementById('fm-owning-team');
+  var unitSel = document.getElementById('fm-itd-team');
+  if (!teamSel || !unitSel) return;
+  var team = teamSel.value;
+  var cur = unitSel.value;
+  var units = fmUnitsForTeam(team);
+  var keep = cur && units.indexOf(cur) >= 0;
+  var html = '<option value="">Select unit…</option>';
+  units.forEach(function(u) {
+    html += '<option value="' + u + '"' + (keep && u === cur ? ' selected' : '') + '>' + u + '</option>';
+  });
+  unitSel.innerHTML = html;
 }
 
 function fmInput(id, value, placeholder, type) {
@@ -1308,6 +1339,15 @@ function buildProjectForm(p) {
 
   var canOps = !(isIdea && !isAdmin());
 
+  // Resolved team for this form (the project's team, or the logged-in user's own
+  // team on a new project). Used to scope the cascading Unit dropdown and as the
+  // Team select's default — shared by both the beta and classic layouts.
+  var _fmTeam = v('owning_team') || (function() {
+    if (!Auth || !Auth.fullName || typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.people) return '';
+    var me = RESOURCES_DATA.people[Auth.fullName];
+    return (me && me.team) || '';
+  })();
+
   // Beta (durationEstimate): guided step-flow layout — groups the estimate's
   // inputs (category, partner, start) ahead of the target-date fields so the
   // suggestion informs the end date. Falls through to the classic layout when
@@ -1315,7 +1355,7 @@ function buildProjectForm(p) {
   // hidden in that case, so the classic conditionals handle it).
   if (typeof isFeatureOn === 'function' && isFeatureOn('durationEstimate') && canOps) {
     var gUnit = fmField('Unit',
-      fmSelect('fm-itd-team', FM_ITD_TEAMS,
+      fmSelect('fm-itd-team', fmUnitsForTeam(_fmTeam),
         v('itd_team') || (function() {
           if (!Auth || !Auth.fullName || typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.people) return '';
           var me = RESOURCES_DATA.people[Auth.fullName];
@@ -1326,12 +1366,8 @@ function buildProjectForm(p) {
       'The smallest organizational grouping doing the work — typically a sub-team within a Team (e.g. GIS within Data Intelligence). Pick "Not in Unit" for team-wide work that doesn\'t fit a specific sub-team. Defaults to your own unit on new projects. Used by Project Review scoping and the Portfolio sidebar filter.');
     var gTeam = fmField('Team',
       fmSelect('fm-owning-team', (typeof _customOwningTeams !== 'undefined' && _customOwningTeams.length ? _customOwningTeams : FM_OWNING_TEAMS),
-        v('owning_team') || (function() {
-          if (!Auth || !Auth.fullName || typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.people) return '';
-          var me = RESOURCES_DATA.people[Auth.fullName];
-          return (me && me.team) || '';
-        })(),
-        'Select team…', false),
+        _fmTeam,
+        'Select team…', false, 'fmOnTeamChange()'),
       false, false,
       'The team that owns the project — set on every project regardless of whether it\'s Data Program work. The Unit above (if any) is a sub-team within this team. Defaults to your own team on new projects. Drives the Data Program portfolio view (when combined with the Data Program checkbox below) and lead-team edit permissions.');
     var gDataProgram = fmField('Data Program',
@@ -1414,7 +1450,7 @@ function buildProjectForm(p) {
       fmCategoryField(v('category'), true) +
       fmField('Partner Department', fmSelect('fm-partner-dept', FM_PARTNER_DEPTS, v('partner_dept'), 'Select department…')) +
       fmField('Unit',
-        fmSelect('fm-itd-team', FM_ITD_TEAMS,
+        fmSelect('fm-itd-team', fmUnitsForTeam(_fmTeam),
           v('itd_team') || (function() {
             // Default to the logged-in user's own unit when the project hasn't
             // been assigned one yet. Local model key is .role (aliased from
@@ -1429,16 +1465,9 @@ function buildProjectForm(p) {
       fmField('Team',
         fmSelect('fm-owning-team',
           (typeof _customOwningTeams !== 'undefined' && _customOwningTeams.length ? _customOwningTeams : FM_OWNING_TEAMS),
-          v('owning_team') || (function() {
-            // Default to the logged-in user's own team when the project hasn't
-            // been assigned one yet. Local model key is .team (aliased from
-            // team_members.owning_team on load — see index.html).
-            if (!Auth || !Auth.fullName || typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.people) return '';
-            var me = RESOURCES_DATA.people[Auth.fullName];
-            return (me && me.team) || '';
-          })(),
+          _fmTeam,
           'Select team…',
-          false),
+          false, 'fmOnTeamChange()'),
         false, false,
         'The team that owns the project — set on every project regardless of whether it\'s Data Program work. The Unit above (if any) is a sub-team within this team. Defaults to your own team on new projects. Drives the Data Program portfolio view (when combined with the Data Program checkbox below) and lead-team edit permissions.') +
       fmField('Data Program',
