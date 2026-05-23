@@ -26,13 +26,17 @@ function _mfFillSelect(id, options, current) {
 function openMemberForm(mode, name) {
   document.getElementById('mf-title').textContent = mode === 'edit' ? 'Edit Team Member' : 'Add Team Member';
   document.getElementById('mf-oid').value = '';
-  // Build the Data Program Lead Team dropdown options from the live config
-  // (excluding DI — DI leads use the existing AGO Team Leads group, not this field).
+  // Build the Team Lead dropdown from the configured owning teams (excluding the
+  // home team — its leads use the AGO admin group, not this field). A Team Lead
+  // can create/edit all of their team's projects.
   var dpltSel = document.getElementById('mf-data-program-lead-team');
-  if (dpltSel && typeof getDataProgramTeams === 'function') {
-    var teams = getDataProgramTeams().filter(function(t) { return t.id !== 'DI'; });
-    dpltSel.innerHTML = '<option value="">&mdash; Not a Data Program lead &mdash;</option>' +
-      teams.map(function(t) { return '<option value="' + esc(t.name) + '">' + esc(t.name) + '</option>'; }).join('');
+  if (dpltSel) {
+    var home = (typeof HOME_TEAM !== 'undefined') ? HOME_TEAM : 'Data Intelligence';
+    var leadTeams = (typeof _customOwningTeams !== 'undefined' && Array.isArray(_customOwningTeams))
+      ? _customOwningTeams.filter(function(t) { return t && t !== home && t !== 'Not on a Team'; })
+      : [];
+    dpltSel.innerHTML = '<option value="">&mdash; Not a team lead &mdash;</option>' +
+      leadTeams.map(function(t) { return '<option value="' + esc(t) + '">' + esc(t) + '</option>'; }).join('');
   }
   if (mode === 'edit' && RESOURCES_DATA && RESOURCES_DATA.people[name]) {
     const p = RESOURCES_DATA.people[name];
@@ -90,6 +94,26 @@ function openMemberForm(mode, name) {
     document.getElementById('mf-name').readOnly = false;
     document.getElementById('mf-name').style.background = '';
   }
+  // Team Lead scoping: a (non-admin) team lead manages only their own team —
+  // lock the Team field to their team and hide the lead-assignment control.
+  (function() {
+    var actorLead = (typeof isAdmin === 'function' && !isAdmin() && typeof getLeadTeam === 'function') ? getLeadTeam() : null;
+    var teamSel = document.getElementById('mf-team');
+    var leadRow = document.getElementById('mf-team-lead-row');
+    if (actorLead) {
+      if (teamSel) {
+        if (!Array.prototype.some.call(teamSel.options, function(o) { return o.value === actorLead; })) {
+          teamSel.add(new Option(actorLead, actorLead));
+        }
+        teamSel.value = actorLead;
+        teamSel.disabled = true;
+      }
+      if (leadRow) leadRow.style.display = 'none';
+    } else {
+      if (teamSel) teamSel.disabled = false;
+      if (leadRow) leadRow.style.display = '';
+    }
+  })();
   document.getElementById('member-form-backdrop').classList.add('open');
   onTrackingLevelChange();
 }
@@ -330,16 +354,32 @@ async function saveMemberForm() {
   const name = document.getElementById('mf-name').value.trim();
   const positionTitle = document.getElementById('mf-position-title').value.trim();
   const role = document.getElementById('mf-role').value.trim();
-  const team = document.getElementById('mf-team').value.trim();
+  let team = document.getElementById('mf-team').value.trim();
   const memberGroup = document.getElementById('mf-member-group').value || 'Data Intelligence';
   const skill = document.getElementById('mf-skill').value.trim();
   const projPct = parseFloat(document.getElementById('mf-proj-pct').value) || 0;
   const trackingLevel = document.getElementById('mf-tracking-level').value || 'full';
-  const dpLeadTeam = document.getElementById('mf-data-program-lead-team').value || null;
+  let dpLeadTeam = document.getElementById('mf-data-program-lead-team').value || null;
   const scheduleType = document.getElementById('mf-schedule-type').value || '5/8';
   const rdoDay = document.getElementById('mf-rdo-day').value || null;
   const lunchMinutes = parseInt(document.getElementById('mf-lunch').value) || 60;
   const origName = document.getElementById('mf-name').dataset.origName || '';
+
+  // Team Lead enforcement: a non-admin team lead may only manage their own team's
+  // members — force the team to theirs, never change lead assignment, and reject
+  // editing a member who belongs to another team.
+  var _actorLead = (typeof isAdmin === 'function' && !isAdmin() && typeof getLeadTeam === 'function') ? getLeadTeam() : null;
+  if (_actorLead) {
+    if (origName && RESOURCES_DATA && RESOURCES_DATA.people[origName]) {
+      var _ot = (RESOURCES_DATA.people[origName].team) || '';
+      var _match = (typeof sameTeam === 'function') ? sameTeam(_ot, _actorLead) : _ot === _actorLead;
+      if (!_match) { showToast('You can only manage your own team\'s members.', 'warn'); return; }
+      dpLeadTeam = RESOURCES_DATA.people[origName].data_program_lead_team || null; // preserve; leads can't grant lead status
+    } else {
+      dpLeadTeam = null; // a member added by a lead is never auto-made a lead
+    }
+    team = _actorLead; // force their own team
+  }
 
   // Collect start/end times and convert "HH:MM" to ms since midnight for TimeOnly fields
   const days = ['mon','tue','wed','thu','fri'];
@@ -521,6 +561,14 @@ async function saveMemberForm() {
 }
 
 async function deleteMember(name) {
+  // Team Lead enforcement: a non-admin lead may only remove their own team's members.
+  var _actorLead = (typeof isAdmin === 'function' && !isAdmin() && typeof getLeadTeam === 'function') ? getLeadTeam() : null;
+  if (_actorLead) {
+    var _p = RESOURCES_DATA && RESOURCES_DATA.people ? RESOURCES_DATA.people[name] : null;
+    var _t = (_p && _p.team) || '';
+    var _ok = (typeof sameTeam === 'function') ? sameTeam(_t, _actorLead) : _t === _actorLead;
+    if (!_ok) { showToast('You can only remove your own team\'s members.', 'warn'); return; }
+  }
   if (!confirm('Remove "' + name + '" from the team?\n\nThis will delete their team member record. Their allocation and absence history will remain in the database.')) return;
   try {
     const existing = await agolQuery(ARCGIS_CONFIG.teamMembersUrl, "name='" + name.replace(/'/g, "''") + "'");

@@ -439,13 +439,18 @@ function updateBetaPref(featureKey, enabled) {
 
 function renderSettingsPage(area) {
   var isAdminUser = isAdmin();
+  var leadTeam = (typeof getLeadTeam === 'function') ? getLeadTeam() : null;
+  var isLeadUser = !isAdminUser && !!leadTeam;
+  var canManagePeople = isAdminUser || isLeadUser;
   if (!Auth.loggedIn) {
     area.innerHTML = '<div class="empty-state">Sign in to access Settings.</div>';
     return;
   }
-  // Non-admins only see preferences — force section
-  if (!isAdminUser && _settingsSection !== 'preferences') {
-    _settingsSection = 'preferences';
+  // Access: admins see all sections; team leads see Preferences + their own
+  // team's members; everyone else sees Preferences only.
+  if (!isAdminUser) {
+    var leadOk = isLeadUser && (_settingsSection === 'team' || _settingsSection === 'teamintro');
+    if (_settingsSection !== 'preferences' && !leadOk) _settingsSection = 'preferences';
   }
 
   // ── Sidebar navigation ──────────────────────────────────
@@ -462,16 +467,25 @@ function renderSettingsPage(area) {
   navHtml += navItem('preferences', 'Preferences');
   navHtml += '</div>';
 
-  // Admin-only sections
-  if (isAdminUser) {
+  // People data — admins see everyone; team leads see only their own team.
+  var people = null, allNames = [], activeCount = 0;
+  if (canManagePeople) {
     if (!RESOURCES_DATA) {
       area.innerHTML = '<div class="empty-state">Resources data is loading…</div>';
       return;
     }
-    var people = RESOURCES_DATA.people;
-    var allNames = Object.keys(people).sort();
-    var activeCount = allNames.filter(function(n) { return people[n].active !== false; }).length;
+    people = RESOURCES_DATA.people;
+    allNames = Object.keys(people).sort();
+    if (!isAdminUser && leadTeam) {
+      allNames = allNames.filter(function(n) {
+        var t = (people[n] && people[n].team) || '';
+        return (typeof sameTeam === 'function') ? sameTeam(t, leadTeam) : t === leadTeam;
+      });
+    }
+    activeCount = allNames.filter(function(n) { return people[n].active !== false; }).length;
+  }
 
+  if (isAdminUser) {
     navHtml += '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">People</div>' +
       navItem('team', 'Team members', activeCount) +
@@ -494,6 +508,12 @@ function renderSettingsPage(area) {
       navItem('trash', 'Trash') +
       navItem('developer', 'Developer') +
     '</div>';
+  } else if (isLeadUser) {
+    navHtml += '<div class="settings-nav-group">' +
+      '<div class="settings-nav-label">' + esc(leadTeam) + '</div>' +
+      navItem('team', 'Team members', activeCount) +
+      navItem('teamintro', 'Team Introduction') +
+    '</div>';
   }
   navHtml += '</div>';
 
@@ -502,7 +522,7 @@ function renderSettingsPage(area) {
 
   if (_settingsSection === 'preferences') {
     panelHtml = buildPreferencesPanel();
-  } else if (!isAdminUser) {
+  } else if (!isAdminUser && !(isLeadUser && (_settingsSection === 'team' || _settingsSection === 'teamintro'))) {
     panelHtml = '<div class="empty-state">You do not have access to this section.</div>';
   } else {
   if (_settingsSection === 'team') {
@@ -523,15 +543,15 @@ function renderSettingsPage(area) {
       var trackingLabel = isLight
         ? '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FFF7ED;color:#9A3412;">Light</span>'
         : '<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#EEF2FF;color:#002669;">Full</span>';
-      // Data Program Lead chip — appended after the tracking-level badge
-      // when the member is flagged as a non-DI team's lead.
+      // Team Lead chip — appended after the tracking-level badge when the member
+      // leads a (non-home) team.
       if (p.data_program_lead_team) {
         var dpltShort = (function() {
           var teams = (typeof getDataProgramTeams === 'function') ? getDataProgramTeams() : [];
           var t = teams.find(function(x) { return x.name === p.data_program_lead_team; });
-          return t && t.id ? t.id + ' Lead' : p.data_program_lead_team + ' Lead';
+          return (t && t.id ? t.id : p.data_program_lead_team) + ' Lead';
         })();
-        trackingLabel += ' <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FEF3C7;color:#92400E;margin-left:4px;" title="Can create projects directly for ' + esc(p.data_program_lead_team) + '">' + esc(dpltShort) + '</span>';
+        trackingLabel += ' <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#FEF3C7;color:#92400E;margin-left:4px;" title="Team Lead — can create and edit all of ' + esc(p.data_program_lead_team) + '’s projects">' + esc(dpltShort) + '</span>';
       }
       return '<tr' + rowStyle + '>' +
         '<td style="font-weight:700;color:var(--navy);">' + esc(name) + '</td>' +

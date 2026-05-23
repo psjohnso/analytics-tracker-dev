@@ -899,7 +899,11 @@ function renderProjectDetail(id) {
     <div class="detail-task-cell" style="font-weight:800;color:var(--navy);">${hoursLabel(projTotalHrs, projMyHrs)}</div>
   </div>` : '';
 
-  var canEditProject = isAdmin() || (Auth.fullName && p.contact === Auth.fullName);
+  // Use the shared permission check so Team Leads get edit rights on their team's
+  // projects (not just admins / the project's own contact).
+  var canEdit = (typeof canEditProject === 'function')
+    ? canEditProject(p)
+    : (isAdmin() || (Auth.fullName && p.contact === Auth.fullName));
 
   return `<div class="detail-page">
     <div class="detail-hero">
@@ -911,10 +915,10 @@ function renderProjectDetail(id) {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
           <button class="detail-back-btn" onclick="goBackFromDetail()">← ${backLabel}</button>
           <div class="detail-hero-actions">
-            ${canEditProject && p.status && p.status !== 'Complete' && p.status !== 'Canceled' ? `<button class="modal-edit-btn" style="background:#EAF3DE;color:#27500A;border-color:#83AC1644;" onclick="markProjectComplete(${p.objectId})">✓ Complete</button>` : ''}
-            ${canEditProject ? `<button class="modal-edit-btn" onclick="openFormModal('edit-project',${p.objectId})">✏ Edit</button>` : ''}
+            ${canEdit && p.status && p.status !== 'Complete' && p.status !== 'Canceled' ? `<button class="modal-edit-btn" style="background:#EAF3DE;color:#27500A;border-color:#83AC1644;" onclick="markProjectComplete(${p.objectId})">✓ Complete</button>` : ''}
+            ${canEdit ? `<button class="modal-edit-btn" onclick="openFormModal('edit-project',${p.objectId})">✏ Edit</button>` : ''}
             <button class="modal-edit-btn" style="background:var(--bg-surface,#F3F1EB);color:var(--text-muted);border-color:#E8E6DF;" onclick="copyProjectSummary(${p.objectId})">📋 Copy</button>
-            ${canEditProject ? `<button class="modal-del-btn" onclick="confirmDeleteProject(${p.objectId})">🗑 Delete</button>` : ''}
+            ${canEdit ? `<button class="modal-del-btn" onclick="confirmDeleteProject(${p.objectId})">🗑 Delete</button>` : ''}
           </div>
         </div>
         <div class="detail-hero-title">${esc(p.title)}</div>

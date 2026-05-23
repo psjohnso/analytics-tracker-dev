@@ -28,13 +28,14 @@ const Auth = {
 // Check admin status respecting preview mode
 function isAdmin() { return Auth.isTeamLead && !Auth.previewMode; }
 
-// ── Data Program Lead helpers ────────────────────────────────────────
-// A "Data Program Lead" is a non-DI team's lead (Data Architecture,
-// Data Librarian, or Emerging Data Infrastructure) whose member record
-// has data_program_lead_team set. They can create projects directly
-// (skipping the Idea review stage) and edit projects scoped to their
-// own team.
-function getDataProgramLeadTeam() {
+// ── Team Lead helpers ────────────────────────────────────────────────
+// A "Team Lead" leads a specific team — their member record's
+// data_program_lead_team field names that team. They can create and edit ALL of
+// their own team's projects (not just data-program ones). The home team (Data
+// Intelligence) uses the admin group instead of this field. The legacy field
+// name is kept to avoid an AGOL schema migration; dataprogram.html's lead
+// console reads the same field.
+function getLeadTeam() {
   if (!Auth.fullName) return null;
   if (Auth.previewMode) return null;
   if (typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.people) return null;
@@ -43,15 +44,19 @@ function getDataProgramLeadTeam() {
   var t = p.data_program_lead_team;
   return (t && typeof t === 'string' && t.trim()) ? t.trim() : null;
 }
-function isDataProgramLead() { return getDataProgramLeadTeam() !== null; }
-function canCreateProject() { return isAdmin() || isDataProgramLead(); }
+function isTeamLeadRole() { return getLeadTeam() !== null; }
+function canCreateProject() { return isAdmin() || isTeamLeadRole(); }
 function canEditProject(p) {
   if (isAdmin()) return true;
   if (Auth.fullName && p && p.contact === Auth.fullName) return true;
-  var leadTeam = getDataProgramLeadTeam();
-  if (leadTeam && p && p.is_data_program && p.owning_team === leadTeam) return true;
+  var leadTeam = getLeadTeam();
+  if (leadTeam && p && p.owning_team &&
+      ((typeof sameTeam === 'function') ? sameTeam(p.owning_team, leadTeam) : p.owning_team === leadTeam)) return true;
   return false;
 }
+// Back-compat aliases (older "Data Program Lead" names).
+function getDataProgramLeadTeam() { return getLeadTeam(); }
+function isDataProgramLead() { return isTeamLeadRole(); }
 
 // ══════════════════════════════════════════════════════════════════════
 //  OAUTH 2.0 AUTHENTICATION (ArcGIS Online Implicit Grant)

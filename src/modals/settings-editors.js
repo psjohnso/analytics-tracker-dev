@@ -953,17 +953,50 @@ function dpEditDiscard() {
 // Partners (rows), About app.
 
 var _teamIntroEditDraft = null;
+var _tiEditTeam = null; // which team's intro is being edited (Tier 2)
+
+function _tiHomeTeam() { return (typeof HOME_TEAM !== 'undefined') ? HOME_TEAM : 'Data Intelligence'; }
+function _tiIsHomeTeam(team) {
+  if (!team) return true;
+  return (typeof sameTeam === 'function') ? sameTeam(team, _tiHomeTeam()) : team === _tiHomeTeam();
+}
+// Find the existing byTeam key matching a team (case-insensitive), or null.
+function _tiByTeamKey(cfg, team) {
+  if (!cfg || !cfg.byTeam || !team) return null;
+  return Object.keys(cfg.byTeam).find(function(t) {
+    return (typeof sameTeam === 'function') ? sameTeam(t, team) : t === team;
+  }) || null;
+}
+function _tiBlankIntro(team) {
+  return { eyebrow: team || '', mission: '', services: [], goals: [], partners: [], about: '', goalsHeading: '', goalsLede: '' };
+}
 
 function _tiEnsureDraft() {
   if (_teamIntroEditDraft) return _teamIntroEditDraft;
-  var current = (typeof _teamIntroConfig !== 'undefined' && _teamIntroConfig)
-    ? _teamIntroConfig
-    : TEAM_INTRO_DEFAULT_CONFIG;
-  _teamIntroEditDraft = JSON.parse(JSON.stringify(current));
+  var cfg = (typeof _teamIntroConfig !== 'undefined' && _teamIntroConfig) ? _teamIntroConfig : TEAM_INTRO_DEFAULT_CONFIG;
+  var team = _tiEditTeam || _tiHomeTeam();
+  var source;
+  if (_tiIsHomeTeam(team)) {
+    // Home team = the flat top-level config.
+    source = cfg;
+  } else {
+    var key = _tiByTeamKey(cfg, team);
+    source = (key && cfg.byTeam) ? cfg.byTeam[key] : _tiBlankIntro(team);
+  }
+  _teamIntroEditDraft = JSON.parse(JSON.stringify(source));
+  // byTeam is a container, not editable content — never carry it into a draft.
+  if (_teamIntroEditDraft.byTeam) delete _teamIntroEditDraft.byTeam;
   if (!Array.isArray(_teamIntroEditDraft.services)) _teamIntroEditDraft.services = [];
   if (!Array.isArray(_teamIntroEditDraft.goals))    _teamIntroEditDraft.goals = [];
   if (!Array.isArray(_teamIntroEditDraft.partners)) _teamIntroEditDraft.partners = [];
   return _teamIntroEditDraft;
+}
+
+// Admin team picker for the intro editor.
+function tiSetEditTeam(team) {
+  _tiEditTeam = team || _tiHomeTeam();
+  _teamIntroEditDraft = null;
+  renderSettingsPage(document.getElementById('content-area'));
 }
 
 function _tiSectionHeader(label, hint) {
@@ -1008,15 +1041,37 @@ function _tiRemoveBtn(section, idx) {
 }
 
 function buildTeamIntroConfigPanel() {
-  if (!isAdmin()) {
+  var isAdminUser = isAdmin();
+  var myLeadTeam = (typeof getLeadTeam === 'function') ? getLeadTeam() : null;
+  if (!isAdminUser && !myLeadTeam) {
     return '<div class="settings-panel-title">Team Introduction</div>' +
-      '<div class="settings-panel-desc">Admin-only — only Team Leads can edit the Overview tab content.</div>';
+      '<div class="settings-panel-desc">Only Team Leads and admins can edit Overview tab content.</div>';
   }
+  // Resolve which team's intro we're editing: leads are locked to their own;
+  // admins default to the home team and can switch via the picker.
+  if (!isAdminUser) _tiEditTeam = myLeadTeam;
+  else if (!_tiEditTeam) _tiEditTeam = _tiHomeTeam();
+
   _teamIntroEditDraft = null;
   var draft = _tiEnsureDraft();
 
   var html = '<div class="settings-panel-title">Team Introduction</div>';
   html += '<div class="settings-panel-desc">Edit the content of the Overview tab: mission, services, year-tagged goals, top partner departments, and the about-this-app blurb. Changes are visible to everyone the next time they refresh.</div>';
+
+  // Per-team scope banner (Tier 2): admin gets a team picker; a lead is locked.
+  html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:8px;padding:8px 12px;font-size:12px;color:var(--navy);margin-bottom:16px;">';
+  if (isAdminUser) {
+    var _tiTeams = (typeof allKnownTeams === 'function') ? allKnownTeams() : [_tiHomeTeam()];
+    html += 'Editing intro for: <select onchange="tiSetEditTeam(this.value)" style="font-family:Lato,sans-serif;font-size:12px;font-weight:700;color:var(--navy);border:1px solid #C7D2FE;border-radius:5px;padding:3px 8px;background:#fff;">' +
+      _tiTeams.map(function(t) {
+        var sel = (typeof sameTeam === 'function') ? sameTeam(t, _tiEditTeam) : (t === _tiEditTeam);
+        return '<option value="' + esc(t) + '"' + (sel ? ' selected' : '') + '>' + esc(t) + '</option>';
+      }).join('') + '</select>';
+    html += '<span style="color:var(--text-muted);">' + (_tiIsHomeTeam(_tiEditTeam) ? 'home team' : 'per-team intro') + '</span>';
+  } else {
+    html += 'Editing intro for your team: <b>' + esc(_tiEditTeam) + '</b> &nbsp;🔒';
+  }
+  html += '</div>';
 
   // Mission section
   html += _tiSectionHeader('Mission &amp; framing', 'The big mission statement and the small eyebrow line above it.');
@@ -1147,12 +1202,29 @@ async function tiEditSave() {
       }
     });
   }
+  // Merge the draft into the correct slice: home team → flat top-level
+  // (preserving the byTeam map); other teams → byTeam[team]. This way a lead
+  // saving their team can never clobber another team's intro.
+  var base = (typeof _teamIntroConfig !== 'undefined' && _teamIntroConfig) ? JSON.parse(JSON.stringify(_teamIntroConfig)) : {};
+  var team = _tiEditTeam || _tiHomeTeam();
+  var merged;
+  if (_tiIsHomeTeam(team)) {
+    var keepByTeam = base.byTeam;
+    merged = JSON.parse(JSON.stringify(_teamIntroEditDraft));
+    if (keepByTeam) merged.byTeam = keepByTeam;
+  } else {
+    merged = base;
+    merged.byTeam = merged.byTeam || {};
+    var oldKey = _tiByTeamKey(merged, team);
+    if (oldKey && oldKey !== team) delete merged.byTeam[oldKey];
+    merged.byTeam[team] = JSON.parse(JSON.stringify(_teamIntroEditDraft));
+  }
   try {
-    var ok = await saveConfigKey('team_intro', _teamIntroEditDraft);
+    var ok = await saveConfigKey('team_intro', merged);
     if (!ok) throw new Error('Save returned false');
-    _teamIntroConfig = JSON.parse(JSON.stringify(_teamIntroEditDraft));
+    _teamIntroConfig = merged;
     _teamIntroEditDraft = null;
-    showToast('Team Introduction saved.', 'success');
+    showToast('Team Introduction saved' + (_tiIsHomeTeam(team) ? '.' : ' for ' + team + '.'), 'success');
     renderSettingsPage(document.getElementById('content-area'));
   } catch (e) {
     console.error('[TeamIntro] Save failed:', e);

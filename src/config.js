@@ -67,6 +67,14 @@ function getTeamIntro(team) {
   var isHome = !scopeOn || (typeof HOME_TEAM === 'undefined') ||
     ((typeof sameTeam === 'function') ? sameTeam(team, HOME_TEAM) : team === HOME_TEAM);
   if (isHome) return cfg;
+  // Per-team intro authored via Settings → Team Introduction (Tier 2): a team's
+  // own slice in cfg.byTeam wins over the auto/minimal fallback.
+  if (cfg && cfg.byTeam && team) {
+    var key = Object.keys(cfg.byTeam).find(function(t) {
+      return (typeof sameTeam === 'function') ? sameTeam(t, team) : t === team;
+    });
+    if (key) return cfg.byTeam[key];
+  }
   return { eyebrow: team || '', mission: '', services: [], goals: [], partners: [], about: (cfg && cfg.about) || '', goalsHeading: '', goalsLede: '' };
 }
 
