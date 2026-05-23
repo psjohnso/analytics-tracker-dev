@@ -39,8 +39,9 @@ function initResourcesWeekIndices() {
   while (dwi > 0 && allPeopleVals.every(p => p.weekly_allocated[dwi] === 0)) dwi--;
   window.dataWeekIdx = dwi;
   // Default selected person to first active person if current selection not in data or inactive
-  if (!people[selectedPerson] || people[selectedPerson].active === false) {
-    const activeNames = Object.keys(people).filter(function(n) { return isFullMember(n); });
+  if (!people[selectedPerson] || people[selectedPerson].active === false ||
+      (typeof inCurrentTeamPerson === 'function' && !inCurrentTeamPerson(selectedPerson))) {
+    const activeNames = Object.keys(people).filter(function(n) { return isFullMember(n) && (typeof inCurrentTeamPerson !== 'function' || inCurrentTeamPerson(n)); });
     if (activeNames.length > 0) selectedPerson = activeNames[0];
     else {
       const names = Object.keys(people);
@@ -50,7 +51,7 @@ function initResourcesWeekIndices() {
 }
 
 function buildResourcePersonCards(people, currentWeekIdx) {
-  return Object.entries(people).filter(([name, p]) => isFullMember(name)).map(([name, p]) => {
+  return Object.entries(people).filter(([name, p]) => isFullMember(name) && (typeof inCurrentTeamPerson !== 'function' || inCurrentTeamPerson(name))).map(([name, p]) => {
     const curUtil = (p.utilization[currentWeekIdx] || 0) * 100;
     const utilColor = curUtil > 90 ? '#EF4444' : curUtil > 70 ? '#F59E0B' : '#83AC16';
     const initials = name.split(' ').map(w => w[0]).join('').slice(0,2);

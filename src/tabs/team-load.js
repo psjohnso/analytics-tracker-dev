@@ -147,6 +147,7 @@ function _tlBuildModel() {
 
   Object.keys(people).forEach(function(name) {
     if (!_tlIsCountableMember(name)) return;
+    if (typeof inCurrentTeamPerson === 'function' && !inCurrentTeamPerson(name)) return;
     var person = people[name];
     if (!person || !person.allocations) return;
     // Org-hierarchy filters (Team → Unit → Member). When set, restrict
@@ -387,6 +388,7 @@ function _tlBuildFilterOptions() {
   var teamSet = {};
   Object.keys(people).forEach(function(name) {
     if (!_tlIsCountableMember(name)) return;
+    if (typeof inCurrentTeamPerson === 'function' && !inCurrentTeamPerson(name)) return;
     teamSet[people[name].team || '(no team)'] = true;
   });
   var teams = Object.keys(teamSet).sort();
@@ -394,6 +396,7 @@ function _tlBuildFilterOptions() {
   var unitSet = {};
   Object.keys(people).forEach(function(name) {
     if (!_tlIsCountableMember(name)) return;
+    if (typeof inCurrentTeamPerson === 'function' && !inCurrentTeamPerson(name)) return;
     var p = people[name];
     if (_tlFilterTeam && (p.team || '') !== _tlFilterTeam) return;
     var u = p.role || '';
@@ -403,6 +406,7 @@ function _tlBuildFilterOptions() {
 
   var members = Object.keys(people).filter(function(name) {
     if (!_tlIsCountableMember(name)) return false;
+    if (typeof inCurrentTeamPerson === 'function' && !inCurrentTeamPerson(name)) return false;
     var p = people[name];
     if (_tlFilterTeam && (p.team || '') !== _tlFilterTeam) return false;
     if (_tlFilterUnit && (p.role || '') !== _tlFilterUnit) return false;

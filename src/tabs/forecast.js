@@ -175,6 +175,7 @@ const CP_TEAMS = ['Data Intelligence', 'Data Architecture', 'Data Librarian', 'E
 // If they're not on one of the four known teams, fall back to All so they
 // aren't accidentally filtered into an empty list.
 function cpDefaultTeam() {
+  if (typeof isTeamScopingOn === 'function' && isTeamScopingOn() && CURRENT_TEAM) return CURRENT_TEAM;
   if (typeof Auth === 'undefined' || !Auth.fullName) return '';
   if (!RESOURCES_DATA || !RESOURCES_DATA.people) return '';
   var p = RESOURCES_DATA.people[Auth.fullName];
@@ -198,6 +199,9 @@ function cpRenderPlanner() {
   cpEnsureTeamInit();
   var avData = fcAvailData();
   var people = Object.keys(avData);
+  // Hard team-scope first (no-op when scoping is off) so other teams never leak
+  // regardless of the planner's own team dropdown.
+  if (typeof inCurrentTeamPerson === 'function') people = people.filter(inCurrentTeamPerson);
   // Filter by team if a specific team is selected ('' = All).
   if (_cpTeam) {
     people = people.filter(function(name) {
@@ -298,10 +302,16 @@ function buildCapacityPlannerSection() {
   var roleOpts = ['Lead', 'Contributor', 'Reviewer'].map(function(r) {
     return '<option value="' + r + '"' + (r === _cpRole ? ' selected' : '') + '>' + r + '</option>';
   }).join('');
-  var teamOpts = '<option value=""' + (_cpTeam === '' ? ' selected' : '') + '>All teams</option>';
-  CP_TEAMS.forEach(function(t) {
-    teamOpts += '<option value="' + esc(t) + '"' + (t === _cpTeam ? ' selected' : '') + '>' + esc(t) + '</option>';
-  });
+  var teamOpts;
+  if (typeof isTeamScopingOn === 'function' && isTeamScopingOn() && CURRENT_TEAM) {
+    // Scoped: lock the planner to the current team (no cross-team option).
+    teamOpts = '<option value="' + esc(CURRENT_TEAM) + '" selected>' + esc(CURRENT_TEAM) + '</option>';
+  } else {
+    teamOpts = '<option value=""' + (_cpTeam === '' ? ' selected' : '') + '>All teams</option>';
+    CP_TEAMS.forEach(function(t) {
+      teamOpts += '<option value="' + esc(t) + '"' + (t === _cpTeam ? ' selected' : '') + '>' + esc(t) + '</option>';
+    });
+  }
   var pct = (_allocationDefaults[_cpSize] || {})[_cpRole] || 0;
 
   return '<div class="cp-section">' +
@@ -320,17 +330,21 @@ function buildForecastPage() {
   if (!RESOURCES_DATA) return '<div class="empty-state">Resources data is loading…</div>';
   const rd = RESOURCES_DATA;
   const weeks = rd.weeks;
-  // Forecast is scoped to the Data Intelligence team only — affiliated
-  // collaborators from other ITD teams (DA / DL / EDI / etc.) plan against
-  // their own teams' capacity, not ours. Filter on the team field from the
-  // team_members feature service (which matches the ITD Team dropdown
-  // values). fcAvailData() already excludes inactive/former members, so
-  // we don't need to repeat that check here.
+  // Forecast is scoped to the current team's people. With team scoping OFF this
+  // resolves to HOME_TEAM (Data Intelligence) — the original single-team view;
+  // with scoping ON it follows CURRENT_TEAM (admin preview or the global flag).
+  // Affiliated collaborators from other teams plan against their own team's
+  // capacity. fcAvailData() already excludes inactive/former members.
   const fullAvData = fcAvailData();
   const avData = {};
+  var _fcTeam = (typeof isTeamScopingOn === 'function' && isTeamScopingOn() && CURRENT_TEAM)
+    ? CURRENT_TEAM
+    : (typeof HOME_TEAM !== 'undefined' ? HOME_TEAM : 'Data Intelligence');
   Object.keys(fullAvData).forEach(function(name) {
-    var p = rd.people[name];
-    if (p && p.team === 'Data Intelligence') avData[name] = fullAvData[name];
+    var keep = (typeof sameTeam === 'function')
+      ? sameTeam((typeof personTeam === 'function' ? personTeam(name) : (rd.people[name] || {}).team), _fcTeam)
+      : (rd.people[name] && rd.people[name].team === _fcTeam);
+    if (keep) avData[name] = fullAvData[name];
   });
   const people = Object.keys(avData);
   const curIdx = window.currentWeekIdx || 9;

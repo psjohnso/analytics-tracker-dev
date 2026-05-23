@@ -953,7 +953,7 @@ function renderMyWork(area) {
 
   // Admin user selector
   if (isAdmin() && RESOURCES_DATA && RESOURCES_DATA.people) {
-    const memberNames = Object.keys(RESOURCES_DATA.people).filter(function(n) { return isFullMember(n); }).sort();
+    const memberNames = Object.keys(RESOURCES_DATA.people).filter(function(n) { return isFullMember(n) && (typeof inCurrentTeamPerson !== 'function' || inCurrentTeamPerson(n)); }).sort();
     html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:0;">';
     html += '<div class="mywork-subtitle" style="margin-bottom:0;">' + today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) + '</div>';
     html += '<select onchange="switchMyWorkUser(this)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--navy);font-weight:600;cursor:pointer;">';

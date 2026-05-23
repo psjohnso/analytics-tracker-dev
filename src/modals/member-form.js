@@ -469,6 +469,25 @@ async function saveMemberForm() {
         ? function() { return !!(RESOURCES_DATA && RESOURCES_DATA.people && RESOURCES_DATA.people[name] && !RESOURCES_DATA.people[origName]); }
         : null;
     await reloadResourcesUntil(_verify, 'member-save');
+    // Optimistic overlay for edits: the team_members re-query can return stale
+    // field values right after a write (read-after-write lag), which made edits
+    // such as tracking_level appear not to take — the reload read the old value
+    // straight back. Apply the values we just saved onto the local record so the
+    // change shows immediately; the next refresh confirms from the server.
+    if (isEdit && RESOURCES_DATA && RESOURCES_DATA.people && RESOURCES_DATA.people[name]) {
+      var _ep = RESOURCES_DATA.people[name];
+      _ep.role = role;
+      _ep.team = team;
+      _ep.member_group = memberGroup;
+      _ep.skill = skill;
+      _ep.proj_pct = projPct / 100;
+      _ep.tracking_level = trackingLevel;
+      _ep.position_title = positionTitle;
+      _ep.data_program_lead_team = dpLeadTeam || null;
+      _ep.schedule_type = scheduleType;
+      _ep.rdo_day = rdoDay || null;
+      _ep.lunch_minutes = (lunchMinutes != null ? lunchMinutes : 60);
+    }
     // Fallback for read-after-write lag: if a newly added member still isn't in
     // RESOURCES_DATA after the reload+retries, insert a minimal optimistic entry
     // so they appear immediately. The next refresh fills in computed fields.
