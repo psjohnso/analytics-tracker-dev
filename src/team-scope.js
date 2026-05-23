@@ -55,12 +55,14 @@ function _adminTeamSelSet(team) {
 // Resolve whether (and to what) we scope this session. Call after auth +
 // resources + app_config have loaded; safe to re-call (admin switch / preview).
 function initTeamScope() {
-  var isAdm = (typeof isAdmin === 'function') && isAdmin();
+  // Use the durable group flag, not isAdmin(): while an admin impersonates a
+  // lead/member, isAdmin() is false but the admin team lens must still apply.
+  var isRealAdmin = (typeof Auth !== 'undefined' && Auth && Auth.isTeamLead);
   // On first boot, fold a ?team=/?teamscope= deep-link into the stored admin
   // selection, then strip it from the URL so later switcher changes win.
   if (!_teamScopeBooted) {
     _teamScopeBooted = true;
-    if (isAdm) {
+    if (isRealAdmin) {
       var params = null;
       try { params = new URLSearchParams(window.location.search); } catch (e) {}
       if (params && (params.has('team') || params.has('teamscope'))) {
@@ -75,7 +77,7 @@ function initTeamScope() {
       }
     }
   }
-  if (isAdm) {
+  if (isRealAdmin) {
     // Admin lens = switcher selection. Empty = All teams (no scope).
     var sel = _adminTeamSelGet();
     if (sel) { CURRENT_TEAM = canonicalTeam(sel); _teamScopeActive = !!CURRENT_TEAM; }
@@ -91,11 +93,34 @@ function initTeamScope() {
 
 // Switch the admin's team lens and re-render. team = '' → All teams (no scope).
 function setTeamScope(team) {
-  _adminTeamSelSet((team && String(team).trim()) || '');
+  team = (team && String(team).trim()) || '';
+  _adminTeamSelSet(team);
+  // "Lead" requires a specific team — drop back to admin (or member) when All.
+  if (!team && typeof Auth !== 'undefined' && Auth && Auth.actAsRole === 'lead') {
+    Auth.actAsRole = 'admin'; Auth.previewMode = false;
+  }
   initTeamScope();
+  if (typeof applyOptionalTabVisibility === 'function') applyOptionalTabVisibility();
   if (typeof renderTeamSwitcher === 'function') renderTeamSwitcher();
   // Mark dirty so render() rebuilds the header stats + sidebar filters (those are
   // gated on Internal.dataDirty); otherwise a team switch leaves stale counts.
+  if (typeof markDataDirty === 'function') markDataDirty();
+  if (typeof render === 'function') render();
+}
+
+// Admin "act as" role for the current team: 'admin' | 'lead' | 'member'.
+// Lead/member de-admin the session so the admin experiences that role; lead also
+// requires a specific team (its lead team = CURRENT_TEAM).
+function setActAsRole(role) {
+  role = (role === 'lead' || role === 'member') ? role : 'admin';
+  if (role === 'lead' && !CURRENT_TEAM) role = 'admin'; // can't lead "All teams"
+  if (typeof Auth !== 'undefined' && Auth) {
+    Auth.actAsRole = role;
+    Auth.previewMode = (role !== 'admin'); // keep legacy previewMode consumers in sync
+  }
+  if (typeof applyOptionalTabVisibility === 'function') applyOptionalTabVisibility();
+  initTeamScope();
+  if (typeof renderTeamSwitcher === 'function') renderTeamSwitcher();
   if (typeof markDataDirty === 'function') markDataDirty();
   if (typeof render === 'function') render();
 }
@@ -187,17 +212,32 @@ function allKnownTeams() {
 function renderTeamSwitcher() {
   var wrap = (typeof document !== 'undefined') ? document.getElementById('team-switcher-wrap') : null;
   if (!wrap) return;
-  var isAdm = (typeof isAdmin === 'function') && isAdmin();
+  // Gate on the durable group flag so the controls stay visible (and the admin
+  // can switch back) even while impersonating a lead/member.
+  var isRealAdmin = (typeof Auth !== 'undefined' && Auth && Auth.isTeamLead);
   var loggedIn = !(typeof Auth !== 'undefined' && Auth) || Auth.loggedIn !== false;
-  if (!isAdm || !loggedIn) { wrap.innerHTML = ''; wrap.style.display = 'none'; return; }
+  if (!isRealAdmin || !loggedIn) { wrap.innerHTML = ''; wrap.style.display = 'none'; return; }
   var cur = CURRENT_TEAM || '';
+  var sStyle = 'font-size:11px;font-weight:700;font-family:Lato,sans-serif;color:var(--navy);background:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.5);border-radius:4px;padding:4px 8px;cursor:pointer;';
+
+  // Team lens
   var opts = '<option value=""' + (cur ? '' : ' selected') + '>All teams</option>';
   allKnownTeams().forEach(function (t) {
     var sel = cur && ((typeof sameTeam === 'function') ? sameTeam(t, cur) : (t === cur));
     opts += '<option value="' + _tsEsc(t) + '" style="color:#111;background:#fff;"' + (sel ? ' selected' : '') + '>' + _tsEsc(t) + '</option>';
   });
+  var html = '<select title="View as team — admin only" onchange="setTeamScope(this.value)" style="' + sStyle + 'max-width:170px;">' + opts + '</select>';
+
+  // Act-as role: Admin always; Lead only with a specific team; Member always.
+  var role = (Auth.actAsRole || 'admin');
+  var roleItems = [['admin', 'Admin']];
+  if (cur) roleItems.push(['lead', 'Lead of ' + cur]);
+  roleItems.push(['member', cur ? ('Member of ' + cur) : 'Member (view as)']);
+  var ropts = roleItems.map(function (r) {
+    return '<option value="' + r[0] + '"' + (role === r[0] ? ' selected' : '') + ' style="color:#111;background:#fff;">' + _tsEsc(r[1]) + '</option>';
+  }).join('');
+  html += ' <select title="Act as role — admin only" onchange="setActAsRole(this.value)" style="' + sStyle + 'max-width:190px;' + (role !== 'admin' ? 'background:#FEF3C7;' : '') + '">' + ropts + '</select>';
+
   wrap.style.display = '';
-  wrap.innerHTML = '<select title="View as team — admin only" onchange="setTeamScope(this.value)" ' +
-    'style="font-size:11px;font-weight:700;font-family:Lato,sans-serif;color:var(--navy);background:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.5);border-radius:4px;padding:4px 8px;cursor:pointer;max-width:170px;">' +
-    opts + '</select>';
+  wrap.innerHTML = html;
 }

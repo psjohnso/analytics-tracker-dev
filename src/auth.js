@@ -22,11 +22,13 @@ const Auth = {
   isTeamLead: false,
   devMode: false,
   dataLoaded: false,
-  previewMode: false, // When true, admin sees the app as a regular team member
+  previewMode: false, // When true, admin sees the app as a regular team member (kept in sync with actAsRole)
+  actAsRole: 'admin', // Admin "act as" lens: 'admin' | 'lead' | 'member'. Lead/member impersonate that role for CURRENT_TEAM.
 };
 
-// Check admin status respecting preview mode
-function isAdmin() { return Auth.isTeamLead && !Auth.previewMode; }
+// Check admin status. A real admin (isTeamLead group) is only treated as admin
+// while acting as themselves ('admin'); impersonating a lead/member de-admins.
+function isAdmin() { return Auth.isTeamLead && Auth.actAsRole === 'admin' && !Auth.previewMode; }
 
 // ── Team Lead helpers ────────────────────────────────────────────────
 // A "Team Lead" leads a specific team — their member record's
@@ -37,7 +39,12 @@ function isAdmin() { return Auth.isTeamLead && !Auth.previewMode; }
 // console reads the same field.
 function getLeadTeam() {
   if (!Auth.fullName) return null;
-  if (Auth.previewMode) return null;
+  // Admin "act as" impersonation: lead → lead of the current team; member → none.
+  if (Auth.actAsRole === 'member') return null;
+  if (Auth.actAsRole === 'lead') {
+    return (typeof CURRENT_TEAM !== 'undefined' && CURRENT_TEAM) ? CURRENT_TEAM : null;
+  }
+  // Acting as self ('admin'): read the real lead-team from the member record.
   if (typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.people) return null;
   var p = RESOURCES_DATA.people[Auth.fullName];
   if (!p) return null;
@@ -433,8 +440,8 @@ async function fetchAgolUserInfo(token) {
           if (Auth.canPromote) {
             const badge = document.getElementById('user-role-badge');
             if (badge) badge.style.display = 'inline-block';
-            var previewBtn = document.getElementById('preview-mode-btn');
-            if (previewBtn) previewBtn.style.display = '';
+            // The header "act as" role dropdown (renderTeamSwitcher) replaces the
+            // old standalone "Preview as member" button — leave that button hidden.
           }
           // Settings is visible to everyone (admins for full settings, members for Preferences only)
           const settingsTab = document.getElementById('tab-settings');
