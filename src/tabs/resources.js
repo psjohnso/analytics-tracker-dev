@@ -38,16 +38,26 @@ function initResourcesWeekIndices() {
   let dwi = cwi;
   while (dwi > 0 && allPeopleVals.every(p => p.weekly_allocated[dwi] === 0)) dwi--;
   window.dataWeekIdx = dwi;
-  // Default selected person to first active person if current selection not in data or inactive
-  if (!people[selectedPerson] || people[selectedPerson].active === false ||
-      (typeof inCurrentTeamPerson === 'function' && !inCurrentTeamPerson(selectedPerson))) {
-    const activeNames = Object.keys(people).filter(function(n) { return isFullMember(n) && (typeof inCurrentTeamPerson !== 'function' || inCurrentTeamPerson(n)); });
-    if (activeNames.length > 0) selectedPerson = activeNames[0];
-    else {
-      const names = Object.keys(people);
-      if (names.length > 0) selectedPerson = names[0];
-    }
-  }
+  _resEnsureSelected();
+}
+
+// Ensure selectedPerson is an active full member of the currently-scoped team;
+// otherwise pick the first such member. Called on data load AND on every
+// Resources render, so opening the tab (or switching teams) always lands on a
+// member of the currently selected team.
+function _resEnsureSelected() {
+  if (!RESOURCES_DATA || !RESOURCES_DATA.people) return;
+  var people = RESOURCES_DATA.people;
+  var cur = people[selectedPerson];
+  var ok = cur && cur.active !== false &&
+    (typeof inCurrentTeamPerson !== 'function' || inCurrentTeamPerson(selectedPerson));
+  if (ok) return;
+  var teamFull = Object.keys(people).filter(function(n) {
+    return isFullMember(n) && (typeof inCurrentTeamPerson !== 'function' || inCurrentTeamPerson(n));
+  });
+  if (teamFull.length > 0) { selectedPerson = teamFull[0]; return; }
+  var any = Object.keys(people);
+  if (any.length > 0) selectedPerson = any[0];
 }
 
 function buildResourcePersonCards(people, currentWeekIdx) {
@@ -122,6 +132,7 @@ function renderResources(area) {
   if (!RESOURCES_DATA) { area.innerHTML = '<div class="empty-state">Resources data is loading…</div>'; return; }
   const weeks = RESOURCES_DATA.weeks;
   const people = RESOURCES_DATA.people;
+  _resEnsureSelected(); // land on a current-team member whenever the tab opens / team switches
   const currentWeekIdx = window.currentWeekIdx;
   const dataWeekIdx    = window.dataWeekIdx;
   // chartWindowStart defaults to 0 (Jan 4) so user sees full year from the start
@@ -340,7 +351,7 @@ function renderResources(area) {
   // selectedPerson. Clicking another member in the rail keeps the active
   // tab so a lead can edit Member A then B then C without leaving.
   const mode = Editor.resourceMode || 'summary';
-  const teamCount = Object.keys(people).filter(function(n) { return isFullMember(n); }).length;
+  const teamCount = Object.keys(people).filter(function(n) { return isFullMember(n) && (typeof inCurrentTeamPerson !== 'function' || inCurrentTeamPerson(n)); }).length;
 
   const summaryBody = `
     <div class="res-edit-header">

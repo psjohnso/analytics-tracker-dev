@@ -20,6 +20,9 @@
 
 function togglePreviewMode() {
   Auth.previewMode = !Auth.previewMode;
+  // Re-resolve team scope: previewMode flips isAdmin(), which changes whether the
+  // admin lens or the non-admin (own-team) rule applies.
+  if (typeof initTeamScope === 'function') initTeamScope();
   var btn = document.getElementById('preview-mode-btn');
   if (btn) {
     if (Auth.previewMode) {

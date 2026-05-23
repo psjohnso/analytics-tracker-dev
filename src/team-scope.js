@@ -36,22 +36,68 @@ function canonicalTeam(name) {
   return String(name).trim();
 }
 
-// Resolve whether (and to what) we scope this session. Call once at boot, after
-// auth + resources + app_config have loaded. Safe to re-call (e.g. admin switch).
+// Admin team-scope selection (the switcher) persists in localStorage.
+// '' / null = "All teams" (no scope). Admins control their own lens regardless of
+// the global flag; non-admins are scoped to their own team only when the flag is on.
+var _teamScopeBooted = false;
+var TEAM_SCOPE_STORAGE_KEY = 'tracker_admin_team_scope';
+
+function _adminTeamSelGet() {
+  try { return localStorage.getItem(TEAM_SCOPE_STORAGE_KEY) || ''; } catch (e) { return ''; }
+}
+function _adminTeamSelSet(team) {
+  try {
+    if (team) localStorage.setItem(TEAM_SCOPE_STORAGE_KEY, team);
+    else localStorage.removeItem(TEAM_SCOPE_STORAGE_KEY);
+  } catch (e) {}
+}
+
+// Resolve whether (and to what) we scope this session. Call after auth +
+// resources + app_config have loaded; safe to re-call (admin switch / preview).
 function initTeamScope() {
-  var params;
-  try { params = new URLSearchParams(window.location.search); } catch (e) { params = null; }
   var isAdm = (typeof isAdmin === 'function') && isAdmin();
-  // Admin-only preview so we can verify before the global flag is flipped on:
-  //   ?teamscope=1  → scope to own team   |   ?team=NAME → scope to a specific team
-  var preview = isAdm && !!params && (params.has('teamscope') || params.has('team'));
-  _teamScopeActive = !!_teamScopingEnabled || preview;
-  if (!_teamScopeActive) { CURRENT_TEAM = null; return; }
-  var override = (isAdm && params) ? String(params.get('team') || '').trim() : '';
+  // On first boot, fold a ?team=/?teamscope= deep-link into the stored admin
+  // selection, then strip it from the URL so later switcher changes win.
+  if (!_teamScopeBooted) {
+    _teamScopeBooted = true;
+    if (isAdm) {
+      var params = null;
+      try { params = new URLSearchParams(window.location.search); } catch (e) {}
+      if (params && (params.has('team') || params.has('teamscope'))) {
+        var who0 = (typeof Auth !== 'undefined' && Auth) ? Auth.fullName : null;
+        var deep = params.has('team') ? String(params.get('team') || '').trim() : (personTeam(who0) || '');
+        _adminTeamSelSet(deep);
+        try {
+          params.delete('team'); params.delete('teamscope');
+          var qs = params.toString();
+          history.replaceState(history.state, '', window.location.pathname + (qs ? '?' + qs : '') + window.location.hash);
+        } catch (e) {}
+      }
+    }
+  }
+  if (isAdm) {
+    // Admin lens = switcher selection. Empty = All teams (no scope).
+    var sel = _adminTeamSelGet();
+    if (sel) { CURRENT_TEAM = canonicalTeam(sel); _teamScopeActive = !!CURRENT_TEAM; }
+    else { CURRENT_TEAM = null; _teamScopeActive = false; }
+    return;
+  }
+  // Non-admin: scoped to own team only when the global rollout flag is on.
+  if (!_teamScopingEnabled) { CURRENT_TEAM = null; _teamScopeActive = false; return; }
   var who = (typeof Auth !== 'undefined' && Auth) ? Auth.fullName : null;
-  var resolved = override || personTeam(who) || null;
-  CURRENT_TEAM = resolved ? canonicalTeam(resolved) : null;
-  if (!CURRENT_TEAM) _teamScopeActive = false; // no team to scope to → don't hide everything
+  CURRENT_TEAM = canonicalTeam(personTeam(who)) || null;
+  _teamScopeActive = !!CURRENT_TEAM;
+}
+
+// Switch the admin's team lens and re-render. team = '' → All teams (no scope).
+function setTeamScope(team) {
+  _adminTeamSelSet((team && String(team).trim()) || '');
+  initTeamScope();
+  if (typeof renderTeamSwitcher === 'function') renderTeamSwitcher();
+  // Mark dirty so render() rebuilds the header stats + sidebar filters (those are
+  // gated on Internal.dataDirty); otherwise a team switch leaves stale counts.
+  if (typeof markDataDirty === 'function') markDataDirty();
+  if (typeof render === 'function') render();
 }
 
 function isTeamScopingOn() { return _teamScopeActive && !!CURRENT_TEAM; }
@@ -106,4 +152,40 @@ function teamPeopleNames(team) {
   if (!isTeamScopingOn()) return names;
   team = team || CURRENT_TEAM;
   return names.filter(function (n) { return sameTeam(personTeam(n), team); });
+}
+
+// ── Admin team switcher (header) ──────────────────────────────────────
+function _tsEsc(s) { return (typeof esc === 'function') ? esc(s) : String(s == null ? '' : s); }
+
+// All known team names (configured list + data + home team), sorted.
+function allKnownTeams() {
+  var set = {};
+  function add(t) { if (t != null && String(t).trim()) set[String(t).trim()] = true; }
+  if (typeof _customOwningTeams !== 'undefined' && Array.isArray(_customOwningTeams)) _customOwningTeams.forEach(add);
+  if (typeof PROJECTS !== 'undefined' && PROJECTS) PROJECTS.forEach(function (p) { if (p) add(p.owning_team); });
+  if (typeof RESOURCES_DATA !== 'undefined' && RESOURCES_DATA && RESOURCES_DATA.people) {
+    Object.keys(RESOURCES_DATA.people).forEach(function (k) { add(RESOURCES_DATA.people[k].team); });
+  }
+  add(HOME_TEAM);
+  return Object.keys(set).sort();
+}
+
+// Render the admin-only "view as team" switcher into the header. Hidden (no-op)
+// for non-admins / signed-out; reflects the current selection.
+function renderTeamSwitcher() {
+  var wrap = (typeof document !== 'undefined') ? document.getElementById('team-switcher-wrap') : null;
+  if (!wrap) return;
+  var isAdm = (typeof isAdmin === 'function') && isAdmin();
+  var loggedIn = !(typeof Auth !== 'undefined' && Auth) || Auth.loggedIn !== false;
+  if (!isAdm || !loggedIn) { wrap.innerHTML = ''; wrap.style.display = 'none'; return; }
+  var cur = CURRENT_TEAM || '';
+  var opts = '<option value=""' + (cur ? '' : ' selected') + '>All teams</option>';
+  allKnownTeams().forEach(function (t) {
+    var sel = cur && ((typeof sameTeam === 'function') ? sameTeam(t, cur) : (t === cur));
+    opts += '<option value="' + _tsEsc(t) + '" style="color:#111;background:#fff;"' + (sel ? ' selected' : '') + '>' + _tsEsc(t) + '</option>';
+  });
+  wrap.style.display = '';
+  wrap.innerHTML = '<select title="View as team — admin only" onchange="setTeamScope(this.value)" ' +
+    'style="font-size:11px;font-weight:700;font-family:Lato,sans-serif;color:var(--navy);background:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.5);border-radius:4px;padding:4px 8px;cursor:pointer;max-width:170px;">' +
+    opts + '</select>';
 }

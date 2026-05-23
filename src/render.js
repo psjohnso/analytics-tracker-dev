@@ -814,6 +814,7 @@ function updateHeaderStats() {
     const _ic = _P.filter(p => p.status === 'Idea').length;
     _ideaBadge.textContent = _ic > 0 ? _ic : '';
   }
+  if (typeof renderTeamSwitcher === 'function') renderTeamSwitcher();
 }
 
 function updateTabCounts() {
