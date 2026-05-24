@@ -676,6 +676,8 @@ function switchTab(tab, preserveFilters) {
   document.getElementById('view-list').classList.toggle('active', currentView === 'list');
   var _vboard = document.getElementById('view-board');
   if (_vboard) { _vboard.style.display = (tab === 'projects') ? '' : 'none'; _vboard.classList.toggle('active', currentView === 'board'); }
+  var _vcal = document.getElementById('view-calendar');
+  if (_vcal) _vcal.classList.toggle('active', currentView === 'calendar');
   document.getElementById('sort-select').style.display = (tab === 'projects' || tab === 'tasks') ? '' : 'none';
   // Hide entire toolbar on tabs that don't need it
   document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'achievements' || tab === 'projectReview' || tab === 'teamload' || tab === 'effortshape') ? 'none' : '';
@@ -746,6 +748,8 @@ function setView(v) {
   document.getElementById('view-list').classList.toggle('active', v==='list');
   var vb = document.getElementById('view-board');
   if (vb) vb.classList.toggle('active', v==='board');
+  var vc = document.getElementById('view-calendar');
+  if (vc) vc.classList.toggle('active', v==='calendar');
   render();
 }
 

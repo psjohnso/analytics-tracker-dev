@@ -232,6 +232,187 @@ async function boardDrop(e, newStatus) {
   }
 }
 
+// ─── CALENDAR VIEW (Projects + Tasks) ─────────────────────────────────
+// Month grid of items on their due date (working_due → end for projects,
+// working_due → due for tasks). Used on both Portfolio sub-tabs; renders into
+// the content area with a day-detail panel and a "My items only" quick filter.
+// Respects the same filters/team-scoping (data comes pre-filtered).
+var _calMonth = null;     // Date = first of the displayed month
+var _calSelected = null;  // 'YYYY-MM-DD' of the selected day
+var _calMineOnly = false;
+var _CAL_MON = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var _CAL_DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function _calISO(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function _calParse(s) { return s ? new Date(s + 'T00:00:00') : null; }
+function _calTodayDate() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+function _calItemDate(it, kind) { return kind === 'project' ? (it.working_due || it.end || '') : (it.working_due || it.due || ''); }
+function _calOwner(it, kind) { return kind === 'project' ? (it.contact || '') : (it.assignee || ''); }
+function _calIsMine(it, kind) {
+  var me = (typeof Auth !== 'undefined' && Auth) ? Auth.fullName : '';
+  if (!me) return true;
+  if (kind === 'project') return it.contact === me || (it.other_members && it.other_members.indexOf(me) >= 0);
+  return (it.assignee || '').indexOf(me) >= 0;
+}
+function _calIsOverdue(it, kind, todayD) {
+  var ds = _calItemDate(it, kind);
+  if (!ds || it.status === 'Complete' || it.status === 'Canceled') return false;
+  return _calParse(ds) < todayD;
+}
+
+function calMoveMonth(n) { var m = _calMonth || _calTodayDate(); _calMonth = new Date(m.getFullYear(), m.getMonth()+n, 1); render(); }
+function calToday() { var t = _calTodayDate(); _calMonth = new Date(t.getFullYear(), t.getMonth(), 1); _calSelected = _calISO(t); render(); }
+function calSelectDay(isoStr) { _calSelected = isoStr; render(); }
+function calToggleMine(on) { _calMineOnly = !!on; render(); }
+
+function renderCalendar(items, kind) {
+  var todayD = _calTodayDate();
+  if (!_calMonth) _calMonth = new Date(todayD.getFullYear(), todayD.getMonth(), 1);
+  if (!_calSelected) _calSelected = _calISO(todayD);
+
+  var data = (items || []).slice();
+  if (_calMineOnly) data = data.filter(function(it) { return _calIsMine(it, kind); });
+
+  var byDate = {}, noDate = [];
+  data.forEach(function(it) {
+    var ds = _calItemDate(it, kind);
+    if (!ds) { noDate.push(it); return; }
+    (byDate[ds] = byDate[ds] || []).push(it);
+  });
+
+  var y = _calMonth.getFullYear(), mo = _calMonth.getMonth();
+  var first = new Date(y, mo, 1);
+  var gridStart = new Date(y, mo, 1 - first.getDay());
+  var todayISO = _calISO(todayD);
+  var meName = (typeof Auth !== 'undefined' && Auth && Auth.fullName) ? Auth.fullName : '';
+
+  var html = '<div class="cal-wrap"><div class="cal-head">' +
+    '<div class="cal-nav">' +
+      '<button class="cal-navbtn" onclick="calMoveMonth(-1)" title="Previous month">‹</button>' +
+      '<button class="cal-todaybtn" onclick="calToday()">Today</button>' +
+      '<button class="cal-navbtn" onclick="calMoveMonth(1)" title="Next month">›</button>' +
+    '</div>' +
+    '<div class="cal-month">' + _CAL_MON[mo] + ' ' + y + '</div>' +
+    '<div style="flex:1;"></div>' +
+    (meName ? '<label class="cal-mine"><input type="checkbox" ' + (_calMineOnly ? 'checked' : '') + ' onchange="calToggleMine(this.checked)"> My items only</label>' : '') +
+  '</div>';
+
+  html += '<div class="cal-body"><div class="cal-grid-wrap"><div class="cal-dow">' +
+    _CAL_DOW.map(function(d) { return '<div>' + d + '</div>'; }).join('') +
+    '</div><div class="cal-weeks">';
+
+  for (var i = 0; i < 42; i++) {
+    var d = new Date(gridStart); d.setDate(gridStart.getDate() + i);
+    var key = _calISO(d);
+    var inMonth = d.getMonth() === mo;
+    var wknd = (d.getDay() === 0 || d.getDay() === 6);
+    var list = byDate[key] || [];
+    var cls = 'cal-cell' + (inMonth ? '' : ' cal-other') + (wknd && inMonth ? ' cal-weekend' : '') + (key === todayISO ? ' cal-today' : '') + (key === _calSelected ? ' cal-sel' : '');
+    html += '<div class="' + cls + '" onclick="calSelectDay(\'' + key + '\')">' +
+      '<span class="cal-daynum">' + d.getDate() + '</span>';
+    list.slice(0, 3).forEach(function(it) {
+      var over = _calIsOverdue(it, kind, todayD);
+      html += '<div class="cal-chip' + (over ? ' cal-chip-over' : '') + '" style="border-left-color:' + (STATUS_COLOR(it.status) || '#9CA3AF') + ';" data-tip="' + esc(_calTipText(it, kind, todayD)) + '" onmouseenter="calTipShow(event)" onmousemove="calTipShow(event)" onmouseleave="calTipHide()" onclick="' + (kind === 'project' ? 'openProject(' + it.objectId + ')' : 'openTask(' + it.objectId + ')') + ';event.stopPropagation();">' + esc(it.title) + '</div>';
+    });
+    if (list.length > 3) html += '<div class="cal-more">+' + (list.length - 3) + ' more</div>';
+    html += '</div>';
+  }
+  html += '</div></div>';
+
+  var selD = _calParse(_calSelected) || todayD;
+  var sl = byDate[_calISO(selD)] || [];
+  html += '<div class="cal-side"><div class="cal-side-head">' + _CAL_DOW[selD.getDay()] + ' · ' + _CAL_MON[selD.getMonth()] + ' ' + selD.getDate() + '</div>' +
+    '<div class="cal-side-sub">' + (sl.length ? (sl.length + ' due') : 'Nothing due') + (_calISO(selD) === todayISO ? ' · Today' : '') + '</div>';
+  if (sl.length) {
+    sl.forEach(function(it) {
+      var over = _calIsOverdue(it, kind, todayD);
+      var color = STATUS_COLOR(it.status) || '#9CA3AF';
+      var openFn = kind === 'project' ? ('openProject(' + it.objectId + ')') : ('openTask(' + it.objectId + ')');
+      html += '<div class="cal-item" onclick="' + openFn + '">' +
+        '<div class="cal-item-bar" style="background:' + color + ';"></div>' +
+        '<div style="min-width:0;"><div class="cal-item-title">' + esc(it.title) + '</div>' +
+        '<div class="cal-item-meta"><span class="cal-pill" style="background:' + color + '22;color:' + color + ';">' + esc(it.status || '—') + '</span> ' + esc(_calOwner(it, kind) || 'Unassigned') + (kind === 'task' && it.project ? ' · ' + esc(it.project) : '') + (over ? ' · <span class="cal-over">overdue</span>' : '') + '</div></div>' +
+      '</div>';
+    });
+  } else {
+    html += '<div class="cal-empty">Nothing due this day.</div>';
+  }
+  html += '</div></div>';
+
+  if (noDate.length) {
+    html += '<div class="cal-nodate">' + noDate.length + ' ' + (kind === 'project' ? 'project' : 'task') + (noDate.length !== 1 ? 's' : '') + ' have no due date and aren’t shown on the calendar.</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+// The tooltip lives on <body> (not inside the calendar) so position:fixed
+// resolves against the viewport — a transformed ancestor would otherwise become
+// its containing block and throw the cursor math off.
+function _calTipEl() {
+  var tip = document.getElementById('cal-tip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'cal-tip';
+    tip.className = 'cal-tip';
+    document.body.appendChild(tip);
+  }
+  return tip;
+}
+
+// Rich hover text for a calendar chip (rendered in #cal-tip via white-space:pre-line).
+function _calTipText(it, kind, todayD) {
+  var date = _calItemDate(it, kind);
+  var owner = _calOwner(it, kind) || 'Unassigned';
+  var lines = [
+    it.title || '(untitled)',
+    (it.status || '—') + ' · ' + owner
+  ];
+  var line3 = 'Due ' + (date || '—');
+  if (it.priority) line3 += '  ·  ' + it.priority + ' priority';
+  if (_calIsOverdue(it, kind, todayD)) line3 += '  ·  OVERDUE';
+  lines.push(line3);
+  if (kind === 'task' && it.project) lines.push('Project: ' + it.project);
+  if (kind === 'project' && it.partner_dept) lines.push('Partner: ' + it.partner_dept);
+  return lines.join('\n');
+}
+
+function calTipShow(e) {
+  var tip = _calTipEl();
+  if (e.currentTarget && e.currentTarget.getAttribute) {
+    var t = e.currentTarget.getAttribute('data-tip');
+    if (t != null) tip.textContent = t;
+  }
+  tip.style.display = 'block';
+  var tw = tip.offsetWidth, th = tip.offsetHeight;
+  var vw = window.innerWidth, vh = window.innerHeight, pad = 6, gap = 12;
+  // Desired on-screen (viewport) position near the cursor, flipped/clamped so it
+  // stays fully visible.
+  var sx = e.clientX + gap;
+  if (sx + tw > vw - pad) sx = e.clientX - gap - tw;
+  if (sx < pad) sx = pad;
+  if (sx + tw > vw - pad) sx = vw - tw - pad;
+  var sy = e.clientY + gap;
+  if (sy + th > vh - pad) sy = e.clientY - gap - th;
+  if (sy < pad) sy = pad;
+  if (sy + th > vh - pad) sy = vh - th - pad;
+  // Place, then self-correct: a transformed ancestor makes a fixed element's
+  // coordinates relative to it (not the viewport), so measure the actual rect and
+  // add back the delta. This pins the tooltip to (sx, sy) on screen regardless.
+  tip.style.left = sx + 'px';
+  tip.style.top = sy + 'px';
+  var rect = tip.getBoundingClientRect();
+  var dx = sx - rect.left, dy = sy - rect.top;
+  if (dx || dy) {
+    tip.style.left = (sx + dx) + 'px';
+    tip.style.top = (sy + dy) + 'px';
+  }
+}
+function calTipHide() {
+  var tip = document.getElementById('cal-tip');
+  if (tip) tip.style.display = 'none';
+}
+
 // ─── PROJECT LIST ─────────────────────────────────────────────────────
 function setProjListSort(key) {
   if (projListSortKey === key) projListSortDir = projListSortDir === 'asc' ? 'desc' : 'asc';
