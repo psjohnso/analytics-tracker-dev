@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Risk badge on Project Review + Needs-Attention digest — mockups</title>
+<style>
+  :root { --navy:#002669; --border:#E1E2DD; --text-body:#002855; --text-muted:#6B7280; --bg:#F9FAFB; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:28px 32px; font-family:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text-body); max-width:980px; margin:0 auto; }
+  h1 { margin:0 0 4px 0; font-size:22px; color:var(--navy); font-weight:800; }
+  .lead { color:var(--text-muted); margin:0 0 22px 0; font-size:13px; }
+  .annot { background:#FEF3C7; border-left:4px solid #F59E0B; padding:10px 14px; border-radius:6px; margin:0 0 16px 0; font-size:12px; color:#78350F; }
+  .annot strong { color:#422006; }
+
+  .section { margin-bottom:42px; }
+  .section-tag { display:inline-block; background:var(--navy); color:#fff; font-weight:800; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; padding:4px 12px; border-radius:6px; margin-bottom:8px; }
+  .section h2 { margin:0 0 2px 0; font-size:18px; font-weight:800; color:var(--navy); }
+  .section .desc { font-size:12px; color:var(--text-muted); margin:0 0 14px 0; }
+
+  /* risk badge */
+  .risk { display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:12px; padding:3px 10px; border-radius:999px; font-variant-numeric:tabular-nums; }
+  .risk-hi { background:#FECACA; color:#991B1B; } .risk-mid { background:#FEF9C3; color:#854D0E; } .risk-lo { background:#DCFCE7; color:#166534; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .dot-hi { background:#DC2626; } .dot-mid { background:#CA8A04; } .dot-lo { background:#16A34A; }
+  .chip { display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; margin:1px 3px 1px 0; white-space:nowrap; }
+  .chip-red { background:#FEE2E2; color:#991B1B; } .chip-amber { background:#FEF3C7; color:#92400E; }
+
+  /* Project Review mock */
+  .pr-head { background:#fff; border:1px solid #E8E6DF; border-radius:12px 12px 0 0; padding:14px 18px; border-bottom:0; }
+  .pr-title { font-size:16px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:8px; }
+  .pr-beta { font-size:9px; font-weight:800; background:#FFF7ED; color:#9A3412; border:1px solid #FED7AA; padding:2px 7px; border-radius:4px; letter-spacing:0.06em; text-transform:uppercase; }
+  .pr-cycle { font-size:12px; color:var(--text-muted); margin-top:4px; }
+  .pr-list { background:#fff; border:1px solid #E8E6DF; border-radius:0 0 12px 12px; }
+  .pr-row { padding:12px 18px; border-top:1px solid #F1F1EC; display:flex; align-items:center; gap:12px; }
+  .pr-row:first-child { border-top:0; }
+  .pr-row .rinfo { flex:1; min-width:0; }
+  .pr-row .rtitle { font-weight:800; color:var(--navy); }
+  .pr-row .rmeta { font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .pr-why { border:1px solid var(--navy); background:#fff; color:var(--navy); border-radius:6px; padding:4px 10px; font-weight:700; font-size:11px; cursor:default; }
+  .pr-expand { background:#FCFCFB; border-top:1px dashed #E1E2DD; padding:14px 18px; display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media(max-width:720px){ .pr-expand { grid-template-columns:1fr; } }
+  .brk-title { font-size:11px; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px; }
+  .frow { display:grid; grid-template-columns:130px 1fr 46px; gap:8px; align-items:center; padding:4px 0; font-size:11px; }
+  .frow .fn { font-weight:700; color:var(--navy); }
+  .ftrack { height:8px; background:#E5E7EB; border-radius:4px; overflow:hidden; }
+  .ftrack > div { height:100%; }
+  .fpts { text-align:right; font-weight:800; font-variant-numeric:tabular-nums; }
+  .na { opacity:0.5; }
+  .review-field { margin-bottom:8px; }
+  .review-field label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-muted); display:block; margin-bottom:3px; }
+  .review-field .box { border:1px solid var(--border); border-radius:6px; background:#fff; min-height:30px; padding:6px 8px; font-size:12px; color:var(--text-body); }
+
+  /* Digest */
+  .digest { background:#fff; border:1px solid #E8E6DF; border-radius:12px; overflow:hidden; }
+  .digest-head { background:var(--navy); color:#fff; padding:12px 18px; font-size:15px; font-weight:800; display:flex; align-items:center; justify-content:space-between; }
+  .digest-head .sub { font-size:11px; font-weight:400; opacity:0.85; }
+  .dgroup { border-top:1px solid #F1F1EC; padding:12px 18px; }
+  .dgroup-h { font-size:12px; font-weight:800; color:var(--navy); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .dgroup-h .count { background:#FEE2E2; color:#991B1B; font-size:11px; font-weight:800; padding:1px 8px; border-radius:999px; }
+  .dgroup-h .count.amber { background:#FEF3C7; color:#92400E; }
+  .ditem { display:flex; align-items:center; gap:10px; padding:5px 0; font-size:12px; border-top:1px solid #FAFAF7; }
+  .ditem:first-of-type { border-top:0; }
+  .ditem .dmain { flex:1; min-width:0; }
+  .ditem .dmain .dt { font-weight:700; color:var(--navy); }
+  .ditem .dmain .dm { font-size:11px; color:var(--text-muted); }
+  .ditem .dwhen { font-size:11px; font-weight:700; white-space:nowrap; }
+  .dwhen.red { color:#991B1B; } .dwhen.amber { color:#92400E; }
+  .digest-foot { border-top:1px solid #F1F1EC; padding:10px 18px; font-size:11px; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; }
+  .digest-foot a { color:var(--navy); font-weight:700; text-decoration:none; }
+</style>
+</head>
+<body>
+
+<h1>Risk badge on Project Review &amp; the Needs-Attention digest</h1>
+<p class="lead">Two surfaces that put the in-flight risk score where decisions happen. Illustrative data, consistent with the risk score already built.</p>
+
+<!-- ════════════ SECTION 1 ════════════ -->
+<div class="section">
+  <div class="section-tag">Surface 1</div>
+  <h2>Risk badge on Project Review</h2>
+  <p class="desc">A 🟢🟡🔴 badge on each project in the weekly review, with a "Why?" expander that drops the per-factor breakdown right next to the review notes — so the conversation starts from the risk drivers. Leads &amp; admins only.</p>
+  <div class="annot"><strong>Where it slots:</strong> the Project Review tab, inline on each project row. The breakdown shares the expanded row with the meeting notes / decisions / action items, so risk informs the discussion in place.</div>
+
+  <div class="pr-head">
+    <div class="pr-title">🔁 Project Review <span class="pr-beta">Beta</span></div>
+    <div class="pr-cycle">Data Intelligence Review · weekly · cycle of May 18–24 · 12 projects in scope</div>
+  </div>
+  <div class="pr-list">
+    <div class="pr-row">
+      <span class="risk risk-hi"><span class="dot dot-hi"></span> 80</span>
+      <div class="rinfo"><div class="rtitle">Safe City data quality scorecard</div>
+        <div class="rmeta">Jessica Fraver · L · Data Program · target Jun 14 (slipped 3 wks)</div></div>
+      <span class="pr-why">Why? ▾</span>
+    </div>
+    <!-- expanded -->
+    <div class="pr-expand">
+      <div>
+        <div class="brk-title">Risk breakdown — 80 / 100</div>
+        <div class="frow"><span class="fn">Schedule drift</span><span class="ftrack"><div style="width:96%;background:#DC2626"></div></span><span class="fpts">24/25</span></div>
+        <div class="frow"><span class="fn">Overdue &amp; aging</span><span class="ftrack"><div style="width:85%;background:#DC2626"></div></span><span class="fpts">17/20</span></div>
+        <div class="frow"><span class="fn">Stalled work</span><span class="ftrack"><div style="width:73%;background:#EA580C"></div></span><span class="fpts">11/15</span></div>
+        <div class="frow"><span class="fn">Pace vs plan</span><span class="ftrack"><div style="width:67%;background:#EA580C"></div></span><span class="fpts">10/15</span></div>
+        <div class="frow"><span class="fn">Single-thread</span><span class="ftrack"><div style="width:80%;background:#CA8A04"></div></span><span class="fpts">4/5</span></div>
+        <div class="frow na"><span class="fn">Scope churn</span><span class="ftrack"><div style="width:0%"></div></span><span class="fpts">n/a</span></div>
+      </div>
+      <div>
+        <div class="brk-title">This cycle's review</div>
+        <div class="review-field"><label>Notes</label><div class="box">Backfill blocked on Water dept sign-off; QA started late.</div></div>
+        <div class="review-field"><label>Decisions</label><div class="box">Escalate the partner dependency to the CMO sync.</div></div>
+        <div class="review-field"><label>Action items</label><div class="box">JF to re-baseline the target date; AS to unblock the API.</div></div>
+      </div>
+    </div>
+
+    <div class="pr-row">
+      <span class="risk risk-hi"><span class="dot dot-hi"></span> 63</span>
+      <div class="rinfo"><div class="rtitle">Parcel layer v2 migration</div>
+        <div class="rmeta">James McGinnis · L · target Jul 1</div>
+        <div style="margin-top:4px;"><span class="chip chip-red">single-thread 90%</span><span class="chip chip-amber">oldest task 47d</span><span class="chip chip-amber">+6 tasks added</span></div></div>
+      <span class="pr-why">Why? ▸</span>
+    </div>
+    <div class="pr-row">
+      <span class="risk risk-mid"><span class="dot dot-mid"></span> 48</span>
+      <div class="rinfo"><div class="rtitle">Water demand model refresh</div>
+        <div class="rmeta">Vladimir Berg · M · target Jun 30</div>
+        <div style="margin-top:4px;"><span class="chip chip-amber">on hold 21d</span><span class="chip chip-amber">pace behind</span></div></div>
+      <span class="pr-why">Why? ▸</span>
+    </div>
+    <div class="pr-row">
+      <span class="risk risk-lo"><span class="dot dot-lo"></span> 19</span>
+      <div class="rinfo"><div class="rtitle">Permit API integration</div>
+        <div class="rmeta">Andrew Sutton · M · target Jun 9 · on track</div></div>
+      <span class="pr-why">Why? ▸</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ SECTION 2 ════════════ -->
+<div class="section">
+  <div class="section-tag">Surface 2</div>
+  <h2>"Needs attention" digest</h2>
+  <p class="desc">A proactive rollup so risk finds people instead of waiting to be opened. Pulls from the same signals: at-risk projects (risk score), overdue tasks, and stalled/waiting work. Shown as an in-app panel — and could be a Monday-morning email.</p>
+  <div class="annot"><strong>Where it slots:</strong> a panel on Overview (or the top of My Work) for leads/admins — team-wide view. Each lead could also get a "your projects" version. Same data could drive a weekly email digest.</div>
+
+  <div class="digest" style="max-width:560px;">
+    <div class="digest-head"><span>⚠️ Needs attention</span><span class="sub">as of Mon May 19</span></div>
+
+    <div class="dgroup">
+      <div class="dgroup-h">🔴 At-risk projects <span class="count">3</span></div>
+      <div class="ditem"><span class="risk risk-hi"><span class="dot dot-hi"></span> 80</span><div class="dmain"><div class="dt">Safe City data quality scorecard</div><div class="dm">Jessica Fraver · 3 wks over plan · 5 overdue</div></div></div>
+      <div class="ditem"><span class="risk risk-hi"><span class="dot dot-hi"></span> 63</span><div class="dmain"><div class="dt">Parcel layer v2 migration</div><div class="dm">James McGinnis · single-thread · oldest task 47d</div></div></div>
+      <div class="ditem"><span class="risk risk-mid"><span class="dot dot-mid"></span> 48</span><div class="dmain"><div class="dt">Water demand model refresh</div><div class="dm">Vladimir Berg · on hold 21d</div></div></div>
+    </div>
+
+    <div class="dgroup">
+      <div class="dgroup-h">⏰ Overdue tasks <span class="count">4</span></div>
+      <div class="ditem"><div class="dmain"><div class="dt">Migrate parcel layer to v2 schema</div><div class="dm">James McGinnis · Parcel layer v2 migration</div></div><span class="dwhen red">12d over</span></div>
+      <div class="ditem"><div class="dmain"><div class="dt">Water SOC dashboard QA</div><div class="dm">Kate Carter · Safe City scorecard</div></div><span class="dwhen red">8d over</span></div>
+      <div class="ditem"><div class="dmain"><div class="dt">Permit API rate-limit fix</div><div class="dm">Andrew Sutton · Permit API integration</div></div><span class="dwhen red">5d over</span></div>
+      <div class="ditem"><div class="dmain"><div class="dt">Council redistricting map update</div><div class="dm">Liz Wilshin · Council district dashboard</div></div><span class="dwhen amber">3d over</span></div>
+    </div>
+
+    <div class="dgroup">
+      <div class="dgroup-h">⏸ Stalled / waiting <span class="count amber">2</span></div>
+      <div class="ditem"><div class="dmain"><div class="dt">Snowflake LIMS migration</div><div class="dm">Vladimir Berg · Waiting for Response</div></div><span class="dwhen amber">18d</span></div>
+      <div class="ditem"><div class="dmain"><div class="dt">Badge process dashboard handoff</div><div class="dm">Kate Carter · On Hold</div></div><span class="dwhen amber">21d</span></div>
+    </div>
+
+    <div class="digest-foot"><span>Quiet items hidden · updates live</span><a href="#">Open At-Risk Projects →</a></div>
+  </div>
+</div>
+
+</body>
+</html>

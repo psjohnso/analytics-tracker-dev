@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Allocation Editor — window-driven project list</title>
+<style>
+  :root {
+    --navy: #002669;
+    --border: #E1E2DD;
+    --text-body: #002855;
+    --text-muted: #6B7280;
+    --bg: #F9FAFB;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px 60px;
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text-body);
+    max-width: 1500px; margin: 0 auto;
+  }
+  h1 { margin: 0 0 4px 0; font-size: 22px; color: var(--navy); font-weight: 800; }
+  .lead { color: var(--text-muted); margin: 0 0 24px 0; font-size: 13px; }
+  .annot {
+    background: #FEF3C7; border-left: 4px solid #F59E0B;
+    padding: 10px 14px; border-radius: 6px; margin: 0 0 24px 0;
+    font-size: 12px; color: #78350F;
+  }
+  .annot strong { color: #422006; }
+
+  .panel {
+    background: #fff; border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px; margin-bottom: 18px;
+  }
+  .panel-h {
+    display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px;
+  }
+  .panel-h h2 {
+    margin: 0; font-size: 13px; font-weight: 800; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .panel-h .sub { font-size: 11px; color: var(--text-muted); }
+  .panel-h .nav-arrow {
+    font-size: 11px; color: var(--text-muted); font-weight: 700;
+  }
+
+  /* ── Editor look-alike ── */
+  .ae-header {
+    border-bottom: 2px solid #E8E6DF; padding-bottom: 10px; margin-bottom: 12px;
+  }
+  .ae-header .ae-name { font-size: 16px; font-weight: 800; color: var(--navy); }
+  .ae-header .ae-role-sub { font-size: 11px; color: var(--text-muted); }
+  .ae-range-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #F3F4F6; padding: 6px 10px; border-radius: 6px; margin-bottom: 10px;
+    font-size: 11px; color: var(--text-muted);
+  }
+  .ae-range-bar .ae-range-label { font-weight: 700; color: var(--navy); font-size: 12px; }
+  .ae-grid-wrap { overflow-x: auto; }
+  table.ae-grid { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ae-grid th, .ae-grid td {
+    border-bottom: 1px solid #F1F1EC; padding: 0;
+    vertical-align: middle;
+  }
+  .ae-grid th {
+    background: #F3F4F6; color: var(--navy);
+    font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+    font-size: 9px; padding: 7px 4px;
+    text-align: center; border-bottom: 1px solid #E8E6DF;
+  }
+  .ae-proj-th { text-align: left !important; padding: 7px 10px !important; min-width: 290px; }
+  .ae-wk-th .wk-sub { display:block; font-size:8px; opacity:.7; font-weight:600; }
+  .ae-cur { background: #FEF9C3 !important; }
+
+  /* Hours summary */
+  .ae-hours-row td { background: #FAFAF7; padding: 6px 8px; font-size: 10px; }
+  .ae-hours-row .ae-hours-label { font-weight: 700; color: var(--text-muted); display: flex; flex-direction: column; gap: 1px; padding-left: 10px; }
+  .ae-hours-cap { font-weight: 700; color: var(--navy); }
+  .ae-hours-leave { color: var(--text-muted); font-size: 9px; }
+  .ae-hours-leave.has-leave { color: #B91C1C; font-weight: 700; }
+
+  /* Group headers — Leading / Contributing only */
+  .ae-group-hdr td {
+    background: #002669; color: #fff;
+    font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 6px 12px;
+  }
+  .ae-group-contrib td { background: #4B5563; }
+  .ae-group-contrib .chevron { font-size: 9px; margin-right: 6px; }
+
+  /* Project row */
+  .ae-proj-td {
+    padding: 8px 10px; min-width: 290px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .ae-proj-name {
+    font-weight: 700; color: var(--navy); font-size: 12px;
+    cursor: pointer; text-decoration: underline;
+  }
+  .ae-proj-status {
+    display: inline-block; font-size: 9px; font-weight: 700;
+    padding: 1px 6px; border-radius: 4px; margin-right: 6px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    vertical-align: middle;
+  }
+  .status-active   { color: #166534; background: rgba(34,197,94,0.13); }
+  .status-onhold   { color: #854D0E; background: rgba(245,158,11,0.13); }
+  .status-waiting  { color: #6B21A8; background: rgba(168,85,247,0.13); }
+  .status-complete { color: #1E3A8A; background: rgba(59,130,246,0.13); }
+  .status-canceled { color: #991B1B; background: rgba(239,68,68,0.13); }
+  .status-scheduled{ color: #115E59; background: rgba(20,184,166,0.13); }
+
+  .ae-role-select {
+    font-size: 11px; padding: 2px 4px; border: 1px solid var(--border); border-radius: 4px;
+    background: #fff; color: var(--text-body); margin-left: 6px;
+    vertical-align: middle;
+  }
+  .ae-date-range {
+    font-size: 10px; color: var(--text-muted); font-variant-numeric: tabular-nums;
+  }
+  .ae-autofill-btn {
+    display: inline-block; font-size: 10px; color: #B45309; background: #FEF3C7;
+    border: 1px solid #FCD34D; border-radius: 4px; padding: 1px 6px;
+    cursor: pointer; margin-left: 6px;
+  }
+  .ae-proj-row-sub {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+
+  /* Weekly % input cells */
+  .ae-wk-td {
+    text-align: center; padding: 6px 4px;
+    min-width: 64px;
+  }
+  .ae-pct-input {
+    width: 46px; height: 24px; text-align: center;
+    border: 1px solid var(--border); border-radius: 4px;
+    font-size: 12px; font-weight: 700; color: var(--text-body);
+    background: #fff;
+  }
+  .ae-pct-input.has-val { color: var(--navy); border-color: var(--navy); background: #EEF2FF; }
+  .ae-pct-input.cur-wk  { background: #FEF9C3; }
+  .ae-hrs { font-size: 9px; color: var(--text-muted); margin-top: 2px; min-height: 11px; }
+
+  /* Out-of-range cells — hatched, slightly opacity-reduced input */
+  .ae-out-range { background: repeating-linear-gradient(45deg, #FAFAF7, #FAFAF7 5px, #F0F0EB 5px, #F0F0EB 10px); }
+  .ae-out-range .ae-pct-input { opacity: 0.65; }
+
+  /* Totals row */
+  .ae-total-row td { background: #F3F4F6; }
+  .ae-total-label { font-weight: 800; color: var(--navy); font-size: 12px; padding: 8px 10px; }
+  .ae-tot-chip {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    padding: 3px 8px; border-radius: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .ae-tot-chip.zero { background: #F3F4F6; color: var(--text-muted); }
+  .ae-tot-chip.ok   { background: #DCFCE7; color: #166534; }
+  .ae-tot-chip.warn { background: #FED7AA; color: #9A3412; }
+  .ae-tot-chip.over { background: #FECACA; color: #991B1B; }
+
+  /* Window transition explainer */
+  .scroll-grid {
+    display: grid; grid-template-columns: 1fr 80px 1fr; gap: 14px; align-items: stretch;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 1100px) { .scroll-grid { grid-template-columns: 1fr; } .scroll-arrow { display: none; } }
+  .scroll-arrow {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--navy); color: #fff; border-radius: 8px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 8px 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .scroll-arrow .big { font-size: 28px; line-height: 1; margin-bottom: 6px; }
+  .mini-panel {
+    background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+    font-size: 11px;
+  }
+  .mini-panel h3 {
+    margin: 0 0 8px 0; font-size: 11px; font-weight: 800; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .mini-panel ul { margin: 0; padding-left: 18px; }
+  .mini-panel li { margin: 3px 0; line-height: 1.4; }
+  .mini-panel li.added   { color: #166534; }
+  .mini-panel li.removed { color: #991B1B; }
+  .mini-panel .range { font-weight: 700; color: var(--navy); display: block; margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+
+  .callout {
+    background: #fff; border: 1px solid #E8E6DF; border-left: 4px solid var(--navy);
+    border-radius: 8px; padding: 14px 18px; font-size: 13px;
+    margin-top: 24px;
+  }
+  .callout strong { color: var(--navy); }
+  .callout ul { margin: 8px 0 0 0; padding-left: 20px; }
+  .callout li { margin: 4px 0; }
+  .key {
+    display: inline-flex; gap: 14px; font-size: 11px; color: var(--text-muted);
+    margin: 6px 0 12px 0; flex-wrap: wrap;
+  }
+  .key span::before {
+    content: ""; display: inline-block; width: 10px; height: 10px;
+    margin-right: 5px; vertical-align: middle; border-radius: 2px;
+  }
+  .key .k-active::before    { background: rgba(34,197,94,0.6); }
+  .key .k-onhold::before    { background: rgba(245,158,11,0.6); }
+  .key .k-waiting::before   { background: rgba(168,85,247,0.6); }
+  .key .k-complete::before  { background: rgba(59,130,246,0.6); }
+  .key .k-canceled::before  { background: rgba(239,68,68,0.6); }
+  .key .k-scheduled::before { background: rgba(20,184,166,0.6); }
+</style>
+</head>
+<body>
+
+<h1>Allocation Editor — window-driven project list</h1>
+<p class="lead">Instead of grouping by current status (Active vs Closed), the editor shows whichever projects were <em>being worked on during the visible 6-week window</em>. The project list flexes as the user clicks Prev / Next — projects appear when the window enters their active span and drop off when it leaves.</p>
+
+<div class="annot">
+  <strong>Inclusion rule:</strong> a project shows in the editor when its active span — <code>start_date</code> through (<code>actual_end</code> if Complete / <code>working_due</code> if mid-flight / <code>end_date</code> otherwise) — overlaps the visible window, OR the user already has a non-zero allocation on it in any visible week (insurance against projects with sparse date metadata). No more "Closed work" section; closed projects simply appear in their proper Leading / Contributing group when the window overlaps their lifetime.
+</div>
+
+<div class="key">
+  <span class="k-active">Active</span>
+  <span class="k-onhold">On Hold</span>
+  <span class="k-waiting">Waiting</span>
+  <span class="k-complete">Complete</span>
+  <span class="k-canceled">Canceled</span>
+  <span class="k-scheduled">Scheduled</span>
+</div>
+
+<!-- ─── Main editor view ─── -->
+<div class="panel">
+  <div class="panel-h">
+    <h2>Snapshot · current week selected</h2>
+    <span class="sub">5 projects shown — all had work during Apr 21 – May 26.</span>
+  </div>
+  <div class="ae-header">
+    <div class="ae-name">Member B</div>
+    <div class="ae-role-sub">Data Intelligence · BAA · 70% project-available</div>
+  </div>
+  <div class="ae-range-bar">
+    <span><span class="ae-range-label">Apr 21 — May 26</span> · W17 – W22</span>
+    <span>◀ Prev · Jump to current · Next ▶</span>
+  </div>
+  <div class="ae-grid-wrap">
+    <table class="ae-grid">
+      <thead>
+        <tr>
+          <th class="ae-proj-th">Project</th>
+          <th>Apr 21<span class="wk-sub">W17</span></th>
+          <th>Apr 28<span class="wk-sub">W18</span></th>
+          <th>May 5<span class="wk-sub">W19</span></th>
+          <th class="ae-cur">May 12<span class="wk-sub">W20</span></th>
+          <th>May 19<span class="wk-sub">W21</span></th>
+          <th>May 26<span class="wk-sub">W22</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="ae-hours-row">
+          <td class="ae-hours-label"><div class="ae-hours-cap">Available hrs</div><div class="ae-hours-leave">Vacation / leave</div></td>
+          <td><div class="ae-hours-cap">28h</div><div class="ae-hours-leave">—</div></td>
+          <td><div class="ae-hours-cap">28h</div><div class="ae-hours-leave">—</div></td>
+          <td><div class="ae-hours-cap">28h</div><div class="ae-hours-leave">—</div></td>
+          <td class="ae-cur"><div class="ae-hours-cap">28h</div><div class="ae-hours-leave">—</div></td>
+          <td><div class="ae-hours-cap">20h</div><div class="ae-hours-leave has-leave">8h</div></td>
+          <td><div class="ae-hours-cap">28h</div><div class="ae-hours-leave">—</div></td>
+        </tr>
+
+        <tr class="ae-group-hdr"><td colspan="7">Leading (2)</td></tr>
+
+        <tr>
+          <td class="ae-proj-td">
+            <div class="ae-proj-row-sub">
+              <span class="ae-proj-name">Safe City Use of Force Dashboard</span>
+              <span class="ae-proj-status status-active">Active</span>
+              <select class="ae-role-select"><option>Lead</option></select>
+            </div>
+            <span class="ae-date-range">▶ 2026-03-02   ■ 2026-06-30</span>
+          </td>
+          <td><input class="ae-pct-input has-val" value="40"><div class="ae-hrs">11.2h</div></td>
+          <td><input class="ae-pct-input has-val" value="35"><div class="ae-hrs">9.8h</div></td>
+          <td><input class="ae-pct-input has-val" value="40"><div class="ae-hrs">11.2h</div></td>
+          <td class="ae-cur"><input class="ae-pct-input has-val cur-wk" value="45"><div class="ae-hrs">12.6h</div></td>
+          <td><input class="ae-pct-input has-val" value="50"><div class="ae-hrs">10.0h</div></td>
+          <td><input class="ae-pct-input has-val" value="45"><div class="ae-hrs">12.6h</div></td>
+        </tr>
+
+        <tr>
+          <td class="ae-proj-td">
+            <div class="ae-proj-row-sub">
+              <span class="ae-proj-name">Water Asset Map</span>
+              <span class="ae-proj-status status-complete">Complete</span>
+              <select class="ae-role-select"><option>Lead</option></select>
+            </div>
+            <span class="ae-date-range">▶ 2026-01-13   ■ 2026-05-05</span>
+          </td>
+          <td><input class="ae-pct-input has-val" value="25"><div class="ae-hrs">7.0h</div></td>
+          <td><input class="ae-pct-input has-val" value="30"><div class="ae-hrs">8.4h</div></td>
+          <td><input class="ae-pct-input has-val" value="10"><div class="ae-hrs">2.8h</div></td>
+          <td class="ae-cur ae-out-range"><input class="ae-pct-input" value="0"><div class="ae-hrs"></div></td>
+          <td class="ae-out-range"><input class="ae-pct-input" value="0"><div class="ae-hrs"></div></td>
+          <td class="ae-out-range"><input class="ae-pct-input" value="0"><div class="ae-hrs"></div></td>
+        </tr>
+
+        <tr class="ae-group-hdr ae-group-contrib"><td colspan="7"><span class="chevron">▼</span>Contributing (3)</td></tr>
+
+        <tr>
+          <td class="ae-proj-td">
+            <div class="ae-proj-row-sub">
+              <span class="ae-proj-name">Customer 311 Trend Report</span>
+              <span class="ae-proj-status status-onhold">On Hold</span>
+              <select class="ae-role-select"><option>Contributor</option></select>
+            </div>
+            <span class="ae-date-range">▶ 2026-02-09   ■ 2026-07-15</span>
+          </td>
+          <td><input class="ae-pct-input has-val" value="20"><div class="ae-hrs">5.6h</div></td>
+          <td><input class="ae-pct-input has-val" value="10"><div class="ae-hrs">2.8h</div></td>
+          <td><input class="ae-pct-input has-val" value="0"><div class="ae-hrs"></div></td>
+          <td class="ae-cur"><input class="ae-pct-input" value="0"><div class="ae-hrs"></div></td>
+          <td><input class="ae-pct-input" value="0"><div class="ae-hrs"></div></td>
+          <td><input class="ae-pct-input has-val" value="15"><div class="ae-hrs">4.2h</div></td>
+        </tr>
+
+        <tr>
+          <td class="ae-proj-td">
+            <div class="ae-proj-row-sub">
+              <span class="ae-proj-name">Citizen Connect Dashboard</span>
+              <span class="ae-proj-status status-waiting">Waiting</span>
+              <select class="ae-role-select"><option>Contributor</option></select>
+            </div>
+            <span class="ae-date-range">▶ 2026-03-30   ■ 2026-08-31</span>
+          </td>
+          <td><input class="ae-pct-input has-val" value="10"><div class="ae-hrs">2.8h</div></td>
+          <td><input class="ae-pct-input has-val" value="5"><div class="ae-hrs">1.4h</div></td>
+          <td><input class="ae-pct-input" value="0"><div class="ae-hrs"></div></td>
+          <td class="ae-cur"><input class="ae-pct-input" value="0"><div class="ae-hrs"></div></td>
+          <td><input class="ae-pct-input" value="0"><div class="ae-hrs"></div></td>
+          <td><input class="ae-pct-input" value="0"><div class="ae-hrs"></div></td>
+        </tr>
+
+        <tr>
+          <td class="ae-proj-td">
+            <div class="ae-proj-row-sub">
+              <span class="ae-proj-name">Police RMS Integration</span>
+              <span class="ae-proj-status status-canceled">Canceled</span>
+              <select class="ae-role-select"><option>Contributor</option></select>
+            </div>
+            <span class="ae-date-range">▶ 2026-02-17   ■ 2026-04-28</span>
+          </td>
+          <td><input class="ae-pct-input has-val" value="15"><div class="ae-hrs">4.2h</div></td>
+          <td><input class="ae-pct-input has-val" value="5"><div class="ae-hrs">1.4h</div></td>
+          <td class="ae-out-range"><input class="ae-pct-input" value="0"><div class="ae-hrs"></div></td>
+          <td class="ae-cur ae-out-range"><input class="ae-pct-input" value="0"><div class="ae-hrs"></div></td>
+          <td class="ae-out-range"><input class="ae-pct-input" value="0"><div class="ae-hrs"></div></td>
+          <td class="ae-out-range"><input class="ae-pct-input" value="0"><div class="ae-hrs"></div></td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="ae-total-row">
+          <td class="ae-total-label">Total allocated</td>
+          <td><span class="ae-tot-chip over">110%</span></td>
+          <td><span class="ae-tot-chip ok">85%</span></td>
+          <td><span class="ae-tot-chip ok">50%</span></td>
+          <td class="ae-cur"><span class="ae-tot-chip ok">45%</span></td>
+          <td><span class="ae-tot-chip ok">50%</span></td>
+          <td><span class="ae-tot-chip ok">60%</span></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- ─── What happens when you scroll forward ─── -->
+<div class="scroll-grid">
+  <div class="mini-panel">
+    <h3>Before clicking ▶ Next</h3>
+    <span class="range">Apr 21 — May 26 · W17 – W22</span>
+    <strong>5 projects visible:</strong>
+    <ul>
+      <li>Safe City Use of Force Dashboard <em style="color:#166534">(Active)</em></li>
+      <li>Water Asset Map <em style="color:#1E3A8A">(Complete, ended May 5)</em></li>
+      <li>Customer 311 Trend Report <em style="color:#854D0E">(On Hold)</em></li>
+      <li>Citizen Connect Dashboard <em style="color:#6B21A8">(Waiting)</em></li>
+      <li>Police RMS Integration <em style="color:#991B1B">(Canceled, ended Apr 28)</em></li>
+    </ul>
+  </div>
+  <div class="scroll-arrow">
+    <span class="big">▶</span>
+    <span>Next 6 wks</span>
+  </div>
+  <div class="mini-panel">
+    <h3>After clicking ▶ Next</h3>
+    <span class="range">May 26 — Jul 7 · W22 – W27</span>
+    <strong>4 projects visible:</strong>
+    <ul>
+      <li>Safe City Use of Force Dashboard <em style="color:#166534">(Active)</em></li>
+      <li>Customer 311 Trend Report <em style="color:#854D0E">(On Hold)</em></li>
+      <li>Citizen Connect Dashboard <em style="color:#6B21A8">(Waiting)</em></li>
+      <li class="added">+ Equity Index Refresh <em style="color:#115E59">(Scheduled, starts Jun 15)</em></li>
+      <li class="removed">− Water Asset Map (entirely behind us now)</li>
+      <li class="removed">− Police RMS Integration (entirely behind us now)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>How this differs from today:</strong>
+  <ul>
+    <li><strong>No "Closed work" section.</strong> Projects in any state appear in Leading or Contributing based on the user's role. Status is shown via the chip on the row, not the section.</li>
+    <li><strong>Visible project count is bounded.</strong> Most weeks you'll see 3–8 projects instead of "every project the person ever touched in the year." Lighter cognitive load.</li>
+    <li><strong>Cells outside a project's active span stay editable</strong>, but get the hatched out-of-range styling — same convention we mocked up before. The team's "reflect on past weeks" practice still works at the closure boundary.</li>
+    <li><strong>Project list updates on Prev/Next.</strong> Same render path as today — clicking ▶ already re-renders the grid; the only change is the row list is now filtered by window-overlap instead of by current status.</li>
+    <li><strong>Scheduled (future-start) projects show up</strong> when the window reaches them. Lets the user pre-allocate as soon as a project is on the calendar.</li>
+  </ul>
+
+  <p style="margin-top:14px;font-size:12px;color:var(--text-muted);">A few questions worth pinning down before code:</p>
+  <ul style="margin-top:4px;">
+    <li><strong>Should we still auto-inject empty rows</strong> for projects where the user is contact / other_members but has no allocation yet, when the project's span overlaps the window? Currently the editor does this for active projects. I'd say yes, same behavior, just gated by the window-overlap rule.</li>
+    <li><strong>What about projects with no <code>start_date</code> or <code>end_date</code>?</strong> Insurance fallback in the rule covers them — they show if the user has a non-zero allocation in any visible week. Better solutions need the dates filled in.</li>
+    <li><strong>Section order — keep Leading then Contributing?</strong> Yes, but role on closed/canceled projects is a historical fact; sort within each section by date or status as you prefer.</li>
+  </ul>
+</div>
+
+</body>
+</html>

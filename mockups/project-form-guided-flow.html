@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Project Editor — Guided Step Flow (proposal)</title>
+<style>
+  :root { --navy:#002669; --border:#E1E2DD; --text-body:#002855; --text-muted:#6B7280; --bg:#F9FAFB; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:28px 32px; font-family:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text-body); max-width:780px; margin:0 auto; }
+  h1 { margin:0 0 4px 0; font-size:22px; color:var(--navy); font-weight:800; }
+  .lead { color:var(--text-muted); margin:0 0 18px 0; font-size:13px; }
+  .annot { background:#FEF3C7; border-left:4px solid #F59E0B; padding:10px 14px; border-radius:6px; margin:0 0 18px 0; font-size:12px; color:#78350F; }
+  .annot strong { color:#422006; }
+
+  .modal { background:#fff; border:1px solid #E8E6DF; border-radius:14px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,0.08); }
+  .modal-head { background:var(--navy); color:#fff; padding:14px 22px; font-size:16px; font-weight:800; display:flex; justify-content:space-between; align-items:center; }
+  .modal-head .x { opacity:0.7; font-weight:400; }
+  .modal-body { padding:6px 22px 20px; }
+
+  .step { border-top:1px solid #EEF0EC; padding:18px 0 6px; }
+  .step:first-child { border-top:0; }
+  .step-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .step-num { flex:0 0 auto; width:24px; height:24px; border-radius:50%; background:var(--navy); color:#fff; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; }
+  .step-title { font-size:14px; font-weight:800; color:var(--navy); }
+  .step-sub { font-size:12px; color:var(--text-muted); font-weight:400; margin-left:6px; }
+
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  label.f { display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:700; color:var(--text-body); }
+  label.f.full { grid-column:1 / -1; }
+  select, input, textarea { font-family:Lato,sans-serif; font-size:14px; padding:8px 10px; border:1px solid var(--border); border-radius:7px; background:#fff; color:var(--text-body); }
+  textarea { min-height:60px; resize:vertical; }
+  .placeholder { font-size:12px; color:var(--text-muted); background:#F8FAFC; border:1px dashed var(--border); border-radius:7px; padding:10px 12px; }
+
+  /* Estimate bridge card */
+  .est-wrap { margin:14px 0 4px; }
+  .est { border-radius:12px; border:1px solid #C9D8F2; background:linear-gradient(180deg,#F2F7FF,#EAF1FF); padding:16px 18px; position:relative; }
+  .est::before { content:"ESTIMATE"; position:absolute; top:-9px; left:14px; background:var(--navy); color:#fff; font-size:9px; font-weight:800; letter-spacing:0.08em; padding:2px 8px; border-radius:6px; }
+  .est.empty { background:#F8FAFC; border-style:dashed; border-color:#E1E2DD; color:var(--text-muted); font-size:13px; text-align:center; }
+  .est.empty::before { background:#9CA3AF; }
+  .est-top { display:flex; align-items:flex-start; gap:18px; flex-wrap:wrap; }
+  .est-num .wks { font-size:34px; font-weight:900; color:var(--navy); line-height:1; }
+  .est-num .mo { font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .est-mid { flex:1; min-width:220px; }
+  .est-range { font-size:13px; margin-bottom:6px; } .est-range b { color:var(--navy); }
+  .est-date { font-size:13px; margin-top:6px; } .est-date b { color:var(--navy); }
+  .btn { border:1px solid var(--navy); background:var(--navy); color:#fff; border-radius:7px; padding:5px 12px; font-weight:700; font-size:12px; cursor:pointer; margin-left:8px; }
+  .conf { display:inline-block; font-size:10px; font-weight:800; padding:2px 8px; border-radius:8px; text-transform:uppercase; letter-spacing:0.04em; margin-left:6px; }
+  .basis { font-size:11px; color:var(--text-muted); margin-top:10px; }
+  .caveat { font-size:11px; color:#9A3412; background:#FFF7ED; border-radius:6px; padding:6px 10px; margin-top:8px; }
+
+  .modal-foot { border-top:1px solid #EEF0EC; padding:14px 22px; display:flex; justify-content:flex-end; gap:10px; }
+  .modal-foot .ghost { background:#fff; color:var(--navy); border:1px solid var(--border); border-radius:7px; padding:8px 16px; font-weight:700; font-size:13px; cursor:pointer; }
+  .modal-foot .primary { background:var(--navy); color:#fff; border:0; border-radius:7px; padding:8px 18px; font-weight:800; font-size:13px; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<h1>Project editor — guided step flow <span style="font-size:13px;font-weight:400;color:var(--text-muted);">(proposal)</span></h1>
+<p class="lead">Restructures the project modal into four numbered steps so the duration estimate appears <em>after</em> you've said what the project is and when it starts, but <em>before</em> you commit to target dates. Interactive — change Category, Partner department, or Start date and watch the estimate bridge update. Medians are your real numbers.</p>
+
+<div class="annot"><strong>Key move:</strong> Category + Partner (Step 1) and Start date (Step 2) now come before the end-date fields (Step 3). The <em>Estimate</em> bridge sits between Step 2 and Step 3, so the suggestion — and the "Use this date" button — are right where you decide the dates.</div>
+
+<div class="modal">
+  <div class="modal-head"><span>New Project</span><span class="x">&times;</span></div>
+  <div class="modal-body">
+
+    <!-- Step 1 -->
+    <div class="step">
+      <div class="step-head"><span class="step-num">1</span><span class="step-title">What is it?</span><span class="step-sub">the basics that classify the work</span></div>
+      <div class="grid">
+        <label class="f full">Title <input type="text" placeholder="Project title…"></label>
+        <label class="f">Category <select id="cat" onchange="recalc()"><option value="">Select category…</option></select></label>
+        <label class="f">Partner department <select id="partner" onchange="recalc()"><option value="">Select department…</option></select></label>
+        <label class="f">Priority <select><option>Medium</option><option>High</option><option>Low</option></select></label>
+        <label class="f">Project size <select><option value="">Not sized</option><option>S</option><option>M</option><option>L</option><option>XL</option></select></label>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step">
+      <div class="step-head"><span class="step-num">2</span><span class="step-title">Who &amp; when?</span><span class="step-sub">owner, team, and start</span></div>
+      <div class="grid">
+        <label class="f">Project lead <select><option>Peter Johnson</option><option>James McGinnis</option><option>Jessica Fraver</option><option>Kate Carter</option></select></label>
+        <label class="f">Owning team <select><option>Data Intelligence</option></select></label>
+        <label class="f full">Team members <div class="placeholder">[ member availability selector — unchanged ]</div></label>
+        <label class="f">Start date <input type="date" id="start" onchange="recalc()"></label>
+      </div>
+
+      <!-- Estimate bridge -->
+      <div class="est-wrap"><div id="est"></div></div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step">
+      <div class="step-head"><span class="step-num">3</span><span class="step-title">Target dates</span><span class="step-sub">informed by the estimate above</span></div>
+      <div class="grid">
+        <label class="f">Original end date <input type="date" id="end"></label>
+        <label class="f">Working due date <input type="date" id="wd"></label>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step">
+      <div class="step-head"><span class="step-num">4</span><span class="step-title">Details</span><span class="step-sub">description &amp; the rest</span></div>
+      <div class="grid">
+        <label class="f full">Description <textarea placeholder="What is this project about?"></textarea></label>
+        <label class="f full" style="flex-direction:row;align-items:center;gap:8px;"><input type="checkbox" style="width:16px;height:16px;"> This project is part of the Data Program portfolio</label>
+        <label class="f full">Strategic alignment <div class="placeholder">[ IT Initiative · City Initiative · Data Program Goal · WWC … — unchanged ]</div></label>
+      </div>
+    </div>
+
+  </div>
+  <div class="modal-foot"><button class="ghost">Cancel</button><button class="primary">Create</button></div>
+</div>
+
+<script>
+  const CATS = [
+    ['Documentation & Knowledge Management', 46.9, 7],['Data Analysis, Reporting & Insights', 38, 34],
+    ['Enterprise Administration & Platform Management', 25, 11],['Spatial Data Services & GIS Product Development', 24.3, 33],
+    ['Data Governance, Compliance & Policy', 24, 11],['Training, Enablement & Community', 19.9, 8],
+    ['AI Enablement, Automation & Machine Intelligence', 17.6, 22],['Application Update & Enhancement', 15.7, 4],
+    ['Data Processing, Integration & Engineering', 14.3, 17],['Operational Support & Sustainment Activities', 11.6, 7],
+    ['Infrastructure Modernization & Platform Migration', 4, 7]
+  ];
+  const PARTNERS = [
+    ["City Manager's Office", 71.6, 11],['Environmental Services', 52, 3],['Transportation & Mobility', 39.6, 4],
+    ['Planning & Development Services', 38, 10],['Business Services', 34.4, 4],['Tucson Water', 24, 7],
+    ['Parks & Recreation', 22.9, 3],['Information Technology', 18.4, 99],['Police', 13.7, 6],['Mayor & Council', 13.4, 5]
+  ];
+  const catSel=document.getElementById('cat'), pSel=document.getElementById('partner');
+  CATS.forEach(c=>catSel.add(new Option(c[0],c[0]))); PARTNERS.forEach(p=>pSel.add(new Option(p[0],p[0])));
+  document.getElementById('start').value=new Date().toISOString().slice(0,10);
+  catSel.value='Data Analysis, Reporting & Insights'; pSel.value="City Manager's Office";
+
+  function conf(n){ if(n>=10)return{l:'High confidence',bg:'#DCFCE7',fg:'#166534'}; if(n>=5)return{l:'Medium confidence',bg:'#FEF9C3',fg:'#854D0E'}; if(n>=3)return{l:'Low confidence',bg:'#F3F4F6',fg:'#6B7280'}; return{l:'Too few samples',bg:'#F3F4F6',fg:'#9CA3AF'}; }
+  function addW(s,w){ if(!s)return null; const d=new Date(s+'T12:00:00'); d.setDate(d.getDate()+Math.round(w*7)); return d.toISOString().slice(0,10); }
+  function fmt(s){ if(!s)return'—'; return new Date(s+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+  function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  function recalc(){
+    const cat=CATS.find(c=>c[0]===catSel.value), partner=PARTNERS.find(p=>p[0]===pSel.value), sv=document.getElementById('start').value;
+    const box=document.getElementById('est');
+    if(!cat&&!partner){ box.className='est empty'; box.innerHTML='Fill in a <strong>category</strong> in Step 1 to estimate this project’s duration before you set its dates.'; return; }
+    let med,n,basis;
+    if(cat&&partner){ med=(cat[1]*cat[2]+partner[1]*partner[2])/(cat[2]+partner[2]); n=Math.min(cat[2],partner[2]); basis='Based on <b>'+cat[2]+'</b> '+esc(cat[0])+' projects, adjusted for <b>'+esc(partner[0])+'</b> ('+partner[2]+').'; }
+    else if(cat){ med=cat[1]; n=cat[2]; basis='Based on <b>'+cat[2]+'</b> '+esc(cat[0])+' projects. Add a partner department to sharpen it.'; }
+    else { med=partner[1]; n=partner[2]; basis='Based on <b>'+partner[2]+'</b> '+esc(partner[0])+' projects. Add a category to sharpen it.'; }
+    const wks=Math.round(med), low=Math.round(med*0.7), high=Math.round(med*1.6), months=wks/4.33, c=conf(n), sugg=addW(sv,wks);
+    box.className='est';
+    let h='<div class="est-top"><div class="est-num"><div class="wks">'+wks+' wks</div><div class="mo">&asymp; '+(months>=2?months.toFixed(months<8?1:0):months.toFixed(1))+' months</div></div>';
+    h+='<div class="est-mid"><div class="est-range">Typical range <b>'+low+'–'+high+' weeks</b><span class="conf" style="background:'+c.bg+';color:'+c.fg+'">'+c.l+'</span></div>';
+    h+='<div class="est-date">Suggested target end: <b>'+fmt(sugg)+'</b>'+(sv?'<button class="btn" onclick="document.getElementById(\'end\').value=\''+sugg+'\'">Use this date</button>':' <span style="color:var(--text-muted);font-size:11px;">(set a start date)</span>')+'</div></div></div>';
+    h+='<div class="basis">'+basis+'</div>';
+    if(n<5) h+='<div class="caveat">Thin history for this mix — a rough anchor, not a commitment.</div>';
+    box.innerHTML=h;
+  }
+  recalc();
+</script>
+
+</body>
+</html>

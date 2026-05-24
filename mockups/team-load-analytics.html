@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Team Load Analytics — Insights mockup</title>
+<style>
+  :root {
+    --navy: #002669;
+    --border: #E1E2DD;
+    --text-body: #002855;
+    --text-muted: #6B7280;
+    --bg: #F9FAFB;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px;
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text-body);
+    max-width: 1200px; margin: 0 auto;
+  }
+  h1 { margin: 0 0 4px 0; font-size: 22px; color: var(--navy); font-weight: 800; }
+  .lead { color: var(--text-muted); margin: 0 0 24px 0; font-size: 13px; }
+  .annot {
+    background: #FEF3C7; border-left: 4px solid #F59E0B;
+    padding: 10px 14px; border-radius: 6px; margin: 0 0 24px 0;
+    font-size: 12px; color: #78350F;
+  }
+  .annot strong { color: #422006; }
+  .privacy {
+    background: #EFF6FF; border-left: 4px solid #3B82F6;
+    padding: 10px 14px; border-radius: 6px; margin: 0 0 16px 0;
+    font-size: 12px; color: #1E3A8A;
+  }
+
+  .ghost-header {
+    opacity: 0.55; padding: 14px 0; border-bottom: 1px dashed #CBD5E1;
+    margin-bottom: 18px;
+  }
+  .ghost-header .tab-title { font-size: 18px; font-weight: 800; color: var(--navy); }
+  .ghost-header .tab-sub   { font-size: 12px; color: var(--text-muted); }
+
+  .kpi-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .res-kpi {
+    background: #fff; border: 1px solid #E8E6DF; border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .kpi-label { font-size: 11px; color: var(--text-muted); font-weight: 700;
+               text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .kpi-value { font-size: 22px; font-weight: 800; color: var(--navy); }
+  .kpi-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .section { margin-bottom: 28px; }
+  .section-head {
+    display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px;
+  }
+  .section-head h2 {
+    margin: 0; font-size: 15px; font-weight: 800; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .section-head .desc { font-size: 12px; color: var(--text-muted); }
+
+  .tbl-wrap {
+    background: #fff; border: 1px solid #E8E6DF; border-radius: 12px;
+    padding: 16px 20px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    background: #F3F4F6; color: var(--navy); font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.04em; font-size: 10px;
+    padding: 9px 12px; text-align: left; border-bottom: 1px solid #E8E6DF;
+  }
+  th.num { text-align: right; }
+  th.ctr { text-align: center; }
+  td { padding: 10px 12px; border-bottom: 1px solid #F1F1EC; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.ctr { text-align: center; }
+  tr:last-child td { border-bottom: 0; }
+  tr:hover td { background: #FAFAF7; }
+  .cat { font-weight: 700; color: var(--navy); }
+
+  /* Horizontal share bar */
+  .share-bar {
+    display: inline-flex; width: 100px; height: 8px;
+    background: #E5E7EB; border-radius: 4px; overflow: hidden;
+    vertical-align: middle; margin-right: 6px;
+  }
+  .share-bar > div { height: 100%; background: var(--navy); }
+
+  /* Stacked Lead/Contributor bar */
+  .stack-bar {
+    display: flex; width: 140px; height: 10px;
+    border-radius: 5px; overflow: hidden;
+    vertical-align: middle;
+    border: 1px solid #E5E7EB;
+  }
+  .stack-bar > .seg-lead { background: #002669; }
+  .stack-bar > .seg-contrib { background: #83AC16; }
+  .stack-key {
+    display: inline-flex; gap: 14px; font-size: 11px; color: var(--text-muted);
+    margin-bottom: 8px; align-items: center;
+  }
+  .stack-key span::before {
+    content: ""; display: inline-block; width: 10px; height: 10px;
+    margin-right: 5px; vertical-align: middle; border-radius: 2px;
+  }
+  .stack-key .lead::before    { background: #002669; }
+  .stack-key .contrib::before { background: #83AC16; }
+
+  /* Unit filter chip group */
+  .unit-filter {
+    display: inline-flex; border: 1px solid var(--navy); border-radius: 6px;
+    overflow: hidden; margin-bottom: 12px;
+  }
+  .unit-filter button {
+    padding: 4px 12px; border: 0; background: transparent; color: var(--navy);
+    font-size: 11px; font-weight: 700; font-family: Lato, sans-serif; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    border-right: 1px solid #E5E7EB;
+  }
+  .unit-filter button:last-child { border-right: 0; }
+  .unit-filter button.on { background: var(--navy); color: #fff; }
+  .unit-filter-row {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .unit-filter-row .label {
+    font-size: 11px; color: var(--text-muted); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+
+  /* Unit badge */
+  .unit-badge {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 8px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .unit-gis { background: #DBEAFE; color: #1E40AF; }
+  .unit-ai  { background: #F0E6FF; color: #6B21A8; }
+  .unit-baa { background: #DCFCE7; color: #166534; }
+
+  /* Concentration pill */
+  .conc {
+    display: inline-block; font-weight: 700; font-size: 11px;
+    padding: 2px 8px; border-radius: 10px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .conc-focused  { background: #FED7AA; color: #9A3412; }   /* >60% on top project */
+  .conc-balanced { background: #DCFCE7; color: #166534; }   /* 30-60% */
+  .conc-spread   { background: #DBEAFE; color: #1E3A8A; }   /* <30% */
+
+  .callout {
+    background: #fff; border: 1px solid #E8E6DF; border-left: 4px solid var(--navy);
+    border-radius: 8px; padding: 14px 18px; font-size: 13px;
+  }
+  .callout strong { color: var(--navy); }
+  .callout ul { margin: 8px 0 0 0; padding-left: 20px; }
+  .callout li { margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<h1>Team Load Analytics</h1>
+<p class="lead">Where the team's hours actually went over the last 12 months. Uses only completed-project time entries — no estimates required. New section on the Insights tab. <strong>Unit filter at the top scopes all four pieces (KPIs + Sections A, B, C) — pick a unit to see that unit's slice of the picture.</strong></p>
+
+<div class="annot">
+  <strong>Where it slots:</strong> Below the existing Team Donut + Completion Timeline row. The donut already shows total hours per team member; this section adds the structural context (partner workload, lead share, concentration).
+</div>
+
+<div class="privacy">
+  <strong>Visibility:</strong> Section C (per-person concentration) shows by name only to team leads and to each person's own row, matching the pattern from Duration Calibration. Sections A and B aggregate across the team and are visible to everyone.
+</div>
+
+<!-- Ghost existing context -->
+<div class="ghost-header">
+  <div class="tab-title">💡 Project Insights</div>
+  <div class="tab-sub">Retrospective data from completed projects.</div>
+</div>
+
+<!-- ─── Global unit filter — scopes all sections below ─── -->
+<div class="unit-filter-row" style="margin-bottom:18px;">
+  <span class="label">Unit:</span>
+  <div class="unit-filter">
+    <button class="on">All units · 10</button>
+    <button>GIS · 3</button>
+    <button>AI · 3</button>
+    <button>BAA · 4</button>
+  </div>
+  <span style="font-size:11px;color:var(--text-muted);">Scopes KPIs and all three sections below. "All units" = team-wide.</span>
+</div>
+
+<!-- ─── KPIs ─── -->
+<div class="kpi-row">
+  <div class="res-kpi">
+    <div class="kpi-label">Top consuming partner</div>
+    <div class="kpi-value" style="font-size:16px;line-height:1.4;">Water<br><span style="font-weight:600;font-size:12px;color:var(--text-muted);">1,820h · 17% of team time</span></div>
+  </div>
+  <div class="res-kpi">
+    <div class="kpi-label">Most lead-heavy category</div>
+    <div class="kpi-value" style="font-size:16px;line-height:1.4;">Geospatial<br><span style="font-weight:600;font-size:12px;color:var(--text-muted);">80% of hours from the lead</span></div>
+  </div>
+  <div class="res-kpi">
+    <div class="kpi-label">Most concentrated</div>
+    <div class="kpi-value" style="font-size:16px;line-height:1.4;">Member D<br><span style="font-weight:600;font-size:12px;color:var(--text-muted);">82% of hours on one project</span></div>
+  </div>
+  <div class="res-kpi">
+    <div class="kpi-label">Most spread</div>
+    <div class="kpi-value" style="font-size:16px;line-height:1.4;">Member A<br><span style="font-weight:600;font-size:12px;color:var(--text-muted);">7 active projects · 21% top share</span></div>
+  </div>
+</div>
+
+<!-- ─── Section A — by Partner Department ─── -->
+<div class="section">
+  <div class="section-head">
+    <h2>A · Hours by Partner Department</h2>
+    <span class="desc">Total team hours invested per department over the last 12 months.</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Department</th>
+          <th class="num">Projects</th>
+          <th class="num">Total hours</th>
+          <th class="num">Avg hrs/project</th>
+          <th>Share of team time</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cat">Water</td>
+          <td class="num">8</td>
+          <td class="num">1,820h</td>
+          <td class="num">228h</td>
+          <td><span class="share-bar"><div style="width:100%"></div></span> 17%</td>
+        </tr>
+        <tr>
+          <td class="cat">Internal / Data Intelligence</td>
+          <td class="num">11</td>
+          <td class="num">1,450h</td>
+          <td class="num">132h</td>
+          <td><span class="share-bar"><div style="width:80%"></div></span> 14%</td>
+        </tr>
+        <tr>
+          <td class="cat">Transportation</td>
+          <td class="num">5</td>
+          <td class="num">1,100h</td>
+          <td class="num">220h</td>
+          <td><span class="share-bar"><div style="width:60%"></div></span> 10%</td>
+        </tr>
+        <tr>
+          <td class="cat">Police</td>
+          <td class="num">4</td>
+          <td class="num">980h</td>
+          <td class="num">245h</td>
+          <td><span class="share-bar"><div style="width:54%"></div></span> 9%</td>
+        </tr>
+        <tr>
+          <td class="cat">Housing</td>
+          <td class="num">3</td>
+          <td class="num">680h</td>
+          <td class="num">227h</td>
+          <td><span class="share-bar"><div style="width:37%"></div></span> 6%</td>
+        </tr>
+        <tr>
+          <td class="cat">Planning &amp; Development Services</td>
+          <td class="num">3</td>
+          <td class="num">540h</td>
+          <td class="num">180h</td>
+          <td><span class="share-bar"><div style="width:30%"></div></span> 5%</td>
+        </tr>
+        <tr style="opacity:0.65;">
+          <td class="cat">Other (4 depts, n &lt; 3 each)</td>
+          <td class="num">6</td>
+          <td class="num">420h</td>
+          <td class="num">70h</td>
+          <td><span class="share-bar"><div style="width:23%"></div></span> 4%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ─── Section B — Lead vs Contributor by Category ─── -->
+<div class="section">
+  <div class="section-head">
+    <h2>B · Lead vs Contributor by Category</h2>
+    <span class="desc">Share of category hours logged by the project's lead (contact) vs by everyone else.</span>
+  </div>
+  <div class="stack-key">
+    <span class="lead">Lead</span>
+    <span class="contrib">Contributors</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th class="num">Projects</th>
+          <th class="num">Total hours</th>
+          <th>Lead / Contributor split</th>
+          <th class="num">Lead share</th>
+          <th>Read</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cat">Geospatial Analysis</td>
+          <td class="num">5</td>
+          <td class="num">820h</td>
+          <td><span class="stack-bar"><div class="seg-lead" style="width:80%"></div><div class="seg-contrib" style="width:20%"></div></span></td>
+          <td class="num">80%</td>
+          <td style="font-size:11px;color:#9A3412;">Specialist single-handed — may indicate succession risk</td>
+        </tr>
+        <tr>
+          <td class="cat">Application Development</td>
+          <td class="num">9</td>
+          <td class="num">1,640h</td>
+          <td><span class="stack-bar"><div class="seg-lead" style="width:68%"></div><div class="seg-contrib" style="width:32%"></div></span></td>
+          <td class="num">68%</td>
+          <td style="font-size:11px;color:var(--text-muted);">Lead-led; some contributor handoff</td>
+        </tr>
+        <tr>
+          <td class="cat">Application Maintenance</td>
+          <td class="num">7</td>
+          <td class="num">410h</td>
+          <td><span class="stack-bar"><div class="seg-lead" style="width:58%"></div><div class="seg-contrib" style="width:42%"></div></span></td>
+          <td class="num">58%</td>
+          <td style="font-size:11px;color:#166534;">Balanced</td>
+        </tr>
+        <tr>
+          <td class="cat">Data Engineering</td>
+          <td class="num">4</td>
+          <td class="num">740h</td>
+          <td><span class="stack-bar"><div class="seg-lead" style="width:54%"></div><div class="seg-contrib" style="width:46%"></div></span></td>
+          <td class="num">54%</td>
+          <td style="font-size:11px;color:#166534;">Balanced</td>
+        </tr>
+        <tr>
+          <td class="cat">Data Visualization &amp; Reporting</td>
+          <td class="num">7</td>
+          <td class="num">880h</td>
+          <td><span class="stack-bar"><div class="seg-lead" style="width:42%"></div><div class="seg-contrib" style="width:58%"></div></span></td>
+          <td class="num">42%</td>
+          <td style="font-size:11px;color:var(--text-muted);">Contributor-led; lead in coordinator role</td>
+        </tr>
+        <tr>
+          <td class="cat">Stakeholder Support</td>
+          <td class="num">3</td>
+          <td class="num">220h</td>
+          <td><span class="stack-bar"><div class="seg-lead" style="width:28%"></div><div class="seg-contrib" style="width:72%"></div></span></td>
+          <td class="num">28%</td>
+          <td style="font-size:11px;color:#1E3A8A;">Mostly contributors — lead is administrative</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ─── Section C — Workload Concentration ─── -->
+<div class="section">
+  <div class="section-head">
+    <h2>C · Workload Concentration</h2>
+    <span class="desc">For each person: how focused (one big project) vs spread (many small projects) was their year. Visible by name to leads &amp; self only.</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Member</th>
+          <th>Unit</th>
+          <th class="num">Active projects</th>
+          <th class="num">Total hours</th>
+          <th class="num">Hours / project</th>
+          <th class="num">Top project share</th>
+          <th class="ctr">Profile</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cat">Member A</td>
+          <td><span class="unit-badge unit-baa">BAA</span></td>
+          <td class="num">7</td>
+          <td class="num">980h</td>
+          <td class="num">140h</td>
+          <td class="num">21%</td>
+          <td class="ctr"><span class="conc conc-spread">Spread</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Member B</td>
+          <td><span class="unit-badge unit-ai">AI</span></td>
+          <td class="num">5</td>
+          <td class="num">1,120h</td>
+          <td class="num">224h</td>
+          <td class="num">34%</td>
+          <td class="ctr"><span class="conc conc-balanced">Balanced</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Member C</td>
+          <td><span class="unit-badge unit-baa">BAA</span></td>
+          <td class="num">4</td>
+          <td class="num">1,040h</td>
+          <td class="num">260h</td>
+          <td class="num">48%</td>
+          <td class="ctr"><span class="conc conc-balanced">Balanced</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Member D</td>
+          <td><span class="unit-badge unit-ai">AI</span></td>
+          <td class="num">2</td>
+          <td class="num">890h</td>
+          <td class="num">445h</td>
+          <td class="num">82%</td>
+          <td class="ctr"><span class="conc conc-focused">Focused</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Member E</td>
+          <td><span class="unit-badge unit-baa">BAA</span></td>
+          <td class="num">6</td>
+          <td class="num">1,180h</td>
+          <td class="num">197h</td>
+          <td class="num">28%</td>
+          <td class="ctr"><span class="conc conc-spread">Spread</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Member F</td>
+          <td><span class="unit-badge unit-gis">GIS</span></td>
+          <td class="num">3</td>
+          <td class="num">760h</td>
+          <td class="num">253h</td>
+          <td class="num">66%</td>
+          <td class="ctr"><span class="conc conc-focused">Focused</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Member G</td>
+          <td><span class="unit-badge unit-gis">GIS</span></td>
+          <td class="num">5</td>
+          <td class="num">1,070h</td>
+          <td class="num">214h</td>
+          <td class="num">39%</td>
+          <td class="ctr"><span class="conc conc-balanced">Balanced</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Member H</td>
+          <td><span class="unit-badge unit-baa">BAA</span></td>
+          <td class="num">4</td>
+          <td class="num">820h</td>
+          <td class="num">205h</td>
+          <td class="num">52%</td>
+          <td class="ctr"><span class="conc conc-balanced">Balanced</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Member I</td>
+          <td><span class="unit-badge unit-gis">GIS</span></td>
+          <td class="num">3</td>
+          <td class="num">540h</td>
+          <td class="num">180h</td>
+          <td class="num">71%</td>
+          <td class="ctr"><span class="conc conc-focused">Focused</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Member J</td>
+          <td><span class="unit-badge unit-ai">AI</span></td>
+          <td class="num">6</td>
+          <td class="num">680h</td>
+          <td class="num">113h</td>
+          <td class="num">26%</td>
+          <td class="ctr"><span class="conc conc-spread">Spread</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="font-size:11px;color:var(--text-muted);font-style:italic;margin-top:8px;">
+    Focused = &gt;60% of hours on one project · Balanced = 30–60% · Spread = &lt;30%. "Top project share" is the % of this person's logged hours that went to their single largest project. Helps identify who would benefit from consolidation, and who's likely a single-thread risk.
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Questions this section helps answer:</strong>
+  <ul>
+    <li>"Are we over-invested in any one partner department?" — Section A. Surfaces the "Water is 17% of our year" point that's worth knowing during planning conversations with the CIO.</li>
+    <li>"Which categories have lone specialists carrying the load?" — Section B's lead-share + the "Read" column flag where the lead is the only person who knows the work. Geospatial at 80% is a succession-planning signal.</li>
+    <li>"Who's spread too thin? Who has concentration risk?" — Section C. Both directions matter — Member A at 7 projects with no clear focus may benefit from consolidation; Member D at 82% on one project is a single-thread risk if that project blocks.</li>
+    <li>"What's the team-load shape we should reproduce next year, and what's the shape we should avoid?" — All three together give the retro narrative.</li>
+  </ul>
+</div>
+
+</body>
+</html>

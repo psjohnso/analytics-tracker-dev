@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Full-page allocation editor — flow from Resources</title>
+<style>
+  :root {
+    --navy: #002669;
+    --border: #E1E2DD;
+    --text-body: #002855;
+    --text-muted: #6B7280;
+    --bg: #F9FAFB;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px 60px;
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text-body);
+    max-width: 1500px; margin: 0 auto;
+  }
+  h1 { margin: 0 0 4px 0; font-size: 22px; color: var(--navy); font-weight: 800; }
+  .lead { color: var(--text-muted); margin: 0 0 24px 0; font-size: 13px; }
+
+  .step {
+    background: #fff; border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px; margin-bottom: 16px;
+  }
+  .step-label {
+    display: inline-block; font-size: 10px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 3px 10px; border-radius: 12px;
+    background: var(--navy); color: #fff;
+    margin-bottom: 6px;
+  }
+  .step-title { font-size: 16px; font-weight: 800; color: var(--navy); margin: 4px 0 4px 0; }
+  .step-tag { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+
+  /* Stage = the browser window mock */
+  .stage {
+    background: #E5E7EB; border-radius: 10px; padding: 14px;
+  }
+  .browser {
+    background: #fff; border: 1px solid #CBD5E1; border-radius: 8px;
+    overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  }
+  .browser-chrome {
+    background: #F3F4F6; padding: 6px 10px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; color: var(--text-muted);
+    border-bottom: 1px solid #E5E7EB;
+  }
+  .browser-chrome .nav-btn {
+    width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center;
+    color: #9CA3AF; font-size: 10px;
+  }
+  .browser-chrome .dot { width: 8px; height: 8px; border-radius: 50%; background: #D1D5DB; }
+  .browser-chrome .url {
+    margin-left: 8px; padding: 3px 10px; background: #fff;
+    border-radius: 12px; border: 1px solid #E5E7EB; font-family: 'Lato', sans-serif;
+    flex: 1; max-width: 600px;
+  }
+  .browser-chrome .url .path { color: var(--text-muted); }
+  .browser-chrome .url .new { color: var(--navy); font-weight: 700; }
+
+  /* App header */
+  .app-header {
+    background: var(--navy); color: #fff;
+    padding: 8px 16px; display: flex; align-items: center; gap: 16px;
+    font-size: 11px;
+  }
+  .app-header .brand { font-weight: 800; font-size: 13px; letter-spacing: 0.04em; }
+  .app-header .tabs { display: flex; gap: 14px; opacity: 0.85; }
+  .app-header .tabs .tab { padding: 2px 4px; cursor: pointer; }
+  .app-header .tabs .tab.active { border-bottom: 2px solid #fff; padding-bottom: 0; font-weight: 700; }
+  .app-header .who { margin-left: auto; opacity: 0.85; }
+
+  /* Sub-header / breadcrumb */
+  .subhdr {
+    background: #fff; border-bottom: 1px solid #E5E7EB;
+    padding: 10px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px;
+  }
+  .crumb { color: var(--text-muted); }
+  .crumb a, .crumb .here { color: var(--navy); text-decoration: none; }
+  .crumb a { text-decoration: underline; cursor: pointer; }
+  .crumb a:hover { color: #1a3a7c; }
+  .crumb .sep { margin: 0 6px; color: #CBD5E1; }
+  .crumb .here { font-weight: 700; }
+  .subhdr .actions { display: flex; gap: 6px; }
+  .btn {
+    font-size: 11px; font-weight: 700; padding: 5px 11px; border-radius: 5px;
+    border: 1px solid var(--border); background: #fff; color: var(--text-body);
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .btn-ghost { background: transparent; border: 1px solid transparent; color: var(--text-muted); }
+  .btn-cta {
+    background: var(--navy); color: #fff; border-color: var(--navy);
+    padding: 8px 18px; font-size: 12px; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 6px; cursor: pointer;
+  }
+  .btn-cta-hl { box-shadow: 0 0 0 3px rgba(34,197,94,0.35); }
+
+  /* Resources tab content (step 1) */
+  .res-pg { padding: 16px 20px; }
+  .res-pg-title { font-size: 16px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+  .res-pg-sub { font-size: 11px; color: var(--text-muted); margin-bottom: 14px; }
+  .res-layout {
+    display: grid; grid-template-columns: 280px 1fr; gap: 16px;
+  }
+  .member-list {
+    background: #FAFAF7; border: 1px solid #E5E7EB; border-radius: 8px;
+    padding: 10px; max-height: 260px; overflow-y: auto;
+  }
+  .member-list h4 {
+    margin: 0 0 8px 0; font-size: 10px; font-weight: 800; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .ml-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 4px; cursor: pointer;
+    font-size: 11px;
+  }
+  .ml-row:hover { background: #F3F4F6; }
+  .ml-row.selected { background: #EEF2FF; }
+  .ml-row .ml-name { font-weight: 700; color: var(--navy); flex: 1; }
+  .ml-row .ml-util { font-weight: 700; font-size: 10px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+  .member-detail {
+    background: #fff; border: 1px solid #E5E7EB; border-radius: 8px;
+    padding: 14px;
+  }
+  .md-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #F1F1EC; }
+  .md-head .md-name { font-size: 14px; font-weight: 800; color: var(--navy); }
+  .md-head .md-sub { font-size: 10px; color: var(--text-muted); }
+  .md-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+  .md-kpi {
+    background: #FAFAF7; border: 1px solid #E5E7EB; border-radius: 4px;
+    padding: 7px 9px; font-size: 10px;
+  }
+  .md-kpi .lbl { color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 8px; }
+  .md-kpi .val { font-weight: 800; color: var(--navy); font-size: 13px; }
+  .md-thumb { font-size: 10px; color: var(--text-muted); }
+  .util-thumb {
+    height: 28px; background: linear-gradient(90deg, #DCFCE7 0%, #DCFCE7 30%, #FEF9C3 30%, #FEF9C3 60%, #FED7AA 60%, #FED7AA 85%, #FECACA 85%);
+    border-radius: 4px; margin-top: 4px;
+  }
+
+  /* Edit-page sidebar + main */
+  .ae-page {
+    display: grid; grid-template-columns: 240px 1fr; gap: 16px;
+    padding: 14px 18px;
+  }
+  .ae-sidebar {
+    background: #FAFAF7; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px; font-size: 11px;
+  }
+  .ae-sidebar h3 {
+    margin: 0 0 6px 0; font-size: 10px; font-weight: 800; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .ae-sidebar .person-name { font-size: 14px; font-weight: 800; color: var(--navy); margin-bottom: 2px; }
+  .ae-sidebar .person-sub { font-size: 10px; color: var(--text-muted); margin-bottom: 12px; }
+  .ae-sidebar .cap-row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .ae-sidebar .cap-row span:last-child { font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+  .ae-sidebar .legend { font-size: 9px; color: var(--text-muted); line-height: 1.5; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #E5E7EB; }
+  .ae-sidebar .switcher {
+    margin-top: 12px; padding-top: 10px; border-top: 1px dashed #E5E7EB;
+  }
+  .ae-sidebar .switch-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 6px; border-radius: 3px; font-size: 10px; cursor: pointer;
+  }
+  .ae-sidebar .switch-row:hover { background: #fff; }
+  .ae-sidebar .switch-row.current { background: var(--navy); color: #fff; }
+  .ae-sidebar .switch-row.current .swl, .ae-sidebar .switch-row.current .swr { color: #fff; }
+  .ae-sidebar .switch-row .swl { color: var(--navy); font-weight: 700; }
+  .ae-sidebar .switch-row .swr { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+  .ae-main {
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px;
+  }
+  .ae-actionbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #F1F1EC;
+  }
+  .ae-actionbar .title { font-size: 13px; font-weight: 800; color: var(--navy); }
+  .ae-actionbar .sub { font-size: 10px; color: var(--text-muted); }
+  .ae-range-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #F3F4F6; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px;
+    font-size: 10px; color: var(--text-muted);
+  }
+  .ae-range-bar .ae-range-label { font-weight: 700; color: var(--navy); font-size: 11px; }
+  .ae-grid { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .ae-grid th, .ae-grid td { border-bottom: 1px solid #F1F1EC; padding: 4px 3px; }
+  .ae-grid th {
+    background: #F3F4F6; color: var(--navy);
+    font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;
+    font-size: 8px; padding: 5px 3px; text-align: center;
+  }
+  .ae-grid th.proj-th { text-align: left; padding-left: 8px; min-width: 180px; }
+  .ae-grid td.proj { padding-left: 8px; }
+  .ae-grid td.proj .name { font-weight: 700; color: var(--navy); font-size: 11px; }
+  .ae-grid td.proj .meta { font-size: 9px; color: var(--text-muted); }
+  .ae-grid td.cell { text-align: center; }
+  .pct { display: inline-block; min-width: 28px; padding: 2px 4px; border: 1px solid var(--border); border-radius: 3px; font-size: 10px; font-weight: 700; }
+  .pct.has-val { background: #EEF2FF; color: var(--navy); border-color: var(--navy); }
+  .ae-cur { background: #FEF9C3 !important; }
+  .ae-hrs { font-size: 8px; color: var(--text-muted); }
+  .ae-out { background: repeating-linear-gradient(45deg, #FAFAF7, #FAFAF7 4px, #F0F0EB 4px, #F0F0EB 8px); }
+  .group-hdr td {
+    background: var(--navy); color: #fff;
+    font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 3px 8px;
+  }
+  .group-contrib td { background: #4B5563; }
+  .tot-row td { background: #F3F4F6; font-weight: 800; }
+  .tot-chip {
+    display: inline-block; font-size: 9px; font-weight: 800;
+    padding: 2px 5px; border-radius: 8px;
+    background: #DCFCE7; color: #166534;
+  }
+  .tot-chip.over { background: #FECACA; color: #991B1B; }
+  .status-active   { color: #166534; background: rgba(34,197,94,0.13); padding: 0 4px; border-radius: 3px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+  .status-complete { color: #1E3A8A; background: rgba(59,130,246,0.13); padding: 0 4px; border-radius: 3px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+  .status-onhold   { color: #854D0E; background: rgba(245,158,11,0.13); padding: 0 4px; border-radius: 3px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+  .status-canceled { color: #991B1B; background: rgba(239,68,68,0.13); padding: 0 4px; border-radius: 3px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+
+  /* Flow arrows */
+  .flow-arrow {
+    display: flex; align-items: center; justify-content: center;
+    margin: 4px 0 16px 0;
+    font-size: 13px; color: var(--navy); font-weight: 700;
+    gap: 10px;
+  }
+  .flow-arrow .arrow {
+    font-size: 28px; line-height: 1; color: var(--navy);
+  }
+  .flow-arrow .lbl { background: #fff; padding: 6px 14px; border-radius: 18px; border: 1px solid #C7D2FE; }
+
+  /* Pin/highlight ring around the CTA in step 1 */
+  .pin {
+    position: relative; display: inline-block;
+  }
+  .pin::after {
+    content: ""; position: absolute; inset: -6px;
+    border: 2px dashed #22C55E; border-radius: 8px;
+    pointer-events: none;
+  }
+  .pin-note {
+    background: #DCFCE7; color: #166534; padding: 3px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; margin-left: 8px; vertical-align: middle;
+  }
+
+  .callout {
+    background: #fff; border: 1px solid #E8E6DF; border-left: 4px solid var(--navy);
+    border-radius: 8px; padding: 14px 18px; font-size: 13px;
+    margin-top: 22px;
+  }
+  .callout strong { color: var(--navy); }
+  .callout ul { margin: 8px 0 0 0; padding-left: 20px; }
+  .callout li { margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<h1>Full-page allocation editor — flow from Resources</h1>
+<p class="lead">How the new full-page editor interacts with the existing Resources page. Three steps shown: entry from Resources, the editor itself with sidebar context, and the return state. The browser URL changes between states so the back button and direct links both work.</p>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- STEP 1 — Resources tab, entry point highlighted -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div class="step">
+  <span class="step-label">Step 1</span>
+  <div class="step-title">Resources tab — entry state</div>
+  <div class="step-tag">User selects a member from the list, scans the at-a-glance KPIs, decides to edit. The "Edit Allocations" CTA is the navigation point.</div>
+
+  <div class="stage">
+    <div class="browser">
+      <div class="browser-chrome">
+        <span class="nav-btn">◀</span><span class="nav-btn">▶</span><span class="nav-btn">⟳</span>
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="url"><span class="path">analytics-tracker.tucsonaz.gov / resources</span></div>
+      </div>
+      <div class="app-header">
+        <span class="brand">📊 Analytics Project Tracker</span>
+        <div class="tabs">
+          <span class="tab">My Work</span>
+          <span class="tab">Projects</span>
+          <span class="tab active">Resources</span>
+          <span class="tab">Analytics</span>
+          <span class="tab">Settings</span>
+        </div>
+        <span class="who">Member B · BAA</span>
+      </div>
+
+      <div class="res-pg">
+        <div class="res-pg-title">Team Resources</div>
+        <div class="res-pg-sub">Capacity, allocations, and utilization across the team. Week of May 12, 2026.</div>
+
+        <div class="res-layout">
+          <div class="member-list">
+            <h4>Team Members (10)</h4>
+            <div class="ml-row"><span class="ml-name">Member A</span><span class="ml-util">82%</span></div>
+            <div class="ml-row selected"><span class="ml-name">Member B</span><span class="ml-util">91%</span></div>
+            <div class="ml-row"><span class="ml-name">Member C</span><span class="ml-util">78%</span></div>
+            <div class="ml-row"><span class="ml-name">Member D</span><span class="ml-util" style="color:#991B1B;">105%</span></div>
+            <div class="ml-row"><span class="ml-name">Member E</span><span class="ml-util">64%</span></div>
+            <div class="ml-row"><span class="ml-name">Member F</span><span class="ml-util">88%</span></div>
+            <div class="ml-row"><span class="ml-name">Member G</span><span class="ml-util">72%</span></div>
+            <div class="ml-row"><span class="ml-name">Member H</span><span class="ml-util">85%</span></div>
+          </div>
+
+          <div class="member-detail">
+            <div class="md-head">
+              <div>
+                <div class="md-name">Member B</div>
+                <div class="md-sub">Data Intelligence · BAA · 70% project-available</div>
+              </div>
+              <span class="pin">
+                <button class="btn-cta btn-cta-hl">✏️ Edit Allocations</button>
+                <span class="pin-note">↳ navigates to full-page editor</span>
+              </span>
+            </div>
+            <div class="md-grid">
+              <div class="md-kpi"><div class="lbl">This week</div><div class="val">25.5h</div></div>
+              <div class="md-kpi"><div class="lbl">Capacity</div><div class="val">28h</div></div>
+              <div class="md-kpi"><div class="lbl">Utilization</div><div class="val">91%</div></div>
+              <div class="md-kpi"><div class="lbl">Active projects</div><div class="val">5</div></div>
+            </div>
+            <div class="md-thumb">8-week utilization at a glance:</div>
+            <div class="util-thumb"></div>
+            <div style="margin-top:10px;font-size:10px;color:var(--text-muted);">▸ Leading 2 projects · Contributing on 3 · 4 projects in close window</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow">
+  <span class="arrow">⤵</span>
+  <span class="lbl">Click "Edit Allocations" → URL updates → full-page editor renders</span>
+  <span class="arrow">⤵</span>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- STEP 2 — Full-page editor -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div class="step">
+  <span class="step-label">Step 2</span>
+  <div class="step-title">Full-page allocation editor</div>
+  <div class="step-tag">Same browser window, URL updated, same app header — user is unmistakably still in the app. Breadcrumb shows where they came from. Sidebar holds capacity context + a Switch member list for editing multiple people in one session.</div>
+
+  <div class="stage">
+    <div class="browser">
+      <div class="browser-chrome">
+        <span class="nav-btn">◀</span><span class="nav-btn">▶</span><span class="nav-btn">⟳</span>
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="url"><span class="path">analytics-tracker.tucsonaz.gov / resources / </span><span class="new">member-b / edit-allocations</span></div>
+      </div>
+      <div class="app-header">
+        <span class="brand">📊 Analytics Project Tracker</span>
+        <div class="tabs">
+          <span class="tab">My Work</span>
+          <span class="tab">Projects</span>
+          <span class="tab active">Resources</span>
+          <span class="tab">Analytics</span>
+          <span class="tab">Settings</span>
+        </div>
+        <span class="who">Member B · BAA</span>
+      </div>
+
+      <div class="subhdr">
+        <div class="crumb">
+          <a>Resources</a><span class="sep">›</span><span class="here">Edit Allocations · Member B</span>
+        </div>
+        <div class="actions">
+          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-primary">Apply changes</button>
+        </div>
+      </div>
+
+      <div class="ae-page">
+        <aside class="ae-sidebar">
+          <div class="person-name">Member B</div>
+          <div class="person-sub">Data Intelligence · BAA · 70% project-available</div>
+
+          <h3>Capacity</h3>
+          <div class="cap-row"><span>FTE</span><span>1.0</span></div>
+          <div class="cap-row"><span>Hours / week</span><span>40h</span></div>
+          <div class="cap-row"><span>Project hours</span><span>28h</span></div>
+          <div class="cap-row"><span>Vacation balance</span><span>96h</span></div>
+
+          <h3 style="margin-top:14px;">Window utilization</h3>
+          <div class="cap-row"><span>Planned (8w avg)</span><span>91%</span></div>
+          <div class="cap-row"><span>Logged YTD</span><span>820h</span></div>
+
+          <div class="switcher">
+            <h3>Switch member</h3>
+            <div class="switch-row"><span class="swl">Member A</span><span class="swr">82%</span></div>
+            <div class="switch-row current"><span class="swl">Member B</span><span class="swr">91%</span></div>
+            <div class="switch-row"><span class="swl">Member C</span><span class="swr">78%</span></div>
+            <div class="switch-row"><span class="swl" style="color:#991B1B;">Member D</span><span class="swr" style="color:#991B1B;">105%</span></div>
+            <div class="switch-row"><span class="swl">Member E</span><span class="swr">64%</span></div>
+            <div style="font-size:9px;color:var(--text-muted);margin-top:6px;text-align:center;cursor:pointer;">Show all 10 ▾</div>
+          </div>
+
+          <div class="legend">
+            <strong style="color:var(--navy);">Legend</strong><br>
+            ▶ project start ■ effective end<br>
+            <span class="ae-out" style="display:inline-block;width:14px;height:9px;vertical-align:middle;border-radius:2px;"></span> outside active span<br>
+            <span style="background:#FEF9C3;display:inline-block;width:14px;height:9px;vertical-align:middle;border-radius:2px;"></span> current week
+          </div>
+        </aside>
+
+        <div class="ae-main">
+          <div class="ae-actionbar">
+            <div>
+              <div class="title">Edit Allocations</div>
+              <div class="sub">Apr 7 — Jun 1 · W15 – W22 · click cells to edit %</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn">◀</button>
+              <button class="btn">Jump to current</button>
+              <button class="btn">▶</button>
+            </div>
+          </div>
+          <table class="ae-grid">
+            <thead>
+              <tr>
+                <th class="proj-th">Project</th>
+                <th>Apr 7<br><span style="font-weight:600;font-size:7px;">W15</span></th>
+                <th>Apr 14<br><span style="font-weight:600;font-size:7px;">W16</span></th>
+                <th>Apr 21<br><span style="font-weight:600;font-size:7px;">W17</span></th>
+                <th>Apr 28<br><span style="font-weight:600;font-size:7px;">W18</span></th>
+                <th>May 5<br><span style="font-weight:600;font-size:7px;">W19</span></th>
+                <th class="ae-cur">May 12<br><span style="font-weight:600;font-size:7px;">W20</span></th>
+                <th>May 19<br><span style="font-weight:600;font-size:7px;">W21</span></th>
+                <th>May 26<br><span style="font-weight:600;font-size:7px;">W22</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="group-hdr"><td colspan="9">Leading (2)</td></tr>
+              <tr>
+                <td class="proj"><div class="name">Safe City Use of Force Dashboard <span class="status-active">Active</span></div><div class="meta">▶ 2026-03-02   ■ 2026-06-30</div></td>
+                <td class="cell"><span class="pct has-val">35</span><div class="ae-hrs">9.8h</div></td>
+                <td class="cell"><span class="pct has-val">40</span><div class="ae-hrs">11.2h</div></td>
+                <td class="cell"><span class="pct has-val">40</span><div class="ae-hrs">11.2h</div></td>
+                <td class="cell"><span class="pct has-val">35</span><div class="ae-hrs">9.8h</div></td>
+                <td class="cell"><span class="pct has-val">40</span><div class="ae-hrs">11.2h</div></td>
+                <td class="cell ae-cur"><span class="pct has-val">45</span><div class="ae-hrs">12.6h</div></td>
+                <td class="cell"><span class="pct has-val">50</span><div class="ae-hrs">10.0h</div></td>
+                <td class="cell"><span class="pct has-val">45</span><div class="ae-hrs">12.6h</div></td>
+              </tr>
+              <tr>
+                <td class="proj"><div class="name">Water Asset Map <span class="status-complete">Complete</span></div><div class="meta">▶ 2026-01-13   ■ 2026-05-05</div></td>
+                <td class="cell"><span class="pct has-val">25</span><div class="ae-hrs">7.0h</div></td>
+                <td class="cell"><span class="pct has-val">30</span><div class="ae-hrs">8.4h</div></td>
+                <td class="cell"><span class="pct has-val">25</span><div class="ae-hrs">7.0h</div></td>
+                <td class="cell"><span class="pct has-val">30</span><div class="ae-hrs">8.4h</div></td>
+                <td class="cell"><span class="pct has-val">10</span><div class="ae-hrs">2.8h</div></td>
+                <td class="cell ae-cur ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+              </tr>
+              <tr class="group-hdr group-contrib"><td colspan="9">▼ Contributing (2)</td></tr>
+              <tr>
+                <td class="proj"><div class="name">Customer 311 Trend Report <span class="status-onhold">On Hold</span></div><div class="meta">▶ 2026-02-09   ■ 2026-07-15</div></td>
+                <td class="cell"><span class="pct has-val">15</span><div class="ae-hrs">4.2h</div></td>
+                <td class="cell"><span class="pct has-val">10</span><div class="ae-hrs">2.8h</div></td>
+                <td class="cell"><span class="pct has-val">20</span><div class="ae-hrs">5.6h</div></td>
+                <td class="cell"><span class="pct has-val">10</span><div class="ae-hrs">2.8h</div></td>
+                <td class="cell"><span class="pct">0</span></td>
+                <td class="cell ae-cur"><span class="pct">0</span></td>
+                <td class="cell"><span class="pct">0</span></td>
+                <td class="cell"><span class="pct has-val">15</span><div class="ae-hrs">4.2h</div></td>
+              </tr>
+              <tr>
+                <td class="proj"><div class="name">Police RMS Integration <span class="status-canceled">Canceled</span></div><div class="meta">▶ 2026-02-17   ■ 2026-04-28</div></td>
+                <td class="cell"><span class="pct has-val">20</span><div class="ae-hrs">5.6h</div></td>
+                <td class="cell"><span class="pct has-val">20</span><div class="ae-hrs">5.6h</div></td>
+                <td class="cell"><span class="pct has-val">15</span><div class="ae-hrs">4.2h</div></td>
+                <td class="cell"><span class="pct has-val">5</span><div class="ae-hrs">1.4h</div></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-cur ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="tot-row">
+                <td class="proj">Total allocated</td>
+                <td class="cell"><span class="tot-chip">95%</span></td>
+                <td class="cell"><span class="tot-chip">100%</span></td>
+                <td class="cell"><span class="tot-chip">100%</span></td>
+                <td class="cell"><span class="tot-chip">80%</span></td>
+                <td class="cell"><span class="tot-chip">50%</span></td>
+                <td class="cell ae-cur"><span class="tot-chip">45%</span></td>
+                <td class="cell"><span class="tot-chip">50%</span></td>
+                <td class="cell"><span class="tot-chip">60%</span></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow">
+  <span class="arrow">⤴</span>
+  <span class="lbl">Click "Resources" breadcrumb or browser-back → return to Resources, state preserved</span>
+  <span class="arrow">⤴</span>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- STEP 3 — Return -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div class="step">
+  <span class="step-label">Step 3</span>
+  <div class="step-title">Back to Resources — state preserved</div>
+  <div class="step-tag">Same scroll position, same selected member, same filters. The KPI numbers reflect whatever was saved on the way out (or unchanged if Cancel was clicked).</div>
+
+  <div class="stage">
+    <div class="browser">
+      <div class="browser-chrome">
+        <span class="nav-btn">◀</span><span class="nav-btn">▶</span><span class="nav-btn">⟳</span>
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        <div class="url"><span class="path">analytics-tracker.tucsonaz.gov / resources</span></div>
+      </div>
+      <div class="app-header">
+        <span class="brand">📊 Analytics Project Tracker</span>
+        <div class="tabs">
+          <span class="tab">My Work</span>
+          <span class="tab">Projects</span>
+          <span class="tab active">Resources</span>
+          <span class="tab">Analytics</span>
+          <span class="tab">Settings</span>
+        </div>
+        <span class="who">Member B · BAA</span>
+      </div>
+
+      <div class="res-pg">
+        <div class="res-pg-title">Team Resources</div>
+        <div class="res-pg-sub">Capacity, allocations, and utilization across the team. Week of May 12, 2026.</div>
+
+        <div class="res-layout">
+          <div class="member-list">
+            <h4>Team Members (10)</h4>
+            <div class="ml-row"><span class="ml-name">Member A</span><span class="ml-util">82%</span></div>
+            <div class="ml-row selected"><span class="ml-name">Member B</span><span class="ml-util">91%</span></div>
+            <div class="ml-row"><span class="ml-name">Member C</span><span class="ml-util">78%</span></div>
+            <div class="ml-row"><span class="ml-name">Member D</span><span class="ml-util" style="color:#991B1B;">105%</span></div>
+            <div class="ml-row"><span class="ml-name">Member E</span><span class="ml-util">64%</span></div>
+            <div class="ml-row"><span class="ml-name">Member F</span><span class="ml-util">88%</span></div>
+            <div class="ml-row"><span class="ml-name">Member G</span><span class="ml-util">72%</span></div>
+            <div class="ml-row"><span class="ml-name">Member H</span><span class="ml-util">85%</span></div>
+          </div>
+
+          <div class="member-detail">
+            <div class="md-head">
+              <div>
+                <div class="md-name">Member B</div>
+                <div class="md-sub">Data Intelligence · BAA · 70% project-available</div>
+              </div>
+              <span style="font-size:10px;color:#166534;font-weight:700;background:#DCFCE7;padding:4px 8px;border-radius:4px;">✓ Allocations updated · 3 weeks changed</span>
+            </div>
+            <div class="md-grid">
+              <div class="md-kpi"><div class="lbl">This week</div><div class="val">26.0h</div></div>
+              <div class="md-kpi"><div class="lbl">Capacity</div><div class="val">28h</div></div>
+              <div class="md-kpi"><div class="lbl">Utilization</div><div class="val">93%</div></div>
+              <div class="md-kpi"><div class="lbl">Active projects</div><div class="val">5</div></div>
+            </div>
+            <div class="md-thumb">8-week utilization at a glance:</div>
+            <div class="util-thumb"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- CALLOUT — design questions -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div class="callout">
+  <strong>Interaction details worth pinning down:</strong>
+  <ul>
+    <li><strong>URL pattern.</strong> Mock uses <code>/resources/&lt;member&gt;/edit-allocations</code>. The app is a single-page SPA, so this is hash-routed under the hood (<code>#/resources/member-b/edit-allocations</code>) or a query-param variant. Either works; routing convention is a one-line decision.</li>
+    <li><strong>Return path.</strong> Three ways out: Cancel button, breadcrumb link, browser back. All three land on the same Resources state. If there are unsaved edits, intercept all three with a "Save changes?" confirm.</li>
+    <li><strong>Switch member sidebar.</strong> The right-sidebar widget lets a lead edit Member A → Member B → Member C without bouncing back to Resources. Clicking another name auto-saves the current edits (or prompts) and loads the next person. Optional — drop if it complicates the data model.</li>
+    <li><strong>State preserved on return.</strong> Same selected member, same scroll position, same filters. Implemented as: Resources tab keeps its UI state in module-level vars (already does); the route change preserves it because we're not re-mounting the Resources component.</li>
+    <li><strong>"Allocations updated" confirmation.</strong> Optional little chip in the member-detail header showing what just happened. Auto-dismisses after ~5s.</li>
+    <li><strong>What replaces the modal?</strong> The current modal-open code path (<code>openAllocEditor()</code>) becomes a router push instead of a modal show. The actual grid rendering can be largely shared between the two if you want a transition period where both work.</li>
+  </ul>
+
+  <p style="margin-top:14px;font-size:12px;color:var(--text-muted);">If the switch-member sidebar feels like scope creep, drop it for v1 and just route back to Resources between members. Easy to add later. Otherwise, ready to prototype this — want me to start with the route + shell + sidebar, with the grid markup just imported from the existing modal?</p>
+</div>
+
+</body>
+</html>

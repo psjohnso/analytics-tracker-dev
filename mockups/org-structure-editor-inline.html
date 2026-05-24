@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Organization editor — INLINE editing (live mockup)</title>
+<style>
+  :root { --navy:#002669; --green:#83AC16; --orange:#C24200; --border:#E8E6DF; --text-body:#002855; --text-muted:#6B7280; --bg:#F3F1EB; --white:#fff; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:28px 24px 80px; font-family:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text-body); }
+  .wrap { max-width:1060px; margin:0 auto; }
+  h1 { margin:0 0 4px; font-size:23px; color:var(--navy); font-weight:800; }
+  .lead { color:var(--text-muted); margin:0 0 18px; font-size:13px; }
+  .annot { background:#FEF3C7; border-left:4px solid #F59E0B; padding:10px 14px; border-radius:6px; margin:0 0 18px; font-size:12px; color:#78350F; line-height:1.6; }
+  .annot strong { color:#422006; }
+  .annot kbd { background:#fff; border:1px solid #D6B45f; border-radius:4px; padding:0 5px; font-size:11px; font-family:inherit; font-weight:700; }
+
+  .settings { display:flex; background:var(--white); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+  .nav { width:200px; flex-shrink:0; border-right:1px solid var(--border); background:#FBFAF7; padding:12px 10px; }
+  .nav-group { margin-bottom:13px; }
+  .nav-label { font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; padding:0 8px 6px; }
+  .nav-item { padding:7px 10px; border-radius:7px; font-size:12.5px; font-weight:600; color:var(--navy); }
+  .nav-item.active { background:var(--navy); color:#fff; }
+  .panel { flex:1; padding:20px 24px; min-width:0; }
+  .panel-title { font-size:18px; font-weight:800; color:var(--navy); margin:0 0 2px; }
+  .panel-desc { font-size:12px; color:var(--text-muted); margin:0 0 18px; }
+
+  .dept { border:1px solid var(--border); border-radius:11px; margin-bottom:16px; overflow:hidden; }
+  .dept-head { display:flex; align-items:center; gap:8px; padding:12px 16px; background:#EEF2FF; border-bottom:1px solid #C7D2FE; }
+  .dept-name { font-size:15px; font-weight:800; color:var(--navy); cursor:text; }
+  .dept-short { font-size:10px; font-weight:800; letter-spacing:0.05em; background:var(--navy); color:#fff; border-radius:5px; padding:2px 7px; }
+  .dept-body { padding:12px 14px 14px; }
+
+  .team { border:1px solid var(--border); border-radius:9px; margin-bottom:10px; }
+  .team:last-child { margin-bottom:0; }
+  .team-head { display:flex; align-items:center; gap:8px; padding:9px 12px; background:#FBFAF7; border-bottom:1px solid var(--border); }
+  .team-name { font-size:13.5px; font-weight:800; color:var(--navy); cursor:text; }
+  .team-meta { font-size:11px; color:var(--text-muted); }
+  .units { padding:10px 12px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .ulabel { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-muted); margin-right:4px; }
+  .unit { display:inline-flex; align-items:center; gap:5px; background:#fff; border:1px solid var(--border); border-radius:20px; padding:3px 6px 3px 11px; font-size:12px; font-weight:600; color:var(--navy); }
+  .unit .x { width:16px; height:16px; border-radius:50%; background:#F3F1EB; color:#9A3412; font-size:11px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .unit-add { display:inline-flex; align-items:center; gap:4px; border:1px dashed #C7D2FE; background:#F8FAFF; border-radius:20px; padding:3px 11px; font-size:12px; font-weight:700; color:var(--navy); cursor:pointer; }
+
+  .icon-btn { width:26px; height:26px; border:1px solid var(--border); background:#fff; border-radius:6px; cursor:pointer; font-size:12px; color:var(--navy); display:inline-flex; align-items:center; justify-content:center; }
+  .icon-btn:hover { background:#F3F1EB; }
+  .icon-btn.del:hover { background:#FEE2E2; }
+  .icon-btn[disabled] { opacity:0.3; cursor:default; }
+  .icon-btn.del { color:#9A3412; }
+  .spacer { margin-left:auto; }
+  .add-row { padding:6px 2px 0; }
+  .add-team { border:1px dashed var(--border); background:#fff; color:var(--navy); border-radius:7px; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer; width:100%; text-align:left; }
+  .add-team:hover { background:#F8FAFF; }
+  .add-dept { border:1px dashed var(--navy); background:#F8FAFF; color:var(--navy); border-radius:9px; padding:11px 14px; font-size:13px; font-weight:800; cursor:pointer; width:100%; text-align:center; margin-top:2px; }
+
+  /* inline editors */
+  .inp { font-family:inherit; font-weight:700; color:var(--navy); border:1.5px solid var(--navy); border-radius:6px; padding:4px 8px; outline:none; background:#fff; }
+  .inp.name-dept { font-size:15px; min-width:220px; }
+  .inp.name-team { font-size:13px; min-width:200px; }
+  .inp.short { font-size:11px; width:64px; text-transform:uppercase; }
+  .inp.unit { font-size:12px; width:150px; padding:3px 8px; border-radius:20px; }
+  .inp.add { font-size:12px; }
+  .ok { width:24px; height:24px; border:none; border-radius:6px; background:var(--green); color:#fff; font-size:13px; cursor:pointer; }
+  .cancel { width:24px; height:24px; border:1px solid var(--border); border-radius:6px; background:#fff; color:#9A3412; font-size:13px; cursor:pointer; }
+
+  .actions { display:flex; gap:10px; align-items:center; margin-top:18px; padding-top:14px; border-top:1px solid var(--border); }
+  .btn { font-family:inherit; font-size:13px; font-weight:700; border-radius:7px; padding:9px 16px; cursor:pointer; border:1px solid transparent; }
+  .btn-primary { background:var(--navy); color:#fff; }
+  .btn-primary[disabled] { opacity:0.5; cursor:default; }
+  .btn-secondary { background:#fff; color:var(--navy); border-color:var(--border); }
+  .btn-secondary[disabled] { opacity:0.5; cursor:default; }
+  .dirty { font-size:11px; font-weight:700; color:#9A3412; }
+  .footnote { font-size:11px; color:var(--text-muted); margin-top:14px; line-height:1.6; }
+  .footnote code { background:#F3F1EB; padding:1px 6px; border-radius:4px; }
+  #toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--navy); color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:8px; opacity:0; transition:opacity .2s; pointer-events:none; }
+  #toast.show { opacity:1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Organization editor — inline editing</h1>
+  <p class="lead">Live mockup. Everything is editable in place — no popup dialogs. This is the alternative to the <code>prompt()</code> version currently wired into the app.</p>
+
+  <div class="annot">
+    <strong>Try it:</strong> click any team/department <strong>name</strong> (or its ✏️) to rename in place · click <strong>＋ add unit</strong> and type — press <kbd>Enter</kbd> to add and keep going, the input stays focused for the next one · <kbd>Esc</kbd> cancels any edit · ↑ ↓ reorder · 🗑 removes. Save/Discard light up once something changes.
+  </div>
+
+  <div class="settings">
+    <div class="nav">
+      <div class="nav-group">
+        <div class="nav-label">Personal</div>
+        <div class="nav-item">Preferences</div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">Project config</div>
+        <div class="nav-item active">Organization</div>
+        <div class="nav-item">Categories &amp; tools</div>
+        <div class="nav-item">Project Risk</div>
+        <div class="nav-item">Allocations</div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">System</div>
+        <div class="nav-item">Data Program teams</div>
+        <div class="nav-item">Partner departments</div>
+        <div class="nav-item">Slideshow</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Organization</div>
+      <div class="panel-desc">Departments → Teams → Units. One source of truth for the org hierarchy — the team switcher, per-team Unit dropdowns, and the header subtitle all derive from it. Units belong to one team; teams belong to one department.</div>
+      <div id="tree"></div>
+    </div>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+// ── seed (mirrors DEFAULT_ORG_STRUCTURE; Architects/EDI fleshed out for demo) ──
+var ORIGINAL = {
+  departments: [
+    { name: 'Information Technology', short: 'IT', teams: [
+      { name: 'Data Intelligence', units: ['Geographic Information Systems', 'Business & Advanced Analytics', 'Artificial Intelligence'] },
+      { name: 'Architects', units: [] },
+      { name: 'Emerging Data Infrastructure', units: ['Cloud Data Services'] }
+    ] },
+    { name: "City Manager's Office", short: 'CMO', teams: [
+      { name: 'Office of Equity', units: [] }
+    ] }
+  ]
+};
+var org = JSON.parse(JSON.stringify(ORIGINAL));
+
+// edit/add UI state. Only one can be active at a time.
+//   edit  = { kind:'dept'|'team', di, ti }
+//   add   = { kind:'unit'|'team'|'dept', di, ti }
+var edit = null, add = null;
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function dirty(){ return JSON.stringify(org) !== JSON.stringify(ORIGINAL); }
+function norm(s){ return String(s==null?'':s).trim().toLowerCase(); }
+function allTeamNames(){ var o=[]; org.departments.forEach(function(d){(d.teams||[]).forEach(function(t){o.push(t.name);});}); return o; }
+function allUnitNames(){ var o=[]; org.departments.forEach(function(d){(d.teams||[]).forEach(function(t){(t.units||[]).forEach(function(u){o.push(u);});});}); return o; }
+function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove('show');},1800); }
+
+function arrows(kind, di, ti, idx, count){
+  var up = kind==='dept' ? 'moveDept('+di+',-1)' : 'moveTeam('+di+','+ti+',-1)';
+  var dn = kind==='dept' ? 'moveDept('+di+',1)'  : 'moveTeam('+di+','+ti+',1)';
+  return '<button class="icon-btn" title="Move up" onclick="'+up+'"'+(idx<=0?' disabled':'')+'>↑</button>'+
+         '<button class="icon-btn" title="Move down" onclick="'+dn+'"'+(idx>=count-1?' disabled':'')+'>↓</button>';
+}
+
+function render(){
+  var h = '';
+  org.departments.forEach(function(dep, di){
+    var editingDept = edit && edit.kind==='dept' && edit.di===di;
+    // department head
+    h += '<div class="dept"><div class="dept-head">';
+    if (editingDept){
+      h += '<input class="inp name-dept" id="ed-name" value="'+esc(dep.name)+'" placeholder="Department name">'+
+           '<input class="inp short" id="ed-short" value="'+esc(dep.short||'')+'" placeholder="SHORT">'+
+           '<button class="ok" title="Save" onclick="commitEdit()">✓</button>'+
+           '<button class="cancel" title="Cancel (Esc)" onclick="cancelEdit()">✕</button>'+
+           '<span class="spacer"></span>';
+    } else {
+      h += '<span class="dept-name" onclick="startEdit(\'dept\','+di+')" title="Click to rename">'+esc(dep.name)+'</span>'+
+           (dep.short?'<span class="dept-short">'+esc(dep.short)+'</span>':'')+
+           '<span class="spacer"></span>'+
+           arrows('dept', di, null, di, org.departments.length)+
+           '<button class="icon-btn" title="Edit name / short" onclick="startEdit(\'dept\','+di+')">✏️</button>'+
+           '<button class="icon-btn del" title="Remove department" onclick="removeDept('+di+')">🗑</button>';
+    }
+    h += '</div><div class="dept-body">';
+
+    // teams
+    (dep.teams||[]).forEach(function(t, ti){
+      var editingTeam = edit && edit.kind==='team' && edit.di===di && edit.ti===ti;
+      h += '<div class="team"><div class="team-head">';
+      if (editingTeam){
+        h += '<input class="inp name-team" id="ed-name" value="'+esc(t.name)+'" placeholder="Team name">'+
+             '<button class="ok" title="Save" onclick="commitEdit()">✓</button>'+
+             '<button class="cancel" title="Cancel (Esc)" onclick="cancelEdit()">✕</button>'+
+             '<span class="spacer"></span>';
+      } else {
+        var n=(t.units||[]).length, meta = n? ('· '+n+' unit'+(n===1?'':'s')) : '· no units';
+        h += '<span class="team-name" onclick="startEdit(\'team\','+di+','+ti+')" title="Click to rename">'+esc(t.name)+'</span>'+
+             '<span class="team-meta">'+meta+'</span>'+
+             '<span class="spacer"></span>'+
+             arrows('team', di, ti, ti, dep.teams.length)+
+             '<button class="icon-btn" title="Rename team" onclick="startEdit(\'team\','+di+','+ti+')">✏️</button>'+
+             '<button class="icon-btn del" title="Remove team" onclick="removeTeam('+di+','+ti+')">🗑</button>';
+      }
+      h += '</div><div class="units"><span class="ulabel">Units</span>';
+      (t.units||[]).forEach(function(u, ui){
+        h += '<span class="unit">'+esc(u)+'<span class="x" title="Remove unit" onclick="removeUnit('+di+','+ti+','+ui+')">✕</span></span>';
+      });
+      var addingUnit = add && add.kind==='unit' && add.di===di && add.ti===ti;
+      if (addingUnit){
+        h += '<input class="inp unit" id="ad-input" placeholder="unit name… ⏎">'+
+             '<button class="ok" title="Add" onclick="commitAdd()">✓</button>'+
+             '<button class="cancel" title="Done (Esc)" onclick="cancelAdd()">✕</button>';
+      } else {
+        h += '<span class="unit-add" onclick="startAdd(\'unit\','+di+','+ti+')">＋ add unit</span>';
+      }
+      h += '</div></div>'; // units, team
+    });
+
+    // add team row
+    var addingTeam = add && add.kind==='team' && add.di===di;
+    h += '<div class="add-row">';
+    if (addingTeam){
+      h += '<div style="display:flex;gap:6px;align-items:center;">'+
+           '<input class="inp add name-team" id="ad-input" placeholder="New team name… ⏎">'+
+           '<button class="ok" onclick="commitAdd()">✓</button>'+
+           '<button class="cancel" onclick="cancelAdd()">✕</button></div>';
+    } else {
+      h += '<button class="add-team" onclick="startAdd(\'team\','+di+')">＋ Add team to '+esc(dep.name)+'</button>';
+    }
+    h += '</div>';
+
+    h += '</div></div>'; // dept-body, dept
+  });
+
+  // add department
+  if (add && add.kind==='dept'){
+    h += '<div style="display:flex;gap:6px;align-items:center;margin-top:2px;">'+
+         '<input class="inp add name-dept" id="ad-input" placeholder="New department name… ⏎">'+
+         '<input class="inp short" id="ad-short" placeholder="SHORT">'+
+         '<button class="ok" onclick="commitAdd()">✓</button>'+
+         '<button class="cancel" onclick="cancelAdd()">✕</button></div>';
+  } else {
+    h += '<button class="add-dept" onclick="startAdd(\'dept\')">＋ Add department</button>';
+  }
+
+  // actions
+  var d = dirty();
+  h += '<div class="actions">'+
+       '<button class="btn btn-primary" onclick="save()"'+(d?'':' disabled')+'>Save organization</button>'+
+       '<button class="btn btn-secondary" onclick="discard()"'+(d?'':' disabled')+'>Discard</button>'+
+       (d?'<span class="dirty">Unsaved changes</span>':'')+
+       '</div>';
+
+  h += '<div class="footnote">'+
+       '• <strong>Units belong to one team.</strong> Renaming changes the canonical name only — existing projects/members keep their stored value.<br>'+
+       '• <strong>Data Program</strong> is a separate cross-cutting collection of teams, not part of this org chart.<br>'+
+       '• Removing a team or unit doesn’t delete history — values already used on records still display.'+
+       '</div>';
+
+  document.getElementById('tree').innerHTML = h;
+
+  // focus the active input and select its text
+  var f = document.getElementById('ed-name') || document.getElementById('ad-input');
+  if (f){ f.focus(); if (f.select) f.select(); }
+}
+
+// ── edit (rename) ──
+function startEdit(kind, di, ti){ cancelAdd(); edit = { kind:kind, di:di, ti:ti }; render(); }
+function cancelEdit(){ edit = null; render(); }
+function commitEdit(){
+  if (!edit) return;
+  var nameEl = document.getElementById('ed-name');
+  var name = (nameEl ? nameEl.value : '').trim();
+  if (!name){ toast('Name can’t be empty'); return; }
+  if (edit.kind==='dept'){
+    if (org.departments.some(function(x,i){ return i!==edit.di && norm(x.name)===norm(name); })){ toast('Department name already exists'); return; }
+    org.departments[edit.di].name = name;
+    var shortEl = document.getElementById('ed-short');
+    org.departments[edit.di].short = (shortEl ? shortEl.value : '').trim();
+  } else {
+    var t = org.departments[edit.di].teams[edit.ti];
+    if (allTeamNames().some(function(x){ return norm(x)===norm(name) && norm(x)!==norm(t.name); })){ toast('Team name already exists'); return; }
+    t.name = name;
+  }
+  edit = null; render();
+}
+
+// ── add ──
+function startAdd(kind, di, ti){ cancelEdit(); add = { kind:kind, di:di, ti:ti }; render(); }
+function cancelAdd(){ add = null; render(); }
+function commitAdd(){
+  if (!add) return;
+  var el = document.getElementById('ad-input');
+  var val = (el ? el.value : '').trim();
+  if (!val){ if (add.kind==='unit'){ add=null; render(); } return; }
+  if (add.kind==='dept'){
+    if (org.departments.some(function(x){ return norm(x.name)===norm(val); })){ toast('Department already exists'); return; }
+    var shortEl = document.getElementById('ad-short');
+    org.departments.push({ name:val, short:(shortEl?shortEl.value:'').trim(), teams:[] });
+    add = null; render();
+  } else if (add.kind==='team'){
+    if (allTeamNames().some(function(x){ return norm(x)===norm(val); })){ toast('Team already exists'); return; }
+    org.departments[add.di].teams.push({ name:val, units:[] });
+    add = null; render();
+  } else { // unit — keep the input open & focused for rapid entry
+    if (allUnitNames().some(function(x){ return norm(x)===norm(val); })){ toast('Unit already exists'); return; }
+    org.departments[add.di].teams[add.ti].units.push(val);
+    render(); // add stays set → fresh empty input re-focuses
+    var again = document.getElementById('ad-input'); if (again){ again.value=''; again.focus(); }
+  }
+}
+
+// ── reorder / remove ──
+function moveDept(di, dir){ var j=di+dir; if(j<0||j>=org.departments.length)return; var a=org.departments; var t=a[di];a[di]=a[j];a[j]=t; render(); }
+function moveTeam(di, ti, dir){ var a=org.departments[di].teams; var j=ti+dir; if(j<0||j>=a.length)return; var t=a[ti];a[ti]=a[j];a[j]=t; render(); }
+function removeDept(di){ var dep=org.departments[di]; var n=(dep.teams||[]).length; if(!confirm('Remove department "'+dep.name+'"'+(n?' and its '+n+' team'+(n===1?'':'s'):'')+'?'))return; org.departments.splice(di,1); render(); }
+function removeTeam(di, ti){ var t=org.departments[di].teams[ti]; var n=(t.units||[]).length; if(!confirm('Remove team "'+t.name+'"'+(n?' and its '+n+' unit'+(n===1?'':'s'):'')+'?'))return; org.departments[di].teams.splice(ti,1); render(); }
+function removeUnit(di, ti, ui){ org.departments[di].teams[ti].units.splice(ui,1); render(); }
+
+// ── save / discard ──
+function save(){ if(!dirty())return; ORIGINAL = JSON.parse(JSON.stringify(org)); toast('Organization saved'); render(); }
+function discard(){ if(dirty() && !confirm('Discard unsaved changes?'))return; org = JSON.parse(JSON.stringify(ORIGINAL)); edit=null; add=null; render(); }
+
+// keyboard: Enter commits, Esc cancels
+document.addEventListener('keydown', function(e){
+  if (e.key==='Enter'){ if (edit){ e.preventDefault(); commitEdit(); } else if (add){ e.preventDefault(); commitAdd(); } }
+  else if (e.key==='Escape'){ if (edit){ cancelEdit(); } else if (add){ cancelAdd(); } }
+});
+
+render();
+</script>
+</body>
+</html>

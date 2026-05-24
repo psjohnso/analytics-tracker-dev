@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Week — Proposed Changes Mockup</title>
+<style>
+  :root {
+    --navy: #002669;
+    --border: #E1E2DD;
+    --text-body: #002855;
+    --text-muted: #6B7280;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #F9FAFB;
+    color: var(--text-body);
+  }
+  h1 { margin: 0 0 4px 0; font-size: 20px; color: var(--navy); }
+  .lead { color: var(--text-muted); margin: 0 0 24px 0; font-size: 13px; }
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 1100px) { .compare { grid-template-columns: 1fr; } }
+  .panel {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .panel-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border-radius: 12px;
+    display: inline-block;
+    margin-bottom: 14px;
+  }
+  .panel-before .panel-label { background: #FEE2E2; color: #991B1B; }
+  .panel-after  .panel-label { background: #DCFCE7; color: #166534; }
+
+  /* ─── Existing My-Week styles (copied from app.css) ─── */
+  .mywork-section-header {
+    font-size: 14px; font-weight: 800; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 2px solid #E8E6DF;
+    display: flex; align-items: center; gap: 8px; min-height: 28px;
+  }
+  .summary-line {
+    font-size: 12px; color: var(--text-muted); margin-bottom: 12px;
+  }
+  .summary-line strong { color: var(--text-body); }
+
+  .mywork-compact-row {
+    background: #fff; border: 1px solid #E8E6DF; border-radius: 6px;
+    padding: 10px 16px; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .mywork-compact-title {
+    flex: 1; min-width: 0; font-size: 13px; font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .mywork-compact-title .lbl {
+    font-size: 10px; font-weight: 700; color: var(--text-muted); margin-right: 4px;
+  }
+  .hours-cell {
+    font-size: 12px; font-weight: 700; color: var(--navy);
+    white-space: nowrap; min-width: 50px; text-align: right;
+  }
+  .pct-cell {
+    font-size: 11px; color: var(--text-muted);
+    white-space: nowrap; min-width: 35px; text-align: right;
+  }
+  .mywork-alloc-bar {
+    height: 8px; border-radius: 4px; background: #E8E6DF;
+    overflow: hidden; flex: 0 0 80px;
+  }
+  .mywork-alloc-fill { height: 100%; border-radius: 4px; }
+
+  /* Missing tasks warning + helpline (existing) */
+  .mywork-compact-row.mw-missing-tasks {
+    background: #FFFBEB;
+    border-left: 3px solid #F59E0B !important;
+    border-radius: 0 6px 6px 0 !important;
+    margin-bottom: 0;
+  }
+  .mw-missing-tasks-helpline {
+    background: #FFFBEB;
+    border-left: 3px solid #F59E0B;
+    border-radius: 0 0 6px 0;
+    padding: 6px 14px 8px 24px;
+    margin-bottom: 6px;
+    font-size: 11px; color: #92400E; font-style: italic;
+    display: flex; align-items: center;
+  }
+  .mw-missing-tasks-helpline a {
+    color: var(--navy); font-weight: 700; text-decoration: none;
+    margin-left: auto; font-style: normal;
+    padding: 3px 10px; border: 1px solid var(--navy); border-radius: 4px;
+    background: #fff;
+  }
+
+  /* Task line */
+  .task-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 8px 4px 24px; font-size: 11px;
+    border-bottom: 0.5px solid #F3F1EB;
+    cursor: pointer;
+  }
+  .task-row.done { opacity: 0.7; }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  }
+  .task-title {
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; color: var(--text-body);
+  }
+  .pri {
+    font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 3px;
+    display: inline-flex; justify-content: flex-end; min-width: 52px;
+  }
+  .pri-slot { display:inline-flex; justify-content:flex-end; min-width:52px; flex-shrink:0; }
+  .pri-high { background: #FCEBEB; color: #791F1F; }
+  .pri-med  { background: #FAEEDA; color: #633806; }
+  .pri-low  { background: #EAF3DE; color: #27500A; }
+  .due {
+    display: inline-flex; justify-content: flex-end; min-width: 76px;
+    flex-shrink: 0; font-size: 10px; color: var(--text-muted); white-space: nowrap;
+  }
+  .pill-slot { display:inline-flex; justify-content:flex-end; min-width:72px; flex-shrink:0; }
+  .pill {
+    font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 8px;
+    text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap;
+  }
+  .pill-active   { background: #DCFCE7; color: #166534; }
+  .pill-hold     { background: #FEF3C7; color: #92400E; }
+  .pill-waiting  { background: #DBEAFE; color: #1E40AF; }
+  .pill-complete { background: #E0F2FE; color: #0C4A6E; }
+
+  /* "Completed this Week" subheader */
+  .mw-done-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px 4px 24px;
+    font-size: 10px; font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .mw-done-header::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+  /* Green variant for "All done this week" — used in AFTER mockup */
+  .mw-done-header.all-done {
+    color: #166534;
+  }
+  .mw-done-header.all-done::after {
+    background: #BBF7D0;
+  }
+
+  /* ─── NEW: project-group container for visual distinction ─── */
+  .mw-project-group {
+    background: #fff;
+    border: 1px solid #E8E6DF;
+    border-radius: 8px;
+    margin-bottom: 14px;        /* clear gap between projects */
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 38, 105, 0.04);
+  }
+  .mw-project-group .mywork-compact-row {
+    border: none;
+    border-radius: 0;
+    margin-bottom: 0;
+    background: #FAFBFD;
+    border-bottom: 1px solid #E8E6DF;
+  }
+  .mw-project-group .mywork-compact-row.mw-missing-tasks {
+    background: #FFFBEB;
+    border-left: 3px solid #F59E0B !important;
+    border-bottom: 1px solid #FCE7B5;
+  }
+  .mw-project-group .mw-missing-tasks-helpline {
+    border-radius: 0;
+    margin-bottom: 0;
+    border-bottom: 1px solid #FCE7B5;
+  }
+  .mw-project-group .task-row:last-child {
+    border-bottom: none;
+  }
+  .mw-project-group .task-row {
+    padding-left: 28px;
+  }
+
+  .note {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #F0F9FF;
+    border-left: 3px solid #0EA5E9;
+    border-radius: 0 6px 6px 0;
+    font-size: 12px;
+    color: #075985;
+  }
+  .note strong { color: #0C4A6E; }
+  .changes {
+    margin-top: 20px;
+    padding: 16px 18px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .changes h2 { margin: 0 0 8px 0; font-size: 14px; color: var(--navy); }
+  .changes ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+  .changes li b { color: var(--navy); }
+</style>
+</head>
+<body>
+
+<h1>📅 My Week — Proposed Changes</h1>
+<p class="lead">Compare the current behavior (left) with the proposed changes (right). Three projects shown to illustrate every state.</p>
+
+<div class="compare">
+
+  <!-- ════════════════ BEFORE ════════════════ -->
+  <div class="panel panel-before">
+    <span class="panel-label">Current behavior</span>
+    <div class="mywork-section-header">📅 My Week</div>
+    <div class="summary-line"><strong>9/80</strong> schedule · Week A (44h) · RDO: Friday (next week)</div>
+    <div class="summary-line"><strong>32h</strong> allocated of <strong>44h</strong> capacity · <strong style="color:#22C55E;">12h</strong> available</div>
+
+    <!-- Project 1: has active tasks — fine -->
+    <div class="mywork-compact-row">
+      <span class="mywork-compact-title"><span class="lbl">Project:</span>DP109 — Permits Dashboard</span>
+      <span class="hours-cell">16h</span>
+      <span class="pct-cell">36%</span>
+      <div class="mywork-alloc-bar"><div class="mywork-alloc-fill" style="width:36%;background:#3B82F6;"></div></div>
+    </div>
+    <div class="task-row">
+      <span class="status-dot" style="background:#22C55E;"></span>
+      <span class="task-title">Wire up the building-type filter</span>
+      <span class="pri-slot"><span class="pri pri-high">High</span></span>
+      <span class="due">2026-05-18</span>
+      <span class="pill-slot"><span class="pill pill-active">Active</span></span>
+    </div>
+    <div class="task-row" style="margin-bottom:6px;">
+      <span class="status-dot" style="background:#F59E0B;"></span>
+      <span class="task-title">Validate quarterly volume against Accela exports</span>
+      <span class="pri-slot"><span class="pri pri-med">Medium</span></span>
+      <span class="due">—</span>
+      <span class="pill-slot"><span class="pill pill-hold">On Hold</span></span>
+    </div>
+
+    <!-- Project 2: ALL TASKS COMPLETE THIS WEEK — BUG: shows warning -->
+    <div class="mywork-compact-row mw-missing-tasks">
+      <span class="mywork-compact-title"><span class="lbl">Project:</span>Safe City — Crime Heatmap Refresh</span>
+      <span class="hours-cell">8h</span>
+      <span class="pct-cell">18%</span>
+      <div class="mywork-alloc-bar"><div class="mywork-alloc-fill" style="width:18%;background:#93C5FD;"></div></div>
+    </div>
+    <div class="mw-missing-tasks-helpline">
+      ⚠ No active tasks assigned to you on this project.
+      <a href="#">＋ Add a task</a>
+    </div>
+
+    <!-- Project 3: truly no tasks (still warns — correct) -->
+    <div class="mywork-compact-row mw-missing-tasks">
+      <span class="mywork-compact-title"><span class="lbl">Project:</span>WWC — Source Replacement Discovery</span>
+      <span class="hours-cell">8h</span>
+      <span class="pct-cell">18%</span>
+      <div class="mywork-alloc-bar"><div class="mywork-alloc-fill" style="width:18%;background:#93C5FD;"></div></div>
+    </div>
+    <div class="mw-missing-tasks-helpline">
+      ⚠ No active tasks assigned to you on this project.
+      <a href="#">＋ Add a task</a>
+    </div>
+
+    <div class="note">
+      <strong>The issue:</strong> Safe City shows a "no active tasks" warning even though all 3 tasks were completed this week — making it look like nothing is happening when in fact the work is done.
+    </div>
+  </div>
+
+  <!-- ════════════════ AFTER ════════════════ -->
+  <div class="panel panel-after">
+    <span class="panel-label">Proposed</span>
+    <div class="mywork-section-header">📅 My Week</div>
+    <div class="summary-line"><strong>9/80</strong> schedule · Week A (44h) · RDO: Friday (next week)</div>
+    <div class="summary-line"><strong>32h</strong> allocated of <strong>44h</strong> capacity · <strong style="color:#22C55E;">12h</strong> available</div>
+
+    <!-- Project 1: has active tasks — same as before, now grouped -->
+    <div class="mw-project-group">
+      <div class="mywork-compact-row">
+        <span class="mywork-compact-title"><span class="lbl">Project:</span>DP109 — Permits Dashboard</span>
+        <span class="hours-cell">16h</span>
+        <span class="pct-cell">36%</span>
+        <div class="mywork-alloc-bar"><div class="mywork-alloc-fill" style="width:36%;background:#3B82F6;"></div></div>
+      </div>
+      <div class="task-row">
+        <span class="status-dot" style="background:#22C55E;"></span>
+        <span class="task-title">Wire up the building-type filter</span>
+        <span class="pri-slot"><span class="pri pri-high">High</span></span>
+        <span class="due">2026-05-18</span>
+        <span class="pill-slot"><span class="pill pill-active">Active</span></span>
+      </div>
+      <div class="task-row">
+        <span class="status-dot" style="background:#F59E0B;"></span>
+        <span class="task-title">Validate quarterly volume against Accela exports</span>
+        <span class="pri-slot"><span class="pri pri-med">Medium</span></span>
+        <span class="due">—</span>
+        <span class="pill-slot"><span class="pill pill-hold">On Hold</span></span>
+      </div>
+    </div>
+
+    <!-- Project 2: all done this week — NEW: shows completed tasks, no warning -->
+    <div class="mw-project-group">
+      <div class="mywork-compact-row">
+        <span class="mywork-compact-title"><span class="lbl">Project:</span>Safe City — Crime Heatmap Refresh</span>
+        <span class="hours-cell">8h</span>
+        <span class="pct-cell">18%</span>
+        <div class="mywork-alloc-bar"><div class="mywork-alloc-fill" style="width:18%;background:#93C5FD;"></div></div>
+      </div>
+      <div class="mw-done-header all-done"><span>✓ All tasks completed this week</span></div>
+      <div class="task-row done">
+        <span class="status-dot" style="background:#0EA5E9;"></span>
+        <span class="task-title">Refresh weekly crime layer in AGO</span>
+        <span class="pri-slot"><span class="pri pri-high">High</span></span>
+        <span class="due">2026-05-13</span>
+        <span class="pill-slot"><span class="pill pill-complete">✓ Done</span></span>
+      </div>
+      <div class="task-row done">
+        <span class="status-dot" style="background:#0EA5E9;"></span>
+        <span class="task-title">Verify symbology against TPD style guide</span>
+        <span class="pri-slot"><span class="pri pri-med">Medium</span></span>
+        <span class="due">2026-05-14</span>
+        <span class="pill-slot"><span class="pill pill-complete">✓ Done</span></span>
+      </div>
+      <div class="task-row done">
+        <span class="status-dot" style="background:#0EA5E9;"></span>
+        <span class="task-title">Notify TPD that refresh is live</span>
+        <span class="pri-slot"></span>
+        <span class="due">2026-05-14</span>
+        <span class="pill-slot"><span class="pill pill-complete">✓ Done</span></span>
+      </div>
+    </div>
+
+    <!-- Project 3: truly no tasks — warning still shows (correct) -->
+    <div class="mw-project-group">
+      <div class="mywork-compact-row mw-missing-tasks">
+        <span class="mywork-compact-title"><span class="lbl">Project:</span>WWC — Source Replacement Discovery</span>
+        <span class="hours-cell">8h</span>
+        <span class="pct-cell">18%</span>
+        <div class="mywork-alloc-bar"><div class="mywork-alloc-fill" style="width:18%;background:#93C5FD;"></div></div>
+      </div>
+      <div class="mw-missing-tasks-helpline">
+        ⚠ No active tasks assigned to you on this project.
+        <a href="#">＋ Add a task</a>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>What changed:</strong>
+      <ol style="margin:6px 0 0 0; padding-left:18px;">
+        <li>Safe City now shows its 3 completed tasks under a green "All tasks completed this week" header instead of the warning.</li>
+        <li>Each project is grouped into its own bordered card with a clear gap between cards, so you can scan project boundaries at a glance.</li>
+        <li>The allocation row tints slightly (#FAFBFD) inside the group so it reads as a "project header" above its tasks.</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<div class="changes">
+  <h2>Summary of code changes (once you approve the design)</h2>
+  <ul>
+    <li><b>Logic fix</b> — in <code>my-work.js</code> around line 1137, change <code>isMissingTasks</code> from <code>pendingTasks.length === 0</code> to <code>pendingTasks.length === 0 &amp;&amp; doneTasks.length === 0</code>. When the user has finished everything for the week, show the completed list (with a green "All tasks completed this week" header) instead of the orange warning.</li>
+    <li><b>Visual distinction</b> — wrap each project's allocation row + tasks in a new <code>.mw-project-group</code> container with a 1px border, 8px radius, ~14px gap below, and a subtle shadow. Allocation row's existing white background becomes <code>#FAFBFD</code> inside the group so it reads as the group's header. The orange missing-tasks card style still wins when applicable.</li>
+  </ul>
+</div>
+
+</body>
+</html>

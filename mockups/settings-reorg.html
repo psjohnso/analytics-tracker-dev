@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings reorganization — by role — mockup</title>
+<style>
+  :root {
+    --navy:#002669; --green:#83AC16; --orange:#C24200;
+    --border:#E8E6DF; --text-body:#002855; --text-muted:#6B7280; --bg:#F3F1EB; --white:#fff;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:28px 24px 60px; font-family:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+         background:var(--bg); color:var(--text-body); }
+  .wrap { max-width:1120px; margin:0 auto; }
+  h1 { margin:0 0 4px; font-size:23px; color:var(--navy); font-weight:800; }
+  .lead { color:var(--text-muted); margin:0 0 18px; font-size:13px; }
+  .annot { background:#FEF3C7; border-left:4px solid #F59E0B; padding:10px 14px; border-radius:6px; margin:0 0 22px; font-size:12px; color:#78350F; line-height:1.55; }
+  .annot strong { color:#422006; }
+
+  .cols { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; align-items:start; }
+  @media(max-width:880px){ .cols { grid-template-columns:1fr; } }
+
+  .role { background:var(--white); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+  .role-head { padding:12px 16px; border-bottom:1px solid var(--border); background:#FBFAF7; }
+  .role-name { font-size:15px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:8px; }
+  .role-badge { font-size:9px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; padding:2px 7px; border-radius:5px; }
+  .b-member { background:#EEF2FF; color:#3730A3; }
+  .b-lead { background:#FEF3C7; color:#92400E; }
+  .b-admin { background:#DCFCE7; color:#166534; }
+  .role-sub { font-size:11px; color:var(--text-muted); margin-top:3px; }
+
+  .nav { padding:12px 10px; }
+  .nav-group { margin-bottom:14px; }
+  .nav-group:last-child { margin-bottom:4px; }
+  .nav-label { font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; padding:0 8px 6px; }
+  .nav-label .scope { color:var(--navy); }
+  .nav-item { padding:8px 10px; border-radius:7px; font-size:13px; font-weight:600; color:var(--navy); display:flex; align-items:center; gap:7px; }
+  .nav-item.active { background:var(--navy); color:#fff; }
+  .nav-item .moved { font-size:8px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase; background:#DCFCE7; color:#166534; padding:1px 5px; border-radius:6px; margin-left:auto; }
+
+  .legend { font-size:11px; color:var(--text-muted); margin-top:18px; display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
+  .legend .moved { font-size:8px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase; background:#DCFCE7; color:#166534; padding:1px 5px; border-radius:6px; }
+
+  .moves { margin-top:26px; background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 20px; }
+  .moves h2 { font-size:14px; font-weight:800; color:var(--navy); margin:0 0 10px; text-transform:uppercase; letter-spacing:0.04em; }
+  .moves ul { margin:0; padding-left:18px; font-size:13px; line-height:1.8; }
+  .moves code { background:#F3F1EB; padding:1px 6px; border-radius:4px; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Settings reorganization — by role</h1>
+  <p class="lead">Proposed left-nav grouping for the Settings page, shown for each role. Pure nav grouping/labeling — no behavior change. Green <span class="legend"><span class="moved">moved</span></span> tags mark items that change group vs. today.</p>
+
+  <div class="annot">
+    <strong>Idea:</strong> collect the per-team items into one <strong>Team setup</strong> group for admins so it mirrors what a Team Lead manages, pull <strong>Team Introduction</strong> out of System, and move <strong>Allocations</strong> next to the other project config. Members and Leads are essentially unchanged.
+  </div>
+
+  <div class="cols">
+
+    <!-- MEMBER -->
+    <div class="role">
+      <div class="role-head">
+        <div class="role-name">Member <span class="role-badge b-member">member</span></div>
+        <div class="role-sub">A regular team member</div>
+      </div>
+      <div class="nav">
+        <div class="nav-group">
+          <div class="nav-label">Personal</div>
+          <div class="nav-item active">Preferences</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);font-style:italic;padding:4px 10px;">Preferences only — incl. the Capacity / Analytics show-tab toggles. Nothing else is theirs to manage.</div>
+      </div>
+    </div>
+
+    <!-- LEAD -->
+    <div class="role">
+      <div class="role-head">
+        <div class="role-name">Team Lead <span class="role-badge b-lead">lead</span></div>
+        <div class="role-sub">Manages their own team only</div>
+      </div>
+      <div class="nav">
+        <div class="nav-group">
+          <div class="nav-label">Personal</div>
+          <div class="nav-item">Preferences</div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-label"><span class="scope">Architects</span></div>
+          <div class="nav-item active">Team members</div>
+          <div class="nav-item">Team Introduction</div>
+          <div class="nav-item">Review types</div>
+          <div class="nav-item">Project intake</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);font-style:italic;padding:4px 10px;">Unchanged — one group named for their team, scoped to it.</div>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div class="role">
+      <div class="role-head">
+        <div class="role-name">Admin <span class="role-badge b-admin">admin</span></div>
+        <div class="role-sub">Full access, all teams</div>
+      </div>
+      <div class="nav">
+        <div class="nav-group">
+          <div class="nav-label">Personal</div>
+          <div class="nav-item">Preferences</div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-label">People</div>
+          <div class="nav-item">Team members</div>
+          <div class="nav-item">Time tracking</div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-label">Team setup</div>
+          <div class="nav-item">Team Introduction <span class="moved">moved</span></div>
+          <div class="nav-item">Review types</div>
+          <div class="nav-item">Project intake</div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-label">Project config</div>
+          <div class="nav-item">Dropdown lists</div>
+          <div class="nav-item">Categories &amp; tools</div>
+          <div class="nav-item">Project Risk</div>
+          <div class="nav-item">Allocations <span class="moved">moved</span></div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-label">System</div>
+          <div class="nav-item">Data Program teams</div>
+          <div class="nav-item">Slideshow</div>
+          <div class="nav-item">AI features</div>
+          <div class="nav-item">Trash</div>
+          <div class="nav-item">Developer</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="moves">
+    <h2>What changes (admin nav only)</h2>
+    <ul>
+      <li><strong>New “Team setup” group</strong> — collects the per-team items (Team Introduction, Review types, Project intake) so the admin view mirrors what a Team Lead manages.</li>
+      <li><strong>Team Introduction</strong> moves out of <code>System</code> → <code>Team setup</code> (it's team content, not system config).</li>
+      <li><strong>Allocations</strong> moves out of <code>People</code> → <code>Project config</code> (it's tuning/defaults, not roster).</li>
+      <li><strong>People</strong> slims to Team members + Time tracking.</li>
+      <li>Everything else keeps its current section; <strong>Leads</strong> and <strong>Members</strong> are unchanged.</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

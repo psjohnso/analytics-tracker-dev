@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dynamic header title/subtitle by team — mockup</title>
+<style>
+  :root { --navy:#002669; --white:#fff; --bg:#F3F1EB; --text-muted:#6B7280; --border:#E8E6DF; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:28px 24px 60px; font-family:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:#002855; }
+  .wrap { max-width:1000px; margin:0 auto; }
+  h1 { margin:0 0 4px; font-size:23px; color:var(--navy); font-weight:800; }
+  .lead { color:var(--text-muted); margin:0 0 18px; font-size:13px; }
+  .annot { background:#FEF3C7; border-left:4px solid #F59E0B; padding:10px 14px; border-radius:6px; margin:0 0 22px; font-size:12px; color:#78350F; line-height:1.55; }
+  .annot strong { color:#422006; }
+
+  .case { margin-bottom:22px; }
+  .case-label { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted); margin-bottom:6px; }
+  .case-label .tag { background:var(--navy); color:#fff; border-radius:5px; padding:2px 8px; margin-right:8px; font-size:10px; }
+
+  /* faithful header bar */
+  .app-header { height:64px; background:var(--navy); display:flex; align-items:center; padding:0 24px; gap:16px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.15); overflow:hidden; }
+  .logo { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+  .logo .cot { width:34px; height:30px; border-radius:5px; background:linear-gradient(135deg,#1b4a8f,#0a2c63); color:#fff; font-size:8px; font-weight:800; display:flex; align-items:center; justify-content:center; text-align:center; line-height:1.05; letter-spacing:0.02em; }
+  .logo .div { width:1px; height:32px; background:rgba(255,255,255,0.35); }
+  .header-title { flex:1; min-width:0; }
+  .header-title h1 { font-family:'Lato',sans-serif; font-size:14px; font-weight:700; color:var(--white); letter-spacing:0.05em; text-transform:uppercase; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .header-title p { font-size:12px; color:rgba(255,255,255,0.6); font-family:'Cardo',Georgia,serif; font-style:italic; margin:2px 0 0; }
+  .header-title p .ver { font-style:normal; opacity:0.85; font-size:11px; margin-left:10px; background:rgba(255,255,255,0.15); padding:2px 8px; border-radius:4px; letter-spacing:0.04em; font-weight:600; font-family:'Lato',sans-serif; }
+  .hstats { display:flex; gap:22px; flex-shrink:0; }
+  .hstat { text-align:center; color:#fff; }
+  .hstat .n { font-size:18px; font-weight:800; line-height:1; }
+  .hstat .l { font-size:9px; text-transform:uppercase; letter-spacing:0.05em; opacity:0.7; margin-top:2px; }
+  .userchip { margin-left:auto; flex-shrink:0; display:flex; align-items:center; gap:8px; color:rgba(255,255,255,0.85); font-size:12px; }
+  .userchip .av { width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; }
+
+  .note { font-size:11px; color:var(--text-muted); margin-top:6px; }
+  .alt { background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 20px; margin-top:26px; }
+  .alt h2 { font-size:14px; font-weight:800; color:var(--navy); margin:0 0 12px; text-transform:uppercase; letter-spacing:0.04em; }
+  .src { margin-top:26px; background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 20px; }
+  .src h2 { font-size:14px; font-weight:800; color:var(--navy); margin:0 0 10px; text-transform:uppercase; letter-spacing:0.04em; }
+  .src ul { margin:0; padding-left:18px; font-size:13px; line-height:1.8; }
+  .src code { background:#F3F1EB; padding:1px 6px; border-radius:4px; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Dynamic header title &amp; subtitle by team</h1>
+  <p class="lead">The header starts generic, then resolves to the signed-in user's team. Recommended style: <strong>team name as the title</strong>, a steady descriptor as the subtitle.</p>
+
+  <div class="annot"><strong>Recommended (Style A below):</strong> title = the user's team; subtitle = "Project &amp; Task Tracker · City of Tucson IT" (or the team's configured eyebrow). Falls back to a generic "Project Tracker" before login or when a user has no team.</div>
+
+  <!-- GENERIC -->
+  <div class="case">
+    <div class="case-label"><span class="tag">1</span>Before login / no team (generic)</div>
+    <div class="app-header">
+      <div class="logo"><div class="cot">CITY OF<br>TUCSON</div><div class="div"></div></div>
+      <div class="header-title">
+        <h1>Project Tracker</h1>
+        <p>City of Tucson · Information Technology <span class="ver">v1.46.0</span></p>
+      </div>
+      <div class="userchip"><span style="border:1px solid rgba(255,255,255,0.4);border-radius:5px;padding:5px 12px;">Sign In</span></div>
+    </div>
+    <div class="note">No team yet — neutral title.</div>
+  </div>
+
+  <!-- DATA INTELLIGENCE -->
+  <div class="case">
+    <div class="case-label"><span class="tag">2</span>Signed in — Data Intelligence member</div>
+    <div class="app-header">
+      <div class="logo"><div class="cot">CITY OF<br>TUCSON</div><div class="div"></div></div>
+      <div class="header-title">
+        <h1>Data Intelligence</h1>
+        <p>Project &amp; Task Tracker · City of Tucson IT <span class="ver">v1.46.0</span></p>
+      </div>
+      <div class="hstats">
+        <div class="hstat"><div class="n">38</div><div class="l">Active</div></div>
+        <div class="hstat"><div class="n">112</div><div class="l">Open Tasks</div></div>
+        <div class="hstat"><div class="n">222</div><div class="l">Total</div></div>
+      </div>
+      <div class="userchip"><span class="av">PJ</span> Peter Johnson</div>
+    </div>
+  </div>
+
+  <!-- ARCHITECTS -->
+  <div class="case">
+    <div class="case-label"><span class="tag">3</span>Signed in — Architects member</div>
+    <div class="app-header">
+      <div class="logo"><div class="cot">CITY OF<br>TUCSON</div><div class="div"></div></div>
+      <div class="header-title">
+        <h1>Architects</h1>
+        <p>Project &amp; Task Tracker · City of Tucson IT <span class="ver">v1.46.0</span></p>
+      </div>
+      <div class="hstats">
+        <div class="hstat"><div class="n">2</div><div class="l">Active</div></div>
+        <div class="hstat"><div class="n">6</div><div class="l">Open Tasks</div></div>
+        <div class="hstat"><div class="n">2</div><div class="l">Total</div></div>
+      </div>
+      <div class="userchip"><span class="av">JR</span> Jordan Reyes</div>
+    </div>
+  </div>
+
+  <!-- EDI -->
+  <div class="case">
+    <div class="case-label"><span class="tag">4</span>Signed in — Emerging Data Infrastructure member</div>
+    <div class="app-header">
+      <div class="logo"><div class="cot">CITY OF<br>TUCSON</div><div class="div"></div></div>
+      <div class="header-title">
+        <h1>Emerging Data Infrastructure</h1>
+        <p>Project &amp; Task Tracker · City of Tucson IT <span class="ver">v1.46.0</span></p>
+      </div>
+      <div class="hstats">
+        <div class="hstat"><div class="n">5</div><div class="l">Active</div></div>
+        <div class="hstat"><div class="n">14</div><div class="l">Open Tasks</div></div>
+        <div class="hstat"><div class="n">5</div><div class="l">Total</div></div>
+      </div>
+      <div class="userchip"><span class="av">DV</span> Deborah Vulcan</div>
+    </div>
+  </div>
+
+  <!-- ADMIN viewing All teams -->
+  <div class="case">
+    <div class="case-label"><span class="tag">5</span>Admin viewing “All teams”</div>
+    <div class="app-header">
+      <div class="logo"><div class="cot">CITY OF<br>TUCSON</div><div class="div"></div></div>
+      <div class="header-title">
+        <h1>All Teams</h1>
+        <p>Project &amp; Task Tracker · City of Tucson IT <span class="ver">v1.46.0</span></p>
+      </div>
+      <div class="userchip"><span class="av">PJ</span> Peter Johnson</div>
+    </div>
+    <div class="note">When an admin's team switcher is on "All teams," the title reads "All Teams." Picking a team updates it live.</div>
+  </div>
+
+  <!-- ALTERNATIVE STYLE -->
+  <div class="alt">
+    <h2>Alternative style B — team in the title line</h2>
+    <div class="app-header" style="box-shadow:none;">
+      <div class="logo"><div class="cot">CITY OF<br>TUCSON</div><div class="div"></div></div>
+      <div class="header-title">
+        <h1>Architects · Project Tracker</h1>
+        <p>City of Tucson · Information Technology <span class="ver">v1.46.0</span></p>
+      </div>
+      <div class="userchip"><span class="av">JR</span> Jordan Reyes</div>
+    </div>
+    <div class="note">Keeps "Project Tracker" in the title and prefixes the team. Reads longer; the team is less of a headline. Style A (team as the headline) is my recommendation.</div>
+  </div>
+
+  <!-- DATA SOURCE -->
+  <div class="src">
+    <h2>Where the text comes from</h2>
+    <ul>
+      <li><strong>Title</strong> = the signed-in user's team (<code>CURRENT_TEAM</code> / their <code>owning_team</code>); admins follow the team switcher ("All Teams" when unscoped). Before login → generic "Project Tracker."</li>
+      <li><strong>Subtitle</strong> = a steady descriptor ("Project &amp; Task Tracker · City of Tucson IT"), or — if you'd like it fully per-team — the team's configured <code>team_intro</code> eyebrow, falling back to the generic line.</li>
+      <li>Updates live on login and on admin team/role switch (same hook as the header stats). Version badge unchanged.</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

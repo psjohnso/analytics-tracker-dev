@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Collapsible sidebar + per-user presets — live mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cardo:ital@0;1&family=Lato:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#002669; --green:#83AC16; --orange:#C24200; --yellow:#FFDB22;
+    --border:#E1E2DD; --text-body:#002855; --text-muted:#6B7280;
+    --surface:#F3F1EB; --surface-2:#EDEAE1; --white:#ffffff;
+    --pill-blue-bg:#EEF2FF; --pill-blue-fg:#002669;
+    --pill-amber-bg:#FFFBEB; --pill-amber-fg:#92400E;
+    --shadow:0 4px 16px rgba(0,0,0,0.12);
+  }
+  body[data-theme="dark"] {
+    --navy:#6E9BD6; --border:#343B45; --text-body:#E6E9ED; --text-muted:#9AA2AC;
+    --surface:#14171D; --surface-2:#2A2F38; --white:#20242C;
+    --pill-blue-bg:rgba(110,155,214,0.18); --pill-blue-fg:#A9C8F0;
+    --pill-amber-bg:rgba(245,200,66,0.16); --pill-amber-fg:#EBCF77;
+    --shadow:0 6px 22px rgba(0,0,0,0.5);
+    color-scheme:dark;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Lato',-apple-system,'Segoe UI',sans-serif; background:var(--surface); color:var(--text-body); }
+
+  .appbar { display:flex; align-items:center; gap:14px; background:var(--navy); color:#fff; padding:11px 22px; }
+  body[data-theme="dark"] .appbar { background:#0D1117; }
+  .brand { font-weight:900; font-size:15px; letter-spacing:0.03em; }
+  .sub { font-family:'Cardo',Georgia,serif; font-style:italic; font-size:12px; opacity:0.82; }
+  .appbar .right { margin-left:auto; display:flex; align-items:center; gap:10px; }
+  .uswitch { display:flex; align-items:center; gap:6px; font-size:12px; }
+  .uswitch select { font-family:inherit; font-size:12px; font-weight:700; color:#F2F4F7; background:#2A2F38; border:1px solid #4A5360; border-radius:6px; padding:5px 8px; cursor:pointer; }
+  body:not([data-theme="dark"]) .uswitch select { color:var(--navy); background:rgba(255,255,255,0.92); border-color:rgba(255,255,255,0.5); }
+  .themebtn { font-family:inherit; font-size:12px; font-weight:700; color:#fff; background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.3); border-radius:6px; padding:6px 12px; cursor:pointer; }
+  .accent { height:4px; background:linear-gradient(90deg,#C24200 25%,#FFDB22 25%,#FFDB22 50%,#83AC16 50%,#83AC16 75%,#002669 75%); }
+  .annot { background:var(--pill-amber-bg); border-left:4px solid #F59E0B; padding:9px 22px; font-size:12.5px; color:var(--pill-amber-fg); line-height:1.5; }
+  .annot b { font-weight:800; }
+
+  .stage { padding:14px 22px 60px; }
+
+  /* preset bar */
+  .presetbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+  .pgroup-label { font-size:10px; letter-spacing:0.07em; text-transform:uppercase; font-weight:800; color:var(--text-muted); margin-right:2px; align-self:center; }
+  .preset { position:relative; font-family:inherit; font-size:13px; font-weight:800; color:var(--text-muted); background:var(--white); border:1.5px solid var(--border); border-radius:20px; padding:7px 12px 7px 14px; cursor:pointer; display:inline-flex; align-items:center; gap:7px; }
+  .preset:hover { border-color:var(--navy); }
+  .preset.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+  body[data-theme="dark"] .preset.on { color:#0D1117; }
+  .preset .star { font-size:12px; color:var(--yellow); -webkit-text-stroke:0.4px #C99A00; }
+  .preset.on .star { -webkit-text-stroke:0.4px rgba(0,0,0,0.4); }
+  .preset .kebab { font-weight:900; opacity:0.55; padding:0 2px; border-radius:4px; }
+  .preset .kebab:hover { opacity:1; background:rgba(127,127,127,0.18); }
+  .preset .cnt { font-size:10px; font-weight:800; opacity:0.7; }
+  .preset.add { border-style:dashed; color:var(--navy); background:transparent; }
+  .preset.save { color:var(--green); border-color:var(--green); background:transparent; }
+  .preset.save:hover { background:rgba(131,172,22,0.10); }
+  .modtag { font-size:11px; font-weight:800; color:var(--orange); background:rgba(194,66,0,0.12); border-radius:12px; padding:3px 9px; }
+
+  .pmenu { position:absolute; top:calc(100% + 5px); right:0; z-index:40; min-width:185px; background:var(--white); border:1px solid var(--border); border-radius:9px; box-shadow:var(--shadow); padding:5px; display:none; }
+  .pmenu.open { display:block; }
+  .pmi { display:flex; align-items:center; gap:8px; padding:8px 10px; font-size:12.5px; font-weight:600; color:var(--text-body); border-radius:6px; cursor:pointer; white-space:nowrap; }
+  .pmi:hover { background:var(--surface-2); }
+  .pmi.danger { color:#DC2626; }
+  .pmi .ic { width:16px; text-align:center; }
+
+  .toggle-side { font-family:inherit; font-size:12px; font-weight:700; color:var(--navy); background:transparent; border:1.5px solid var(--border); border-radius:7px; padding:7px 12px; cursor:pointer; margin-bottom:12px; }
+
+  /* layout: sidebar + results */
+  .blayout { display:flex; gap:18px; align-items:flex-start; }
+  .bside { flex:0 0 248px; background:var(--white); border:1px solid var(--border); border-radius:12px; padding:10px; }
+  .bside.hidden { display:none; }
+  .bmain { flex:1; min-width:0; }
+  .bside-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .bside-top .ttl { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--text-muted); }
+  .bside-top .clr { font-size:11px; color:var(--navy); cursor:pointer; font-weight:700; }
+  .bsearch { width:100%; font-family:inherit; font-size:12.5px; border:1px solid var(--border); border-radius:7px; padding:7px 9px; margin-bottom:8px; background:var(--surface-2); color:var(--text-body); outline:none; }
+  .bsearch:focus { border-color:var(--navy); }
+  .bsec { border-top:1px solid var(--border); }
+  .bsec-h { display:flex; align-items:center; gap:7px; padding:9px 4px; cursor:pointer; font-size:12.5px; font-weight:800; color:var(--text-body); user-select:none; }
+  .bsec-h .car { font-size:9px; color:var(--text-muted); transition:transform 0.12s; }
+  .bsec.open .bsec-h .car { transform:rotate(90deg); }
+  .bsec-h .secount { margin-left:auto; font-size:10px; font-weight:800; color:#fff; background:var(--navy); border-radius:10px; padding:1px 7px; }
+  body[data-theme="dark"] .bsec-h .secount { color:#0D1117; }
+  .bsec-body { display:none; padding:0 2px 8px; }
+  .bsec.open .bsec-body { display:block; }
+  .prows { max-height:230px; overflow-y:auto; }
+  .prow { display:flex; align-items:center; gap:8px; padding:5px 6px; border-radius:6px; font-size:12.5px; cursor:pointer; }
+  .prow:hover { background:var(--surface-2); }
+  .prow.on { color:var(--pill-blue-fg); font-weight:700; }
+  .prow input { width:14px; height:14px; cursor:pointer; accent-color:var(--navy); }
+  .prow .pl { flex:1; } .prow .pc { font-size:11px; color:var(--text-muted); font-weight:700; }
+  .prow .empty { color:var(--text-muted); font-size:12px; padding:6px; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+
+  /* results */
+  .count { font-family:'Cardo',Georgia,serif; font-style:italic; color:var(--text-muted); font-size:14px; margin:2px 0 10px; }
+  table { width:100%; border-collapse:collapse; background:var(--white); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  thead th { text-align:left; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:#fff; background:var(--navy); padding:10px 12px; font-weight:800; }
+  body[data-theme="dark"] thead th { background:var(--white); color:var(--text-muted); border-bottom:1px solid var(--border); }
+  tbody td { padding:9px 12px; font-size:13px; border-bottom:1px solid var(--border); }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover td { background:var(--surface-2); }
+  .num { font-family:monospace; color:var(--text-muted); font-size:12px; }
+  .ptitle { font-weight:700; color:var(--text-body); }
+  .spill { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; }
+  .empty-res { padding:40px; text-align:center; color:var(--text-muted); font-style:italic; font-family:'Cardo',serif; }
+</style>
+</head>
+<body>
+  <div class="appbar">
+    <div>
+      <div class="brand">DATA INTELLIGENCE</div>
+      <div class="sub">Collapsible sidebar + per-user presets · prototype</div>
+    </div>
+    <div class="right">
+      <span class="uswitch">Signed in as <select id="userSel" onchange="switchUser(this.value)"></select></span>
+      <button class="themebtn" onclick="toggleTheme()" id="themebtn">🌙 Dark</button>
+    </div>
+  </div>
+  <div class="accent"></div>
+  <div class="annot">
+    <b>Presets are per-user.</b> The built-in views are always there; anything you save lives on <i>your</i> profile.
+    Switch the “Signed in as” person above to see each user’s own saved views and default. Build a filter in the sidebar, then <b>💾 Save view</b>. Use the <b>⋯</b> on any saved view to rename, update, set-as-default, or delete.
+  </div>
+
+  <div class="stage" id="stage"></div>
+
+<script>
+/* ---------------- mock data ---------------- */
+var TODAY='2026-05-24';
+var USERS=['Peter Johnson','Jessica Fraver','James McGinnis','Kate Carter'];
+var MEMBERS=['Peter Johnson','Jessica Fraver','James McGinnis','Kate Carter','Andrew Sutton','Joseph Ahumada','Liz Wilshin','Vladimir Berg'];
+var DEPTS=['Police','Water','Transportation','City Clerk','Parks & Rec','Finance'];
+var CATS=['Data Governance','Training & Enablement','Strategic Planning','Data Analysis & Insights','Reporting & BI','Compliance & Policy'];
+var STATUSES=['Active','On Hold','Waiting for Response','Future','Scheduled','Complete','Canceled'];
+var PRIOS=['High','Medium','Low'];
+function mk(n,t,s,p,c,m,d,due){return {num:n,title:t,status:s,priority:p,category:c,member:m,dept:d,due:due};}
+var DATA=[
+  mk('P-330','Application Development Standards & Governance','Active','High','Data Governance','Peter Johnson','City Clerk','2026-06-12'),
+  mk('P-259','Data Governance Framework Training — IT Staff','Active','Medium','Training & Enablement','Jessica Fraver','City Clerk','2026-05-20'),
+  mk('P-342','Finalize DGEC Charter with Executive Committee','Active','High','Strategic Planning','Peter Johnson','Finance','2026-05-30'),
+  mk('P-351','Analytics & AI ROI Analysis and Expansion','Future','Medium','Data Analysis & Insights','James McGinnis','Finance','2026-09-01'),
+  mk('P-352','Analytics & BI Training Course Series','Scheduled','Medium','Training & Enablement','Kate Carter','Parks & Rec','2026-07-15'),
+  mk('P-188','Police Use-of-Force Dashboard','Active','High','Reporting & BI','James McGinnis','Police','2026-05-18'),
+  mk('P-201','Water Quality Sampling Data Pipeline','Active','Medium','Data Analysis & Insights','Andrew Sutton','Water','2026-06-04'),
+  mk('P-219','Transit Ridership Trend Reports','On Hold','Low','Reporting & BI','Liz Wilshin','Transportation','2026-08-10'),
+  mk('P-244','Records Retention Policy Modernization','Waiting for Response','Medium','Compliance & Policy','Joseph Ahumada','City Clerk','2026-05-22'),
+  mk('P-277','Open Data Portal Refresh','Active','Medium','Data Governance','Kate Carter','Finance','2026-06-28'),
+  mk('P-281','Parks Maintenance Backlog Analytics','Active','Low','Data Analysis & Insights','Vladimir Berg','Parks & Rec','2026-05-15'),
+  mk('P-290','Crime Hotspot Predictive Model','Future','High','Data Analysis & Insights','James McGinnis','Police','2026-10-05'),
+  mk('P-301','Finance Close Reporting Automation','Scheduled','High','Reporting & BI','Jessica Fraver','Finance','2026-07-01'),
+  mk('P-118','Citywide Data Catalog','Complete','Medium','Data Governance','Peter Johnson','City Clerk','2026-03-12'),
+  mk('P-126','Water Meter Anomaly Detection','Complete','High','Data Analysis & Insights','Andrew Sutton','Water','2026-02-28'),
+  mk('P-133','GIS Training for Field Crews','Canceled','Low','Training & Enablement','Liz Wilshin','Transportation','2026-01-20'),
+  mk('P-309','Master Data Management Strategy','Active','High','Strategic Planning','Peter Johnson','Finance','2026-06-18'),
+  mk('P-314','Police Overtime Spend Analysis','Waiting for Response','Medium','Reporting & BI','Joseph Ahumada','Police','2026-05-21'),
+  mk('P-318','Parks Program Equity Study','On Hold','Medium','Data Analysis & Insights','Vladimir Berg','Parks & Rec','2026-09-12'),
+  mk('P-322','Transportation Asset Inventory BI','Active','Medium','Reporting & BI','Liz Wilshin','Transportation','2026-06-09'),
+  mk('P-205','Data Sharing Agreement Templates','Active','Low','Compliance & Policy','Joseph Ahumada','City Clerk','2026-05-25'),
+  mk('P-333','AI Use Policy & Guardrails','Future','High','Compliance & Policy','Peter Johnson','Finance','2026-11-01'),
+  mk('P-340','Self-Service BI Enablement','Scheduled','Medium','Training & Enablement','Kate Carter','Water','2026-08-01'),
+  mk('P-141','Council District Profile Reports','Complete','Low','Reporting & BI','Jessica Fraver','City Clerk','2026-04-02'),
+  mk('P-355','Sensor Telemetry Lakehouse POC','Future','Medium','Data Analysis & Insights','Andrew Sutton','Water','2026-10-20'),
+  mk('P-360','Quarterly Data Literacy Workshops','Active','Low','Training & Enablement','Liz Wilshin','Parks & Rec','2026-06-30')
+];
+var FIELD={status:'status',priority:'priority',category:'category',member:'member',dept:'dept'};
+var VALUES={status:STATUSES.slice(),priority:PRIOS.slice(),category:CATS.slice().sort(),member:MEMBERS.slice().sort(),dept:DEPTS.slice().sort()};
+var FACETS=[{key:'status',label:'Status'},{key:'priority',label:'Priority'},{key:'category',label:'Category'},{key:'member',label:'Owner'},{key:'dept',label:'Department'}];
+var OPEN_STATUSES=['Active','On Hold','Waiting for Response','Future','Scheduled'];
+
+/* ---------------- filter engine ---------------- */
+function emptyState(){return {status:[],priority:[],category:[],member:[],dept:[],search:'',overdue:false};}
+var F=emptyState();
+function passesExcept(p,except){
+  for(var i=0;i<FACETS.length;i++){var k=FACETS[i].key; if(k===except)continue; if(F[k].length&&F[k].indexOf(p[FIELD[k]])<0)return false;}
+  if(F.overdue&&!(p.due<TODAY&&OPEN_STATUSES.indexOf(p.status)>=0))return false;
+  if(F.search){var q=F.search.toLowerCase(); if((p.title+' '+p.num+' '+p.member+' '+p.dept+' '+p.category).toLowerCase().indexOf(q)<0)return false;}
+  return true;
+}
+function applyAll(){return DATA.filter(function(p){return passesExcept(p,null);});}
+function countFor(key,value){var n=0;DATA.forEach(function(p){if(p[FIELD[key]]===value&&passesExcept(p,key))n++;});return n;}
+function anyActive(){return F.status.length||F.priority.length||F.category.length||F.member.length||F.dept.length||F.search||F.overdue;}
+function stateKey(s){return JSON.stringify({status:s.status.slice().sort(),priority:s.priority.slice().sort(),category:s.category.slice().sort(),member:s.member.slice().sort(),dept:s.dept.slice().sort(),search:s.search||'',overdue:!!s.overdue});}
+function clone(s){return JSON.parse(JSON.stringify(s));}
+
+/* ---------------- per-user presets (persisted) ---------------- */
+var currentUser=USERS[0];
+function pKey(u){return 'fsp:presets:'+u;}
+function dKey(u){return 'fsp:default:'+u;}
+function loadCustom(){ try{var r=JSON.parse(localStorage.getItem(pKey(currentUser))); return r||null;}catch(e){return null;} }
+function saveCustom(){ localStorage.setItem(pKey(currentUser), JSON.stringify(customPresets)); }
+function getDefault(){ return localStorage.getItem(dKey(currentUser))||'open'; }
+function setDefault(id){ localStorage.setItem(dKey(currentUser), id); }
+var customPresets=[];
+
+function seedIfEmpty(){
+  var existing=loadCustom();
+  if(existing){ customPresets=existing; return; }
+  // First visit for this user: seed a couple illustrative views (Peter only) so the demo isn't empty.
+  if(currentUser==='Peter Johnson'){
+    customPresets=[
+      {id:'cp_police', name:'Police work', state:Object.assign(emptyState(),{dept:['Police']})},
+      {id:'cp_govhi', name:'Governance — High', state:Object.assign(emptyState(),{status:OPEN_STATUSES.slice(),priority:['High'],category:['Data Governance']})}
+    ];
+  } else { customPresets=[]; }
+  saveCustom();
+}
+
+function builtinPresets(){
+  return [
+    {id:'all', name:'All', builtin:true, state:emptyState()},
+    {id:'mine', name:'My Work', builtin:true, state:Object.assign(emptyState(),{status:OPEN_STATUSES.slice(),member:[currentUser]})},
+    {id:'open', name:'Open', builtin:true, state:Object.assign(emptyState(),{status:OPEN_STATUSES.slice()})},
+    {id:'overdue', name:'Overdue', builtin:true, state:Object.assign(emptyState(),{overdue:true})},
+    {id:'high', name:'High Priority', builtin:true, state:Object.assign(emptyState(),{status:OPEN_STATUSES.slice(),priority:['High']})}
+  ];
+}
+function allPresets(){ return builtinPresets().concat(customPresets); }
+function presetById(id){ return allPresets().find(function(p){return p.id===id;}); }
+
+var activePreset=null;
+function applyPreset(id){ var p=presetById(id); if(!p)return; F=clone(p.state); activePreset=id; closeMenus(); renderStage(); }
+function isModified(){ if(!activePreset)return anyActive(); var p=presetById(activePreset); return p? stateKey(F)!==stateKey(p.state):true; }
+
+function saveAsNew(){
+  var name=prompt('Name this view:',''); if(!name)return; name=name.trim(); if(!name)return;
+  var id='cp_'+Date.now(); customPresets.push({id:id,name:name,state:clone(F)}); saveCustom(); activePreset=id; renderStage();
+}
+function updatePreset(id){ var p=customPresets.find(function(x){return x.id===id;}); if(!p)return; p.state=clone(F); saveCustom(); renderStage(); }
+function renamePreset(id){ var p=customPresets.find(function(x){return x.id===id;}); if(!p)return; var name=prompt('Rename view:',p.name); if(!name)return; p.name=name.trim()||p.name; saveCustom(); renderStage(); }
+function deletePreset(id){ var p=customPresets.find(function(x){return x.id===id;}); if(!p)return; if(!confirm('Delete view “'+p.name+'”?'))return; customPresets=customPresets.filter(function(x){return x.id!==id;}); saveCustom(); if(activePreset===id)activePreset=null; if(getDefault()===id)setDefault('open'); renderStage(); }
+function makeDefault(id){ setDefault(id); renderStage(); }
+
+function switchUser(u){ currentUser=u; seedIfEmpty(); var dv=getDefault(); var p=presetById(dv)||presetById('open'); F=clone(p.state); activePreset=p.id; renderStage(); }
+
+/* ---------------- rendering ---------------- */
+function sColor(s){return ({Active:'#83AC16','On Hold':'#C99A00','Waiting for Response':'#3B82F6',Future:'#C24200',Scheduled:'#9E0059',Complete:'#0088FF',Canceled:'#9CA3AF'})[s]||'#9CA3AF';}
+function pColor(p){return ({High:'#C24200',Medium:'#C99A00',Low:'#83AC16'})[p]||'#9CA3AF';}
+
+var rowSearch={};
+function rowsHTML(key){
+  var q=(rowSearch[key]||'').toLowerCase();
+  var vals=VALUES[key].filter(function(v){return v.toLowerCase().indexOf(q)>=0;});
+  if(!vals.length)return '<div class="empty">no matches</div>';
+  return vals.map(function(v){
+    var idx=VALUES[key].indexOf(v),on=F[key].indexOf(v)>=0,c=countFor(key,v);
+    var dot=key==='status'?'<span class="dot" style="background:'+sColor(v)+'"></span>':(key==='priority'?'<span class="dot" style="background:'+pColor(v)+'"></span>':'');
+    return '<label class="prow'+(on?' on':'')+'"><input type="checkbox" '+(on?'checked':'')+' onchange="toggleVal(\''+key+'\','+idx+')">'+dot+'<span class="pl">'+v+'</span><span class="pc">'+c+'</span></label>';
+  }).join('');
+}
+function setRowSearch(key,val){rowSearch[key]=val;var el=document.getElementById('rows-'+key);if(el)el.innerHTML=rowsHTML(key);}
+function refreshAllRows(){FACETS.forEach(function(f){var el=document.getElementById('rows-'+f.key);if(el)el.innerHTML=rowsHTML(f.key);});}
+function updateSecounts(){FACETS.forEach(function(f){var n=F[f.key].length;var sc=document.getElementById('secount-'+f.key);if(sc){sc.style.display=n?'':'none';sc.textContent=n;}});}
+
+var bExpanded={}, bSideHidden=false;
+function toggleVal(key,idx){var v=VALUES[key][idx],a=F[key],i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);renderResults();refreshAllRows();updateSecounts();renderPresetBar();}
+function bToggleSec(key){bExpanded[key]=!(bExpanded[key]||F[key].length>0);renderSidebar();}
+function bToggleSide(){bSideHidden=!bSideHidden;renderStage();}
+function clearFilters(){F=emptyState();activePreset='all';renderStage();}
+function onMainSearch(v){F.search=v;renderResults();renderPresetBar();}
+
+function sidebarHTML(){
+  return '<div class="bside-top"><span class="ttl">Filters</span>'+(anyActive()?'<span class="clr" onclick="clearFilters()">Clear all</span>':'')+'</div>'+
+    '<input class="bsearch" placeholder="Search projects…" value="'+(F.search||'')+'" oninput="onMainSearch(this.value)">'+
+    FACETS.map(function(f){
+      var n=F[f.key].length, open=bExpanded[f.key]||n>0;
+      var hasSearch=(f.key==='member'||f.key==='category'||f.key==='dept');
+      return '<div class="bsec'+(open?' open':'')+'">'+
+        '<div class="bsec-h" onclick="bToggleSec(\''+f.key+'\')"><span class="car">▶</span>'+f.label+
+          '<span class="secount" id="secount-'+f.key+'" style="'+(n?'':'display:none;')+'">'+n+'</span></div>'+
+        '<div class="bsec-body">'+
+          (hasSearch?'<input class="bsearch" placeholder="type to filter…" value="'+(rowSearch[f.key]||'')+'" oninput="setRowSearch(\''+f.key+'\',this.value)">':'')+
+          '<div class="prows" id="rows-'+f.key+'">'+rowsHTML(f.key)+'</div>'+
+        '</div></div>';
+    }).join('');
+}
+function renderSidebar(){var el=document.getElementById('sidebar');if(el){el.innerHTML=sidebarHTML();el.classList.toggle('hidden',bSideHidden);}}
+
+var openMenuId=null;
+function presetBarHTML(){
+  var def=getDefault();
+  var html='<span class="pgroup-label">Views</span>';
+  html+=allPresets().map(function(p){
+    var on=activePreset===p.id&&!isModified();
+    var star=(def===p.id)?'<span class="star">★</span>':'';
+    var kebab='<span class="kebab" onclick="toggleMenu(\''+p.id+'\',event)">⋯</span>';
+    return '<span class="preset'+(on?' on':'')+'" onclick="applyPreset(\''+p.id+'\')">'+star+p.name+kebab+
+      '<div class="pmenu" id="menu-'+p.id+'">'+menuItems(p)+'</div></span>';
+  }).join('');
+  html+='<button class="preset save" onclick="saveCurrent(event)">💾 Save view</button>';
+  if(activePreset&&isModified()){ var ap=presetById(activePreset); html+='<span class="modtag">● unsaved changes'+(ap&&!ap.builtin?' — <span style="text-decoration:underline;cursor:pointer;" onclick="updatePreset(\''+activePreset+'\')">update “'+ap.name+'”</span>':'')+'</span>'; }
+  return html;
+}
+function menuItems(p){
+  var def=getDefault();
+  var items='';
+  items+='<div class="pmi" onclick="makeDefault(\''+p.id+'\');event.stopPropagation();"><span class="ic">★</span>'+(def===p.id?'Default view ✓':'Set as default')+'</div>';
+  if(!p.builtin){
+    items+='<div class="pmi" onclick="updatePreset(\''+p.id+'\');event.stopPropagation();"><span class="ic">⤓</span>Update to current filters</div>';
+    items+='<div class="pmi" onclick="renamePreset(\''+p.id+'\');event.stopPropagation();"><span class="ic">✎</span>Rename…</div>';
+    items+='<div class="pmi danger" onclick="deletePreset(\''+p.id+'\');event.stopPropagation();"><span class="ic">🗑</span>Delete</div>';
+  } else {
+    items+='<div class="pmi" style="color:var(--text-muted);cursor:default;"><span class="ic">🔒</span>Built-in view</div>';
+  }
+  return items;
+}
+function renderPresetBar(){var el=document.getElementById('presetbar');if(el)el.innerHTML=presetBarHTML();}
+function saveCurrent(ev){ev.stopPropagation();saveAsNew();}
+function toggleMenu(id,ev){ev.stopPropagation();var m=document.getElementById('menu-'+id);var was=m.classList.contains('open');closeMenus();if(!was){m.classList.add('open');openMenuId=id;}}
+function closeMenus(){document.querySelectorAll('.pmenu.open').forEach(function(m){m.classList.remove('open');});openMenuId=null;}
+document.addEventListener('click',function(e){if(!e.target.closest('.preset'))closeMenus();});
+
+function resultsHTML(){
+  var rows=applyAll();
+  var body=rows.length?rows.map(function(p){
+    var over=p.due<TODAY&&OPEN_STATUSES.indexOf(p.status)>=0;
+    return '<tr><td class="num">'+p.num+'</td><td class="ptitle">'+p.title+'</td>'+
+      '<td><span class="spill" style="background:'+sColor(p.status)+'22;color:'+sColor(p.status)+';"><span class="dot" style="background:'+sColor(p.status)+'"></span>'+p.status+'</span></td>'+
+      '<td><span class="spill" style="background:'+pColor(p.priority)+'22;color:'+pColor(p.priority)+';">'+p.priority+'</span></td>'+
+      '<td>'+p.category+'</td><td>'+p.member+'</td><td>'+p.dept+'</td>'+
+      '<td style="'+(over?'color:#DC2626;font-weight:700;':'color:var(--text-muted);')+'">'+p.due.slice(5)+'</td></tr>';
+  }).join('') : '<tr><td colspan="8"><div class="empty-res">No projects match these filters.</div></td></tr>';
+  return '<div class="count">'+rows.length+' of '+DATA.length+' projects</div>'+
+    '<table><thead><tr><th>ID</th><th>Project</th><th>Status</th><th>Priority</th><th>Category</th><th>Owner</th><th>Dept</th><th>Due</th></tr></thead><tbody>'+body+'</tbody></table>';
+}
+function renderResults(){var el=document.getElementById('results');if(el)el.innerHTML=resultsHTML();}
+
+function renderStage(){
+  document.getElementById('userSel').innerHTML=USERS.map(function(u){return '<option'+(u===currentUser?' selected':'')+'>'+u+'</option>';}).join('');
+  document.getElementById('stage').innerHTML=
+    '<div class="presetbar" id="presetbar"></div>'+
+    '<button class="toggle-side" onclick="bToggleSide()">'+(bSideHidden?'▶ Show filters':'◀ Hide filters')+'</button>'+
+    '<div class="blayout"><div class="bside'+(bSideHidden?' hidden':'')+'" id="sidebar"></div><div class="bmain"><div id="results"></div></div></div>';
+  renderPresetBar(); renderSidebar(); renderResults();
+}
+function toggleTheme(){var d=document.body.getAttribute('data-theme')==='dark';document.body.setAttribute('data-theme',d?'':'dark');document.getElementById('themebtn').textContent=d?'🌙 Dark':'☀ Light';}
+
+/* init */
+seedIfEmpty();
+(function(){var p=presetById(getDefault())||presetById('open');F=clone(p.state);activePreset=p.id;})();
+renderStage();
+</script>
+</body>
+</html>

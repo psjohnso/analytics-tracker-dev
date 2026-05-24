@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Duration Predictor on the Project Form — mockup</title>
+<style>
+  :root { --navy:#002669; --border:#E1E2DD; --text-body:#002855; --text-muted:#6B7280; --bg:#F9FAFB; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:28px 32px; font-family:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text-body); max-width:760px; margin:0 auto; }
+  h1 { margin:0 0 4px 0; font-size:22px; color:var(--navy); font-weight:800; }
+  .lead { color:var(--text-muted); margin:0 0 18px 0; font-size:13px; }
+  .annot { background:#FEF3C7; border-left:4px solid #F59E0B; padding:10px 14px; border-radius:6px; margin:0 0 18px 0; font-size:12px; color:#78350F; }
+  .annot strong { color:#422006; }
+
+  .form-card { background:#fff; border:1px solid #E8E6DF; border-radius:14px; padding:20px 22px; }
+  .sec-label { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--navy); margin:14px 0 8px; }
+  .sec-label:first-child { margin-top:0; }
+  .fm-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  label.f { display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:700; color:var(--text-body); }
+  select, input { font-family:Lato,sans-serif; font-size:14px; padding:8px 10px; border:1px solid var(--border); border-radius:7px; background:#fff; color:var(--text-body); }
+
+  /* Estimate card */
+  .est { margin-top:14px; border-radius:12px; border:1px solid #D9E2F2; background:#F5F8FF; padding:16px 18px; }
+  .est.empty { background:#F8FAFC; border-style:dashed; border-color:#E1E2DD; color:var(--text-muted); font-size:13px; text-align:center; padding:22px; }
+  .est-top { display:flex; align-items:flex-start; gap:18px; flex-wrap:wrap; }
+  .est-num { flex:0 0 auto; }
+  .est-num .wks { font-size:38px; font-weight:900; color:var(--navy); line-height:1; }
+  .est-num .mo { font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .est-mid { flex:1; min-width:220px; }
+  .est-range { font-size:13px; color:var(--text-body); margin-bottom:6px; }
+  .est-range b { color:var(--navy); }
+  .rangebar { height:8px; background:#E5E7EB; border-radius:4px; position:relative; margin:6px 0 4px; }
+  .rangebar .span { position:absolute; height:100%; background:#BFD0F0; border-radius:4px; }
+  .rangebar .mid { position:absolute; width:3px; height:14px; top:-3px; background:var(--navy); border-radius:2px; }
+  .est-date { font-size:13px; margin-top:8px; }
+  .est-date b { color:var(--navy); }
+  .btn { border:1px solid var(--navy); background:var(--navy); color:#fff; border-radius:7px; padding:6px 12px; font-weight:700; font-size:12px; cursor:pointer; margin-left:8px; }
+  .conf { display:inline-block; font-size:10px; font-weight:800; padding:2px 8px; border-radius:8px; text-transform:uppercase; letter-spacing:0.04em; }
+  .basis { font-size:11px; color:var(--text-muted); margin-top:10px; }
+  .caveat { font-size:11px; color:#9A3412; background:#FFF7ED; border-radius:6px; padding:6px 10px; margin-top:8px; }
+  .how { font-size:11px; color:var(--text-muted); margin-top:8px; }
+  .how summary { cursor:pointer; font-weight:700; color:var(--navy); }
+  .how p { margin:6px 0 0; }
+</style>
+</head>
+<body>
+
+<h1>Duration estimate on the project form</h1>
+<p class="lead">A reference-class estimate that appears as the user fills out a new project — driven by the two variables that actually predict duration in your data: <strong>category</strong> and <strong>partner department</strong>. Live and interactive: change the dropdowns below to see it update. Medians are your real numbers from the analysis.</p>
+
+<div class="annot"><strong>Where it slots:</strong> in the project form's Timeline section, just under the Target end date field. It's an <em>aid</em>, never a lock — one click fills the suggested date, or the user ignores it. Allocation/effort isn't used (your data showed it isn't recorded reliably enough yet).</div>
+
+<div class="form-card">
+  <div class="sec-label">Classification</div>
+  <div class="fm-grid">
+    <label class="f">Category
+      <select id="cat" onchange="recalc()"><option value="">Select category…</option></select>
+    </label>
+    <label class="f">Partner department
+      <select id="partner" onchange="recalc()"><option value="">Select department…</option></select>
+    </label>
+  </div>
+
+  <div class="sec-label">Timeline</div>
+  <div class="fm-grid">
+    <label class="f">Start date
+      <input type="date" id="start" onchange="recalc()">
+    </label>
+    <label class="f">Target end date
+      <input type="date" id="end">
+    </label>
+  </div>
+
+  <div id="est"></div>
+</div>
+
+<script>
+  // Real medians + sample sizes from the duration analysis.
+  const CATS = [
+    ['Documentation & Knowledge Management', 46.9, 7],
+    ['Data Analysis, Reporting & Insights', 38, 34],
+    ['Enterprise Administration & Platform Management', 25, 11],
+    ['Spatial Data Services & GIS Product Development', 24.3, 33],
+    ['Data Governance, Compliance & Policy', 24, 11],
+    ['Training, Enablement & Community', 19.9, 8],
+    ['AI Enablement, Automation & Machine Intelligence', 17.6, 22],
+    ['Application Update & Enhancement', 15.7, 4],
+    ['Data Processing, Integration & Engineering', 14.3, 17],
+    ['Operational Support & Sustainment Activities', 11.6, 7],
+    ['Infrastructure Modernization & Platform Migration', 4, 7]
+  ];
+  const PARTNERS = [
+    ["City Manager's Office", 71.6, 11],
+    ['Environmental Services', 52, 3],
+    ['Transportation & Mobility', 39.6, 4],
+    ['Planning & Development Services', 38, 10],
+    ['Business Services', 34.4, 4],
+    ['Tucson Water', 24, 7],
+    ['Parks & Recreation', 22.9, 3],
+    ['Information Technology', 18.4, 99],
+    ['Police', 13.7, 6],
+    ['Mayor & Council', 13.4, 5]
+  ];
+  const OVERALL = 22.4;
+
+  // Populate dropdowns
+  const catSel = document.getElementById('cat'), pSel = document.getElementById('partner');
+  CATS.forEach(c => catSel.add(new Option(c[0], c[0])));
+  PARTNERS.forEach(p => pSel.add(new Option(p[0], p[0])));
+  // Defaults that show the headline example
+  document.getElementById('start').value = new Date().toISOString().slice(0,10);
+  catSel.value = 'Data Analysis, Reporting & Insights';
+  pSel.value = "City Manager's Office";
+
+  function conf(n) {
+    if (n >= 10) return { label:'High confidence', bg:'#DCFCE7', fg:'#166534' };
+    if (n >= 5)  return { label:'Medium confidence', bg:'#FEF9C3', fg:'#854D0E' };
+    if (n >= 3)  return { label:'Low confidence', bg:'#F3F4F6', fg:'#6B7280' };
+    return { label:'Too few samples', bg:'#F3F4F6', fg:'#9CA3AF' };
+  }
+  function addWeeks(dateStr, wks) {
+    if (!dateStr) return null;
+    const d = new Date(dateStr + 'T12:00:00'); d.setDate(d.getDate() + Math.round(wks*7));
+    return d.toISOString().slice(0,10);
+  }
+  function fmtDate(s){ if(!s) return '—'; const d=new Date(s+'T12:00:00'); return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+
+  function recalc() {
+    const cv = catSel.value, pv = pSel.value, sv = document.getElementById('start').value;
+    const cat = CATS.find(c => c[0]===cv), partner = PARTNERS.find(p => p[0]===pv);
+    const box = document.getElementById('est');
+
+    if (!cat && !partner) {
+      box.innerHTML = '<div class="est empty">Pick a <strong>category</strong> (and ideally a partner department) to see an estimated duration from similar past projects.</div>';
+      return;
+    }
+    // Blend the two reference classes weighted by sample size; base on whichever exists.
+    let med, n, basis;
+    if (cat && partner) {
+      med = (cat[1]*cat[2] + partner[1]*partner[2]) / (cat[2]+partner[2]);
+      n = Math.min(cat[2], partner[2]);
+      basis = 'Based on <b>' + cat[2] + '</b> ' + escapeHtml(cat[0]) + ' projects, adjusted for <b>' + escapeHtml(partner[0]) + '</b> (' + partner[2] + ' projects).';
+    } else if (cat) {
+      med = cat[1]; n = cat[2];
+      basis = 'Based on <b>' + cat[2] + '</b> ' + escapeHtml(cat[0]) + ' projects. Pick a partner department to sharpen it.';
+    } else {
+      med = partner[1]; n = partner[2];
+      basis = 'Based on <b>' + partner[2] + '</b> ' + escapeHtml(partner[0]) + ' projects. Pick a category to sharpen it.';
+    }
+    const wks = Math.round(med);
+    const low = Math.round(med*0.7), high = Math.round(med*1.6); // typical right-skewed range
+    const months = (wks/4.33);
+    const c = conf(n);
+    const sugg = addWeeks(sv, wks);
+
+    // range bar geometry (scale 0..high*1.1)
+    const scaleMax = high*1.15;
+    const spanL = (low/scaleMax*100), spanW = ((high-low)/scaleMax*100), midL = (wks/scaleMax*100);
+
+    let html = '<div class="est">';
+    html += '<div class="est-top">';
+    html += '<div class="est-num"><div class="wks">' + wks + ' wks</div><div class="mo">&asymp; ' + (months>=2?months.toFixed(months<8?1:0):months.toFixed(1)) + ' months</div></div>';
+    html += '<div class="est-mid">';
+    html += '<div class="est-range">Typical range <b>' + low + '–' + high + ' weeks</b> <span class="conf" style="background:'+c.bg+';color:'+c.fg+';margin-left:6px;">'+c.label+'</span></div>';
+    html += '<div class="rangebar"><div class="span" style="left:'+spanL+'%;width:'+spanW+'%;"></div><div class="mid" style="left:'+midL+'%;"></div></div>';
+    html += '<div class="est-date">Suggested target end: <b>' + fmtDate(sugg) + '</b>' + (sv ? '<button class="btn" onclick="document.getElementById(\'end\').value=\''+sugg+'\'">Use this date</button>' : ' <span style="color:var(--text-muted);font-size:11px;">(set a start date)</span>') + '</div>';
+    html += '</div></div>';
+    html += '<div class="basis">' + basis + '</div>';
+    if (n < 5) html += '<div class="caveat">Thin history for this combination — treat the estimate as a rough anchor, not a commitment.</div>';
+    html += '<details class="how"><summary>How this is calculated</summary><p>Reference-class forecast: the median actual duration of completed projects in this category, blended with the partner department\'s median (weighted by how many of each we\'ve done). Confidence reflects the smaller of the two samples. The production version uses the reference class\'s actual 25th–75th percentile for the range.</p></details>';
+    html += '</div>';
+    box.innerHTML = html;
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  recalc();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Phase 1 (revised) — Project Duration Calibration</title>
+<style>
+  :root {
+    --navy: #002669;
+    --border: #E1E2DD;
+    --text-body: #002855;
+    --text-muted: #6B7280;
+    --bg: #F9FAFB;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px;
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text-body);
+    max-width: 1200px; margin: 0 auto;
+  }
+  h1 { margin: 0 0 4px 0; font-size: 22px; color: var(--navy); font-weight: 800; }
+  .lead { color: var(--text-muted); margin: 0 0 24px 0; font-size: 13px; }
+  .annot {
+    background: #FEF3C7; border-left: 4px solid #F59E0B;
+    padding: 10px 14px; border-radius: 6px; margin: 0 0 24px 0;
+    font-size: 12px; color: #78350F;
+  }
+  .annot strong { color: #422006; }
+
+  .ghost-header {
+    opacity: 0.55; padding: 14px 0; border-bottom: 1px dashed #CBD5E1;
+    margin-bottom: 18px;
+  }
+  .ghost-header .tab-title { font-size: 18px; font-weight: 800; color: var(--navy); }
+  .ghost-header .tab-sub   { font-size: 12px; color: var(--text-muted); }
+
+  .kpi-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .res-kpi {
+    background: #fff; border: 1px solid #E8E6DF; border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .kpi-label { font-size: 11px; color: var(--text-muted); font-weight: 700;
+               text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .kpi-value { font-size: 22px; font-weight: 800; color: var(--navy); }
+  .kpi-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .section { margin-bottom: 28px; }
+  .section-head {
+    display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .section-head h2 {
+    margin: 0; font-size: 15px; font-weight: 800; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .section-head .desc {
+    font-size: 12px; color: var(--text-muted);
+  }
+
+  .tbl-wrap {
+    background: #fff; border: 1px solid #E8E6DF; border-radius: 10px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    background: #F3F4F6; color: var(--navy); font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.04em; font-size: 10px;
+    padding: 9px 12px; text-align: left; border-bottom: 1px solid #E8E6DF;
+  }
+  th.num { text-align: right; }
+  th.ctr { text-align: center; }
+  td { padding: 10px 12px; border-bottom: 1px solid #F1F1EC; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.ctr { text-align: center; }
+  tr:last-child td { border-bottom: 0; }
+  tr:hover td { background: #FAFAF7; }
+  .cat { font-weight: 700; color: var(--navy); }
+
+  .mult {
+    display: inline-block; font-weight: 800; font-variant-numeric: tabular-nums;
+    padding: 2px 8px; border-radius: 10px; font-size: 12px;
+  }
+  .mult-good { background: #DCFCE7; color: #166534; }
+  .mult-med  { background: #FEF9C3; color: #854D0E; }
+  .mult-bad  { background: #FED7AA; color: #9A3412; }
+  .mult-ugly { background: #FECACA; color: #991B1B; }
+  .mult-low  { background: #DBEAFE; color: #1E3A8A; }
+
+  .ontime-bar {
+    display: inline-block; width: 60px; height: 8px;
+    background: #E5E7EB; border-radius: 4px; overflow: hidden;
+    vertical-align: middle; margin-right: 6px;
+  }
+  .ontime-bar > div { height: 100%; background: #22C55E; }
+  .ontime-bar.warn > div { background: #F59E0B; }
+  .ontime-bar.bad  > div { background: #EF4444; }
+
+  .confidence {
+    font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .conf-hi  { background: #DCFCE7; color: #166534; }
+  .conf-md  { background: #FEF9C3; color: #854D0E; }
+  .conf-lo  { background: #F3F4F6; color: var(--text-muted); }
+
+  .rec {
+    font-size: 11px; color: var(--text-muted); font-style: italic;
+  }
+  .rec.up   { color: #B91C1C; }
+  .rec.down { color: #166534; }
+
+  .toggle {
+    display: inline-flex; border: 1px solid var(--navy); border-radius: 6px; overflow: hidden;
+  }
+  .toggle button {
+    padding: 4px 12px; border: 0; background: transparent; color: var(--navy);
+    font-size: 11px; font-weight: 700; font-family: Lato, sans-serif; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .toggle button.on { background: var(--navy); color: #fff; }
+
+  .callout {
+    background: #fff; border: 1px solid #E8E6DF; border-left: 4px solid var(--navy);
+    border-radius: 8px; padding: 14px 18px; font-size: 13px;
+  }
+  .callout strong { color: var(--navy); }
+  .callout ul { margin: 8px 0 0 0; padding-left: 20px; }
+  .callout li { margin: 4px 0; }
+  .pill {
+    display: inline-block; background: var(--navy); color: #fff;
+    font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px;
+    text-transform: uppercase; letter-spacing: 0.04em; margin-right: 6px;
+  }
+
+  .question {
+    background: #EFF6FF; border-left: 4px solid #3B82F6;
+    padding: 10px 14px; border-radius: 6px; margin: 0 0 24px 0;
+    font-size: 12px; color: #1E3A8A;
+  }
+</style>
+</head>
+<body>
+
+<h1>Phase 1 (revised) — Project Duration Calibration</h1>
+<p class="lead">Pivoted from per-task hours (no estimate field exists) to per-project duration (planned weeks vs actual weeks). New section on the Insights tab. Read-only, retrospective. All numbers below are mock.</p>
+
+<div class="annot">
+  <strong>Where it slots:</strong> Below the existing "💡 Project Insights" KPI strip, above the by-Size chart. The existing by-Size table absorbs Section B and adds the multiplier + recommendation columns. Sections A and C are new.
+</div>
+
+<div class="question">
+  <strong>Design question this mockup tries to resolve:</strong> Should "planned" mean the form's <code>end_date</code> (original commitment) or <code>working_due</code> (latest forecast)? The toggle at the top of the Calibration By Category section lets the user pick. Both are valuable: end_date answers "did we hit our promise"; working_due answers "did we get better at forecasting as we went." Default is <code>end_date</code> since that's what partner departments remember.
+</div>
+
+<div class="ghost-header">
+  <div class="tab-title">💡 Project Insights</div>
+  <div class="tab-sub">Retrospective data from completed projects.</div>
+</div>
+
+<!-- ─── Calibration KPI strip ─── -->
+<div class="kpi-row">
+  <div class="res-kpi">
+    <div class="kpi-label">Schedule multiplier</div>
+    <div class="kpi-value">1.34×</div>
+    <div class="kpi-sub">median; actual ÷ planned weeks</div>
+  </div>
+  <div class="res-kpi">
+    <div class="kpi-label">On-time delivery</div>
+    <div class="kpi-value">52%</div>
+    <div class="kpi-sub">finished by planned end_date</div>
+  </div>
+  <div class="res-kpi">
+    <div class="kpi-label">Completed (12mo)</div>
+    <div class="kpi-value">31</div>
+    <div class="kpi-sub">with start &amp; actual_end set</div>
+  </div>
+  <div class="res-kpi">
+    <div class="kpi-label">Most divergent</div>
+    <div class="kpi-value" style="font-size:14px;line-height:1.4;">Stakeholder<br>Support<br><span style="font-weight:600;font-size:12px;color:var(--text-muted);">2.4× (n=4)</span></div>
+  </div>
+</div>
+
+<!-- ─── Section A — By Category ─── -->
+<div class="section">
+  <div class="section-head">
+    <h2>A · Calibration by Category</h2>
+    <span class="desc">Completed projects in last 12 months with both <em>start_date</em> and <em>actual_end</em> populated.</span>
+    <div class="toggle" style="margin-left:auto;">
+      <button class="on">vs end_date</button>
+      <button>vs working_due</button>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th class="num">Projects (n)</th>
+          <th class="num">Median planned</th>
+          <th class="num">Median actual</th>
+          <th class="num">Multiplier</th>
+          <th>On-time %</th>
+          <th class="ctr">Confidence</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cat">Application Development</td>
+          <td class="num">9</td>
+          <td class="num">8 wk</td>
+          <td class="num">13 wk</td>
+          <td class="num"><span class="mult mult-med">1.45×</span></td>
+          <td><span class="ontime-bar warn"><div style="width:44%;"></div></span> 44%</td>
+          <td class="ctr"><span class="confidence conf-md">Medium</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Data Visualization &amp; Reporting</td>
+          <td class="num">7</td>
+          <td class="num">6 wk</td>
+          <td class="num">7 wk</td>
+          <td class="num"><span class="mult mult-good">1.12×</span></td>
+          <td><span class="ontime-bar"><div style="width:71%;"></div></span> 71%</td>
+          <td class="ctr"><span class="confidence conf-md">Medium</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Data Engineering</td>
+          <td class="num">5</td>
+          <td class="num">12 wk</td>
+          <td class="num">16 wk</td>
+          <td class="num"><span class="mult mult-med">1.30×</span></td>
+          <td><span class="ontime-bar warn"><div style="width:40%;"></div></span> 40%</td>
+          <td class="ctr"><span class="confidence conf-md">Medium</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Geospatial Analysis</td>
+          <td class="num">4</td>
+          <td class="num">5 wk</td>
+          <td class="num">5 wk</td>
+          <td class="num"><span class="mult mult-good">0.96×</span></td>
+          <td><span class="ontime-bar"><div style="width:75%;"></div></span> 75%</td>
+          <td class="ctr"><span class="confidence conf-lo">Low (n&lt;5)</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Stakeholder Support</td>
+          <td class="num">4</td>
+          <td class="num">3 wk</td>
+          <td class="num">7 wk</td>
+          <td class="num"><span class="mult mult-ugly">2.40×</span></td>
+          <td><span class="ontime-bar bad"><div style="width:25%;"></div></span> 25%</td>
+          <td class="ctr"><span class="confidence conf-lo">Low (n&lt;5)</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Application Maintenance</td>
+          <td class="num">3</td>
+          <td class="num">2 wk</td>
+          <td class="num">3 wk</td>
+          <td class="num"><span class="mult mult-med">1.33×</span></td>
+          <td><span class="ontime-bar warn"><div style="width:33%;"></div></span> 33%</td>
+          <td class="ctr"><span class="confidence conf-lo">Low (n&lt;5)</span></td>
+        </tr>
+        <tr style="opacity:0.6;">
+          <td class="cat">Documentation, Security &amp; Compliance, Other</td>
+          <td class="num">3</td>
+          <td colspan="4" style="color:var(--text-muted);font-style:italic;">grouped — insufficient sample for per-category</td>
+          <td class="ctr"><span class="confidence conf-lo">Insufficient</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ─── Section B — By Size (replaces existing By-Size table) ─── -->
+<div class="section">
+  <div class="section-head">
+    <h2>B · Size-Class Calibration</h2>
+    <span class="desc">Validates <code>SIZE_DURATIONS</code> defaults that drive the capacity planner. Replaces today's by-Size table on Insights.</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Size</th>
+          <th class="num">Projects (n)</th>
+          <th class="num">Default (today)</th>
+          <th class="num">Median actual</th>
+          <th class="num">Multiplier</th>
+          <th>Recommendation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cat">S</td>
+          <td class="num">11</td>
+          <td class="num">2 wk</td>
+          <td class="num">3 wk</td>
+          <td class="num"><span class="mult mult-med">1.50×</span></td>
+          <td><span class="rec up">↑ Consider raising default to 3 wk</span></td>
+        </tr>
+        <tr>
+          <td class="cat">M</td>
+          <td class="num">14</td>
+          <td class="num">6 wk</td>
+          <td class="num">8 wk</td>
+          <td class="num"><span class="mult mult-med">1.33×</span></td>
+          <td><span class="rec up">↑ Consider raising default to 8 wk</span></td>
+        </tr>
+        <tr>
+          <td class="cat">L</td>
+          <td class="num">5</td>
+          <td class="num">13 wk</td>
+          <td class="num">15 wk</td>
+          <td class="num"><span class="mult mult-good">1.15×</span></td>
+          <td><span class="rec">→ Default is close; hold</span></td>
+        </tr>
+        <tr>
+          <td class="cat">XL</td>
+          <td class="num">1</td>
+          <td class="num">26 wk</td>
+          <td class="num" colspan="2" style="color:var(--text-muted);font-style:italic;">insufficient sample</td>
+          <td><span class="rec">— Need more completed XL projects</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ─── Section C — By Partner Department ─── -->
+<div class="section">
+  <div class="section-head">
+    <h2>C · Calibration by Partner Department</h2>
+    <span class="desc">Helps answer "are projects with department X chronically slower?" — useful for setting expectations during intake.</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Partner department</th>
+          <th class="num">Projects (n)</th>
+          <th class="num">Median multiplier</th>
+          <th>On-time %</th>
+          <th class="ctr">Confidence</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cat">Internal / Data Intelligence</td>
+          <td class="num">12</td>
+          <td class="num"><span class="mult mult-good">1.08×</span></td>
+          <td><span class="ontime-bar"><div style="width:75%;"></div></span> 75%</td>
+          <td class="ctr"><span class="confidence conf-hi">High</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Water</td>
+          <td class="num">6</td>
+          <td class="num"><span class="mult mult-bad">1.65×</span></td>
+          <td><span class="ontime-bar bad"><div style="width:33%;"></div></span> 33%</td>
+          <td class="ctr"><span class="confidence conf-md">Medium</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Transportation</td>
+          <td class="num">4</td>
+          <td class="num"><span class="mult mult-med">1.30×</span></td>
+          <td><span class="ontime-bar warn"><div style="width:50%;"></div></span> 50%</td>
+          <td class="ctr"><span class="confidence conf-lo">Low (n&lt;5)</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Police</td>
+          <td class="num">3</td>
+          <td class="num"><span class="mult mult-bad">1.85×</span></td>
+          <td><span class="ontime-bar bad"><div style="width:0%;"></div></span> 0%</td>
+          <td class="ctr"><span class="confidence conf-lo">Low (n&lt;5)</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Housing</td>
+          <td class="num">3</td>
+          <td class="num"><span class="mult mult-med">1.40×</span></td>
+          <td><span class="ontime-bar warn"><div style="width:33%;"></div></span> 33%</td>
+          <td class="ctr"><span class="confidence conf-lo">Low (n&lt;5)</span></td>
+        </tr>
+        <tr>
+          <td class="cat">Planning &amp; Development Services</td>
+          <td class="num">3</td>
+          <td class="num"><span class="mult mult-good">1.10×</span></td>
+          <td><span class="ontime-bar"><div style="width:67%;"></div></span> 67%</td>
+          <td class="ctr"><span class="confidence conf-lo">Low (n&lt;5)</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>What this enables next:</strong>
+  <ul>
+    <li><span class="pill">Phase 2</span>Risk badge "Schedule risk" on the project list — when a project's planned duration is shorter than its category/size/partner cohort's p75, flag it at kickoff. When `working_due` slips past `end_date`, flag it again.</li>
+    <li><span class="pill">Phase 2</span>Intake hint on the new-project form — "Water projects in Application Development take 1.65× planned on average; consider a longer initial timeline."</li>
+    <li><span class="pill">Phase 3</span>Monte Carlo finish-date forecast — sample from the multiplier distribution for the project's (category, size, partner) cohort to produce p50/p80/p95 dates against the originally planned end.</li>
+    <li><span class="pill">Bonus</span>Use Section B's recommendations to update `SIZE_DURATIONS` in [constants.js / settings] — a one-line config change that ripples to every capacity-planner estimate.</li>
+  </ul>
+</div>
+
+</body>
+</html>

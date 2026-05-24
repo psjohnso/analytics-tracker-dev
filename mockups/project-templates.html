@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project templates — live mockup</title>
+<style>
+  :root { --navy:#002669; --green:#83AC16; --orange:#C24200; --yellow:#FFDB22; --border:#E8E6DF; --text-body:#002855; --text-muted:#6B7280; --bg:#F3F1EB; --white:#fff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text-body); }
+  .appbar { display:flex; align-items:center; gap:14px; background:var(--navy); color:#fff; padding:12px 22px; }
+  .appbar .brand { font-weight:800; font-size:15px; }
+  .appbar .sub { font-family:'Cardo',Georgia,serif; font-style:italic; font-size:12px; opacity:0.8; }
+  .appbar .ver { font-size:10px; background:rgba(255,255,255,0.15); padding:2px 8px; border-radius:4px; font-weight:700; }
+  .accent { height:4px; background:linear-gradient(90deg,#C24200 25%,#FFDB22 25%,#FFDB22 50%,#83AC16 50%,#83AC16 75%,#002669 75%); }
+  .annot { background:#FEF3C7; border-left:4px solid #F59E0B; padding:9px 16px; font-size:12px; color:#78350F; line-height:1.55; }
+  .annot strong { color:#422006; } .annot kbd { background:#fff; border:1px solid #D6B45f; border-radius:4px; padding:0 5px; font-weight:700; }
+
+  .modebar { display:flex; gap:8px; padding:14px 22px 4px; align-items:center; }
+  .modebtn { font-family:inherit; font-size:13px; font-weight:800; color:var(--navy); background:#fff; border:1.5px solid var(--border); border-radius:8px; padding:8px 16px; cursor:pointer; }
+  .modebtn.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+  .modebar .hint { font-size:11px; color:var(--text-muted); font-style:italic; margin-left:6px; }
+
+  .wrap { display:grid; grid-template-columns:340px 1fr; gap:16px; padding:14px 22px 50px; align-items:start; }
+  .panel { background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+  .panel h2 { margin:0 0 3px; font-size:15px; font-weight:800; color:var(--navy); }
+  .panel .desc { font-size:11px; color:var(--text-muted); margin:0 0 14px; }
+
+  /* gallery */
+  .tpl { display:flex; gap:11px; align-items:flex-start; border:1.5px solid var(--border); border-radius:10px; padding:11px 12px; cursor:pointer; margin-bottom:9px; transition:border-color .12s, background .12s; }
+  .tpl:hover { border-color:#C7D2FE; background:#F8FAFF; }
+  .tpl.sel { border-color:var(--navy); background:#F4F7FF; }
+  .tpl .ico { font-size:22px; line-height:1; flex-shrink:0; width:34px; height:34px; display:flex; align-items:center; justify-content:center; background:var(--bg); border-radius:8px; }
+  .tpl .nm { font-size:13.5px; font-weight:800; color:var(--navy); }
+  .tpl .mt { font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .tpl.blank .ico { background:#fff; border:1px dashed var(--border); color:var(--text-muted); }
+  .newtpl { width:100%; border:1px dashed var(--navy); background:#F8FAFF; color:var(--navy); border-radius:9px; padding:9px; font-size:12.5px; font-weight:800; cursor:pointer; margin-top:4px; }
+
+  /* preview / form */
+  .frow { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+  .fld { flex:1; min-width:150px; }
+  .fld label { display:block; font-size:10px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px; }
+  .fld input, .fld select { width:100%; font-family:inherit; font-size:13px; border:1.5px solid var(--border); border-radius:7px; padding:7px 9px; outline:none; color:var(--navy); font-weight:600; }
+  .fld input:focus, .fld select:focus { border-color:var(--navy); }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin:2px 0 4px; }
+  .chip { font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; background:#EEF2FF; color:var(--navy); border:1px solid #C7D2FE; }
+  .chip.dp { background:#FFF7ED; color:#9A3412; border-color:#FED7AA; }
+  .chip.size { background:#F3E8FF; color:#6B21A8; border-color:#D8B4FE; }
+  .chip.wwc { background:#ECFDF5; color:#065F46; border-color:#A7F3D0; }
+  .seclabel { font-size:11px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase; color:var(--text-muted); margin:16px 0 8px; display:flex; align-items:center; gap:8px; }
+  .seclabel .ln { flex:1; height:1px; background:var(--border); }
+
+  /* task playbook */
+  table.pb { width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.pb th { text-align:left; font-size:10px; font-weight:800; letter-spacing:0.04em; text-transform:uppercase; color:var(--text-muted); padding:6px 8px; border-bottom:1px solid var(--border); }
+  table.pb td { padding:7px 8px; border-bottom:1px solid #F2F0EA; vertical-align:middle; }
+  table.pb tr:last-child td { border-bottom:none; }
+  .tk-title { font-weight:700; color:var(--navy); }
+  .tk-phase { font-size:10px; font-weight:800; color:#155E75; background:#ECFEFF; border:1px solid #A5F3FC; border-radius:5px; padding:1px 6px; }
+  .tk-role { font-size:11px; color:var(--text-muted); }
+  .tk-due { font-weight:800; color:var(--navy); white-space:nowrap; }
+  .tk-off { font-size:10px; color:var(--text-muted); }
+  .ed-inp { font-family:inherit; font-size:12.5px; border:1.5px solid var(--border); border-radius:6px; padding:5px 7px; outline:none; color:var(--navy); }
+  .ed-inp:focus { border-color:var(--navy); }
+  .rm { color:#9A3412; cursor:pointer; font-weight:800; border:none; background:none; font-size:14px; }
+  .addtask { border:1px dashed var(--border); background:#fff; color:var(--navy); border-radius:7px; padding:7px; font-size:12px; font-weight:700; cursor:pointer; width:100%; margin-top:8px; }
+  .addtask:hover { border-color:var(--navy); }
+
+  .actions { display:flex; gap:10px; align-items:center; margin-top:18px; padding-top:14px; border-top:1px solid var(--border); }
+  .btn { font-family:inherit; font-size:13px; font-weight:800; border-radius:8px; padding:9px 18px; cursor:pointer; border:1px solid transparent; }
+  .btn-primary { background:var(--navy); color:#fff; }
+  .btn-secondary { background:#fff; color:var(--navy); border-color:var(--border); }
+  .muted { font-size:11px; color:var(--text-muted); }
+  #toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--navy); color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:8px; opacity:0; transition:opacity .2s; pointer-events:none; z-index:50; max-width:80vw; text-align:center; }
+  #toast.show { opacity:1; }
+</style>
+</head>
+<body>
+  <div class="appbar">
+    <div>
+      <div class="brand">DATA INTELLIGENCE</div>
+      <div class="sub">Project &amp; Task Tracker · Information Technology</div>
+    </div>
+    <span class="ver">mockup</span>
+  </div>
+  <div class="accent"></div>
+
+  <div class="annot" id="annot"></div>
+
+  <div class="modebar">
+    <button class="modebtn on" id="mb-use" onclick="setMode('use')">＋ New from template</button>
+    <button class="modebtn" id="mb-manage" onclick="setMode('manage')">⚙ Manage templates</button>
+    <span class="hint" id="modehint"></span>
+  </div>
+
+  <div class="wrap" id="wrap"></div>
+  <div id="toast"></div>
+
+<script>
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(m){ var t=document.getElementById('toast'); t.innerHTML=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove('show');},2600); }
+function addDays(iso, n){ var d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return d; }
+function fmt(d){ return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate(); }
+
+var PHASES = ['Init','Kickoff','Data prep','Build','QA','Design review','Partner review','Launch','Acceptance'];
+var ROLES = ['Lead','GIS Analyst','Data Analyst','BI Developer','Data Engineer','QA Reviewer','AI Specialist','(unassigned)'];
+
+// Seed templates (would live in app_config.project_templates, per team)
+var TEMPLATES = [
+  { id:'dashboard', icon:'📊', name:'Dashboard Build', size:'M', dp:true, category:'Data Visualization & Reporting', tags:['WWC: Performance & Analytics'],
+    tasks:[
+      {t:'Requirements & success criteria', role:'Lead', off:3, ph:'Kickoff'},
+      {t:'Secure data access', role:'Data Analyst', off:7, ph:'Data prep'},
+      {t:'Build data model', role:'Data Analyst', off:14, ph:'Data prep'},
+      {t:'Prototype dashboard', role:'BI Developer', off:21, ph:'Build'},
+      {t:'Stakeholder demo', role:'Lead', off:28, ph:'Build'},
+      {t:'QA + accessibility (ADA)', role:'QA Reviewer', off:35, ph:'QA'},
+      {t:'Deploy to production', role:'BI Developer', off:42, ph:'Launch'},
+      {t:'Training & handoff', role:'Lead', off:49, ph:'Acceptance'}
+    ] },
+  { id:'pipeline', icon:'🔗', name:'Data Pipeline / Integration', size:'L', dp:true, category:'Application Development', tags:['DP Goal: Scalable Architecture'],
+    tasks:[
+      {t:'Source discovery', role:'Data Engineer', off:3, ph:'Kickoff'},
+      {t:'Access & credentials', role:'Data Engineer', off:7, ph:'Data prep'},
+      {t:'Schema design', role:'Data Engineer', off:14, ph:'Data prep'},
+      {t:'Build ETL', role:'Data Engineer', off:28, ph:'Build'},
+      {t:'Data quality validation', role:'Data Analyst', off:35, ph:'QA'},
+      {t:'Orchestration & scheduling', role:'Data Engineer', off:42, ph:'Build'},
+      {t:'Monitoring & alerts', role:'Data Engineer', off:49, ph:'Launch'},
+      {t:'Documentation', role:'Lead', off:56, ph:'Acceptance'}
+    ] },
+  { id:'storymap', icon:'🗺️', name:'Public Story Map / App', size:'S', dp:false, category:'Application Development', tags:[],
+    tasks:[
+      {t:'Content outline', role:'Lead', off:3, ph:'Kickoff'},
+      {t:'Gather data & media', role:'GIS Analyst', off:7, ph:'Data prep'},
+      {t:'Build experience', role:'GIS Analyst', off:14, ph:'Build'},
+      {t:'Accessibility review (ADA)', role:'QA Reviewer', off:18, ph:'Design review'},
+      {t:'Partner review', role:'Lead', off:21, ph:'Partner review'},
+      {t:'Launch & comms', role:'Lead', off:25, ph:'Launch'}
+    ] },
+  { id:'analysis', icon:'📝', name:'Analysis & Report', size:'S', dp:false, category:'Data Analysis, Reporting & Insights', tags:[],
+    tasks:[
+      {t:'Define question & scope', role:'Lead', off:2, ph:'Kickoff'},
+      {t:'Gather data', role:'Data Analyst', off:5, ph:'Data prep'},
+      {t:'Analysis', role:'Data Analyst', off:12, ph:'Build'},
+      {t:'Peer review', role:'QA Reviewer', off:15, ph:'QA'},
+      {t:'Write report', role:'Data Analyst', off:19, ph:'Build'},
+      {t:'Present findings', role:'Lead', off:22, ph:'Acceptance'}
+    ] },
+  { id:'survey', icon:'📋', name:'Survey123 Field Collection', size:'S', dp:false, category:'Application Development', tags:[],
+    tasks:[
+      {t:'Form design', role:'GIS Analyst', off:3, ph:'Build'},
+      {t:'Domains & lists', role:'GIS Analyst', off:5, ph:'Build'},
+      {t:'Field test', role:'GIS Analyst', off:9, ph:'QA'},
+      {t:'Deploy', role:'GIS Analyst', off:12, ph:'Launch'},
+      {t:'Train field staff', role:'Lead', off:14, ph:'Acceptance'},
+      {t:'Results dashboard', role:'BI Developer', off:19, ph:'Acceptance'}
+    ] },
+  { id:'aipilot', icon:'🤖', name:'AI / ML Pilot', size:'L', dp:true, category:'Data Analysis, Reporting & Insights', tags:['IT: AI Deployment & Responsible Use'],
+    tasks:[
+      {t:'Problem framing', role:'Lead', off:5, ph:'Kickoff'},
+      {t:'Data readiness', role:'Data Engineer', off:14, ph:'Data prep'},
+      {t:'Responsible-AI review', role:'AI Specialist', off:18, ph:'Design review'},
+      {t:'Prototype model', role:'AI Specialist', off:32, ph:'Build'},
+      {t:'Evaluation', role:'AI Specialist', off:39, ph:'QA'},
+      {t:'Governance sign-off', role:'Lead', off:46, ph:'Partner review'},
+      {t:'Pilot deployment', role:'AI Specialist', off:53, ph:'Launch'}
+    ] }
+];
+
+var mode = 'use';
+var selId = 'dashboard';
+var startDate = '2026-05-26';
+
+function setMode(m){ mode=m; document.getElementById('mb-use').classList.toggle('on', m==='use'); document.getElementById('mb-manage').classList.toggle('on', m==='manage'); render(); }
+function pick(id){ selId=id; render(); }
+function tpl(id){ return TEMPLATES.find(function(x){return x.id===id;}); }
+
+function galleryHtml(){
+  var h='<div class="panel"><h2>Choose a starting point</h2><div class="desc">Templates set the project defaults and stamp out a standard task list. Managed by admins &amp; team leads.</div>';
+  h+='<div class="tpl blank'+(selId==='blank'?' sel':'')+'" onclick="pick(\'blank\')"><div class="ico">＋</div><div><div class="nm">Blank project</div><div class="mt">Start from scratch — the normal form</div></div></div>';
+  TEMPLATES.forEach(function(t){
+    h+='<div class="tpl'+(selId===t.id?' sel':'')+'" onclick="pick(\''+t.id+'\')"><div class="ico">'+t.icon+'</div><div><div class="nm">'+esc(t.name)+'</div><div class="mt">'+t.tasks.length+' tasks · default size '+t.size+' · '+esc(t.category)+'</div></div></div>';
+  });
+  h+='</div>';
+  return h;
+}
+
+function previewHtml(){
+  if (selId==='blank'){
+    return '<div class="panel"><h2>Blank project</h2><div class="desc">Opens the standard New Project form with no defaults or tasks.</div><div class="actions"><button class="btn btn-primary" onclick="toast(\'Would open the normal New Project form\')">Open blank form</button></div></div>';
+  }
+  var t=tpl(selId);
+  var h='<div class="panel"><h2>'+t.icon+' '+esc(t.name)+'</h2><div class="desc">Review &amp; adjust, then create. Task due dates are computed from the start date — change it and watch them shift.</div>';
+  // project basics
+  h+='<div class="frow">'+
+       '<div class="fld" style="flex:2;"><label>Project title</label><input value="" placeholder="e.g. '+esc(t.name)+' — Tucson Water"></div>'+
+       '<div class="fld"><label>Lead</label><select><option>Peter Johnson</option><option>Maria Sanchez</option><option>David Kim</option></select></div>'+
+     '</div>'+
+     '<div class="frow">'+
+       '<div class="fld"><label>Partner department</label><select><option value="">Select…</option><option>Tucson Water</option><option>Police</option><option>Planning &amp; Development</option></select></div>'+
+       '<div class="fld"><label>Start date</label><input type="date" id="startdate" value="'+startDate+'" onchange="onStart(this.value)"></div>'+
+     '</div>';
+  // defaults from template
+  h+='<div class="chips"><span class="chip size">Size '+t.size+'</span><span class="chip">'+esc(t.category)+'</span>'+(t.dp?'<span class="chip dp">Data Program</span>':'')+t.tags.map(function(tag){return '<span class="chip wwc">'+esc(tag)+'</span>';}).join('')+'</div>';
+  h+='<div class="muted">↑ pre-filled from the template (still editable on the form).</div>';
+  // playbook
+  h+='<div class="seclabel">Task playbook · '+t.tasks.length+' tasks<span class="ln"></span></div>';
+  h+='<table class="pb"><thead><tr><th>Task</th><th>Phase</th><th>Suggested role</th><th>Due</th></tr></thead><tbody>';
+  t.tasks.forEach(function(tk){
+    var due=addDays(startDate, tk.off);
+    h+='<tr><td class="tk-title">'+esc(tk.t)+'</td><td><span class="tk-phase">'+esc(tk.ph)+'</span></td><td class="tk-role">'+esc(tk.role)+'</td><td class="tk-due">'+fmt(due)+' <span class="tk-off">(+'+tk.off+'d)</span></td></tr>';
+  });
+  h+='</tbody></table>';
+  h+='<div class="actions"><button class="btn btn-primary" onclick="toast(\'Would create the project + '+t.tasks.length+' tasks with these due dates\')">Create project + '+t.tasks.length+' tasks</button><span class="muted">Assignees left blank (or matched by role) — set them after.</span></div>';
+  h+='</div>';
+  return h;
+}
+
+function manageListHtml(){
+  var h='<div class="panel"><h2>Templates</h2><div class="desc">Per-team. A lead manages their team\'s templates; admins manage all.</div>';
+  TEMPLATES.forEach(function(t){
+    h+='<div class="tpl'+(selId===t.id?' sel':'')+'" onclick="pick(\''+t.id+'\')"><div class="ico">'+t.icon+'</div><div><div class="nm">'+esc(t.name)+'</div><div class="mt">'+t.tasks.length+' tasks · '+t.size+'</div></div></div>';
+  });
+  h+='<button class="newtpl" onclick="toast(\'Would create a new blank template\')">＋ New template</button></div>';
+  return h;
+}
+
+function editorHtml(){
+  var t=tpl(selId); if(!t || selId==='blank'){ selId=TEMPLATES[0].id; t=tpl(selId); }
+  var roleOpts=ROLES.map(function(r){return '<option'+(r===''?'':'')+'>'+esc(r)+'</option>';}).join('');
+  var phaseOpts=PHASES.map(function(p){return '<option>'+esc(p)+'</option>';}).join('');
+  var h='<div class="panel"><h2>Edit template</h2><div class="desc">Define the defaults and the task playbook. Offsets are days from the project start date.</div>';
+  h+='<div class="frow">'+
+       '<div class="fld" style="flex:2;"><label>Template name</label><input value="'+esc(t.name)+'"></div>'+
+       '<div class="fld"><label>Icon</label><input value="'+t.icon+'" style="text-align:center;"></div>'+
+       '<div class="fld"><label>Default size</label><select><option'+(t.size==='S'?' selected':'')+'>S</option><option'+(t.size==='M'?' selected':'')+'>M</option><option'+(t.size==='L'?' selected':'')+'>L</option><option'+(t.size==='XL'?' selected':'')+'>XL</option></select></div>'+
+     '</div>'+
+     '<div class="frow">'+
+       '<div class="fld" style="flex:2;"><label>Default category</label><input value="'+esc(t.category)+'"></div>'+
+       '<div class="fld"><label>Data Program</label><select><option'+(t.dp?' selected':'')+'>Yes</option><option'+(!t.dp?' selected':'')+'>No</option></select></div>'+
+     '</div>';
+  h+='<div class="seclabel">Task playbook<span class="ln"></span></div>';
+  h+='<table class="pb"><thead><tr><th style="width:42%;">Task</th><th>Phase</th><th>Role</th><th>Offset</th><th></th></tr></thead><tbody>';
+  t.tasks.forEach(function(tk,i){
+    h+='<tr>'+
+      '<td><input class="ed-inp" style="width:100%;" value="'+esc(tk.t)+'"></td>'+
+      '<td><select class="ed-inp">'+PHASES.map(function(p){return '<option'+(p===tk.ph?' selected':'')+'>'+esc(p)+'</option>';}).join('')+'</select></td>'+
+      '<td><select class="ed-inp">'+ROLES.map(function(r){return '<option'+(r===tk.role?' selected':'')+'>'+esc(r)+'</option>';}).join('')+'</select></td>'+
+      '<td><input class="ed-inp" type="number" style="width:64px;" value="'+tk.off+'"> <span class="tk-off">d</span></td>'+
+      '<td><button class="rm" title="Remove" onclick="rmTask(\''+t.id+'\','+i+')">✕</button></td>'+
+    '</tr>';
+  });
+  h+='</tbody></table>';
+  h+='<button class="addtask" onclick="addTask(\''+t.id+'\')">＋ Add task</button>';
+  h+='<div class="actions"><button class="btn btn-primary" onclick="toast(\'Would save template to app_config.project_templates\')">Save template</button><button class="btn btn-secondary" onclick="toast(\'Discarded\')">Discard</button></div>';
+  h+='</div>';
+  return h;
+}
+
+function rmTask(id,i){ var t=tpl(id); t.tasks.splice(i,1); render(); }
+function addTask(id){ var t=tpl(id); t.tasks.push({t:'New task', role:'(unassigned)', off:(t.tasks.length?t.tasks[t.tasks.length-1].off+7:3), ph:'Build'}); render(); }
+function onStart(v){ startDate=v; render(); }
+
+function render(){
+  var annot=document.getElementById('annot'), hint=document.getElementById('modehint'), wrap=document.getElementById('wrap');
+  if (mode==='use'){
+    annot.innerHTML='<strong>Try it:</strong> click a template on the left to see what it creates. Change the <strong>Start date</strong> — every task due date recomputes from its offset. “Blank project” opens the normal form.';
+    hint.textContent='What anyone who can create a project sees.';
+    wrap.innerHTML=galleryHtml()+previewHtml();
+  } else {
+    annot.innerHTML='<strong>Admin / team-lead view.</strong> Define a template’s defaults and its task playbook (each task carries a phase, a suggested role, and a day-offset from the project start). Add/remove tasks below.';
+    hint.textContent='Admins & team leads only.';
+    wrap.innerHTML=manageListHtml()+editorHtml();
+  }
+}
+render();
+</script>
+</body>
+</html>

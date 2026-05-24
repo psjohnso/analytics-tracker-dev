@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Activity feed + @mentions — live mockup</title>
+<style>
+  :root { --navy:#002669; --green:#83AC16; --orange:#C24200; --yellow:#FFDB22; --border:#E8E6DF; --text-body:#002855; --text-muted:#6B7280; --bg:#F3F1EB; --white:#fff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text-body); }
+  .appbar { display:flex; align-items:center; gap:14px; background:var(--navy); color:#fff; padding:12px 22px; position:relative; }
+  .appbar .brand { font-weight:800; font-size:15px; }
+  .appbar .sub { font-family:'Cardo',Georgia,serif; font-style:italic; font-size:12px; opacity:0.8; }
+  .appbar .grow { flex:1; }
+  .appbar .ver { font-size:10px; background:rgba(255,255,255,0.15); padding:2px 8px; border-radius:4px; font-weight:700; }
+  .bell { position:relative; cursor:pointer; font-size:20px; line-height:1; padding:6px 8px; border-radius:8px; }
+  .bell:hover { background:rgba(255,255,255,0.12); }
+  .bell .badge { position:absolute; top:-2px; right:-2px; background:#DC2626; color:#fff; font-size:10px; font-weight:800; min-width:17px; height:17px; border-radius:9px; display:flex; align-items:center; justify-content:center; padding:0 4px; border:2px solid var(--navy); }
+  .accent { height:4px; background:linear-gradient(90deg,#C24200 25%,#FFDB22 25%,#FFDB22 50%,#83AC16 50%,#83AC16 75%,#002669 75%); }
+
+  /* inbox dropdown */
+  .inbox { position:absolute; top:52px; right:16px; width:380px; max-width:92vw; background:#fff; border:1px solid var(--border); border-radius:12px; box-shadow:0 12px 36px rgba(0,0,0,0.18); z-index:40; overflow:hidden; display:none; }
+  .inbox.open { display:block; }
+  .inbox-head { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border); }
+  .inbox-head .t { font-size:14px; font-weight:800; color:var(--navy); }
+  .inbox-head .mark { font-size:11px; font-weight:700; color:var(--navy); cursor:pointer; background:none; border:none; }
+  .inbox-head .mark:hover { text-decoration:underline; }
+  .inbox-list { max-height:380px; overflow-y:auto; }
+  .ntf { display:flex; gap:10px; padding:11px 16px; border-bottom:1px solid #F2F0EA; cursor:pointer; }
+  .ntf:hover { background:#F8FAFF; }
+  .ntf.unread { background:#F4F7FF; }
+  .ntf .av { width:30px; height:30px; border-radius:50%; background:var(--navy); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .ntf .body { min-width:0; flex:1; }
+  .ntf .msg { font-size:12.5px; color:var(--text-body); line-height:1.35; }
+  .ntf .msg b { color:var(--navy); }
+  .ntf .ctx { font-size:11px; color:var(--text-muted); margin-top:3px; }
+  .ntf .dot { width:8px; height:8px; border-radius:50%; background:#2563EB; flex-shrink:0; margin-top:6px; }
+  .ntf .dot.hidden { visibility:hidden; }
+  .inbox-empty { padding:26px; text-align:center; color:var(--text-muted); font-size:13px; }
+
+  .annot { background:#FEF3C7; border-left:4px solid #F59E0B; padding:9px 16px; font-size:12px; color:#78350F; line-height:1.55; }
+  .annot strong { color:#422006; } .annot kbd { background:#fff; border:1px solid #D6B45f; border-radius:4px; padding:0 5px; font-weight:700; }
+
+  .wrap { max-width:780px; margin:0 auto; padding:18px 22px 60px; }
+  .pcard { background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px 18px; margin-bottom:16px; }
+  .pcard h1 { margin:0 0 6px; font-size:18px; color:var(--navy); font-weight:800; }
+  .pmeta { display:flex; flex-wrap:wrap; gap:7px; align-items:center; }
+  .tag { font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; background:#EEF2FF; color:var(--navy); border:1px solid #C7D2FE; }
+  .tag.status { background:#FFF7ED; color:#9A3412; border-color:#FED7AA; }
+
+  .panel { background:#fff; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .panel-head { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--border); }
+  .panel-head .t { font-size:14px; font-weight:800; color:var(--navy); }
+  .seg { margin-left:auto; display:inline-flex; border:1.5px solid var(--border); border-radius:8px; overflow:hidden; }
+  .seg button { font-family:inherit; font-size:11.5px; font-weight:700; color:var(--navy); background:#fff; border:none; padding:5px 11px; cursor:pointer; }
+  .seg button.on { background:var(--navy); color:#fff; }
+
+  .feed { padding:8px 16px 4px; max-height:460px; overflow-y:auto; }
+  /* activity (system) entries */
+  .act { display:flex; gap:10px; align-items:flex-start; padding:7px 0 7px 2px; font-size:12px; color:var(--text-muted); }
+  .act .ic { width:22px; height:22px; border-radius:50%; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; }
+  .act b { color:var(--text-body); }
+  .act .when { color:#9CA3AF; }
+  /* comment entries */
+  .cmt { display:flex; gap:10px; padding:10px 0; }
+  .cmt .av { width:30px; height:30px; border-radius:50%; background:var(--green); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cmt.me .av { background:var(--navy); }
+  .cmt .cbody { min-width:0; flex:1; }
+  .cmt .chead { font-size:12.5px; }
+  .cmt .chead b { color:var(--navy); font-weight:800; }
+  .cmt .chead .when { color:#9CA3AF; font-size:11px; margin-left:6px; }
+  .cmt .ctext { font-size:13px; line-height:1.5; color:var(--text-body); margin-top:2px; white-space:pre-wrap; }
+  .mention { background:#E0EAFF; color:#1E3A8A; font-weight:700; border-radius:4px; padding:0 4px; }
+
+  /* composer */
+  .composer { border-top:1px solid var(--border); padding:12px 16px; position:relative; }
+  .composer textarea { width:100%; min-height:64px; resize:vertical; font-family:inherit; font-size:13px; border:1.5px solid var(--border); border-radius:9px; padding:9px 11px; outline:none; color:var(--text-body); }
+  .composer textarea:focus { border-color:var(--navy); }
+  .composer .row { display:flex; align-items:center; gap:10px; margin-top:8px; }
+  .composer .hint { font-size:11px; color:var(--text-muted); }
+  .composer .grow { flex:1; }
+  .btn { font-family:inherit; font-size:12.5px; font-weight:800; border-radius:8px; padding:7px 16px; cursor:pointer; border:1px solid transparent; }
+  .btn-primary { background:var(--navy); color:#fff; }
+  .btn-primary:disabled { opacity:0.5; cursor:default; }
+  .mmenu { position:absolute; bottom:74px; left:16px; width:240px; background:#fff; border:1px solid var(--border); border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,0.16); z-index:20; display:none; overflow:hidden; }
+  .mmenu.open { display:block; }
+  .mmenu .mi { display:flex; align-items:center; gap:9px; padding:8px 11px; cursor:pointer; font-size:13px; }
+  .mmenu .mi:hover, .mmenu .mi.sel { background:#F4F7FF; }
+  .mmenu .av { width:24px; height:24px; border-radius:50%; background:var(--navy); color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  #toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--navy); color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:8px; opacity:0; transition:opacity .2s; pointer-events:none; z-index:60; }
+  #toast.show { opacity:1; }
+</style>
+</head>
+<body>
+  <div class="appbar">
+    <div><div class="brand">DATA INTELLIGENCE</div><div class="sub">Project &amp; Task Tracker · Information Technology</div></div>
+    <div class="grow"></div>
+    <span class="ver">mockup</span>
+    <div class="bell" id="bell" onclick="toggleInbox(event)">🔔<span class="badge" id="badge"></span></div>
+    <div class="inbox" id="inbox">
+      <div class="inbox-head"><span class="t">Notifications</span><button class="mark" onclick="markAll()">Mark all read</button></div>
+      <div class="inbox-list" id="inbox-list"></div>
+    </div>
+  </div>
+  <div class="accent"></div>
+  <div class="annot">
+    <strong>Two surfaces, one feature.</strong> Top-right <strong>🔔 inbox</strong> = your incoming notifications (click one to jump + mark read; you’re signed in as <b>Peter Johnson</b>). Below = a project’s <strong>Activity</strong> panel: auto-logged events interleaved with comments. Type a comment and use <kbd>@</kbd> to mention a teammate — posting it pings them (watch for the toast). Toggle <strong>All / Comments</strong> to hide the system events.
+  </div>
+
+  <div class="wrap">
+    <div class="pcard">
+      <h1>Water Conservation Rebates Dashboard</h1>
+      <div class="pmeta">
+        <span class="tag status">On Hold</span>
+        <span class="tag">Lead: Maria Sanchez</span>
+        <span class="tag">Partner: Tucson Water</span>
+        <span class="tag">Due May 30</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="t">Activity</span>
+        <div class="seg"><button id="seg-all" class="on" onclick="setFilter('all')">All</button><button id="seg-cmt" onclick="setFilter('comments')">Comments</button></div>
+      </div>
+      <div class="feed" id="feed"></div>
+      <div class="composer">
+        <div class="mmenu" id="mmenu"></div>
+        <textarea id="composer" placeholder="Write a comment…  use @ to mention a teammate" oninput="onInput()" onkeydown="onKey(event)"></textarea>
+        <div class="row">
+          <span class="hint">@ to mention · ⌘/Ctrl+Enter to post</span>
+          <span class="grow"></span>
+          <button class="btn btn-primary" id="postbtn" onclick="postComment()" disabled>Comment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="toast"></div>
+
+<script>
+var ME = 'Peter Johnson';
+var MEMBERS = ['Peter Johnson','Maria Sanchez','David Kim','Aisha Brown','Tom Nguyen','Rachel Green'];
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function initials(n){ return n.split(/\s+/).map(function(w){return w[0];}).slice(0,2).join('').toUpperCase(); }
+function toast(m){ var t=document.getElementById('toast'); t.innerHTML=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove('show');},2600); }
+
+// Unified timeline (oldest → newest). type: 'act' (system) or 'cmt' (comment).
+var FEED = [
+  { type:'act', ic:'🆕', when:'May 1',  text:'<b>Maria Sanchez</b> created this project' },
+  { type:'act', ic:'▷',  when:'May 2',  text:'<b>Maria Sanchez</b> changed status <b>Idea → Scheduled</b>' },
+  { type:'cmt', who:'Maria Sanchez', when:'May 3', text:'@Peter Johnson kicking this off — partner is Tucson Water. We need the Hansen feed before we can build.' },
+  { type:'cmt', who:'Peter Johnson', when:'May 4', text:'Thanks Maria. @David Kim can you confirm the Hansen feed is stable?' },
+  { type:'act', ic:'⏸', when:'May 9',  text:'<b>Peter Johnson</b> changed status <b>Scheduled → On Hold</b>' },
+  { type:'cmt', who:'David Kim', when:'May 11', text:'Hansen API changed — vendor pushed an update that broke the pull. Holding until they patch. @Peter Johnson @Maria Sanchez' },
+  { type:'act', ic:'📅', when:'May 11', text:'<b>Peter Johnson</b> moved working due <b>May 9 → May 30</b>' },
+  { type:'cmt', who:'Maria Sanchez', when:'May 14', text:'Logged a ticket with the vendor (#48213). Will update here when they respond.' }
+];
+
+// Peter's inbox.
+var NOTIFS = [
+  { id:1, actor:'David Kim',     msg:'<b>David Kim</b> mentioned you in <b>Water Conservation Rebates Dashboard</b>', ctx:'“…broke the pull. Holding until they patch.” · 2d ago', read:false },
+  { id:2, actor:'System',        msg:'Status of <b>Equity Index Map</b> (you lead) changed to <b>Scheduled</b>', ctx:'by Aisha Brown · 3d ago', read:false },
+  { id:3, actor:'Maria Sanchez', msg:'<b>Maria Sanchez</b> mentioned you in <b>Water Conservation Rebates Dashboard</b>', ctx:'“…kicking this off — partner is Tucson Water.” · 5d ago', read:true },
+  { id:4, actor:'Tom Nguyen',    msg:'<b>Tom Nguyen</b> assigned you to <b>Parcel Viewer Modernization</b>', ctx:'1w ago', read:true }
+];
+
+var filter = 'all';
+function setFilter(f){ filter=f; document.getElementById('seg-all').classList.toggle('on',f==='all'); document.getElementById('seg-cmt').classList.toggle('on',f==='comments'); renderFeed(); }
+
+function renderText(t){
+  var h = esc(t);
+  MEMBERS.forEach(function(m){ h = h.split('@'+m).join('<span class="mention">@'+esc(m)+'</span>'); });
+  return h.replace(/\n/g,'<br>');
+}
+function renderFeed(){
+  var html='';
+  FEED.forEach(function(e){
+    if (e.type==='act'){
+      if (filter==='comments') return;
+      html += '<div class="act"><span class="ic">'+e.ic+'</span><div>'+e.text+' <span class="when">· '+e.when+'</span></div></div>';
+    } else {
+      html += '<div class="cmt'+(e.who===ME?' me':'')+'"><div class="av">'+initials(e.who)+'</div><div class="cbody">'+
+        '<div class="chead"><b>'+esc(e.who)+'</b><span class="when">'+e.when+'</span></div>'+
+        '<div class="ctext">'+renderText(e.text)+'</div></div></div>';
+    }
+  });
+  var feed=document.getElementById('feed'); feed.innerHTML=html; feed.scrollTop=feed.scrollHeight;
+}
+
+// ── inbox ──
+function renderBell(){
+  var unread = NOTIFS.filter(function(n){return !n.read;}).length;
+  var b=document.getElementById('badge'); b.textContent=unread||''; b.style.display=unread?'flex':'none';
+  var list=document.getElementById('inbox-list');
+  list.innerHTML = NOTIFS.length ? NOTIFS.map(function(n){
+    var av = n.actor==='System' ? '★' : initials(n.actor);
+    return '<div class="ntf'+(n.read?'':' unread')+'" onclick="openNotif('+n.id+')">'+
+      '<div class="av">'+av+'</div>'+
+      '<div class="body"><div class="msg">'+n.msg+'</div><div class="ctx">'+n.ctx+'</div></div>'+
+      '<div class="dot'+(n.read?' hidden':'')+'"></div>'+
+    '</div>';
+  }).join('') : '<div class="inbox-empty">You’re all caught up 🎉</div>';
+}
+function toggleInbox(e){ e.stopPropagation(); document.getElementById('inbox').classList.toggle('open'); }
+function openNotif(id){
+  var n=NOTIFS.find(function(x){return x.id===id;}); if(n) n.read=true;
+  renderBell();
+  document.getElementById('inbox').classList.remove('open');
+  toast('Jumped to the item · marked read');
+}
+function markAll(){ NOTIFS.forEach(function(n){n.read=true;}); renderBell(); toast('All notifications marked read'); }
+document.addEventListener('click', function(){ document.getElementById('inbox').classList.remove('open'); });
+
+// ── composer + @mention picker ──
+var ta=document.getElementById('composer'), mmenu=document.getElementById('mmenu');
+var tokenStart=-1, mSel=0, mMatches=[];
+function onInput(){
+  document.getElementById('postbtn').disabled = ta.value.trim()==='';
+  var caret=ta.selectionStart, upto=ta.value.slice(0,caret);
+  var m=upto.match(/@([A-Za-z]*)$/);
+  if (m){
+    tokenStart=caret-m[0].length;
+    var q=m[1].toLowerCase();
+    mMatches=MEMBERS.filter(function(x){return x.toLowerCase().indexOf(q)>=0;});
+    mSel=0; showMenu();
+  } else hideMenu();
+}
+function showMenu(){
+  if(!mMatches.length){ hideMenu(); return; }
+  mmenu.innerHTML=mMatches.map(function(name,i){ return '<div class="mi'+(i===mSel?' sel':'')+'" onmousedown="pickMention(event,'+i+')"><div class="av">'+initials(name)+'</div>'+esc(name)+'</div>'; }).join('');
+  mmenu.classList.add('open');
+}
+function hideMenu(){ mmenu.classList.remove('open'); tokenStart=-1; }
+function pickMention(e,i){
+  e.preventDefault();
+  var name=mMatches[i]; if(!name) return;
+  var caret=ta.selectionStart;
+  ta.value = ta.value.slice(0,tokenStart) + '@'+name+' ' + ta.value.slice(caret);
+  var pos=tokenStart + ('@'+name+' ').length;
+  ta.focus(); ta.setSelectionRange(pos,pos);
+  hideMenu(); document.getElementById('postbtn').disabled=ta.value.trim()==='';
+}
+function onKey(e){
+  if (mmenu.classList.contains('open')){
+    if (e.key==='ArrowDown'){ e.preventDefault(); mSel=(mSel+1)%mMatches.length; showMenu(); return; }
+    if (e.key==='ArrowUp'){ e.preventDefault(); mSel=(mSel-1+mMatches.length)%mMatches.length; showMenu(); return; }
+    if (e.key==='Enter' || e.key==='Tab'){ e.preventDefault(); pickMention(e,mSel); return; }
+    if (e.key==='Escape'){ hideMenu(); return; }
+  }
+  if ((e.metaKey||e.ctrlKey) && e.key==='Enter') postComment();
+}
+function postComment(){
+  var text=ta.value.trim(); if(!text) return;
+  FEED.push({ type:'cmt', who:ME, when:'just now', text:text });
+  renderFeed();
+  var mentioned=MEMBERS.filter(function(m){ return m!==ME && text.indexOf('@'+m)>=0; });
+  // (real app) write a notifications row per mentioned person
+  ta.value=''; document.getElementById('postbtn').disabled=true; hideMenu();
+  if (mentioned.length) toast('Notified '+mentioned.join(', '));
+  else toast('Comment posted');
+}
+
+renderFeed(); renderBell();
+</script>
+</body>
+</html>

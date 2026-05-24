@@ -42,6 +42,9 @@ let activeFilters = {
   itdTeam: [],
   dataProgram: false,
   search: '',
+  // Computed dimension (not a value list): items past due and still open.
+  // Set only by the "Overdue" preset; honored by filterProjects/filterTasks.
+  overdue: false,
 };
 
 // ─── STATUS / PRIORITY COLORS ─────────────────────────────────────────
@@ -289,9 +292,10 @@ function buildSidebarFilters() {
   renderFilterGroup('dept-filters', Object.fromEntries(Object.entries(depts).sort((a,b) => a[0].localeCompare(b[0]))), 'partnerDept');
   renderFilterGroup('team-filters', Object.fromEntries(Object.entries(teams).sort((a,b) => a[0].localeCompare(b[0]))), 'itdTeam');
 
-  // Saved-views sidebar section — re-rendered on every filter rebuild
-  // so the "active" chip highlight tracks the live filter state.
-  if (typeof renderSavedViews === 'function') renderSavedViews();
+  // Saved views now live in the preset bar above the results (renderPresetBar,
+  // called from updateFilterIndicator on every render). Here we just sync the
+  // collapsible-section open states + selection counts.
+  applyAccordionState();
 
   // Data Program toggle filter — count projects that would remain if this
   // toggle were ON, given other active filters.
@@ -311,15 +315,31 @@ function buildSidebarFilters() {
   }
 }
 
+// Collapsible-sidebar support: remember per-facet search text, the last items
+// rendered (so a search keystroke can re-filter without recomputing counts),
+// and which accordion sections the user has explicitly opened/closed.
+var facetSearch = {};
+var lastFacetItems = {};
+var sectionOpenState = {};
+var FACET_GROUP_IDS = {
+  status: 'status-filters', priority: 'priority-filters', category: 'category-filters',
+  member: 'member-filters', taskStatus: 'task-status-filters', taskCategory: 'task-category-filters',
+  taskTool: 'task-tool-filters', partnerDept: 'dept-filters', itdTeam: 'team-filters'
+};
+
 function renderFilterGroup(id, items, filterType) {
   const el = document.getElementById(id);
+  if (!el) return;
+  lastFacetItems[filterType] = items;
   const arr = activeFilters[filterType];
   const noneSelected = arr.length === 0;
   const total = Object.values(items).reduce((a,b) => a+b, 0);
+  const q = (facetSearch[filterType] || '').toLowerCase();
   const allBtn = `<button class="filter-btn ${noneSelected ? 'active' : ''}" onclick="setFilter('${filterType}', null)">
     <span>All</span><span class="badge">${total}</span>
   </button>`;
-  const btns = Object.entries(items).map(([k,v]) => {
+  const entries = Object.entries(items).filter(([k]) => !q || k.toLowerCase().includes(q));
+  const btns = entries.map(([k,v]) => {
     const isActive = arr.includes(k);
     const dot = STATUS_COLOR(k) ? `<span class="status-dot" style="background:${STATUS_COLOR(k)}"></span>` : '';
     return `<button class="filter-btn ${isActive ? 'active' : ''}" onclick="setFilter('${filterType}', '${k.replace(/'/g, "\\'")}')">
@@ -327,7 +347,42 @@ function renderFilterGroup(id, items, filterType) {
       <span class="badge">${v}</span>
     </button>`;
   }).join('');
-  el.innerHTML = allBtn + btns;
+  el.innerHTML = allBtn + btns + (q && !entries.length ? '<div class="facet-empty">No matches</div>' : '');
+  updateAccordionCount(filterType);
+}
+
+// Live filter inside one facet's value list (the per-facet search box).
+function setFacetSearch(type, val) {
+  facetSearch[type] = val;
+  renderFilterGroup(FACET_GROUP_IDS[type], lastFacetItems[type] || {}, type);
+}
+
+// Show the count of selected values in a facet's accordion header.
+function updateAccordionCount(type) {
+  var c = document.getElementById('cnt-' + type);
+  if (!c) return;
+  var n = activeFilters[type] ? activeFilters[type].length : 0;
+  c.textContent = n ? n : '';
+  c.style.display = n ? 'inline-block' : 'none';
+}
+
+// Expand a section if the user opened it, else auto-open when it has a selection.
+function applyAccordionState() {
+  Object.keys(FACET_GROUP_IDS).forEach(function(type) {
+    var secId = 'sec-' + type;
+    var el = document.getElementById(secId);
+    if (!el) return;
+    var open = (secId in sectionOpenState) ? sectionOpenState[secId] : (activeFilters[type].length > 0);
+    el.classList.toggle('open', open);
+  });
+}
+
+function toggleFilterSection(secId) {
+  var el = document.getElementById(secId);
+  if (!el) return;
+  var open = !el.classList.contains('open');
+  el.classList.toggle('open', open);
+  sectionOpenState[secId] = open;
 }
 
 const OPEN_PROJECT_STATUSES = ['Active', 'Scheduled', 'On Hold', 'Future', 'Idea', 'Waiting for Response'];
@@ -424,6 +479,7 @@ function clearAllFilters() {
   activeFilters.partnerDept = [];
   activeFilters.itdTeam = [];
   activeFilters.dataProgram = false;
+  activeFilters.overdue = false;
   activeFilters.search = '';
   var searchEl = document.getElementById('search-input');
   if (searchEl) searchEl.value = '';
@@ -431,6 +487,7 @@ function clearAllFilters() {
   if (dpCb) dpCb.checked = false;
   resetQuickFilterBtn('open-projects-btn', '#83AC16');
   resetQuickFilterBtn('open-tasks-btn', '#C24200');
+  if (typeof svLastAppliedId !== 'undefined') svLastAppliedId = null;
   buildSidebarFilters();
   currentPage = 1;
   render();
@@ -450,11 +507,15 @@ function getActiveFilterCount() {
   if (activeFilters.partnerDept.length) count += activeFilters.partnerDept.length;
   if (activeFilters.itdTeam.length) count += activeFilters.itdTeam.length;
   if (activeFilters.dataProgram) count++;
+  if (activeFilters.overdue) count++;
   if (activeFilters.search) count++;
   return count;
 }
 
 function updateFilterIndicator() {
+  // The preset bar lives outside the dataDirty fast-path, so refresh it on
+  // every render (covers tab switches, preset clicks, manual filter edits).
+  if (typeof renderPresetBar === 'function') renderPresetBar();
   var count = getActiveFilterCount();
   var isFilterTab = currentTab === 'projects' || currentTab === 'tasks';
   var indicator = document.getElementById('sidebar-active-indicator');
@@ -490,6 +551,10 @@ function updateFilterIndicator() {
   if (activeFilters.dataProgram) {
     chips += '<span style="' + chipStyle + '">Data Program' +
       '<span style="' + xStyle + '" onclick="activeFilters.dataProgram=false;buildSidebarFilters();render();updateFilterIndicator();">&times;</span></span>';
+  }
+  if (activeFilters.overdue) {
+    chips += '<span style="' + chipStyle + '">Overdue' +
+      '<span style="' + xStyle + '" onclick="activeFilters.overdue=false;buildSidebarFilters();render();updateFilterIndicator();">&times;</span></span>';
   }
   if (activeFilters.search) {
     chips += '<span style="' + chipStyle + '">Search: ' + esc(activeFilters.search.length > 15 ? activeFilters.search.slice(0, 15) + '…' : activeFilters.search) +
@@ -764,6 +829,10 @@ function filterProjects() {
   if (activeFilters.partnerDept.length) data = data.filter(p => activeFilters.partnerDept.includes(p.partner_dept));
   if (activeFilters.itdTeam.length)  data = data.filter(p => activeFilters.itdTeam.includes(p.itd_team));
   if (activeFilters.dataProgram) data = data.filter(p => p.is_data_program);
+  if (activeFilters.overdue) {
+    var _ovT = new Date().toISOString().slice(0, 10);
+    data = data.filter(p => { var d = p.working_due || p.end; return d && d < _ovT && OPEN_PROJECT_STATUSES.includes(p.status); });
+  }
   if (activeFilters.search) data = data.filter(p =>
     (p.title || '').toLowerCase().includes(activeFilters.search) ||
     (p.description || '').toLowerCase().includes(activeFilters.search) ||
@@ -786,6 +855,10 @@ function filterTasks() {
     data = data.filter(function(t) {
       return activeFilters.member.includes(t.assignee);
     });
+  }
+  if (activeFilters.overdue) {
+    var _ovT = new Date().toISOString().slice(0, 10);
+    data = data.filter(t => { var d = t.working_due || t.due; return d && d < _ovT && OPEN_TASK_STATUSES.includes(t.status); });
   }
   if (activeFilters.search) data = data.filter(t =>
     (t.title || '').toLowerCase().includes(activeFilters.search) ||

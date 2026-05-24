@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Planned vs Actual by Employee × Category — Insights mockup</title>
+<style>
+  :root {
+    --navy: #002669;
+    --border: #E1E2DD;
+    --text-body: #002855;
+    --text-muted: #6B7280;
+    --bg: #F9FAFB;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px;
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text-body);
+    max-width: 1180px; margin: 0 auto;
+  }
+  h1 { margin: 0 0 4px 0; font-size: 22px; color: var(--navy); font-weight: 800; }
+  .lead { color: var(--text-muted); margin: 0 0 20px 0; font-size: 13px; }
+  .annot {
+    background: #FEF3C7; border-left: 4px solid #F59E0B;
+    padding: 10px 14px; border-radius: 6px; margin: 0 0 16px 0;
+    font-size: 12px; color: #78350F;
+  }
+  .annot strong { color: #422006; }
+  .privacy {
+    background: #EFF6FF; border-left: 4px solid #3B82F6;
+    padding: 10px 14px; border-radius: 6px; margin: 0 0 16px 0;
+    font-size: 12px; color: #1E3A8A;
+  }
+  .warn {
+    background: #FEF2F2; border-left: 4px solid #EF4444;
+    padding: 10px 14px; border-radius: 6px; margin: 0 0 24px 0;
+    font-size: 12px; color: #991B1B;
+  }
+
+  .ghost-header {
+    opacity: 0.55; padding: 14px 0; border-bottom: 1px dashed #CBD5E1;
+    margin-bottom: 18px;
+  }
+  .ghost-header .tab-title { font-size: 18px; font-weight: 800; color: var(--navy); }
+  .ghost-header .tab-sub   { font-size: 12px; color: var(--text-muted); }
+
+  /* Filter row (ghosted — same Team/Unit/Member pattern as Team Load) */
+  .filter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; opacity: 0.7; }
+  .filter-row .label { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  .filter-row select {
+    font-family: Lato, sans-serif; font-size: 12px; padding: 5px 10px;
+    border: 1px solid var(--border); border-radius: 6px; background: #fff; color: var(--navy);
+  }
+
+  .kpi-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+    gap: 12px; margin-bottom: 28px;
+  }
+  .res-kpi { background: #fff; border: 1px solid #E8E6DF; border-radius: 10px; padding: 14px 16px; }
+  .kpi-label { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .kpi-value { font-size: 22px; font-weight: 800; color: var(--navy); }
+  .kpi-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .option { margin-bottom: 40px; }
+  .option-tag {
+    display: inline-block; background: var(--navy); color: #fff; font-weight: 800;
+    font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 6px; margin-bottom: 8px;
+  }
+  .option h2 { margin: 0 0 2px 0; font-size: 17px; font-weight: 800; color: var(--navy); }
+  .option .desc { font-size: 12px; color: var(--text-muted); margin: 0 0 14px 0; }
+
+  .tbl-wrap { background: #fff; border: 1px solid #E8E6DF; border-radius: 12px; padding: 8px 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    background: #F3F4F6; color: var(--navy); font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.04em; font-size: 10px; padding: 9px 12px; text-align: left;
+    border-bottom: 1px solid #E8E6DF; white-space: nowrap;
+  }
+  th.num { text-align: right; }
+  th.ctr { text-align: center; }
+  td { padding: 9px 12px; border-bottom: 1px solid #F1F1EC; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.ctr { text-align: center; }
+  .grp-row td { background: #F8FAFC; font-weight: 800; color: var(--navy); border-bottom: 1px solid #E8E6DF; }
+  .sub-name { padding-left: 24px; color: var(--text-body); }
+  .unit-badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 7px; text-transform: uppercase; letter-spacing: 0.03em; margin-left: 6px; }
+  .unit-gis { background: #DBEAFE; color: #1E40AF; }
+  .unit-ai  { background: #F0E6FF; color: #6B21A8; }
+  .unit-baa { background: #DCFCE7; color: #166534; }
+
+  .var-chip {
+    display: inline-block; padding: 2px 8px; border-radius: 10px; font-weight: 800;
+    font-variant-numeric: tabular-nums; font-size: 11px; min-width: 46px; text-align: center;
+  }
+
+  /* Matrix */
+  .matrix td.cell { text-align: center; font-variant-numeric: tabular-nums; font-weight: 700; }
+  .matrix td.empty { color: #CBD5E1; text-align: center; }
+  .matrix th.rot { font-size: 10px; }
+  .matrix .rowname { font-weight: 700; color: var(--navy); white-space: nowrap; }
+
+  .legend { display: inline-flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--text-muted); margin: 10px 2px 0; align-items: center; }
+  .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+
+  .callout { background: #fff; border: 1px solid #E8E6DF; border-left: 4px solid var(--navy); border-radius: 8px; padding: 14px 18px; font-size: 13px; margin-top: 8px; }
+  .callout strong { color: var(--navy); }
+  .callout ul { margin: 8px 0 0 0; padding-left: 20px; }
+  .callout li { margin: 5px 0; }
+  .recommend { font-size: 11px; font-weight: 800; color: #166534; background: #DCFCE7; padding: 2px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.04em; margin-left: 8px; }
+</style>
+</head>
+<body>
+
+<h1>Planned vs Actual — by Employee × Project Category</h1>
+<p class="lead">Three layout options for the same data. <strong>Planned</strong> = the original weekly allocation estimate captured by the snapshot pipeline when each week was current. <strong>Actual</strong> = that same week's allocation value after it was updated to reflect what really happened. Variance = (actual − planned) ÷ planned. Numbers below are illustrative sample data — identical across all three options so you're comparing layout, not content.</p>
+
+<div class="annot">
+  <strong>Where it slots:</strong> A new section on the Capacity → Insights tab, below Duration Calibration. The Team / Unit / Member filter row scopes the whole section.
+</div>
+<div class="privacy">
+  <strong>Visibility:</strong> per-person rows show by name only to team leads and to each person's own row — same pattern as Duration Calibration. Aggregates (category subtotals, KPIs) are visible to everyone.
+</div>
+<div class="warn">
+  <strong>Data dependency:</strong> "Actual via snapshots" needs enough accrued weekly snapshots to compare against. Until several weeks accumulate the variance will be thin or empty for recent weeks — the section will show a "building history" note rather than misleading numbers.
+</div>
+
+<!-- Ghost existing context -->
+<div class="ghost-header">
+  <div class="tab-title">💡 Project Insights</div>
+  <div class="tab-sub">Duration Calibration · Planned vs Actual (new)</div>
+</div>
+
+<!-- Ghost filter row -->
+<div class="filter-row">
+  <span class="label">Team:</span>
+  <select><option>Data Intelligence</option></select>
+  <span class="label">Unit:</span>
+  <select><option>All units</option><option>GIS</option><option>AI</option><option>BAA</option></select>
+  <span class="label">Member:</span>
+  <select><option>All members</option></select>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-row">
+  <div class="res-kpi"><div class="kpi-label">Planned (YTD)</div><div class="kpi-value" id="kpiPlanned">—</div><div class="kpi-sub">allocation estimate</div></div>
+  <div class="res-kpi"><div class="kpi-label">Actual (YTD)</div><div class="kpi-value" id="kpiActual">—</div><div class="kpi-sub">updated allocation</div></div>
+  <div class="res-kpi"><div class="kpi-label">Overall variance</div><div class="kpi-value" id="kpiVar">—</div><div class="kpi-sub">actual ÷ planned</div></div>
+  <div class="res-kpi"><div class="kpi-label">Most over plan</div><div class="kpi-value" id="kpiOver" style="font-size:15px;line-height:1.4;">—</div></div>
+  <div class="res-kpi"><div class="kpi-label">Most under plan</div><div class="kpi-value" id="kpiUnder" style="font-size:15px;line-height:1.4;">—</div></div>
+</div>
+
+<!-- OPTION 1 -->
+<div class="option">
+  <div class="option-tag">Option 1</div><span class="recommend">matches "category as primary slice"</span>
+  <h2>Category-first</h2>
+  <p class="desc">Group by project category (with a category subtotal row), employees nested underneath. Best for "which categories are we systematically mis-estimating, and who drives it."</p>
+  <div class="tbl-wrap" id="opt1"></div>
+</div>
+
+<!-- OPTION 2 -->
+<div class="option">
+  <div class="option-tag">Option 2</div>
+  <h2>Employee-first</h2>
+  <p class="desc">Group by employee (with a per-person subtotal row), categories nested underneath. Best for a 1:1 / capacity conversation: "how did this person's plan vs reality break down across their work."</p>
+  <div class="tbl-wrap" id="opt2"></div>
+</div>
+
+<!-- OPTION 3 -->
+<div class="option">
+  <div class="option-tag">Option 3</div>
+  <h2>Matrix heatmap</h2>
+  <p class="desc">Employees as rows, categories as columns; each cell is the variance %, color-coded. Most compact and scannable — patterns jump out, but it hides the raw planned/actual hours (shown on hover in the real thing).</p>
+  <div class="tbl-wrap" id="opt3"></div>
+  <div class="legend">
+    <span><span class="sw" style="background:#DBEAFE"></span>Under plan (&lt; 0.85×)</span>
+    <span><span class="sw" style="background:#DCFCE7"></span>On plan (0.85–1.15×)</span>
+    <span><span class="sw" style="background:#FEF9C3"></span>Over (1.15–1.5×)</span>
+    <span><span class="sw" style="background:#FED7AA"></span>Well over (1.5–2×)</span>
+    <span><span class="sw" style="background:#FECACA"></span>Major overrun (&gt; 2×)</span>
+    <span><span class="sw" style="background:#fff;border:1px solid #E5E7EB"></span>No work in category</span>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Reading the sample data (same numbers in all three):</strong>
+  <ul>
+    <li>Andrew Sutton — Data Engineering: planned 60h, actual 95h (1.58×). Estimated light, ran heavy. The single biggest overrun in the sample.</li>
+    <li>James McGinnis — Application Development: planned 60h, actual 44h (0.73×). Came in well under the estimate.</li>
+    <li>Dashboards &amp; Reporting overall lands close to plan; Data Engineering skews over.</li>
+  </ul>
+</div>
+
+<script>
+  // Shared sample dataset — illustrative only. One flat list of (person, unit, category) cells.
+  const CELLS = [
+    { person:'Peter Johnson',  unit:'BAA', cat:'Governance & Strategy',   planned:120, actual:98  },
+    { person:'Peter Johnson',  unit:'BAA', cat:'Dashboards & Reporting',  planned:40,  actual:52  },
+    { person:'James McGinnis', unit:'GIS', cat:'Geospatial Analysis',     planned:160, actual:188 },
+    { person:'James McGinnis', unit:'GIS', cat:'Application Development',  planned:60,  actual:44  },
+    { person:'Jessica Fraver', unit:'BAA', cat:'Dashboards & Reporting',  planned:140, actual:152 },
+    { person:'Jessica Fraver', unit:'BAA', cat:'Data Engineering',        planned:80,  actual:61  },
+    { person:'Kate Carter',    unit:'BAA', cat:'Stakeholder Support',     planned:90,  actual:110 },
+    { person:'Kate Carter',    unit:'BAA', cat:'Dashboards & Reporting',  planned:70,  actual:66  },
+    { person:'Andrew Sutton',  unit:'AI',  cat:'Application Development',  planned:150, actual:120 },
+    { person:'Andrew Sutton',  unit:'AI',  cat:'Data Engineering',        planned:60,  actual:95  },
+    { person:'Vladimir Berg',  unit:'AI',  cat:'Data Engineering',        planned:130, actual:142 },
+    { person:'Vladimir Berg',  unit:'AI',  cat:'Geospatial Analysis',     planned:40,  actual:33  },
+  ];
+
+  const unitClass = { GIS:'unit-gis', AI:'unit-ai', BAA:'unit-baa' };
+  function ratioColor(r) {
+    if (r < 0.85) return { bg:'#DBEAFE', fg:'#1E3A8A' };
+    if (r <= 1.15) return { bg:'#DCFCE7', fg:'#166534' };
+    if (r <= 1.50) return { bg:'#FEF9C3', fg:'#854D0E' };
+    if (r <= 2.00) return { bg:'#FED7AA', fg:'#9A3412' };
+    return { bg:'#FECACA', fg:'#991B1B' };
+  }
+  function varPct(p, a) { return Math.round((a - p) / p * 100); }
+  function varChip(p, a) {
+    const r = a / p, c = ratioColor(r), v = varPct(p, a);
+    return '<span class="var-chip" style="background:' + c.bg + ';color:' + c.fg + '">' + (v > 0 ? '+' : '') + v + '%</span>';
+  }
+  function uBadge(u) { return '<span class="unit-badge ' + unitClass[u] + '">' + u + '</span>'; }
+  const h = n => Math.round(n) + 'h';
+
+  // ---- KPIs ----
+  (function () {
+    const tp = CELLS.reduce((s, c) => s + c.planned, 0);
+    const ta = CELLS.reduce((s, c) => s + c.actual, 0);
+    document.getElementById('kpiPlanned').textContent = h(tp);
+    document.getElementById('kpiActual').textContent = h(ta);
+    document.getElementById('kpiVar').innerHTML = (ta / tp).toFixed(2) + '×';
+    // by category for over/under extremes
+    const byCat = {};
+    CELLS.forEach(c => { (byCat[c.cat] = byCat[c.cat] || { p:0, a:0 }); byCat[c.cat].p += c.planned; byCat[c.cat].a += c.actual; });
+    const cats = Object.entries(byCat).map(([k, v]) => ({ k, r: v.a / v.p, v: varPct(v.p, v.a) }));
+    const over = cats.slice().sort((x, y) => y.r - x.r)[0];
+    const under = cats.slice().sort((x, y) => x.r - y.r)[0];
+    document.getElementById('kpiOver').innerHTML = over.k + '<br><span style="font-weight:600;font-size:12px;color:var(--text-muted)">' + (over.v > 0 ? '+' : '') + over.v + '%</span>';
+    document.getElementById('kpiUnder').innerHTML = under.k + '<br><span style="font-weight:600;font-size:12px;color:var(--text-muted)">' + (under.v > 0 ? '+' : '') + under.v + '%</span>';
+  })();
+
+  // ---- Option 1: category-first ----
+  (function () {
+    const cats = [...new Set(CELLS.map(c => c.cat))].sort();
+    let html = '<table><thead><tr><th>Category / Employee</th><th class="num">Planned</th><th class="num">Actual</th><th class="ctr">Variance</th></tr></thead><tbody>';
+    cats.forEach(cat => {
+      const rows = CELLS.filter(c => c.cat === cat);
+      const p = rows.reduce((s, c) => s + c.planned, 0), a = rows.reduce((s, c) => s + c.actual, 0);
+      html += '<tr class="grp-row"><td>' + cat + '</td><td class="num">' + h(p) + '</td><td class="num">' + h(a) + '</td><td class="ctr">' + varChip(p, a) + '</td></tr>';
+      rows.sort((x, y) => (y.actual / y.planned) - (x.actual / x.planned)).forEach(c => {
+        html += '<tr><td class="sub-name">' + c.person + uBadge(c.unit) + '</td><td class="num">' + h(c.planned) + '</td><td class="num">' + h(c.actual) + '</td><td class="ctr">' + varChip(c.planned, c.actual) + '</td></tr>';
+      });
+    });
+    html += '</tbody></table>';
+    document.getElementById('opt1').innerHTML = html;
+  })();
+
+  // ---- Option 2: employee-first ----
+  (function () {
+    const people = [...new Set(CELLS.map(c => c.person))];
+    let html = '<table><thead><tr><th>Employee / Category</th><th class="num">Planned</th><th class="num">Actual</th><th class="ctr">Variance</th></tr></thead><tbody>';
+    people.forEach(person => {
+      const rows = CELLS.filter(c => c.person === person);
+      const p = rows.reduce((s, c) => s + c.planned, 0), a = rows.reduce((s, c) => s + c.actual, 0);
+      html += '<tr class="grp-row"><td>' + person + uBadge(rows[0].unit) + '</td><td class="num">' + h(p) + '</td><td class="num">' + h(a) + '</td><td class="ctr">' + varChip(p, a) + '</td></tr>';
+      rows.sort((x, y) => y.actual - x.actual).forEach(c => {
+        html += '<tr><td class="sub-name">' + c.cat + '</td><td class="num">' + h(c.planned) + '</td><td class="num">' + h(c.actual) + '</td><td class="ctr">' + varChip(c.planned, c.actual) + '</td></tr>';
+      });
+    });
+    html += '</tbody></table>';
+    document.getElementById('opt2').innerHTML = html;
+  })();
+
+  // ---- Option 3: matrix heatmap ----
+  (function () {
+    const people = [...new Set(CELLS.map(c => c.person))];
+    const cats = [...new Set(CELLS.map(c => c.cat))].sort();
+    const key = (p, c) => p + '||' + c;
+    const map = {}; CELLS.forEach(c => map[key(c.person, c.cat)] = c);
+    let html = '<table class="matrix"><thead><tr><th>Employee</th>';
+    cats.forEach(c => html += '<th class="ctr rot">' + c + '</th>');
+    html += '<th class="ctr">Total</th></tr></thead><tbody>';
+    people.forEach(person => {
+      const prows = CELLS.filter(c => c.person === person);
+      const tp = prows.reduce((s, c) => s + c.planned, 0), ta = prows.reduce((s, c) => s + c.actual, 0);
+      html += '<tr><td class="rowname">' + person + uBadge(prows[0].unit) + '</td>';
+      cats.forEach(cat => {
+        const cell = map[key(person, cat)];
+        if (!cell) { html += '<td class="empty">—</td>'; return; }
+        const r = cell.actual / cell.planned, col = ratioColor(r), v = varPct(cell.planned, cell.actual);
+        html += '<td class="cell" style="background:' + col.bg + ';color:' + col.fg + '" title="' + cat + ' — planned ' + cell.planned + 'h, actual ' + cell.actual + 'h">' + (v > 0 ? '+' : '') + v + '%</td>';
+      });
+      html += '<td class="cell" style="background:' + ratioColor(ta / tp).bg + ';color:' + ratioColor(ta / tp).fg + '">' + (varPct(tp, ta) > 0 ? '+' : '') + varPct(tp, ta) + '%</td>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('opt3').innerHTML = html;
+  })();
+</script>
+
+</body>
+</html>

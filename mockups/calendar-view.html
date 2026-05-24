@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar view — live mockup</title>
+<style>
+  :root { --navy:#002669; --green:#83AC16; --orange:#C24200; --yellow:#FFDB22; --border:#E8E6DF; --text-body:#002855; --text-muted:#6B7280; --bg:#F3F1EB; --white:#fff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text-body); }
+  .appbar { display:flex; align-items:center; gap:14px; background:var(--navy); color:#fff; padding:12px 22px; }
+  .appbar .brand { font-weight:800; font-size:15px; }
+  .appbar .sub { font-family:'Cardo',Georgia,serif; font-style:italic; font-size:12px; opacity:0.8; }
+  .appbar .ver { font-size:10px; background:rgba(255,255,255,0.15); padding:2px 8px; border-radius:4px; font-weight:700; }
+  .accent { height:4px; background:linear-gradient(90deg,#C24200 25%,#FFDB22 25%,#FFDB22 50%,#83AC16 50%,#83AC16 75%,#002669 75%); }
+  .subtabs { display:flex; gap:6px; padding:10px 22px 0; background:var(--white); border-bottom:1px solid var(--border); }
+  .subtab { padding:8px 14px; font-size:13px; font-weight:700; color:var(--text-muted); border-radius:8px 8px 0 0; }
+  .subtab.active { color:var(--navy); background:var(--bg); }
+  .annot { background:#FEF3C7; border-left:4px solid #F59E0B; padding:9px 16px; font-size:12px; color:#78350F; line-height:1.55; }
+  .annot strong { color:#422006; }
+
+  .toolbar { display:flex; align-items:center; gap:12px; padding:12px 22px; flex-wrap:wrap; }
+  .navgrp { display:flex; align-items:center; gap:4px; }
+  .navbtn { font-family:inherit; font-size:14px; font-weight:800; color:var(--navy); background:#fff; border:1.5px solid var(--border); border-radius:7px; width:32px; height:32px; cursor:pointer; }
+  .todaybtn { font-family:inherit; font-size:12px; font-weight:800; color:var(--navy); background:#fff; border:1.5px solid var(--border); border-radius:7px; padding:0 12px; height:32px; cursor:pointer; }
+  .monthlabel { font-size:17px; font-weight:800; color:var(--navy); min-width:160px; }
+  .grow { flex:1; }
+  .seg { display:inline-flex; border:1.5px solid var(--border); border-radius:8px; overflow:hidden; }
+  .seg button { font-family:inherit; font-size:12.5px; font-weight:700; color:var(--navy); background:#fff; border:none; padding:7px 12px; cursor:pointer; }
+  .seg button.on { background:var(--navy); color:#fff; }
+  .viewseg button.on { background:var(--navy); color:#fff; }
+
+  .layout { display:grid; grid-template-columns:1fr 300px; gap:16px; padding:6px 22px 40px; align-items:start; }
+  .cal { background:#fff; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .dow { display:grid; grid-template-columns:repeat(7,1fr); background:#FBFAF7; border-bottom:1px solid var(--border); }
+  .dow div { padding:8px 10px; font-size:10px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-muted); }
+  .weeks { display:grid; grid-template-columns:repeat(7,1fr); }
+  .cell { min-height:104px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:5px 6px; cursor:pointer; position:relative; }
+  .cell:nth-child(7n) { border-right:none; }
+  .cell.other { background:#FAFAF8; }
+  .cell.weekend { background:#FBFAF7; }
+  .cell.sel { outline:2px solid var(--navy); outline-offset:-2px; }
+  .daynum { font-size:12px; font-weight:800; color:var(--text-body); }
+  .cell.other .daynum { color:#C7C7C2; }
+  .today .daynum { background:var(--navy); color:#fff; border-radius:50%; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; }
+  .chip { display:flex; align-items:center; gap:5px; margin-top:3px; padding:2px 6px; border-radius:5px; background:#fff; border:1px solid var(--border); border-left:3px solid var(--navy); font-size:11px; font-weight:700; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .chip.over { background:#FEF2F2; border-color:#FECACA; }
+  .chip .tt { overflow:hidden; text-overflow:ellipsis; }
+  .more { font-size:10px; font-weight:800; color:var(--text-muted); margin-top:3px; padding-left:3px; }
+
+  .side { background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px 16px; position:sticky; top:10px; }
+  .side h3 { margin:0 0 2px; font-size:14px; font-weight:800; color:var(--navy); }
+  .side .sd { font-size:11px; color:var(--text-muted); margin:0 0 12px; }
+  .item { display:flex; gap:9px; align-items:flex-start; padding:9px 0; border-bottom:1px solid #F2F0EA; cursor:pointer; }
+  .item:last-child { border-bottom:none; }
+  .item .bar { width:4px; align-self:stretch; border-radius:3px; background:var(--navy); flex-shrink:0; }
+  .item .it { font-size:12.5px; font-weight:800; color:var(--navy); line-height:1.2; }
+  .item .meta { font-size:10.5px; color:var(--text-muted); margin-top:2px; }
+  .pill { font-size:9px; font-weight:800; padding:1px 6px; border-radius:20px; }
+  .over-tag { color:#DC2626; font-weight:800; }
+  .empty { font-size:12px; color:var(--text-muted); padding:18px 4px; text-align:center; }
+  .legend { display:flex; flex-wrap:wrap; gap:8px 14px; padding:2px 22px 10px; }
+  .lg { display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--text-muted); font-weight:600; }
+  .lg .d { width:9px; height:9px; border-radius:50%; }
+  .nodate { padding:4px 22px 0; font-size:11px; color:var(--text-muted); font-style:italic; }
+  #toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--navy); color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:8px; opacity:0; transition:opacity .2s; pointer-events:none; z-index:50; }
+  #toast.show { opacity:1; }
+</style>
+</head>
+<body>
+  <div class="appbar">
+    <div><div class="brand">DATA INTELLIGENCE</div><div class="sub">Project &amp; Task Tracker · Information Technology</div></div>
+    <span class="ver">mockup</span>
+  </div>
+  <div class="accent"></div>
+  <div class="subtabs">
+    <div class="subtab active">Projects</div>
+    <div class="subtab">Tasks</div>
+    <div class="subtab">Project Review</div>
+  </div>
+  <div class="annot">
+    <strong>Try it:</strong> click a day to see everything due that day on the right · use ‹ › / Today to move months · toggle <strong>Projects / Tasks</strong> to recolor the calendar by what's due. Items sit on their due date (working due for projects), colored by status; <span style="color:#DC2626;font-weight:800;">red</span> = overdue and not done. The Grid / List / Board / Calendar switch is where this lives in the toolbar.
+  </div>
+
+  <div class="toolbar">
+    <div class="navgrp">
+      <button class="navbtn" onclick="moveMonth(-1)">‹</button>
+      <button class="todaybtn" onclick="goToday()">Today</button>
+      <button class="navbtn" onclick="moveMonth(1)">›</button>
+    </div>
+    <div class="monthlabel" id="monthlabel"></div>
+    <div class="grow"></div>
+    <div class="seg" id="scopeseg">
+      <button id="sc-projects" class="on" onclick="setScope('projects')">Projects</button>
+      <button id="sc-tasks" onclick="setScope('tasks')">Tasks</button>
+    </div>
+    <div class="seg viewseg" title="View (mockup: Calendar shown)">
+      <button>⊞ Grid</button><button>☰ List</button><button>▤ Board</button><button class="on">📅 Calendar</button>
+    </div>
+  </div>
+  <div class="legend" id="legend"></div>
+
+  <div class="layout">
+    <div class="cal">
+      <div class="dow"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+      <div class="weeks" id="weeks"></div>
+    </div>
+    <div class="side" id="side"></div>
+  </div>
+  <div class="nodate" id="nodate"></div>
+  <div id="toast"></div>
+
+<script>
+var TODAY = new Date('2026-05-23T00:00:00');
+function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parse(s){ return s ? new Date(s+'T00:00:00') : null; }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function initials(n){ return (n||'?').split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase(); }
+function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove('show');},2200); }
+var MON=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+var STATUS_COLOR = { 'Active':'#83AC16','Scheduled':'#0E7490','On Hold':'#C24200','Future':'#9CA3AF','Idea':'#F59E0B','Complete':'#002669','Canceled':'#9CA3AF','Pending':'#6366F1','Waiting for Response':'#C026D3' };
+function sc(s){ return STATUS_COLOR[s] || '#9CA3AF'; }
+
+// Projects — due = working_due (target end). Some have no due (Idea).
+var PROJECTS = [
+  {title:'Parcel Viewer Modernization', status:'Active', due:'2026-06-12', who:'Peter Johnson'},
+  {title:'Water Conservation Rebates Dashboard', status:'On Hold', due:'2026-05-09', who:'Maria Sanchez'},
+  {title:'Open Data Portal Refresh', status:'Scheduled', due:'2026-07-01', who:'David Kim'},
+  {title:'AI Use Policy Rollout', status:'Active', due:'2026-06-30', who:'Aisha Brown'},
+  {title:'Council District Story Maps', status:'Active', due:'2026-06-05', who:'Tom Nguyen'},
+  {title:'GIS Address Standardization', status:'Active', due:'2026-05-19', who:'Tom Nguyen'},
+  {title:'Equity Index Map', status:'Scheduled', due:'2026-06-18', who:'Aisha Brown'},
+  {title:'Data Literacy Training Series', status:'Active', due:'2026-06-26', who:'Peter Johnson'},
+  {title:'Hansen Data Integration', status:'On Hold', due:'2026-05-15', who:'Rachel Green'},
+  {title:'Budget Dashboard Q2 Refresh', status:'Active', due:'2026-05-26', who:'Maria Sanchez'},
+  {title:'Water Usage Report', status:'Active', due:'2026-05-22', who:'David Kim'},
+  {title:'Open Data License Review', status:'Scheduled', due:'2026-05-29', who:'David Kim'},
+  {title:'Snowflake Migration — Phase 2', status:'Active', due:'2026-08-15', who:'Rachel Green'},
+  {title:'Crime Stats Public Dashboard', status:'Idea', due:'', who:'David Kim'},
+  {title:'Fleet Telematics Insights', status:'Idea', due:'', who:'Rachel Green'}
+];
+
+// Tasks — due = task due date; project = parent.
+var TASKS = [
+  {title:'Build data model', status:'Active', due:'2026-05-21', who:'Tom Nguyen', project:'Parcel Viewer'},
+  {title:'Stakeholder demo', status:'Pending', due:'2026-05-28', who:'Peter Johnson', project:'Parcel Viewer'},
+  {title:'Secure data access', status:'On Hold', due:'2026-05-11', who:'Maria Sanchez', project:'Water Rebates'},
+  {title:'QA + accessibility (ADA)', status:'Active', due:'2026-05-25', who:'Tom Nguyen', project:'Story Maps'},
+  {title:'Prototype dashboard', status:'Active', due:'2026-05-20', who:'Maria Sanchez', project:'Budget Q2'},
+  {title:'Field test', status:'Complete', due:'2026-05-08', who:'Tom Nguyen', project:'Survey123'},
+  {title:'Schema design', status:'On Hold', due:'2026-05-14', who:'Rachel Green', project:'Hansen'},
+  {title:'Address dedup pass', status:'Active', due:'2026-05-19', who:'Tom Nguyen', project:'GIS Address'},
+  {title:'Write report', status:'Active', due:'2026-05-22', who:'David Kim', project:'Water Usage'},
+  {title:'Peer review', status:'Pending', due:'2026-05-27', who:'Aisha Brown', project:'Water Usage'},
+  {title:'Domains & lists', status:'Complete', due:'2026-05-06', who:'Tom Nguyen', project:'Survey123'},
+  {title:'Responsible-AI review', status:'Active', due:'2026-05-29', who:'Aisha Brown', project:'AI Policy'},
+  {title:'Data quality validation', status:'Active', due:'2026-05-29', who:'Rachel Green', project:'Snowflake'},
+  {title:'Content outline', status:'Complete', due:'2026-05-12', who:'Tom Nguyen', project:'Story Maps'},
+  {title:'Gather data & media', status:'Active', due:'2026-05-29', who:'Aisha Brown', project:'Equity Index'},
+  {title:'Orchestration & scheduling', status:'Pending', due:'2026-05-29', who:'Rachel Green', project:'Snowflake'},
+  {title:'Form design', status:'Active', due:'2026-05-18', who:'Tom Nguyen', project:'Survey123 v2'},
+  {title:'Define question & scope', status:'Complete', due:'2026-05-05', who:'David Kim', project:'Water Usage'}
+];
+
+var scope = 'projects';
+var view = new Date('2026-05-01T00:00:00');
+var selected = '2026-05-29';
+
+function items(){ return scope==='projects' ? PROJECTS : TASKS; }
+function byDate(){
+  var m={};
+  items().forEach(function(it){ if(!it.due) return; (m[it.due]=m[it.due]||[]).push(it); });
+  return m;
+}
+function isOver(it){ return it.due && it.status!=='Complete' && it.status!=='Canceled' && parse(it.due) < TODAY; }
+
+function setScope(s){ scope=s; document.getElementById('sc-projects').classList.toggle('on',s==='projects'); document.getElementById('sc-tasks').classList.toggle('on',s==='tasks'); render(); }
+function moveMonth(n){ view=new Date(view.getFullYear(), view.getMonth()+n, 1); render(); }
+function goToday(){ view=new Date(TODAY.getFullYear(), TODAY.getMonth(), 1); selected=iso(TODAY); render(); }
+function selectDay(d){ selected=d; render(); }
+
+function render(){
+  document.getElementById('monthlabel').textContent = MON[view.getMonth()]+' '+view.getFullYear();
+  // legend
+  var statuses = scope==='projects' ? ['Idea','Scheduled','Active','On Hold','Complete'] : ['Active','Pending','On Hold','Waiting for Response','Complete'];
+  document.getElementById('legend').innerHTML = statuses.map(function(s){ return '<span class="lg"><span class="d" style="background:'+sc(s)+'"></span>'+s+'</span>'; }).join('') + '<span class="lg"><span class="d" style="background:#DC2626"></span>Overdue</span>';
+
+  var map = byDate();
+  var first = new Date(view.getFullYear(), view.getMonth(), 1);
+  var gridStart = new Date(view.getFullYear(), view.getMonth(), 1-first.getDay());
+  var todayIso = iso(TODAY), curMonth = view.getMonth();
+  var html='';
+  for (var i=0;i<42;i++){
+    var d=new Date(gridStart); d.setDate(gridStart.getDate()+i);
+    var key=iso(d), inMonth=d.getMonth()===curMonth, wknd=(d.getDay()===0||d.getDay()===6);
+    var list=(map[key]||[]);
+    var cls='cell'+(inMonth?'':' other')+(wknd&&inMonth?' weekend':'')+(key===todayIso?' today':'')+(key===selected?' sel':'');
+    html+='<div class="'+cls+'" onclick="selectDay(\''+key+'\')">';
+    html+='<span class="daynum">'+d.getDate()+'</span>';
+    list.slice(0,3).forEach(function(it){
+      var over=isOver(it);
+      html+='<div class="chip'+(over?' over':'')+'" style="border-left-color:'+sc(it.status)+'" title="'+esc(it.title)+'"><span class="tt" style="'+(over?'color:#DC2626;':'')+'">'+esc(it.title)+'</span></div>';
+    });
+    if (list.length>3) html+='<div class="more">+'+(list.length-3)+' more</div>';
+    html+='</div>';
+  }
+  document.getElementById('weeks').innerHTML=html;
+
+  // side panel for selected day
+  var sd=parse(selected), sl=(map[selected]||[]);
+  var head='<h3>'+DOW[sd.getDay()]+' · '+MON[sd.getMonth()]+' '+sd.getDate()+'</h3><div class="sd">'+(sl.length? (sl.length+' '+scope.slice(0,-1)+(sl.length!==1?'s':'')+' due') : 'Nothing due')+(selected===iso(TODAY)?' · Today':'')+'</div>';
+  var body = sl.length ? sl.map(function(it){
+    var over=isOver(it);
+    return '<div class="item" onclick="toast(\'Would open: '+esc(it.title).replace(/\'/g,'')+'\')">'+
+      '<div class="bar" style="background:'+sc(it.status)+'"></div>'+
+      '<div style="min-width:0;"><div class="it">'+esc(it.title)+'</div>'+
+      '<div class="meta"><span class="pill" style="background:'+sc(it.status)+'22;color:'+sc(it.status)+'">'+it.status+'</span> · '+esc(it.who)+(it.project?' · '+esc(it.project):'')+(over?' · <span class="over-tag">overdue</span>':'')+'</div></div>'+
+    '</div>';
+  }).join('') : '<div class="empty">Nothing due this day.</div>';
+  document.getElementById('side').innerHTML=head+body;
+
+  // no-date footer
+  var nd=items().filter(function(it){return !it.due;});
+  document.getElementById('nodate').textContent = nd.length ? (nd.length+' '+scope+' have no due date (e.g. '+nd.slice(0,2).map(function(x){return x.title;}).join(', ')+') — they would list in a "No date" tray.') : '';
+}
+render();
+</script>
+</body>
+</html>

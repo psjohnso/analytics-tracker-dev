@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Task Completion Analytics — Insights mockup</title>
+<style>
+  :root { --navy:#002669; --border:#E1E2DD; --text-body:#002855; --text-muted:#6B7280; --bg:#F9FAFB; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:28px 32px; font-family:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text-body); max-width:1180px; margin:0 auto; }
+  h1 { margin:0 0 4px 0; font-size:22px; color:var(--navy); font-weight:800; }
+  .lead { color:var(--text-muted); margin:0 0 20px 0; font-size:13px; }
+  .annot { background:#FEF3C7; border-left:4px solid #F59E0B; padding:10px 14px; border-radius:6px; margin:0 0 16px 0; font-size:12px; color:#78350F; }
+  .annot strong { color:#422006; }
+  .warn { background:#FEF2F2; border-left:4px solid #EF4444; padding:10px 14px; border-radius:6px; margin:10px 0 0 0; font-size:12px; color:#991B1B; }
+  .src { background:#EFF6FF; border-left:4px solid #3B82F6; padding:8px 12px; border-radius:6px; margin:0 0 12px 0; font-size:11px; color:#1E3A8A; }
+  .src code { background:#DBEAFE; padding:1px 4px; border-radius:3px; }
+
+  .ghost-header { opacity:0.55; padding:14px 0; border-bottom:1px dashed #CBD5E1; margin-bottom:18px; }
+  .ghost-header .tab-title { font-size:18px; font-weight:800; color:var(--navy); }
+  .ghost-header .tab-sub { font-size:12px; color:var(--text-muted); }
+
+  .kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:28px; }
+  .res-kpi { background:#fff; border:1px solid #E8E6DF; border-radius:10px; padding:14px 16px; }
+  .kpi-label { font-size:11px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px; }
+  .kpi-value { font-size:22px; font-weight:800; color:var(--navy); }
+  .kpi-sub { font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+  .option { margin-bottom:34px; }
+  .option-tag { display:inline-block; background:var(--navy); color:#fff; font-weight:800; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; padding:4px 12px; border-radius:6px; margin-bottom:8px; }
+  .option h2 { margin:0 0 2px 0; font-size:17px; font-weight:800; color:var(--navy); }
+  .option .desc { font-size:12px; color:var(--text-muted); margin:0 0 12px 0; }
+  .recommend { font-size:11px; font-weight:800; color:#166534; background:#DCFCE7; padding:2px 8px; border-radius:8px; text-transform:uppercase; letter-spacing:0.04em; margin-left:8px; }
+
+  .tbl-wrap { background:#fff; border:1px solid #E8E6DF; border-radius:12px; padding:8px 16px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { background:#F3F4F6; color:var(--navy); font-weight:800; text-transform:uppercase; letter-spacing:0.04em; font-size:10px; padding:9px 12px; text-align:left; border-bottom:1px solid #E8E6DF; white-space:nowrap; }
+  th.num { text-align:right; } th.ctr { text-align:center; }
+  td { padding:9px 12px; border-bottom:1px solid #F1F1EC; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; } td.ctr { text-align:center; }
+  tr:last-child td { border-bottom:0; }
+  .cat { font-weight:700; color:var(--navy); }
+
+  .bar { display:inline-block; height:8px; background:var(--navy); border-radius:4px; vertical-align:middle; margin-right:6px; }
+  .bartrack { display:inline-block; width:90px; height:8px; background:#E5E7EB; border-radius:4px; vertical-align:middle; margin-right:6px; overflow:hidden; }
+  .bartrack > div { height:100%; background:var(--navy); }
+
+  .stack { display:flex; width:150px; height:11px; border-radius:5px; overflow:hidden; border:1px solid #E5E7EB; vertical-align:middle; }
+  .stack > .ontime { background:#83AC16; } .stack > .late { background:#EF4444; }
+  .key { display:inline-flex; gap:14px; font-size:11px; color:var(--text-muted); margin-bottom:8px; align-items:center; }
+  .key span::before { content:""; display:inline-block; width:10px; height:10px; margin-right:5px; vertical-align:middle; border-radius:2px; }
+  .key .ontime::before { background:#83AC16; } .key .late::before { background:#EF4444; }
+
+  .agecard { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px; }
+  .agebucket { background:#fff; border:1px solid #E8E6DF; border-radius:10px; padding:12px 14px; }
+  .agebucket .n { font-size:24px; font-weight:800; color:var(--navy); }
+  .agebucket .lbl { font-size:11px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.03em; }
+  .agebucket.hot { border-color:#FCA5A5; background:#FEF2F2; }
+  .agebucket.hot .n { color:#991B1B; }
+
+  .pill { display:inline-block; font-weight:700; font-size:11px; padding:2px 8px; border-radius:10px; }
+  .pill-good { background:#DCFCE7; color:#166534; } .pill-mid { background:#FEF9C3; color:#854D0E; } .pill-bad { background:#FECACA; color:#991B1B; }
+  .stat-pill { background:#F3F4F6; color:#374151; }
+
+  .callout { background:#fff; border:1px solid #E8E6DF; border-left:4px solid var(--navy); border-radius:8px; padding:14px 18px; font-size:13px; margin-top:8px; }
+  .callout strong { color:var(--navy); } .callout ul { margin:8px 0 0 0; padding-left:20px; } .callout li { margin:5px 0; }
+</style>
+</head>
+<body>
+
+<h1>Task Completion Analytics</h1>
+<p class="lead">Five options for a task-flow section on the Insights tab — how tasks move from start to done, where they stall, and how on-time delivery looks. Numbers are illustrative sample data. Most options run on existing task fields; one (time-in-status) has a real data gap, flagged below.</p>
+
+<div class="annot"><strong>Where it slots:</strong> A new block on Capacity → Insights, alongside Duration Calibration and Planned vs Actual. The Team / Unit / Member filter row would scope all sections.</div>
+
+<!-- Ghost existing context -->
+<div class="ghost-header"><div class="tab-title">💡 Project Insights</div><div class="tab-sub">Duration Calibration · Planned vs Actual · Task Completion (new)</div></div>
+
+<!-- KPIs -->
+<div class="kpi-row">
+  <div class="res-kpi"><div class="kpi-label">Median cycle time</div><div class="kpi-value">6d</div><div class="kpi-sub">start → completed</div></div>
+  <div class="res-kpi"><div class="kpi-label">Completed (90d)</div><div class="kpi-value">142</div><div class="kpi-sub">~1.6 / day</div></div>
+  <div class="res-kpi"><div class="kpi-label">On-time rate</div><div class="kpi-value" style="color:#F59E0B;">71%</div><div class="kpi-sub">by due date</div></div>
+  <div class="res-kpi"><div class="kpi-label">Open &amp; overdue</div><div class="kpi-value" style="color:#EF4444;">18</div><div class="kpi-sub">of 75 open</div></div>
+  <div class="res-kpi"><div class="kpi-label">Oldest open task</div><div class="kpi-value">47d</div><div class="kpi-sub">still active</div></div>
+</div>
+
+<!-- A · Cycle time by category -->
+<div class="option">
+  <div class="option-tag">Option A</div><span class="recommend">recommended</span>
+  <h2>Cycle time by category</h2>
+  <p class="desc">Elapsed start → completion per task type. The task-level analog of project Duration Calibration — answers "how long does this kind of task actually take." Median resists outliers; P75 shows the long tail.</p>
+  <div class="src">Source: <code>start_date</code> → <code>actual_end</code> on completed tasks, grouped by <code>category</code>. No extra data needed.</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Category</th><th class="num">Completed</th><th>Median cycle</th><th class="num">P75</th><th class="ctr">On-time</th></tr></thead>
+      <tbody>
+        <tr><td class="cat">Application Development</td><td class="num">31</td><td><span class="bartrack"><div style="width:100%"></div></span>12d</td><td class="num">25d</td><td class="ctr"><span class="pill pill-bad">58%</span></td></tr>
+        <tr><td class="cat">Geospatial Analysis</td><td class="num">22</td><td><span class="bartrack"><div style="width:75%"></div></span>9d</td><td class="num">18d</td><td class="ctr"><span class="pill pill-mid">64%</span></td></tr>
+        <tr><td class="cat">Data Engineering</td><td class="num">18</td><td><span class="bartrack"><div style="width:67%"></div></span>8d</td><td class="num">16d</td><td class="ctr"><span class="pill pill-mid">70%</span></td></tr>
+        <tr><td class="cat">Data Visualization &amp; Reporting</td><td class="num">40</td><td><span class="bartrack"><div style="width:42%"></div></span>5d</td><td class="num">11d</td><td class="ctr"><span class="pill pill-good">78%</span></td></tr>
+        <tr><td class="cat">Application Maintenance</td><td class="num">12</td><td><span class="bartrack"><div style="width:33%"></div></span>4d</td><td class="num">9d</td><td class="ctr"><span class="pill pill-good">82%</span></td></tr>
+        <tr><td class="cat">Stakeholder Support</td><td class="num">19</td><td><span class="bartrack"><div style="width:25%"></div></span>3d</td><td class="num">6d</td><td class="ctr"><span class="pill pill-good">86%</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- B · Throughput trend -->
+<div class="option">
+  <div class="option-tag">Option B</div>
+  <h2>Throughput trend</h2>
+  <p class="desc">Tasks completed per month — the team's velocity and its seasonality. Sliceable by person or category. Pairs well with the cycle-time view (are we doing more, or just faster?).</p>
+  <div class="src">Source: count of tasks by <code>actual_end</code> month. No extra data needed.</div>
+  <div class="tbl-wrap">
+    <svg viewBox="0 0 640 200" style="width:100%;display:block;">
+      <!-- gridlines -->
+      <line x1="40" y1="20" x2="640" y2="20" stroke="#E8E6DF" stroke-width="0.5"/>
+      <line x1="40" y1="70" x2="640" y2="70" stroke="#E8E6DF" stroke-width="0.5"/>
+      <line x1="40" y1="120" x2="640" y2="120" stroke="#E8E6DF" stroke-width="0.5"/>
+      <line x1="40" y1="170" x2="640" y2="170" stroke="#374151" stroke-width="1"/>
+      <text x="34" y="24" text-anchor="end" font-size="9" fill="#9CA3AF">30</text>
+      <text x="34" y="74" text-anchor="end" font-size="9" fill="#9CA3AF">20</text>
+      <text x="34" y="124" text-anchor="end" font-size="9" fill="#9CA3AF">10</text>
+      <!-- bars: Oct18 Nov22 Dec14 Jan25 Feb21 Mar27 Apr24 May19 (max 30 -> 150px scale) -->
+      <g fill="#002669">
+        <rect x="60"  y="80"  width="44" height="90"  rx="3"/>
+        <rect x="132" y="60"  width="44" height="110" rx="3"/>
+        <rect x="204" y="100" width="44" height="70"  rx="3"/>
+        <rect x="276" y="45"  width="44" height="125" rx="3"/>
+        <rect x="348" y="65"  width="44" height="105" rx="3"/>
+        <rect x="420" y="35"  width="44" height="135" rx="3"/>
+        <rect x="492" y="50"  width="44" height="120" rx="3"/>
+        <rect x="564" y="75"  width="44" height="95"  rx="3" fill="#93C5FD"/>
+      </g>
+      <g font-size="10" font-weight="700" fill="#002669" text-anchor="middle">
+        <text x="82" y="72">18</text><text x="154" y="52">22</text><text x="226" y="92">14</text><text x="298" y="37">25</text>
+        <text x="370" y="57">21</text><text x="442" y="27">27</text><text x="514" y="42">24</text><text x="586" y="67">19</text>
+      </g>
+      <g font-size="9" fill="#9CA3AF" text-anchor="middle">
+        <text x="82" y="184">Oct</text><text x="154" y="184">Nov</text><text x="226" y="184">Dec</text><text x="298" y="184">Jan</text>
+        <text x="370" y="184">Feb</text><text x="442" y="184">Mar</text><text x="514" y="184">Apr</text><text x="586" y="184">May*</text>
+      </g>
+      <text x="608" y="196" text-anchor="end" font-size="8" fill="#9CA3AF" font-style="italic">*month in progress</text>
+    </svg>
+  </div>
+</div>
+
+<!-- C · Aging WIP & overdue -->
+<div class="option">
+  <div class="option-tag">Option C</div><span class="recommend">recommended</span>
+  <h2>Aging WIP &amp; overdue</h2>
+  <p class="desc">The operational one — what's open right now, how long it's been open, and what's past due. Surfaces stuck work before it becomes a surprise. Most useful day-to-day, least useful as a long-term retro.</p>
+  <div class="src">Source: open tasks (<code>status</code> ≠ Complete/Canceled), age from <code>start_date</code>/<code>CreationDate</code>, overdue from <code>due_date</code>/<code>working_due</code>. No extra data needed.</div>
+  <div class="agecard">
+    <div class="agebucket"><div class="n">24</div><div class="lbl">0–7 days</div></div>
+    <div class="agebucket"><div class="n">31</div><div class="lbl">8–30 days</div></div>
+    <div class="agebucket"><div class="n">14</div><div class="lbl">31–90 days</div></div>
+    <div class="agebucket hot"><div class="n">6</div><div class="lbl">&gt; 90 days</div></div>
+    <div class="agebucket hot"><div class="n">18</div><div class="lbl">Overdue</div></div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Oldest open tasks</th><th>Assignee</th><th>Category</th><th class="num">Age</th><th class="ctr">Status</th></tr></thead>
+      <tbody>
+        <tr><td class="cat">Migrate parcel layer to v2 schema</td><td>James McGinnis</td><td>Geospatial Analysis</td><td class="num">47d</td><td class="ctr"><span class="pill stat-pill">Waiting for Response</span></td></tr>
+        <tr><td class="cat">Water demand model refresh</td><td>Vladimir Berg</td><td>Data Engineering</td><td class="num">39d</td><td class="ctr"><span class="pill stat-pill">On Hold</span></td></tr>
+        <tr><td class="cat">Council district dashboard QA</td><td>Kate Carter</td><td>Data Viz &amp; Reporting</td><td class="num">34d</td><td class="ctr"><span class="pill stat-pill">Active</span></td></tr>
+        <tr><td class="cat">Permit API rate-limit fix</td><td>Andrew Sutton</td><td>Application Development</td><td class="num">31d</td><td class="ctr"><span class="pill stat-pill">Waiting for Response</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- D · On-time completion rate -->
+<div class="option">
+  <div class="option-tag">Option D</div>
+  <h2>On-time completion rate by category</h2>
+  <p class="desc">Of completed tasks, how many landed on or before their due date. The honest delivery-reliability number, by category (or assignee).</p>
+  <div class="src">Source: <code>actual_end</code> vs <code>due_date</code> (or <code>working_due</code>) on completed tasks. No extra data needed.</div>
+  <div class="key"><span class="ontime">On time</span><span class="late">Late</span></div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Category</th><th class="num">Completed</th><th>On-time / Late</th><th class="num">On-time %</th></tr></thead>
+      <tbody>
+        <tr><td class="cat">Stakeholder Support</td><td class="num">19</td><td><span class="stack"><div class="ontime" style="width:86%"></div><div class="late" style="width:14%"></div></span></td><td class="num">86%</td></tr>
+        <tr><td class="cat">Application Maintenance</td><td class="num">12</td><td><span class="stack"><div class="ontime" style="width:82%"></div><div class="late" style="width:18%"></div></span></td><td class="num">82%</td></tr>
+        <tr><td class="cat">Data Visualization &amp; Reporting</td><td class="num">40</td><td><span class="stack"><div class="ontime" style="width:78%"></div><div class="late" style="width:22%"></div></span></td><td class="num">78%</td></tr>
+        <tr><td class="cat">Data Engineering</td><td class="num">18</td><td><span class="stack"><div class="ontime" style="width:70%"></div><div class="late" style="width:30%"></div></span></td><td class="num">70%</td></tr>
+        <tr><td class="cat">Geospatial Analysis</td><td class="num">22</td><td><span class="stack"><div class="ontime" style="width:64%"></div><div class="late" style="width:36%"></div></span></td><td class="num">64%</td></tr>
+        <tr><td class="cat">Application Development</td><td class="num">31</td><td><span class="stack"><div class="ontime" style="width:58%"></div><div class="late" style="width:42%"></div></span></td><td class="num">58%</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- E · Time-in-status / bottlenecks -->
+<div class="option">
+  <div class="option-tag">Option E</div>
+  <h2>Time-in-status / bottlenecks</h2>
+  <p class="desc">Average days a task sits in each status before moving on. The richest story — it surfaces where work stalls (often "Waiting for Response," i.e. blocked on a partner, not the team). But it has a real data dependency.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Status</th><th>Avg days in status</th><th class="num">Days</th><th>Read</th></tr></thead>
+      <tbody>
+        <tr><td class="cat">On Hold</td><td><span class="bartrack"><div style="width:100%"></div></span></td><td class="num">21d</td><td style="font-size:11px;color:#991B1B;">Longest stall — worth a standing review</td></tr>
+        <tr><td class="cat">Waiting for Response</td><td><span class="bartrack"><div style="width:52%"></div></span></td><td class="num">11d</td><td style="font-size:11px;color:#9A3412;">Usually blocked on a partner, not the team</td></tr>
+        <tr><td class="cat">Pending</td><td><span class="bartrack"><div style="width:29%"></div></span></td><td class="num">6d</td><td style="font-size:11px;color:var(--text-muted);">Queue before pickup</td></tr>
+        <tr><td class="cat">Active</td><td><span class="bartrack"><div style="width:19%"></div></span></td><td class="num">4d</td><td style="font-size:11px;color:#166534;">Actual hands-on time</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="warn"><strong>Data dependency:</strong> this needs per-task status-change history. The <code>status_history</code> layer is <em>project-level only</em>; task-level history exists only behind the <code>FEATURE_TASK_HISTORY</code> flag (<code>task_status_history</code> JSON) and may be thin or unpopulated. So this one is "build the capture first, then the chart" — unlike A–D, which run on data you already have.</div>
+</div>
+
+<div class="callout">
+  <strong>How they compare:</strong>
+  <ul>
+    <li><strong>A · Cycle time</strong> and <strong>C · Aging/overdue</strong> are the best value-per-effort — buildable today, and complementary (retro vs. live).</li>
+    <li><strong>B · Throughput</strong> and <strong>D · On-time</strong> are easy add-ons from the same data; good as secondary panels.</li>
+    <li><strong>E · Time-in-status</strong> is the most insightful but needs task status history captured first.</li>
+    <li><strong>Bonus not shown:</strong> tasks also have <code>hours</code> (estimated) + <code>hours_worked</code> (actual), so a task-level <em>estimate vs actual hours</em> view is possible too — if those fields are actually being filled in. Worth a quick data check.</li>
+  </ul>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kanban board — live mockup</title>
+<style>
+  :root { --navy:#002669; --green:#83AC16; --orange:#C24200; --yellow:#FFDB22; --border:#E8E6DF; --text-body:#002855; --text-muted:#6B7280; --bg:#F3F1EB; --white:#fff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text-body); }
+
+  /* app chrome */
+  .appbar { display:flex; align-items:center; gap:14px; background:var(--navy); color:#fff; padding:12px 22px; }
+  .appbar .brand { font-weight:800; font-size:15px; letter-spacing:0.02em; }
+  .appbar .sub { font-family:'Cardo',Georgia,serif; font-style:italic; font-size:12px; opacity:0.8; }
+  .appbar .ver { font-size:10px; background:rgba(255,255,255,0.15); padding:2px 8px; border-radius:4px; font-weight:700; }
+  .accent { height:4px; background:linear-gradient(90deg,#C24200 25%,#FFDB22 25%,#FFDB22 50%,#83AC16 50%,#83AC16 75%,#002669 75%); }
+  .subtabs { display:flex; gap:6px; padding:10px 22px 0; background:var(--white); border-bottom:1px solid var(--border); }
+  .subtab { padding:8px 14px; font-size:13px; font-weight:700; color:var(--text-muted); border-radius:8px 8px 0 0; }
+  .subtab.active { color:var(--navy); background:var(--bg); }
+
+  .annot { background:#FEF3C7; border-left:4px solid #F59E0B; padding:9px 16px; font-size:12px; color:#78350F; line-height:1.55; }
+  .annot strong { color:#422006; } .annot kbd { background:#fff; border:1px solid #D6B45f; border-radius:4px; padding:0 5px; font-weight:700; }
+
+  .toolbar { display:flex; align-items:center; gap:12px; padding:12px 22px; flex-wrap:wrap; }
+  .toolbar .count { font-family:'Cardo',Georgia,serif; font-style:italic; color:var(--text-muted); font-size:14px; }
+  .toolbar .grow { flex:1; }
+  .ctl { font-family:inherit; font-size:13px; font-weight:700; color:var(--navy); border:1.5px solid var(--border); border-radius:7px; padding:7px 10px; background:#fff; cursor:pointer; }
+  .ctl.viewbtn { display:inline-flex; gap:6px; align-items:center; }
+  .ctl.viewbtn .seg { padding:2px 8px; border-radius:5px; }
+  .ctl.viewbtn .seg.on { background:var(--navy); color:#fff; }
+  input.search { font-family:inherit; font-size:13px; border:1.5px solid var(--border); border-radius:7px; padding:7px 10px; min-width:190px; outline:none; }
+  input.search:focus { border-color:var(--navy); }
+
+  /* board */
+  .board { display:flex; gap:14px; padding:6px 22px 40px; overflow-x:auto; align-items:flex-start; min-height:60vh; }
+  .col { flex:0 0 296px; background:#FBFAF7; border:1px solid var(--border); border-radius:12px; display:flex; flex-direction:column; max-height:78vh; }
+  .col.drop { outline:2px dashed var(--navy); outline-offset:-3px; background:#F4F7FF; }
+  .col-head { display:flex; align-items:center; gap:8px; padding:11px 13px; border-bottom:1px solid var(--border); position:sticky; top:0; }
+  .col-bar { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .col-name { font-size:13px; font-weight:800; letter-spacing:0.02em; }
+  .col-count { font-size:11px; font-weight:800; color:var(--text-muted); background:var(--bg); border-radius:10px; padding:1px 8px; }
+  .col-collapse { margin-left:auto; cursor:pointer; color:var(--text-muted); font-size:13px; width:22px; height:22px; display:flex; align-items:center; justify-content:center; border-radius:5px; }
+  .col-collapse:hover { background:var(--bg); }
+  .col-body { padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:9px; }
+  .col.collapsed { flex-basis:54px; }
+  .col.collapsed .col-body, .col.collapsed .col-name, .col.collapsed .col-count { display:none; }
+  .col.collapsed .col-head { flex-direction:column; gap:8px; padding:11px 6px; }
+  .col-add { font-size:12px; font-weight:700; color:var(--text-muted); border:1px dashed var(--border); border-radius:8px; padding:7px; text-align:center; cursor:pointer; background:#fff; }
+  .col-add:hover { color:var(--navy); border-color:var(--navy); }
+
+  /* card */
+  .card { background:#fff; border:1px solid var(--border); border-left:4px solid var(--navy); border-radius:10px; padding:11px 12px; cursor:grab; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+  .card:active { cursor:grabbing; }
+  .card.dragging { opacity:0.4; }
+  .card-top { display:flex; align-items:flex-start; gap:8px; margin-bottom:7px; }
+  .card-title { font-size:13.5px; font-weight:800; color:var(--navy); line-height:1.25; flex:1; }
+  .pill { font-size:9.5px; font-weight:800; letter-spacing:0.03em; padding:2px 7px; border-radius:20px; white-space:nowrap; }
+  .size { font-size:9.5px; font-weight:800; color:#fff; background:var(--navy); border-radius:5px; padding:1px 6px; }
+  .meta { display:flex; align-items:center; gap:7px; font-size:11px; color:var(--text-muted); margin-top:3px; flex-wrap:wrap; }
+  .who { display:inline-flex; align-items:center; gap:5px; }
+  .ava { width:19px; height:19px; border-radius:50%; background:var(--navy); color:#fff; font-size:9px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .card-foot { display:flex; align-items:center; gap:10px; margin-top:9px; padding-top:8px; border-top:1px solid #F2F0EA; font-size:11px; color:var(--text-muted); }
+  .due.over { color:#DC2626; font-weight:800; }
+  .star { color:var(--yellow); -webkit-text-stroke:0.5px #C99A00; }
+  #toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--navy); color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:8px; opacity:0; transition:opacity .2s; pointer-events:none; z-index:50; }
+  #toast.show { opacity:1; }
+</style>
+</head>
+<body>
+  <div class="appbar">
+    <div>
+      <div class="brand">DATA INTELLIGENCE</div>
+      <div class="sub">Project &amp; Task Tracker · Information Technology</div>
+    </div>
+    <span class="ver">v1.47.0.0035</span>
+  </div>
+  <div class="accent"></div>
+  <div class="subtabs">
+    <div class="subtab">Projects</div>
+    <div class="subtab active">Board</div>
+    <div class="subtab">Tasks</div>
+    <div class="subtab">Project Review</div>
+  </div>
+
+  <div class="annot">
+    <strong>Try it:</strong> drag a card to another column to change its <strong>status</strong>. Switch <strong>Group by</strong> to re-pivot the same cards by Priority or Lead — dragging then sets <em>that</em> field. Dropping into <strong>Complete</strong> stamps a completion date; <strong>On Hold</strong> / <strong>Canceled</strong> ask for a reason (mirroring the app). Collapse a column with the chevron. Cards would open the project detail on click.
+  </div>
+
+  <div class="toolbar">
+    <span class="count" id="count"></span>
+    <div class="grow"></div>
+    <input class="search" id="search" placeholder="Search projects…" oninput="render()">
+    <label style="font-size:12px;font-weight:700;color:var(--text-muted);">Group by
+      <select class="ctl" id="groupby" onchange="onGroupChange()" style="margin-left:6px;">
+        <option value="status">Status</option>
+        <option value="priority">Priority</option>
+        <option value="lead">Lead</option>
+      </select>
+    </label>
+    <div class="ctl viewbtn" title="View (mockup: Board shown)">
+      <span class="seg">▦ Grid</span><span class="seg">≣ List</span><span class="seg on">▤ Board</span><span class="seg">📅 Cal</span>
+    </div>
+  </div>
+
+  <div class="board" id="board"></div>
+  <div id="toast"></div>
+
+<script>
+var TODAY = new Date('2026-05-23');
+function d(s){ return s ? new Date(s+'T00:00:00') : null; }
+function fmtDate(s){ if(!s) return '—'; var x=d(s); return (x.getMonth()+1)+'/'+x.getDate(); }
+function initials(n){ return n.split(/\s+/).map(function(w){return w[0];}).slice(0,2).join('').toUpperCase(); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(function(){t.classList.remove('show');},2200); }
+
+var P = [
+  { id:1,  title:'Parcel Viewer Modernization',          status:'Active',    priority:'High',   size:'L',  lead:'Peter Johnson', dept:'Planning & Development', due:'2026-06-12', risk:'Med',  done:5, total:8,  dp:true  },
+  { id:2,  title:'Water Conservation Rebates Dashboard',  status:'On Hold',   priority:'High',   size:'M',  lead:'Maria Sanchez', dept:'Tucson Water',          due:'2026-05-09', risk:'High', done:3, total:7,  dp:false, reason:'Awaiting data feed from Hansen' },
+  { id:3,  title:'Open Data Portal Refresh',              status:'Scheduled', priority:'Medium', size:'M',  lead:'David Kim',     dept:'Citywide',              due:'2026-07-01', risk:'Low',  done:0, total:6,  dp:true  },
+  { id:4,  title:'AI Use Policy Rollout',                 status:'Active',    priority:'High',   size:'L',  lead:'Aisha Brown',   dept:'Citywide',              due:'2026-06-30', risk:'Med',  done:4, total:10, dp:true  },
+  { id:5,  title:'Council District Story Maps',           status:'Active',    priority:'Low',    size:'S',  lead:'Tom Nguyen',    dept:'Mayor & Council',       due:'2026-06-05', risk:'Low',  done:2, total:4,  dp:false },
+  { id:6,  title:'Snowflake Migration — Phase 2',         status:'Active',    priority:'High',   size:'XL', lead:'Rachel Green',  dept:'IT',                    due:'2026-08-15', risk:'High', done:6, total:14, dp:true  },
+  { id:7,  title:'Crime Stats Public Dashboard',          status:'Idea',      priority:'Medium', size:'',   lead:'David Kim',     dept:'Police',                due:'',          risk:'Low',  done:0, total:0,  dp:false },
+  { id:8,  title:'Permit Backlog Analytics',              status:'Scheduled', priority:'Medium', size:'M',  lead:'Maria Sanchez', dept:'Planning & Development', due:'2026-07-20', risk:'Med',  done:0, total:5,  dp:false },
+  { id:9,  title:'GIS Address Standardization',           status:'Active',    priority:'Medium', size:'M',  lead:'Tom Nguyen',    dept:'Transportation',        due:'2026-05-19', risk:'Med',  done:3, total:6,  dp:false },
+  { id:10, title:'Budget Transparency Portal',            status:'Future',    priority:'Low',    size:'L',  lead:'Aisha Brown',   dept:"City Manager's Office",  due:'',          risk:'Low',  done:0, total:0,  dp:true  },
+  { id:11, title:'Fleet Telematics Insights',             status:'Idea',      priority:'Low',    size:'',   lead:'Rachel Green',  dept:'Environmental Services', due:'',          risk:'Low',  done:0, total:0,  dp:false },
+  { id:12, title:'Data Literacy Training Series',         status:'Active',    priority:'Medium', size:'S',  lead:'Peter Johnson', dept:'Citywide',              due:'2026-06-26', risk:'Low',  done:1, total:5,  dp:true  },
+  { id:13, title:'Survey123 Field Inspections',           status:'Complete',  priority:'Medium', size:'S',  lead:'Tom Nguyen',    dept:'Environmental Services', due:'2026-04-30', risk:'Low',  done:5, total:5,  dp:false },
+  { id:14, title:'Hansen Data Integration',              status:'On Hold',   priority:'Medium', size:'L',  lead:'Rachel Green',  dept:'Tucson Water',          due:'2026-05-15', risk:'High', done:2, total:9,  dp:false, reason:'Vendor API change' },
+  { id:15, title:'Equity Index Map',                      status:'Scheduled', priority:'High',   size:'M',  lead:'Aisha Brown',   dept:'Office of Equity',      due:'2026-06-18', risk:'Med',  done:0, total:6,  dp:true  },
+  { id:16, title:'Legacy Report Sunset',                  status:'Canceled',  priority:'Low',    size:'S',  lead:'David Kim',     dept:'IT',                    due:'',          risk:'Low',  done:0, total:3,  dp:false, reason:'Superseded by Power BI refresh' }
+];
+
+var GROUPS = {
+  status: {
+    field:'status',
+    values:['Idea','Future','Scheduled','Active','On Hold','Complete','Canceled'],
+    colors:{ 'Idea':'#F59E0B','Future':'#9CA3AF','Scheduled':'#0E7490','Active':'#83AC16','On Hold':'#C24200','Complete':'#002669','Canceled':'#9CA3AF' }
+  },
+  priority: {
+    field:'priority',
+    values:['High','Medium','Low'],
+    colors:{ 'High':'#DC2626','Medium':'#F59E0B','Low':'#9CA3AF' }
+  },
+  lead: { field:'lead', values:null, colors:{} } // values derived
+};
+
+var collapsed = { 'Future':true, 'Canceled':true };
+var dragId = null;
+
+function priColors(p){ return p==='High'?['#FEE2E2','#991B1B','#DC2626']: p==='Medium'?['#FEF3C7','#92400E','#F59E0B']:['#F3F4F6','#4B5563','#9CA3AF']; }
+function riskColor(r){ return r==='High'?'#DC2626': r==='Med'?'#F59E0B':'#83AC16'; }
+
+function groupValues(g){
+  if (g.values) return g.values.slice();
+  var seen=[], out=[];
+  P.forEach(function(p){ var v=p[g.field]||'—'; if(seen.indexOf(v)<0){seen.push(v);out.push(v);} });
+  return out.sort();
+}
+
+function cardHtml(p){
+  var pc = priColors(p.priority);
+  var overdue = p.due && d(p.due) < TODAY && p.status!=='Complete' && p.status!=='Canceled';
+  return '<div class="card" draggable="true" data-id="'+p.id+'" ondragstart="onDragStart(event,'+p.id+')" ondragend="onDragEnd(event)" onclick="toast(\'Would open: '+esc(p.title).replace(/\'/g,"")+'\')" style="border-left-color:'+riskColor(p.risk)+';">'+
+    '<div class="card-top">'+
+      '<div class="card-title">'+esc(p.title)+'</div>'+
+      (p.size?'<span class="size">'+p.size+'</span>':'')+
+    '</div>'+
+    '<div class="meta">'+
+      '<span class="pill" style="background:'+pc[0]+';color:'+pc[1]+';">'+p.priority+'</span>'+
+      '<span class="who"><span class="ava">'+initials(p.lead)+'</span>'+esc(p.lead.split(' ')[0])+'</span>'+
+    '</div>'+
+    '<div class="meta" style="margin-top:5px;">'+esc(p.dept)+'</div>'+
+    '<div class="card-foot">'+
+      '<span title="Risk"><span class="dot" style="background:'+riskColor(p.risk)+';"></span> '+p.risk+' risk</span>'+
+      (p.total?'<span title="Tasks">✓ '+p.done+'/'+p.total+'</span>':'')+
+      (p.due?'<span class="due'+(overdue?' over':'')+'" style="margin-left:auto;">📅 '+fmtDate(p.due)+'</span>':'<span style="margin-left:auto;"></span>')+
+      (p.dp?'<span class="star" title="Data Program">★</span>':'')+
+    '</div>'+
+  '</div>';
+}
+
+function render(){
+  var g = GROUPS[document.getElementById('groupby').value];
+  var q = (document.getElementById('search').value||'').toLowerCase();
+  var vals = groupValues(g);
+  var shown = 0, board = '';
+  vals.forEach(function(val){
+    var cards = P.filter(function(p){ return (p[g.field]||'—')===val && (!q || p.title.toLowerCase().indexOf(q)>=0); });
+    shown += cards.length;
+    var isColl = !!collapsed[val];
+    var color = g.colors[val] || '#9CA3AF';
+    var inner = cards.map(cardHtml).join('') || '<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:14px 4px;">No projects</div>';
+    board += '<div class="col'+(isColl?' collapsed':'')+'" data-val="'+esc(val)+'" ondragover="onOver(event)" ondragleave="onLeave(event)" ondrop="onDrop(event,\''+esc(val).replace(/\'/g,"")+'\')">'+
+      '<div class="col-head">'+
+        '<span class="col-bar" style="background:'+color+';"></span>'+
+        '<span class="col-name">'+esc(val)+'</span>'+
+        '<span class="col-count">'+cards.length+'</span>'+
+        '<span class="col-collapse" title="Collapse" onclick="toggleCol(\''+esc(val).replace(/\'/g,"")+'\',event)">'+(isColl?'»':'«')+'</span>'+
+      '</div>'+
+      '<div class="col-body">'+inner+
+        (g.field==='status'?'<div class="col-add" onclick="toast(\'Would open New Project in '+esc(val).replace(/\'/g,"")+'\')">＋ Add</div>':'')+
+      '</div>'+
+    '</div>';
+  });
+  document.getElementById('board').innerHTML = board;
+  document.getElementById('count').textContent = shown + ' projects' + (q?' matching “'+q+'”':' for Peter Johnson');
+}
+
+function onGroupChange(){ collapsed = (document.getElementById('groupby').value==='status') ? {'Future':true,'Canceled':true} : {}; render(); }
+function toggleCol(val,e){ e.stopPropagation(); collapsed[val] = !collapsed[val]; render(); }
+
+function onDragStart(e,id){ dragId=id; e.dataTransfer.effectAllowed='move'; var el=e.currentTarget; setTimeout(function(){el.classList.add('dragging');},0); }
+function onDragEnd(e){ e.currentTarget.classList.remove('dragging'); }
+function onOver(e){ e.preventDefault(); e.currentTarget.classList.add('drop'); }
+function onLeave(e){ e.currentTarget.classList.remove('drop'); }
+function onDrop(e,val){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drop');
+  if (dragId==null) return;
+  var p = P.find(function(x){return x.id===dragId;});
+  var field = GROUPS[document.getElementById('groupby').value].field;
+  if (p[field]===val){ dragId=null; render(); return; }
+  // status-change side effects mirror the app
+  if (field==='status'){
+    if (val==='Complete'){ p.due = '2026-05-23'; toast('“'+p.title+'” → Complete · completion date set to 5/23'); }
+    else if (val==='On Hold' || val==='Canceled'){
+      var r = prompt('Reason for moving “'+p.title+'” to '+val+':', p.reason||'');
+      if (r===null){ dragId=null; render(); return; } // canceled the move
+      p.reason = r; toast('“'+p.title+'” → '+val+(r?' · reason logged':''));
+    } else { toast('“'+p.title+'” → '+val); }
+  } else if (field==='lead'){ toast('Reassigned “'+p.title+'” → '+val); }
+  else { toast('“'+p.title+'” priority → '+val); }
+  p[field] = val;
+  dragId = null;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>

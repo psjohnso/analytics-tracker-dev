@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>In-Flight Project Risk Score — mockup</title>
+<style>
+  :root { --navy:#002669; --border:#E1E2DD; --text-body:#002855; --text-muted:#6B7280; --bg:#F9FAFB; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:28px 32px; font-family:'Lato',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text-body); max-width:1180px; margin:0 auto; }
+  h1 { margin:0 0 4px 0; font-size:22px; color:var(--navy); font-weight:800; }
+  .lead { color:var(--text-muted); margin:0 0 20px 0; font-size:13px; }
+  .annot { background:#FEF3C7; border-left:4px solid #F59E0B; padding:10px 14px; border-radius:6px; margin:0 0 16px 0; font-size:12px; color:#78350F; }
+  .annot strong { color:#422006; }
+  .src { background:#EFF6FF; border-left:4px solid #3B82F6; padding:8px 12px; border-radius:6px; margin:0 0 14px 0; font-size:11px; color:#1E3A8A; }
+
+  .ghost-header { opacity:0.55; padding:14px 0; border-bottom:1px dashed #CBD5E1; margin-bottom:18px; }
+  .ghost-header .tab-title { font-size:18px; font-weight:800; color:var(--navy); }
+  .ghost-header .tab-sub { font-size:12px; color:var(--text-muted); }
+
+  .option { margin-bottom:34px; }
+  .option-tag { display:inline-block; background:var(--navy); color:#fff; font-weight:800; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; padding:4px 12px; border-radius:6px; margin-bottom:8px; }
+  .option h2 { margin:0 0 2px 0; font-size:17px; font-weight:800; color:var(--navy); }
+  .option .desc { font-size:12px; color:var(--text-muted); margin:0 0 12px 0; }
+
+  .tbl-wrap { background:#fff; border:1px solid #E8E6DF; border-radius:12px; padding:8px 16px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { background:#F3F4F6; color:var(--navy); font-weight:800; text-transform:uppercase; letter-spacing:0.04em; font-size:10px; padding:9px 12px; text-align:left; border-bottom:1px solid #E8E6DF; white-space:nowrap; }
+  th.num { text-align:right; } th.ctr { text-align:center; }
+  td { padding:10px 12px; border-bottom:1px solid #F1F1EC; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; } td.ctr { text-align:center; }
+  tr:last-child td { border-bottom:0; }
+  .cat { font-weight:700; color:var(--navy); }
+
+  /* Risk badge */
+  .risk { display:inline-flex; align-items:center; gap:6px; font-weight:800; font-size:12px; padding:3px 10px; border-radius:999px; font-variant-numeric:tabular-nums; }
+  .risk-hi { background:#FECACA; color:#991B1B; } .risk-mid { background:#FEF9C3; color:#854D0E; } .risk-lo { background:#DCFCE7; color:#166534; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .dot-hi { background:#DC2626; } .dot-mid { background:#CA8A04; } .dot-lo { background:#16A34A; }
+
+  /* driver chips */
+  .chip { display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:8px; background:#F3F4F6; color:#374151; margin:1px 3px 1px 0; white-space:nowrap; }
+  .chip-red { background:#FEE2E2; color:#991B1B; } .chip-amber { background:#FEF3C7; color:#92400E; }
+
+  /* detail breakdown */
+  .scorecard { background:#fff; border:1px solid #E8E6DF; border-radius:12px; padding:18px 20px; display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; }
+  .scoredial { flex:0 0 auto; text-align:center; width:150px; }
+  .scoredial .big { font-size:46px; font-weight:900; line-height:1; }
+  .scoredial .of { font-size:13px; color:var(--text-muted); }
+  .factors { flex:1; min-width:340px; }
+  .frow { display:grid; grid-template-columns:190px 1fr 48px; gap:10px; align-items:center; padding:7px 0; border-bottom:1px solid #F1F1EC; }
+  .frow:last-child { border-bottom:0; }
+  .fname { font-weight:700; font-size:12px; color:var(--navy); }
+  .fdesc { font-size:11px; color:var(--text-muted); }
+  .ftrack { height:9px; background:#E5E7EB; border-radius:5px; overflow:hidden; }
+  .ftrack > div { height:100%; }
+  .fpts { text-align:right; font-weight:800; font-size:12px; font-variant-numeric:tabular-nums; }
+  .fna { opacity:0.5; }
+
+  .bands { display:inline-flex; gap:14px; font-size:11px; color:var(--text-muted); margin:6px 0 0; align-items:center; }
+  .bands b { font-weight:800; }
+
+  /* ghost review row */
+  .reviewrow { background:#fff; border:1px solid #E8E6DF; border-radius:10px; padding:12px 16px; display:flex; align-items:center; gap:14px; }
+  .reviewrow .title { font-weight:800; color:var(--navy); }
+  .reviewrow .meta { font-size:11px; color:var(--text-muted); }
+
+  .callout { background:#fff; border:1px solid #E8E6DF; border-left:4px solid var(--navy); border-radius:8px; padding:14px 18px; font-size:13px; margin-top:8px; }
+  .callout strong { color:var(--navy); } .callout ul { margin:8px 0 0 0; padding-left:20px; } .callout li { margin:5px 0; }
+</style>
+</head>
+<body>
+
+<h1>In-Flight Project Risk Score</h1>
+<p class="lead">A weekly 🟢🟡🔴 early-warning score for active projects, built from leading indicators you already track. Transparent and additive — every score shows exactly which factors drove it, so it's a conversation starter, not a black box. Numbers are illustrative.</p>
+
+<div class="annot"><strong>Where it surfaces:</strong> primary home is the <strong>Project Review</strong> tab (a badge per project + expandable drivers — decisions happen there weekly). Plus an <strong>"At Risk" rollup</strong> on Insights/Overview, and a small risk chip on project cards and a lead's My Work.</div>
+
+<!-- Scoring model -->
+<div class="option">
+  <div class="option-tag">The model</div>
+  <h2>How the score is built</h2>
+  <p class="desc">Additive, weighted, and degrades gracefully: each factor contributes 0 → its max based on a 0–1 severity from concrete thresholds. Score = Σ(points) normalized to 0–100 over the factors that have data. A missing factor (e.g. no snapshot history yet) is dropped and its weight redistributed — projects are never penalized for missing data.</p>
+  <div class="src">All inputs come from existing data: project <code>start_date</code>/<code>end_date</code>/<code>working_due</code>, the calibrated expected duration (Duration Calibration), tasks (<code>status</code>/<code>due_date</code>/<code>actual_end</code>/<code>CreationDate</code>), allocations + snapshots, and assignee mix. Weights/thresholds live in <code>app_config</code> so you can tune without code.</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Factor</th><th class="num">Weight</th><th>Severity (0→1) basis</th></tr></thead>
+      <tbody>
+        <tr><td class="cat">Schedule drift</td><td class="num">25</td><td>working_due slipping vs committed end; elapsed vs RCF-expected duration</td></tr>
+        <tr><td class="cat">Overdue &amp; aging tasks</td><td class="num">20</td><td>share of open tasks overdue + oldest open-task age</td></tr>
+        <tr><td class="cat">Stalled work</td><td class="num">15</td><td>open tasks sitting in Waiting for Response / On Hold beyond N days</td></tr>
+        <tr><td class="cat">Pace vs plan</td><td class="num">15</td><td>% of tasks done vs % of schedule elapsed (behind = risk)</td></tr>
+        <tr><td class="cat">Scope churn</td><td class="num">10</td><td>tasks added after start as a share of total</td></tr>
+        <tr><td class="cat">Plan-vs-actual burn</td><td class="num">10</td><td>allocation actual vs estimate (snapshots) — <em>excluded until history accrues</em></td></tr>
+        <tr><td class="cat">Single-thread staffing</td><td class="num">5</td><td>top contributor's share of hours (bus-factor)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="bands">
+    Bands: <span class="risk risk-lo"><span class="dot dot-lo"></span> 0–24 Healthy</span>
+    <span class="risk risk-mid"><span class="dot dot-mid"></span> 25–49 Watch</span>
+    <span class="risk risk-hi"><span class="dot dot-hi"></span> 50–100 At risk</span>
+  </div>
+</div>
+
+<!-- At-risk rollup -->
+<div class="option">
+  <div class="option-tag">Surface 1</div>
+  <h2>"At Risk" rollup</h2>
+  <p class="desc">Active projects sorted by score, each with its top drivers as chips. The triage list for a weekly review or a leadership check-in.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Project</th><th class="ctr">Risk</th><th>Top drivers</th><th>Lead</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="cat">Safe City data quality scorecard</td>
+          <td class="ctr"><span class="risk risk-hi"><span class="dot dot-hi"></span> 80</span></td>
+          <td><span class="chip chip-red">3 wks over plan</span><span class="chip chip-red">5 overdue</span><span class="chip chip-amber">stalled 18d</span></td>
+          <td>Jessica Fraver</td>
+        </tr>
+        <tr>
+          <td class="cat">Parcel layer v2 migration</td>
+          <td class="ctr"><span class="risk risk-hi"><span class="dot dot-hi"></span> 63</span></td>
+          <td><span class="chip chip-red">single-thread 90%</span><span class="chip chip-amber">oldest task 47d</span><span class="chip chip-amber">+6 tasks added</span></td>
+          <td>James McGinnis</td>
+        </tr>
+        <tr>
+          <td class="cat">Water demand model refresh</td>
+          <td class="ctr"><span class="risk risk-mid"><span class="dot dot-mid"></span> 48</span></td>
+          <td><span class="chip chip-amber">on hold 21d</span><span class="chip chip-amber">pace behind</span></td>
+          <td>Vladimir Berg</td>
+        </tr>
+        <tr>
+          <td class="cat">Council district dashboard</td>
+          <td class="ctr"><span class="risk risk-mid"><span class="dot dot-mid"></span> 34</span></td>
+          <td><span class="chip chip-amber">slight slip</span><span class="chip">QA aging</span></td>
+          <td>Kate Carter</td>
+        </tr>
+        <tr>
+          <td class="cat">Permit API integration</td>
+          <td class="ctr"><span class="risk risk-lo"><span class="dot dot-lo"></span> 19</span></td>
+          <td><span class="chip">1 overdue</span></td>
+          <td>Andrew Sutton</td>
+        </tr>
+        <tr>
+          <td class="cat">Open data portal refresh</td>
+          <td class="ctr"><span class="risk risk-lo"><span class="dot dot-lo"></span> 9</span></td>
+          <td><span class="chip">on track</span></td>
+          <td>Liz Wilshin</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Detail breakdown -->
+<div class="option">
+  <div class="option-tag">Surface 2 (expand)</div>
+  <h2>Per-project breakdown</h2>
+  <p class="desc">Click any project to see exactly why it scored what it did — the contributing points per factor. This is what makes it trustworthy and actionable.</p>
+  <div class="scorecard">
+    <div class="scoredial">
+      <div class="big" style="color:#991B1B;">80</div>
+      <div class="of">/ 100 · At risk</div>
+      <div style="margin-top:8px;font-size:12px;font-weight:700;color:var(--navy);">Safe City data quality scorecard</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Lead: Jessica Fraver · L · Data Program</div>
+    </div>
+    <div class="factors">
+      <div class="frow"><div><div class="fname">Schedule drift</div><div class="fdesc">working_due slipped 3 wks past committed end; 1.6× the calibrated L expected</div></div><div class="ftrack"><div style="width:96%;background:#DC2626;"></div></div><div class="fpts">24/25</div></div>
+      <div class="frow"><div><div class="fname">Overdue &amp; aging tasks</div><div class="fdesc">5 of 9 open tasks overdue; oldest open 19d</div></div><div class="ftrack"><div style="width:85%;background:#DC2626;"></div></div><div class="fpts">17/20</div></div>
+      <div class="frow"><div><div class="fname">Stalled work</div><div class="fdesc">2 tasks in Waiting for Response &gt; 14d</div></div><div class="ftrack"><div style="width:73%;background:#EA580C;"></div></div><div class="fpts">11/15</div></div>
+      <div class="frow"><div><div class="fname">Pace vs plan</div><div class="fdesc">40% of tasks done at 75% of schedule elapsed</div></div><div class="ftrack"><div style="width:67%;background:#EA580C;"></div></div><div class="fpts">10/15</div></div>
+      <div class="frow"><div><div class="fname">Scope churn</div><div class="fdesc">3 tasks added after start (+33%)</div></div><div class="ftrack"><div style="width:60%;background:#CA8A04;"></div></div><div class="fpts">6/10</div></div>
+      <div class="frow"><div><div class="fname">Single-thread staffing</div><div class="fdesc">top contributor 55% of hours</div></div><div class="ftrack"><div style="width:80%;background:#CA8A04;"></div></div><div class="fpts">4/5</div></div>
+      <div class="frow fna"><div><div class="fname">Plan-vs-actual burn</div><div class="fdesc">snapshot history still accruing — excluded, weights renormalized</div></div><div class="ftrack"><div style="width:0%;"></div></div><div class="fpts">n/a</div></div>
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--text-muted);font-style:italic;margin-top:8px;">Raw 72 of 90 available points → normalized 80/100. The burn factor is omitted (no snapshot history yet) and its 10 points redistributed across the rest.</div>
+</div>
+
+<!-- In Project Review -->
+<div class="option">
+  <div class="option-tag">Surface 3</div>
+  <h2>As a badge in Project Review</h2>
+  <p class="desc">Inline on each review row, so the score is right where the weekly conversation already happens.</p>
+  <div class="reviewrow">
+    <span class="risk risk-hi"><span class="dot dot-hi"></span> 80</span>
+    <div style="flex:1;">
+      <div class="title">Safe City data quality scorecard</div>
+      <div class="meta">Data Program · L · target Jun 14 (slipped 3 wks) · 9 open tasks, 5 overdue</div>
+    </div>
+    <button style="border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:6px;padding:5px 12px;font-weight:700;font-size:11px;cursor:pointer;">Why? ▾</button>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Design choices worth confirming:</strong>
+  <ul>
+    <li><strong>Transparent &amp; tunable</strong> — additive points, drivers always shown, weights/thresholds in <code>app_config</code>. No ML, no black box (right call at your data volume).</li>
+    <li><strong>Graceful degradation</strong> — the snapshot-dependent factor is excluded until history accrues, so this ships useful today and gets sharper over time.</li>
+    <li><strong>Scope</strong> — active/scheduled projects only; recomputed client-side on each load.</li>
+    <li><strong>Open question:</strong> default weights above are a starting point — we'd calibrate them against a few projects you already know were "troubled" to make sure the score agrees with your gut.</li>
+  </ul>
+</div>
+
+</body>
+</html>

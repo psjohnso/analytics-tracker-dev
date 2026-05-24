@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Option C — merged control strip (functional)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#002669; --orange:#C24200; --yellow:#FFDB22; --green:#83AC16;
+    --border:#E1E2DD; --text-body:#002855; --text-muted:#6B7280;
+    --surface:#F3F1EB; --surface-2:#EDEAE1; --white:#ffffff;
+    --pill-blue-bg:#EEF2FF; --pill-blue-fg:#002669; --shadow:0 6px 22px rgba(0,0,0,0.14);
+  }
+  body[data-theme="dark"] {
+    --navy:#6E9BD6; --border:#343B45; --text-body:#E6E9ED; --text-muted:#9AA2AC;
+    --surface:#14171D; --surface-2:#2A2F38; --white:#20242C;
+    --pill-blue-bg:rgba(110,155,214,0.18); --pill-blue-fg:#A9C8F0; --shadow:0 6px 22px rgba(0,0,0,0.5); color-scheme:dark;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Lato',Arial,sans-serif; background:var(--surface); color:var(--text-body); font-size:14px; }
+
+  /* static header + tabs (unchanged in Option C) */
+  .appheader { display:flex; align-items:center; gap:14px; background:var(--navy); color:#fff; padding:0 20px; height:58px; }
+  body[data-theme="dark"] .appheader { background:#0D1117; }
+  .ah-mark { width:30px; height:30px; border-radius:6px; background:linear-gradient(135deg,#fff,#dbe4f5); color:var(--navy); font-weight:900; font-size:12px; display:flex; align-items:center; justify-content:center; }
+  .ah-title .t { font-weight:900; font-size:15px; } .ah-title .s { font-family:'Cardo',serif; font-style:italic; font-size:11px; opacity:0.82; }
+  .ah-stats { display:flex; gap:6px; margin-left:6px; }
+  .stat { background:rgba(255,255,255,0.10); border-radius:6px; padding:4px 10px; text-align:center; }
+  .stat .n { font-weight:900; font-size:15px; } .stat .l { font-size:9px; opacity:0.78; text-transform:uppercase; }
+  .ah-right { margin-left:auto; display:flex; align-items:center; gap:9px; }
+  .ah-icon { width:30px; height:30px; border-radius:7px; background:rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .ah-av { width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; }
+  .themebtn { font-family:inherit; font-size:11px; font-weight:700; color:#fff; background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.3); border-radius:6px; padding:5px 10px; cursor:pointer; }
+  .tabbar { display:flex; align-items:center; gap:3px; background:var(--white); padding:0 16px; border-bottom:1px solid var(--border); }
+  .tab { padding:12px 13px; font-size:13px; font-weight:700; color:var(--text-muted); border-bottom:3px solid transparent; }
+  .tab.active { color:var(--navy); border-bottom-color:var(--navy); }
+  .accent { height:4px; background:linear-gradient(90deg,#C24200 25%,#FFDB22 25%,#FFDB22 50%,#83AC16 50%,#83AC16 75%,#002669 75%); }
+
+  /* ── THE MERGED CONTROL STRIP ─────────────────────────────── */
+  .controlstrip { display:flex; align-items:center; gap:10px; padding:10px 16px; background:var(--surface); border-bottom:1px solid var(--border); }
+  .cs-left { flex:1; display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; }
+  .cs-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .segmented { display:inline-flex; background:var(--surface-2); border-radius:8px; padding:3px; gap:2px; }
+  .seg { font-size:12.5px; font-weight:800; color:var(--text-muted); padding:6px 14px; border-radius:6px; cursor:pointer; }
+  .seg.on { background:var(--navy); color:#fff; }
+  body[data-theme="dark"] .seg.on { color:#0D1117; }
+  .seg .c { font-size:10px; opacity:0.7; margin-left:4px; }
+  .cs-div { width:1px; height:22px; background:var(--border); margin:0 2px; }
+  .pchip { position:relative; font-size:12.5px; font-weight:700; color:var(--text-body); background:var(--white); border:1.5px solid var(--border); border-radius:18px; padding:6px 12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+  .pchip:hover { border-color:var(--navy); }
+  .pchip.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+  body[data-theme="dark"] .pchip.on { color:#0D1117; }
+  .pchip .star { color:var(--yellow); -webkit-text-stroke:0.4px #C99A00; font-size:11px; }
+  .pchip.on .star { -webkit-text-stroke:0.4px rgba(0,0,0,0.4); }
+  .pchip .kebab { font-weight:900; opacity:0.5; padding:0 1px; }
+  .pchip .kebab:hover { opacity:1; }
+  .pchip.save { color:var(--green); border-color:var(--green); background:transparent; }
+  .pmod { font-size:11.5px; font-weight:700; color:var(--orange); background:rgba(194,66,0,0.12); border-radius:12px; padding:4px 10px; }
+  .pmod a { text-decoration:underline; cursor:pointer; }
+  .pmenu { position:absolute; top:calc(100% + 5px); right:0; z-index:50; min-width:185px; background:var(--white); border:1px solid var(--border); border-radius:9px; box-shadow:var(--shadow); padding:5px; display:none; cursor:default; }
+  .pmenu.open { display:block; }
+  .pmi { display:flex; align-items:center; gap:9px; padding:8px 10px; font-size:12.5px; font-weight:600; border-radius:6px; cursor:pointer; white-space:nowrap; }
+  .pmi:hover { background:var(--surface-2); } .pmi.danger { color:#DC2626; } .pmi .ic { width:15px; text-align:center; }
+  .tb-count { font-family:'Cardo',serif; font-style:italic; color:var(--text-muted); font-size:14px; }
+  .tb-btn { font-size:12.5px; font-weight:700; color:var(--navy); border:1.5px solid var(--border); background:var(--white); border-radius:7px; padding:7px 11px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+  .tb-btn.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+  body[data-theme="dark"] .tb-btn.on { color:#0D1117; }
+  .sortsel { font-size:12.5px; font-weight:700; color:var(--navy); border:1.5px solid var(--border); background:var(--white); border-radius:7px; padding:7px 9px; font-family:inherit; }
+  .viewtoggle { display:inline-flex; border:1.5px solid var(--border); border-radius:7px; overflow:hidden; }
+  .vt { padding:6px 10px; font-size:13px; cursor:pointer; color:var(--text-muted); background:var(--white); }
+  .vt.on { background:var(--navy); color:#fff; }
+  body[data-theme="dark"] .vt.on { color:#0D1117; }
+
+  /* layout */
+  .layout { display:flex; align-items:flex-start; }
+  .sidebar { flex:0 0 250px; background:var(--white); border-right:1px solid var(--border); padding:8px 12px 30px; align-self:stretch; }
+  .sidebar.hidden { display:none; }
+  .main { flex:1; min-width:0; padding:16px; }
+  .sb-top { display:flex; align-items:center; justify-content:space-between; padding:8px 2px; }
+  .sb-top .ttl { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--text-muted); }
+  .sb-top .clr { font-size:11px; color:var(--navy); cursor:pointer; font-weight:700; }
+  .facet { border-top:1px solid var(--border); }
+  .facet-h { display:flex; align-items:center; gap:7px; padding:9px 2px; cursor:pointer; user-select:none; }
+  .facet-h .lbl { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--orange); }
+  .facet-h .cnt { font-size:10px; font-weight:800; color:#fff; background:var(--navy); border-radius:9px; padding:1px 7px; display:none; }
+  body[data-theme="dark"] .facet-h .cnt { color:#0D1117; }
+  .facet-h .car { margin-left:auto; font-size:9px; color:var(--text-muted); transition:transform .12s; }
+  .facet.open .facet-h .car { transform:rotate(90deg); }
+  .facet-b { display:none; padding-bottom:8px; }
+  .facet.open .facet-b { display:block; }
+  .facet-search { width:100%; padding:6px 9px; margin-bottom:6px; border:1px solid var(--border); border-radius:6px; font-size:12px; font-family:inherit; background:var(--surface-2); color:var(--text-body); outline:none; }
+  .fbtn { display:flex; align-items:center; justify-content:space-between; width:100%; padding:6px 9px; border:none; background:transparent; border-radius:6px; cursor:pointer; font-family:inherit; font-size:12.5px; color:var(--text-body); text-align:left; }
+  .fbtn:hover { background:var(--surface-2); }
+  .fbtn.on { background:var(--navy); color:#fff; }
+  body[data-theme="dark"] .fbtn.on { color:#0D1117; }
+  .fbtn .left { display:flex; align-items:center; gap:7px; }
+  .fbtn .badge { font-size:11px; font-weight:700; background:rgba(0,0,0,0.08); border-radius:9px; padding:1px 7px; }
+  .fbtn.on .badge { background:rgba(255,255,255,0.25); }
+  body[data-theme="dark"] .fbtn.on .badge { background:rgba(0,0,0,0.2); }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .facet-empty { font-size:11px; color:var(--text-muted); font-style:italic; padding:4px; }
+
+  /* results */
+  table { width:100%; border-collapse:collapse; background:var(--white); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  th { text-align:left; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:#fff; background:var(--navy); padding:9px 12px; font-weight:800; }
+  body[data-theme="dark"] th { background:var(--white); color:var(--text-muted); }
+  td { padding:9px 12px; font-size:13px; border-bottom:1px solid var(--border); }
+  tr:last-child td { border-bottom:none; } tr:hover td { background:var(--surface-2); }
+  .num { font-family:monospace; color:var(--text-muted); font-size:12px; }
+  .spill { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; }
+  .card { background:var(--white); border:1px solid var(--border); border-left:4px solid var(--navy); border-radius:10px; padding:12px; }
+  .card .t { font-weight:800; color:var(--navy); font-size:13.5px; margin-bottom:7px; }
+  .card .meta { display:flex; gap:6px; flex-wrap:wrap; }
+  .empty { padding:40px; text-align:center; color:var(--text-muted); font-style:italic; font-family:'Cardo',serif; }
+</style>
+</head>
+<body>
+  <!-- header (static; unchanged in Option C) -->
+  <div class="appheader">
+    <div class="ah-mark">CoT</div>
+    <div class="ah-title"><div class="t">Project Tracker</div><div class="s">City of Tucson · Information Technology</div></div>
+    <div class="ah-stats">
+      <div class="stat"><div class="n">12</div><div class="l">Active</div></div>
+      <div class="stat"><div class="n">76</div><div class="l">Open</div></div>
+      <div class="stat"><div class="n">28</div><div class="l">Total</div></div>
+    </div>
+    <div class="ah-right">
+      <button class="themebtn" onclick="toggleTheme()" id="themebtn">🌙 Dark</button>
+      <div class="ah-icon">🔔</div><div class="ah-av">PJ</div>
+    </div>
+  </div>
+  <div class="tabbar">
+    <div class="tab">Overview</div><div class="tab">My Work</div><div class="tab active">Portfolio</div>
+    <div class="tab">Capacity</div><div class="tab">Analytics</div><div class="tab">⋯ More</div>
+  </div>
+  <div class="accent"></div>
+
+  <!-- the one merged control strip -->
+  <div class="controlstrip" id="controlstrip"></div>
+
+  <div class="layout">
+    <aside class="sidebar hidden" id="sidebar"></aside>
+    <main class="main"><div id="results"></div></main>
+  </div>
+
+<script>
+var TODAY='2026-05-24', ME='Peter Johnson';
+/* ---- data ---- */
+function mkP(n,t,s,p,c,m,d,due){return{num:n,title:t,status:s,priority:p,category:c,member:m,dept:d,due:due};}
+function mkT(n,t,s,p,c,a,tool,due){return{num:n,title:t,status:s,priority:p,category:c,assignee:a,tool:tool,due:due};}
+var DATA = {
+ projects:[
+  mkP('P-330','Application Development Standards & Governance','Active','High','Data Governance','Peter Johnson','City Clerk','2026-06-12'),
+  mkP('P-342','Finalize DGEC Charter w/ Exec Committee','Active','High','Strategic Planning','Peter Johnson','Finance','2026-05-30'),
+  mkP('P-188','Police Use-of-Force Dashboard','Active','High','Reporting & BI','James McGinnis','Police','2026-05-18'),
+  mkP('P-259','Data Governance Framework Training','Active','Medium','Training & Enablement','Jessica Fraver','City Clerk','2026-05-20'),
+  mkP('P-201','Water Quality Sampling Pipeline','Active','Medium','Data Analysis & Insights','Andrew Sutton','Water','2026-06-04'),
+  mkP('P-277','Open Data Portal Refresh','Active','Medium','Data Governance','Kate Carter','Finance','2026-06-28'),
+  mkP('P-309','Master Data Management Strategy','Active','High','Strategic Planning','Peter Johnson','Finance','2026-06-18'),
+  mkP('P-281','Parks Maintenance Backlog Analytics','Active','Low','Data Analysis & Insights','Vladimir Berg','Parks & Rec','2026-05-15'),
+  mkP('P-322','Transportation Asset Inventory BI','Active','Medium','Reporting & BI','Liz Wilshin','Transportation','2026-06-09'),
+  mkP('P-205','Data Sharing Agreement Templates','Active','Low','Compliance & Policy','Joseph Ahumada','City Clerk','2026-05-25'),
+  mkP('P-244','Records Retention Policy Modernization','Waiting for Response','Medium','Compliance & Policy','Joseph Ahumada','City Clerk','2026-05-22'),
+  mkP('P-314','Police Overtime Spend Analysis','Waiting for Response','Medium','Reporting & BI','Joseph Ahumada','Police','2026-05-21'),
+  mkP('P-219','Transit Ridership Trend Reports','On Hold','Low','Reporting & BI','Liz Wilshin','Transportation','2026-08-10'),
+  mkP('P-318','Parks Program Equity Study','On Hold','Medium','Data Analysis & Insights','Vladimir Berg','Parks & Rec','2026-09-12'),
+  mkP('P-351','Analytics & AI ROI Analysis','Future','Medium','Data Analysis & Insights','James McGinnis','Finance','2026-09-01'),
+  mkP('P-290','Crime Hotspot Predictive Model','Future','High','Data Analysis & Insights','James McGinnis','Police','2026-10-05'),
+  mkP('P-333','AI Use Policy & Guardrails','Future','High','Compliance & Policy','Peter Johnson','Finance','2026-11-01'),
+  mkP('P-352','Analytics & BI Training Series','Scheduled','Medium','Training & Enablement','Kate Carter','Parks & Rec','2026-07-15'),
+  mkP('P-301','Finance Close Reporting Automation','Scheduled','High','Reporting & BI','Jessica Fraver','Finance','2026-07-01'),
+  mkP('P-340','Self-Service BI Enablement','Scheduled','Medium','Training & Enablement','Kate Carter','Water','2026-08-01'),
+  mkP('P-118','Citywide Data Catalog','Complete','Medium','Data Governance','Peter Johnson','City Clerk','2026-03-12'),
+  mkP('P-126','Water Meter Anomaly Detection','Complete','High','Data Analysis & Insights','Andrew Sutton','Water','2026-02-28'),
+  mkP('P-141','Council District Profile Reports','Complete','Low','Reporting & BI','Jessica Fraver','City Clerk','2026-04-02'),
+  mkP('P-133','GIS Training for Field Crews','Canceled','Low','Training & Enablement','Liz Wilshin','Transportation','2026-01-20')
+ ],
+ tasks:[
+  mkT('T-1201','Wire up RLS roles in Police dashboard','Active','High','Reporting & BI','James McGinnis','Power BI','2026-05-19'),
+  mkT('T-1202','Draft DGEC charter v3','Active','High','Strategic Planning','Peter Johnson','Word','2026-05-26'),
+  mkT('T-1203','Build water sampling ETL','Active','Medium','Data Analysis & Insights','Andrew Sutton','Python','2026-06-02'),
+  mkT('T-1204','Open Data portal theme refresh','Active','Medium','Data Governance','Kate Carter','ArcGIS','2026-05-17'),
+  mkT('T-1205','Overtime spend SQL model','Waiting for Response','Medium','Reporting & BI','Joseph Ahumada','SQL','2026-05-21'),
+  mkT('T-1206','Retention schedule crosswalk','Waiting for Response','Medium','Compliance & Policy','Joseph Ahumada','Excel','2026-05-23'),
+  mkT('T-1207','Parks backlog Tableau viz','Active','Low','Data Analysis & Insights','Vladimir Berg','Tableau','2026-05-14'),
+  mkT('T-1208','MDM tooling eval matrix','Active','High','Strategic Planning','Peter Johnson','Excel','2026-06-10'),
+  mkT('T-1209','Transit ridership refresh','On Hold','Low','Reporting & BI','Liz Wilshin','Power BI','2026-08-09'),
+  mkT('T-1210','Equity study survey design','On Hold','Medium','Data Analysis & Insights','Vladimir Berg','Word','2026-09-10'),
+  mkT('T-1211','AI guardrails policy outline','Pending','High','Compliance & Policy','Peter Johnson','Word','2026-06-20'),
+  mkT('T-1212','BI training curriculum draft','Pending','Medium','Training & Enablement','Kate Carter','Word','2026-06-15'),
+  mkT('T-1213','Asset inventory schema','Active','Medium','Reporting & BI','Liz Wilshin','SQL','2026-06-08'),
+  mkT('T-1214','Catalog metadata import','Complete','Medium','Data Governance','Peter Johnson','Python','2026-03-10'),
+  mkT('T-1215','Meter anomaly model tuning','Complete','High','Data Analysis & Insights','Andrew Sutton','Python','2026-02-26'),
+  mkT('T-1216','District profile layout','Complete','Low','Reporting & BI','Jessica Fraver','Power BI','2026-04-01'),
+  mkT('T-1217','Field crew GIS deck','Canceled','Low','Training & Enablement','Liz Wilshin','ArcGIS','2026-01-18'),
+  mkT('T-1218','Governance intake form','Active','Low','Data Governance','Jessica Fraver','ArcGIS','2026-05-28'),
+  mkT('T-1219','Hotspot model feature prep','Pending','High','Data Analysis & Insights','James McGinnis','Python','2026-07-01'),
+  mkT('T-1220','Close automation runbook','Active','High','Reporting & BI','Jessica Fraver','Power BI','2026-06-27'),
+  mkT('T-1221','Sharing agreement template','Active','Low','Compliance & Policy','Joseph Ahumada','Word','2026-05-24'),
+  mkT('T-1222','Self-service workspace setup','Active','Medium','Training & Enablement','Kate Carter','Power BI','2026-07-30')
+ ]
+};
+
+var FACETS = {
+ projects:[
+  {key:'status',label:'Status',field:'status',dot:'status'},
+  {key:'priority',label:'Priority',field:'priority',dot:'priority'},
+  {key:'category',label:'Category',field:'category',search:true},
+  {key:'member',label:'Owner',field:'member',search:true},
+  {key:'dept',label:'Department',field:'dept',search:true}
+ ],
+ tasks:[
+  {key:'status',label:'Status',field:'status',dot:'status'},
+  {key:'priority',label:'Priority',field:'priority',dot:'priority'},
+  {key:'category',label:'Category',field:'category',search:true},
+  {key:'assignee',label:'Assignee',field:'assignee',search:true},
+  {key:'tool',label:'Tool',field:'tool',search:true}
+ ]
+};
+var OPEN = { projects:['Active','On Hold','Waiting for Response','Future','Scheduled'], tasks:['Active','On Hold','Pending','Waiting for Response'] };
+function VALUES(ent,key){ var f=facetByKey(ent,key); var set={}; DATA[ent].forEach(function(it){ if(it[f.field]) set[it[f.field]]=1; }); return Object.keys(set).sort(); }
+function facetByKey(ent,key){ var a=FACETS[ent]; for(var i=0;i<a.length;i++) if(a[i].key===key) return a[i]; return null; }
+
+/* ---- state ---- */
+var ENTITY='projects', VIEW='list', SORT='title', sidebarOpen=false;
+function blank(ent){ var s={search:'',overdue:false}; FACETS[ent].forEach(function(f){ s[f.key]=[]; }); return s; }
+var state={ projects:blank('projects'), tasks:blank('tasks') };
+function F(){ return state[ENTITY]; }
+var rowSearch={}, facetOpen={}, lastApplied=null;
+
+/* ---- engine ---- */
+function passesExcept(it,except){
+  var fs=FACETS[ENTITY], st=F();
+  for(var i=0;i<fs.length;i++){ var f=fs[i]; if(f.key===except) continue; if(st[f.key].length && st[f.key].indexOf(it[f.field])<0) return false; }
+  if(st.overdue && !(it.due<TODAY && OPEN[ENTITY].indexOf(it.status)>=0)) return false;
+  if(st.search){ var q=st.search.toLowerCase(); var hay=(it.title+' '+it.num+' '+(it.member||it.assignee||'')+' '+(it.dept||it.tool||'')+' '+it.category).toLowerCase(); if(hay.indexOf(q)<0) return false; }
+  return true;
+}
+function applyAll(){ var d=DATA[ENTITY].filter(function(it){return passesExcept(it,null);}); return sortRows(d); }
+function countFor(key,val){ var f=facetByKey(ENTITY,key),n=0; DATA[ENTITY].forEach(function(it){ if(it[f.field]===val && passesExcept(it,key)) n++; }); return n; }
+function anyActive(){ var st=F(); if(st.search||st.overdue) return true; var fs=FACETS[ENTITY]; for(var i=0;i<fs.length;i++) if(st[fs[i].key].length) return true; return false; }
+function sortRows(d){ var k=SORT,dir=1; return d.slice().sort(function(a,b){
+  if(k==='priority'){ var o={High:0,Medium:1,Low:2}; return (o[a.priority]==null?9:o[a.priority])-(o[b.priority]==null?9:o[b.priority]); }
+  if(k==='status') return (a.status||'').localeCompare(b.status||'');
+  if(k==='due') return (a.due||'9').localeCompare(b.due||'9');
+  return (a.title||'').localeCompare(b.title||'');
+}); }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function snapEqual(a,b){
+  // compare two entity-state snapshots (facets+overdue+search)
+  var keys={}; Object.keys(a).forEach(function(k){keys[k]=1;}); Object.keys(b).forEach(function(k){keys[k]=1;});
+  var ok=true; Object.keys(keys).forEach(function(k){
+    if(k==='search'){ if((a.search||'')!==(b.search||'')) ok=false; }
+    else if(k==='overdue'){ if(!!a.overdue!==!!b.overdue) ok=false; }
+    else { var av=(a[k]||[]).slice().sort(), bv=(b[k]||[]).slice().sort(); if(av.length!==bv.length){ok=false;} else for(var i=0;i<av.length;i++) if(av[i]!==bv[i]) ok=false; }
+  });
+  return ok;
+}
+
+/* ---- presets ---- */
+function builtins(){
+  var o=OPEN[ENTITY], ownerKey = ENTITY==='tasks' ? 'assignee' : 'member';
+  function mk(extra){ var s=blank(ENTITY); for(var k in extra) s[k]=extra[k]; return s; }
+  var mine={}; mine[ownerKey]=[ME]; mine.status=o.slice();
+  var list=[
+    {id:'__all',name:'All',state:blank(ENTITY)},
+    {id:'__mine',name:'My work',state:mk(mine)},
+    {id:'__open',name:'Open',state:mk({status:o.slice()})},
+    {id:'__overdue',name:'Overdue',state:mk({overdue:true})},
+    {id:'__high',name:'High priority',state:mk({priority:['High'],status:o.slice()})}
+  ];
+  return list;
+}
+function loadViews(){ try{return JSON.parse(localStorage.getItem('optc:views'))||[];}catch(e){return [];} }
+function saveViews(v){ localStorage.setItem('optc:views', JSON.stringify(v)); }
+var VIEWS = loadViews();
+function getDefault(){ return localStorage.getItem('optc:default')||''; }
+function setDefaultRef(ref){ localStorage.setItem('optc:default', ref); }
+
+function applyState(ent, snap){ ENTITY=ent; state[ent]=clone(snap); }
+function applyBuiltin(id){ var b=builtins(); for(var i=0;i<b.length;i++) if(b[i].id===id){ state[ENTITY]=clone(b[i].state); lastApplied=null; renderAll(); return; } }
+function applyView(id){ var v=null; for(var i=0;i<VIEWS.length;i++) if(VIEWS[i].id===id) v=VIEWS[i]; if(!v) return; ENTITY=v.entity; state[ENTITY]=clone(v.state); lastApplied=id; closeMenus(); renderAll(); }
+function saveCurrent(){ if(!anyActive()){ alert('Add some filters first.'); return; } var name=prompt('Name this view:',''); if(!name) return; name=name.trim().slice(0,40); if(!name) return; var id='cv_'+Date.now(); VIEWS.push({id:id,name:name,entity:ENTITY,state:clone(F())}); saveViews(VIEWS); lastApplied=id; closeMenus(); renderAll(); }
+function updateView(id,e){ if(e){e.stopPropagation();} var v=find(id); if(!v) return; v.entity=ENTITY; v.state=clone(F()); saveViews(VIEWS); lastApplied=id; closeMenus(); renderAll(); }
+function renameView(id,e){ if(e){e.stopPropagation();} var v=find(id); if(!v) return; var n=prompt('Rename view:',v.name); if(n===null) return; n=n.trim().slice(0,40); if(n){ v.name=n; saveViews(VIEWS);} closeMenus(); renderAll(); }
+function deleteView(id,e){ if(e){e.stopPropagation();} var v=find(id); if(!v) return; if(!confirm('Delete “'+v.name+'”?')) return; VIEWS=VIEWS.filter(function(x){return x.id!==id;}); saveViews(VIEWS); if(getDefault()==='view:'+id) setDefaultRef(''); closeMenus(); renderAll(); }
+function find(id){ for(var i=0;i<VIEWS.length;i++) if(VIEWS[i].id===id) return VIEWS[i]; return null; }
+function setDefault(ref,e){ if(e){e.stopPropagation();} setDefaultRef(getDefault()===ref?'':ref); closeMenus(); renderAll(); }
+
+/* ---- chrome interactions ---- */
+function switchEntity(ent){ if(ENTITY===ent) return; ENTITY=ent; lastApplied=null; renderAll(); }
+function toggleSidebar(){ sidebarOpen=!sidebarOpen; renderAll(); }
+function setSort(v){ SORT=v; renderResults(); }
+function setView(v){ VIEW=v; renderAll(); }
+function setFacet(key,idx){ var vals=VALUES(ENTITY,key); var v=vals[idx]; var arr=F()[key]; var i=arr.indexOf(v); if(i>=0) arr.splice(i,1); else arr.push(v); renderResults(); refreshFacets(); renderStrip(); }
+function setFacetSearch(key,val){ rowSearch[ENTITY+':'+key]=val; var el=document.getElementById('fb-'+key); if(el) el.innerHTML=facetButtons(key); }
+function toggleFacet(key){ facetOpen[ENTITY+':'+key]=!(facetOpen[ENTITY+':'+key]||F()[key].length>0); renderSidebar(); }
+function clearAll(){ state[ENTITY]=blank(ENTITY); lastApplied=null; renderAll(); }
+
+/* ---- menus ---- */
+var openMenu=null;
+function toggleMenu(id,e){ if(e){e.stopPropagation();} var was=openMenu===id; closeMenus(); if(!was){ var m=document.getElementById('m-'+id); if(m){m.classList.add('open'); openMenu=id;} } }
+function closeMenus(){ var o=document.querySelectorAll('.pmenu.open'); for(var i=0;i<o.length;i++) o[i].classList.remove('open'); openMenu=null; }
+document.addEventListener('click', function(e){ if(!e.target.closest||!e.target.closest('.pchip')) closeMenus(); });
+
+/* ---- colors ---- */
+function sColor(s){return ({Active:'#83AC16','On Hold':'#C99A00','Waiting for Response':'#3B82F6',Pending:'#7C3AED',Future:'#C24200',Scheduled:'#9E0059',Complete:'#0088FF',Canceled:'#9CA3AF'})[s]||'#9CA3AF';}
+function pColor(p){return ({High:'#C24200',Medium:'#C99A00',Low:'#83AC16'})[p]||'#9CA3AF';}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+/* ---- render: strip ---- */
+function renderStrip(){
+  var pc=DATA.projects.length, tc=DATA.tasks.length;
+  var seg='<div class="segmented">'+
+    '<div class="seg'+(ENTITY==='projects'?' on':'')+'" onclick="switchEntity(\'projects\')">Projects<span class="c">'+pc+'</span></div>'+
+    '<div class="seg'+(ENTITY==='tasks'?' on':'')+'" onclick="switchEntity(\'tasks\')">Tasks<span class="c">'+tc+'</span></div>'+
+    '<div class="seg'+(ENTITY==='review'?' on':'')+'" onclick="switchEntity(\'review\')">Review</div></div>';
+
+  // Project Review is a guided workflow, not a faceted list — so the filter /
+  // preset / sort / view controls don't apply. Strip simplifies to the segments.
+  if(ENTITY==='review'){
+    document.getElementById('controlstrip').innerHTML =
+      '<div class="cs-left">'+seg+'<span class="cs-div"></span>'+
+        '<span style="font-size:12.5px;color:var(--text-muted);font-style:italic;font-family:\'Cardo\',Georgia,serif;">A guided workflow — filters &amp; views don’t apply here.</span>'+
+      '</div>';
+    return;
+  }
+
+  var cur=F(), defRef=getDefault();
+  var b=builtins();
+  var activeBuiltin=null; for(var i=0;i<b.length;i++) if(snapEqual(cur,b[i].state)){ activeBuiltin=b[i].id; break; }
+  var activeView=null; if(!activeBuiltin) for(var j=0;j<VIEWS.length;j++) if(VIEWS[j].entity===ENTITY && snapEqual(cur,VIEWS[j].state)){ activeView=VIEWS[j].id; break; }
+
+  var html='<div class="cs-left">';
+  html+='<button class="tb-btn'+(sidebarOpen?' on':'')+'" onclick="toggleSidebar()" title="Show/hide filter sidebar">'+(sidebarOpen?'◀':'▦')+' Filters'+(anyActive()?' ('+activeCount()+')':'')+'</button>';
+  html+='<span class="cs-div"></span>';
+  html+=seg;
+  html+='<span class="cs-div"></span>';
+  b.forEach(function(p){ html+='<span class="pchip'+(p.id===activeBuiltin?' on':'')+'" onclick="applyBuiltin(\''+p.id+'\')">'+(defRef==='builtin:'+p.id?'<span class="star">★</span>':'')+p.name+
+    '<span class="kebab" onclick="toggleMenu(\''+p.id+'\',event)">⋯</span>'+
+    '<div class="pmenu" id="m-'+p.id+'"><div class="pmi" onclick="setDefault(\'builtin:'+p.id+'\',event)"><span class="ic">★</span>'+(defRef==='builtin:'+p.id?'Default view ✓':'Set as default')+'</div></div></span>'; });
+  var mine=VIEWS.filter(function(v){return v.entity===ENTITY;});
+  if(mine.length) html+='<span class="cs-div"></span>';
+  mine.forEach(function(v){ html+='<span class="pchip'+(v.id===activeView?' on':'')+'" onclick="applyView(\''+v.id+'\')">'+(defRef==='view:'+v.id?'<span class="star">★</span>':'')+esc(v.name)+
+    '<span class="kebab" onclick="toggleMenu(\''+v.id+'\',event)">⋯</span>'+
+    '<div class="pmenu" id="m-'+v.id+'">'+
+      '<div class="pmi" onclick="setDefault(\'view:'+v.id+'\',event)"><span class="ic">★</span>'+(defRef==='view:'+v.id?'Default view ✓':'Set as default')+'</div>'+
+      '<div class="pmi" onclick="updateView(\''+v.id+'\',event)"><span class="ic">⤓</span>Update to current</div>'+
+      '<div class="pmi" onclick="renameView(\''+v.id+'\',event)"><span class="ic">✎</span>Rename…</div>'+
+      '<div class="pmi danger" onclick="deleteView(\''+v.id+'\',event)"><span class="ic">🗑</span>Delete</div>'+
+    '</div></span>'; });
+  html+='<button class="pchip save" onclick="saveCurrent()">💾 Save view</button>';
+  if(lastApplied){ var lv=find(lastApplied); if(lv && lv.entity===ENTITY && !snapEqual(cur,lv.state)) html+='<span class="pmod">● unsaved — <a onclick="updateView(\''+lv.id+'\')">update “'+esc(lv.name)+'”</a></span>'; }
+  html+='</div>';
+
+  // right controls
+  var n=applyAll().length, label=ENTITY==='tasks'?'task':'project';
+  html+='<div class="cs-right">'+
+    '<span class="tb-count">'+n+' '+label+(n!==1?'s':'')+'</span>'+
+    '<button class="tb-btn">＋ New '+(ENTITY==='tasks'?'Task':'Project')+'</button>'+
+    '<select class="sortsel" onchange="setSort(this.value)">'+
+      ['title','status','priority','due'].map(function(k){return '<option value="'+k+'"'+(SORT===k?' selected':'')+'>Sort: '+({title:'Title',status:'Status',priority:'Priority',due:'Due'}[k])+'</option>';}).join('')+
+    '</select>'+
+    '<span class="viewtoggle"><span class="vt'+(VIEW==='grid'?' on':'')+'" onclick="setView(\'grid\')">⊞</span><span class="vt'+(VIEW==='list'?' on':'')+'" onclick="setView(\'list\')">☰</span></span>'+
+  '</div>';
+  document.getElementById('controlstrip').innerHTML=html;
+}
+function activeCount(){ var st=F(),n=0; FACETS[ENTITY].forEach(function(f){n+=st[f.key].length;}); if(st.overdue)n++; if(st.search)n++; return n; }
+
+/* ---- render: sidebar ---- */
+function facetButtons(key){
+  var f=facetByKey(ENTITY,key), q=(rowSearch[ENTITY+':'+key]||'').toLowerCase();
+  var vals=VALUES(ENTITY,key).filter(function(v){return v.toLowerCase().indexOf(q)>=0;});
+  if(!vals.length) return '<div class="facet-empty">No matches</div>';
+  return vals.map(function(v){ var idx=VALUES(ENTITY,key).indexOf(v), on=F()[key].indexOf(v)>=0, c=countFor(key,v);
+    var dot=f.dot==='status'?'<span class="dot" style="background:'+sColor(v)+'"></span>':(f.dot==='priority'?'<span class="dot" style="background:'+pColor(v)+'"></span>':'');
+    return '<button class="fbtn'+(on?' on':'')+'" onclick="setFacet(\''+key+'\','+idx+')"><span class="left">'+dot+esc(v)+'</span><span class="badge">'+c+'</span></button>';
+  }).join('');
+}
+function renderSidebar(){
+  var sb=document.getElementById('sidebar');
+  if(ENTITY==='review'){ sb.classList.add('hidden'); return; }
+  sb.classList.toggle('hidden',!sidebarOpen); if(!sidebarOpen) return;
+  var html='<div class="sb-top"><span class="ttl">Filter '+ENTITY+'</span>'+(anyActive()?'<span class="clr" onclick="clearAll()">Clear all</span>':'')+'</div>';
+  html+='<input class="facet-search" placeholder="Search '+ENTITY+'…" value="'+esc(F().search||'')+'" oninput="F().search=this.value;renderResults();renderStrip();">';
+  FACETS[ENTITY].forEach(function(f){
+    var n=F()[f.key].length, open=facetOpen[ENTITY+':'+f.key]||n>0;
+    html+='<div class="facet'+(open?' open':'')+'">'+
+      '<div class="facet-h" onclick="toggleFacet(\''+f.key+'\')"><span class="lbl">'+f.label+'</span><span class="cnt" style="'+(n?'display:inline-block':'')+'">'+n+'</span><span class="car">▶</span></div>'+
+      '<div class="facet-b">'+(f.search?'<input class="facet-search" placeholder="type to filter…" value="'+esc(rowSearch[ENTITY+':'+f.key]||'')+'" oninput="setFacetSearch(\''+f.key+'\',this.value)">':'')+
+        '<div id="fb-'+f.key+'">'+facetButtons(f.key)+'</div></div></div>';
+  });
+  sb.innerHTML=html;
+}
+// A facet toggle changes cross-facet counts + the header selection counts, so
+// just rebuild the sidebar (triggered by a click, so no input focus to lose).
+function refreshFacets(){ renderSidebar(); }
+
+/* ---- render: results ---- */
+function reviewScreen(){
+  // Placeholder for the existing Project Review workflow — a curated queue, not
+  // a filterable list. Shown here just so the segment is represented.
+  var queue=[
+    ['P-330','Application Development Standards & Governance','Peter Johnson','Q2 cycle'],
+    ['P-201','Water Quality Sampling Pipeline','Andrew Sutton','Q2 cycle'],
+    ['P-314','Police Overtime Spend Analysis','Joseph Ahumada','Needs response'],
+    ['P-309','Master Data Management Strategy','Peter Johnson','Q2 cycle']
+  ];
+  return '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px 18px;">'+
+    '<div style="font-weight:900;color:var(--navy);font-size:16px;">🔁 Project Review</div>'+
+    '<div style="font-size:13px;color:var(--text-muted);margin:4px 0 14px;">Guided quarterly review queue — '+queue.length+' projects awaiting your sign-off. (This is the existing Review workflow; it keeps its own screen.)</div>'+
+    queue.map(function(r){ return '<div style="display:flex;align-items:center;gap:12px;padding:11px 6px;border-top:1px solid var(--border);">'+
+      '<span class="num">'+r[0]+'</span>'+
+      '<span style="flex:1;font-weight:700;">'+esc(r[1])+'</span>'+
+      '<span style="font-size:12px;color:var(--text-muted);">'+esc(r[2])+'</span>'+
+      '<span class="spill" style="background:var(--pill-blue-bg);color:var(--pill-blue-fg);">'+r[3]+'</span>'+
+      '<button class="tb-btn" style="color:var(--green);border-color:var(--green);">✓ Approve</button>'+
+      '<button class="tb-btn">⚑ Flag</button></div>';
+    }).join('')+
+  '</div>';
+}
+function renderResults(){
+  var el=document.getElementById('results');
+  if(ENTITY==='review'){ el.innerHTML=reviewScreen(); return; }
+  var rows=applyAll();
+  if(!rows.length){ el.innerHTML='<div class="empty">No '+ENTITY+' match these filters.</div>'; return; }
+  if(VIEW==='grid'){
+    el.innerHTML='<div class="grid">'+rows.map(function(it){ var owner=it.member||it.assignee;
+      return '<div class="card"><div class="t">'+esc(it.title)+'</div><div class="meta">'+
+        '<span class="spill" style="background:'+sColor(it.status)+'22;color:'+sColor(it.status)+';"><span class="dot" style="background:'+sColor(it.status)+'"></span>'+it.status+'</span>'+
+        '<span class="spill" style="background:'+pColor(it.priority)+'22;color:'+pColor(it.priority)+';">'+it.priority+'</span></div>'+
+        '<div style="margin-top:8px;font-size:12px;color:var(--text-muted);">'+esc(owner)+' · '+esc(it.dept||it.tool||'')+'</div></div>';
+    }).join('')+'</div>';
+    return;
+  }
+  var ownerCol = ENTITY==='tasks' ? 'Assignee' : 'Owner', extraCol = ENTITY==='tasks' ? 'Tool' : 'Dept';
+  var body=rows.map(function(it){ var over=it.due<TODAY && OPEN[ENTITY].indexOf(it.status)>=0;
+    return '<tr><td class="num">'+it.num+'</td><td style="font-weight:700;">'+esc(it.title)+'</td>'+
+      '<td><span class="spill" style="background:'+sColor(it.status)+'22;color:'+sColor(it.status)+';"><span class="dot" style="background:'+sColor(it.status)+'"></span>'+it.status+'</span></td>'+
+      '<td><span class="spill" style="background:'+pColor(it.priority)+'22;color:'+pColor(it.priority)+';">'+it.priority+'</span></td>'+
+      '<td>'+esc(it.member||it.assignee)+'</td><td>'+esc(it.dept||it.tool)+'</td>'+
+      '<td style="'+(over?'color:#DC2626;font-weight:700;':'color:var(--text-muted);')+'">'+it.due.slice(5)+'</td></tr>';
+  }).join('');
+  el.innerHTML='<table><thead><tr><th>ID</th><th>'+(ENTITY==='tasks'?'Task':'Project')+'</th><th>Status</th><th>Priority</th><th>'+ownerCol+'</th><th>'+extraCol+'</th><th>Due</th></tr></thead><tbody>'+body+'</tbody></table>';
+}
+
+function renderAll(){ renderStrip(); renderSidebar(); renderResults(); }
+function toggleTheme(){ var d=document.body.getAttribute('data-theme')==='dark'; document.body.setAttribute('data-theme',d?'':'dark'); document.getElementById('themebtn').textContent=d?'🌙 Dark':'☀ Light'; }
+
+/* apply default on load */
+(function(){ var ref=getDefault(); if(ref){ if(ref.indexOf('builtin:')===0){ /* applied per-entity at render via highlight; also set state */ var id=ref.slice(8); var b=builtins(); for(var i=0;i<b.length;i++) if(b[i].id===id){ state[ENTITY]=clone(b[i].state); } } else if(ref.indexOf('view:')===0){ var vid=ref.slice(5); var v=find(vid); if(v){ ENTITY=v.entity; state[ENTITY]=clone(v.state); lastApplied=vid; } } } renderAll(); })();
+</script>
+</body>
+</html>

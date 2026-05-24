@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Allocation Editor — form factor alternatives</title>
+<style>
+  :root {
+    --navy: #002669;
+    --border: #E1E2DD;
+    --text-body: #002855;
+    --text-muted: #6B7280;
+    --bg: #F9FAFB;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px 60px;
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text-body);
+    max-width: 1500px; margin: 0 auto;
+  }
+  h1 { margin: 0 0 4px 0; font-size: 22px; color: var(--navy); font-weight: 800; }
+  .lead { color: var(--text-muted); margin: 0 0 28px 0; font-size: 13px; }
+
+  .option {
+    background: #fff; border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px 24px; margin-bottom: 28px;
+  }
+  .option-label {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 4px 10px; border-radius: 12px; margin-bottom: 4px;
+    background: var(--navy); color: #fff;
+  }
+  .option-title {
+    font-size: 17px; font-weight: 800; color: var(--navy); margin: 8px 0 4px 0;
+  }
+  .option-tag { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+
+  /* ── Scale wrapper — simulates a real screen at 1100px wide ── */
+  .stage {
+    background: #E5E7EB; border-radius: 10px; padding: 14px;
+    position: relative; overflow: hidden;
+  }
+  .browser {
+    background: #fff; border: 1px solid #CBD5E1; border-radius: 8px;
+    overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    position: relative;
+  }
+  .browser-chrome {
+    background: #F3F4F6; padding: 6px 10px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; color: var(--text-muted);
+    border-bottom: 1px solid #E5E7EB;
+  }
+  .browser-chrome .dot { width: 8px; height: 8px; border-radius: 50%; background: #D1D5DB; }
+  .browser-chrome .url { margin-left: 6px; padding: 2px 8px; background: #fff; border-radius: 10px; border: 1px solid #E5E7EB; }
+
+  /* ── App header (matches real app navy bar) ── */
+  .app-header {
+    background: var(--navy); color: #fff;
+    padding: 8px 16px; display: flex; align-items: center; gap: 16px;
+    font-size: 11px;
+  }
+  .app-header .brand { font-weight: 800; font-size: 13px; letter-spacing: 0.04em; }
+  .app-header .tabs { display: flex; gap: 14px; opacity: 0.85; }
+  .app-header .tabs .tab { padding: 2px 4px; }
+  .app-header .tabs .tab.active { border-bottom: 2px solid #fff; padding-bottom: 0; font-weight: 700; }
+  .app-header .who { margin-left: auto; opacity: 0.85; }
+
+  /* ── Allocation grid mock ── */
+  .ae-page {
+    display: grid; grid-template-columns: 220px 1fr; gap: 16px;
+    padding: 14px;
+  }
+  .ae-page.inline-pg { grid-template-columns: 1fr; gap: 0; }
+  .ae-sidebar {
+    background: #FAFAF7; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px; font-size: 11px;
+  }
+  .ae-sidebar h3 {
+    margin: 0 0 6px 0; font-size: 10px; font-weight: 800; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .ae-sidebar .person-name { font-size: 14px; font-weight: 800; color: var(--navy); margin-bottom: 2px; }
+  .ae-sidebar .person-sub { font-size: 10px; color: var(--text-muted); margin-bottom: 12px; }
+  .ae-sidebar .cap-row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .ae-sidebar .cap-row span:last-child { font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+  .ae-sidebar .legend { font-size: 9px; color: var(--text-muted); line-height: 1.5; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #E5E7EB; }
+
+  .ae-main {
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px; overflow: hidden;
+  }
+  .ae-actionbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #F1F1EC;
+  }
+  .ae-actionbar .title { font-size: 13px; font-weight: 800; color: var(--navy); }
+  .ae-actionbar .sub { font-size: 10px; color: var(--text-muted); }
+  .ae-actionbar .actions { display: flex; gap: 6px; }
+  .btn {
+    font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 4px;
+    border: 1px solid var(--border); background: #fff; color: var(--text-body);
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid transparent; }
+
+  .ae-range-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #F3F4F6; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px;
+    font-size: 10px; color: var(--text-muted);
+  }
+  .ae-range-bar .ae-range-label { font-weight: 700; color: var(--navy); font-size: 11px; }
+
+  .ae-grid { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .ae-grid th, .ae-grid td { border-bottom: 1px solid #F1F1EC; padding: 4px 3px; }
+  .ae-grid th {
+    background: #F3F4F6; color: var(--navy);
+    font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;
+    font-size: 8px; padding: 5px 3px; text-align: center;
+  }
+  .ae-grid th.proj-th { text-align: left; padding-left: 8px; min-width: 180px; }
+  .ae-grid td.proj { padding-left: 8px; }
+  .ae-grid td.proj .name { font-weight: 700; color: var(--navy); font-size: 11px; }
+  .ae-grid td.proj .meta { font-size: 9px; color: var(--text-muted); }
+  .ae-grid td.cell { text-align: center; }
+  .pct { display: inline-block; min-width: 28px; padding: 2px 4px; border: 1px solid var(--border); border-radius: 3px; font-size: 10px; font-weight: 700; }
+  .pct.has-val { background: #EEF2FF; color: var(--navy); border-color: var(--navy); }
+  .ae-cur { background: #FEF9C3 !important; }
+  .ae-hrs { font-size: 8px; color: var(--text-muted); }
+  .ae-out { background: repeating-linear-gradient(45deg, #FAFAF7, #FAFAF7 4px, #F0F0EB 4px, #F0F0EB 8px); }
+
+  .group-hdr td {
+    background: var(--navy); color: #fff;
+    font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 3px 8px;
+  }
+  .group-contrib td { background: #4B5563; }
+  .tot-row td { background: #F3F4F6; font-weight: 800; }
+  .tot-chip {
+    display: inline-block; font-size: 9px; font-weight: 800;
+    padding: 2px 5px; border-radius: 8px;
+    background: #DCFCE7; color: #166534;
+  }
+  .tot-chip.over { background: #FECACA; color: #991B1B; }
+
+  .status-active   { color: #166534; background: rgba(34,197,94,0.13); padding: 0 4px; border-radius: 3px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+  .status-complete { color: #1E3A8A; background: rgba(59,130,246,0.13); padding: 0 4px; border-radius: 3px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+  .status-onhold   { color: #854D0E; background: rgba(245,158,11,0.13); padding: 0 4px; border-radius: 3px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+  .status-canceled { color: #991B1B; background: rgba(239,68,68,0.13); padding: 0 4px; border-radius: 3px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+
+  /* ── Option 2 specific: side panel ── */
+  .stage.panel { padding: 14px; }
+  .stage.panel .behind {
+    background: #fff; border: 1px solid #E5E7EB; border-radius: 6px;
+    padding: 14px; font-size: 10px; color: var(--text-muted);
+    filter: blur(0.5px);
+  }
+  .stage.panel .behind-content {
+    opacity: 0.4;
+  }
+  .stage.panel .side-panel {
+    position: absolute; top: 14px; right: 14px; bottom: 14px;
+    width: 70%; background: #fff; border-left: 1px solid #CBD5E1;
+    box-shadow: -6px 0 16px rgba(0,0,0,0.12);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .side-panel-header {
+    padding: 10px 14px; border-bottom: 1px solid #F1F1EC;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--navy); color: #fff;
+  }
+  .side-panel-header .name { font-size: 13px; font-weight: 800; }
+  .side-panel-header .sub { font-size: 10px; opacity: 0.85; }
+  .side-panel-header .close { font-size: 16px; color: #fff; cursor: pointer; font-weight: 700; }
+  .side-panel-body { padding: 12px; overflow-y: auto; flex: 1; }
+
+  /* ── Option 3 specific: inline expansion ── */
+  .res-list { padding: 12px; }
+  .res-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 10px; border-bottom: 1px solid #F1F1EC;
+    font-size: 11px;
+  }
+  .res-row.expanded { background: #FAFAF7; flex-direction: column; align-items: stretch; }
+  .res-row.expanded .res-row-head { display: flex; align-items: center; gap: 12px; width: 100%; padding-bottom: 8px; border-bottom: 1px solid #F1F1EC; margin-bottom: 8px; }
+  .res-row .res-name { font-weight: 700; color: var(--navy); min-width: 140px; }
+  .res-row .res-meta { color: var(--text-muted); font-size: 10px; }
+  .res-row .res-util-bar {
+    flex: 1; height: 8px; background: #E5E7EB; border-radius: 4px; overflow: hidden;
+  }
+  .res-row .res-util-bar > div { height: 100%; background: #22C55E; }
+  .res-row .chevron { font-size: 10px; color: var(--text-muted); }
+  .res-row.expanded .chevron { color: var(--navy); transform: rotate(90deg); }
+
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; font-size: 12px; }
+  .pros-cons h4 { margin: 0 0 4px 0; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+  .pros-cons .pros h4 { color: #166534; }
+  .pros-cons .cons h4 { color: #991B1B; }
+  .pros-cons ul { margin: 0; padding-left: 18px; }
+  .pros-cons li { margin: 3px 0; line-height: 1.4; }
+
+  .verdict {
+    background: #fff; border: 1px solid #E8E6DF; border-left: 4px solid var(--navy);
+    border-radius: 8px; padding: 14px 18px; font-size: 13px;
+    margin-top: 28px;
+  }
+  .verdict strong { color: var(--navy); }
+</style>
+</head>
+<body>
+
+<h1>Allocation Editor — form factor alternatives</h1>
+<p class="lead">Three layouts compared at representative scale. Same member, same data, same week window where possible. Real allocation grid markup is simplified for visual brevity but the room each layout has for the grid is honest. Each "browser" frame represents a 1100px-wide viewport.</p>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- OPTION 1 — FULL-PAGE ROUTE -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div class="option">
+  <span class="option-label">Option 1</span>
+  <div class="option-title">Dedicated full-page editor</div>
+  <div class="option-tag">"Edit Allocations" navigates to its own page. Sidebar holds person/capacity context. Grid gets the full main column — comfortably shows 8–10 weeks.</div>
+
+  <div class="stage">
+    <div class="browser">
+      <div class="browser-chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="url">analytics-tracker.tucsonaz.gov / resources / member-b / edit-allocations</div></div>
+      <div class="app-header">
+        <span class="brand">📊 Analytics Project Tracker</span>
+        <div class="tabs">
+          <span class="tab">My Work</span>
+          <span class="tab">Projects</span>
+          <span class="tab active">Resources</span>
+          <span class="tab">Analytics</span>
+          <span class="tab">Settings</span>
+        </div>
+        <span class="who">Member B · BAA</span>
+      </div>
+
+      <div style="background:#F9FAFB;padding:8px 14px;font-size:11px;color:var(--text-muted);border-bottom:1px solid #E5E7EB;">
+        <span style="color:var(--navy);text-decoration:underline;cursor:pointer;">Resources</span> · Edit Allocations
+        <span style="float:right;">
+          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-primary">Apply changes</button>
+        </span>
+      </div>
+
+      <div class="ae-page">
+        <aside class="ae-sidebar">
+          <div class="person-name">Member B</div>
+          <div class="person-sub">Data Intelligence · BAA · 70% project-available</div>
+          <h3>This person's capacity</h3>
+          <div class="cap-row"><span>FTE</span><span>1.0</span></div>
+          <div class="cap-row"><span>Hours / week</span><span>40h</span></div>
+          <div class="cap-row"><span>Project hours</span><span>28h</span></div>
+          <div class="cap-row"><span>Vacation balance</span><span>96h</span></div>
+          <h3 style="margin-top:14px;">Window utilization</h3>
+          <div class="cap-row"><span>Planned (8w avg)</span><span>91%</span></div>
+          <div class="cap-row"><span>Logged YTD</span><span>820h</span></div>
+          <div class="legend">
+            <strong style="color:var(--navy);">Legend</strong><br>
+            ▶ project start ■ effective end<br>
+            <span class="ae-out" style="display:inline-block;width:14px;height:9px;vertical-align:middle;border-radius:2px;"></span> outside active span<br>
+            <span style="background:#FEF9C3;display:inline-block;width:14px;height:9px;vertical-align:middle;border-radius:2px;"></span> current week
+          </div>
+        </aside>
+
+        <div class="ae-main">
+          <div class="ae-actionbar">
+            <div>
+              <div class="title">Edit Allocations</div>
+              <div class="sub">Apr 7 — Jun 1 · W15 – W22 · click cells to edit %</div>
+            </div>
+            <div class="actions">
+              <button class="btn">◀</button>
+              <button class="btn">Jump to current</button>
+              <button class="btn">▶</button>
+            </div>
+          </div>
+          <table class="ae-grid">
+            <thead>
+              <tr>
+                <th class="proj-th">Project</th>
+                <th>Apr 7<br><span style="font-weight:600;font-size:7px;">W15</span></th>
+                <th>Apr 14<br><span style="font-weight:600;font-size:7px;">W16</span></th>
+                <th>Apr 21<br><span style="font-weight:600;font-size:7px;">W17</span></th>
+                <th>Apr 28<br><span style="font-weight:600;font-size:7px;">W18</span></th>
+                <th>May 5<br><span style="font-weight:600;font-size:7px;">W19</span></th>
+                <th class="ae-cur">May 12<br><span style="font-weight:600;font-size:7px;">W20</span></th>
+                <th>May 19<br><span style="font-weight:600;font-size:7px;">W21</span></th>
+                <th>May 26<br><span style="font-weight:600;font-size:7px;">W22</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="group-hdr"><td colspan="9">Leading (2)</td></tr>
+              <tr>
+                <td class="proj"><div class="name">Safe City Use of Force Dashboard <span class="status-active">Active</span></div><div class="meta">▶ 2026-03-02   ■ 2026-06-30</div></td>
+                <td class="cell"><span class="pct has-val">35</span><div class="ae-hrs">9.8h</div></td>
+                <td class="cell"><span class="pct has-val">40</span><div class="ae-hrs">11.2h</div></td>
+                <td class="cell"><span class="pct has-val">40</span><div class="ae-hrs">11.2h</div></td>
+                <td class="cell"><span class="pct has-val">35</span><div class="ae-hrs">9.8h</div></td>
+                <td class="cell"><span class="pct has-val">40</span><div class="ae-hrs">11.2h</div></td>
+                <td class="cell ae-cur"><span class="pct has-val">45</span><div class="ae-hrs">12.6h</div></td>
+                <td class="cell"><span class="pct has-val">50</span><div class="ae-hrs">10.0h</div></td>
+                <td class="cell"><span class="pct has-val">45</span><div class="ae-hrs">12.6h</div></td>
+              </tr>
+              <tr>
+                <td class="proj"><div class="name">Water Asset Map <span class="status-complete">Complete</span></div><div class="meta">▶ 2026-01-13   ■ 2026-05-05</div></td>
+                <td class="cell"><span class="pct has-val">25</span><div class="ae-hrs">7.0h</div></td>
+                <td class="cell"><span class="pct has-val">30</span><div class="ae-hrs">8.4h</div></td>
+                <td class="cell"><span class="pct has-val">25</span><div class="ae-hrs">7.0h</div></td>
+                <td class="cell"><span class="pct has-val">30</span><div class="ae-hrs">8.4h</div></td>
+                <td class="cell"><span class="pct has-val">10</span><div class="ae-hrs">2.8h</div></td>
+                <td class="cell ae-cur ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+              </tr>
+              <tr class="group-hdr group-contrib"><td colspan="9">▼ Contributing (2)</td></tr>
+              <tr>
+                <td class="proj"><div class="name">Customer 311 Trend Report <span class="status-onhold">On Hold</span></div><div class="meta">▶ 2026-02-09   ■ 2026-07-15</div></td>
+                <td class="cell"><span class="pct has-val">15</span><div class="ae-hrs">4.2h</div></td>
+                <td class="cell"><span class="pct has-val">10</span><div class="ae-hrs">2.8h</div></td>
+                <td class="cell"><span class="pct has-val">20</span><div class="ae-hrs">5.6h</div></td>
+                <td class="cell"><span class="pct has-val">10</span><div class="ae-hrs">2.8h</div></td>
+                <td class="cell"><span class="pct">0</span></td>
+                <td class="cell ae-cur"><span class="pct">0</span></td>
+                <td class="cell"><span class="pct">0</span></td>
+                <td class="cell"><span class="pct has-val">15</span><div class="ae-hrs">4.2h</div></td>
+              </tr>
+              <tr>
+                <td class="proj"><div class="name">Police RMS Integration <span class="status-canceled">Canceled</span></div><div class="meta">▶ 2026-02-17   ■ 2026-04-28</div></td>
+                <td class="cell"><span class="pct has-val">20</span><div class="ae-hrs">5.6h</div></td>
+                <td class="cell"><span class="pct has-val">20</span><div class="ae-hrs">5.6h</div></td>
+                <td class="cell"><span class="pct has-val">15</span><div class="ae-hrs">4.2h</div></td>
+                <td class="cell"><span class="pct has-val">5</span><div class="ae-hrs">1.4h</div></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-cur ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="tot-row">
+                <td class="proj">Total allocated</td>
+                <td class="cell"><span class="tot-chip">95%</span></td>
+                <td class="cell"><span class="tot-chip">100%</span></td>
+                <td class="cell"><span class="tot-chip">100%</span></td>
+                <td class="cell"><span class="tot-chip">80%</span></td>
+                <td class="cell"><span class="tot-chip">50%</span></td>
+                <td class="cell ae-cur"><span class="tot-chip">45%</span></td>
+                <td class="cell"><span class="tot-chip">50%</span></td>
+                <td class="cell"><span class="tot-chip">60%</span></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Pros</h4>
+      <ul>
+        <li>8 visible weeks instead of 6 — no horizontal scrolling for typical edits.</li>
+        <li>Sidebar holds capacity context the modal can't fit (FTE, vacation balance, window utilization, legend).</li>
+        <li>URL is shareable — unit lead can send "review your allocations for Q2" link.</li>
+        <li>Survives future field additions (notes per week, project links, etc.) without re-cramping.</li>
+        <li>Save/Cancel pinned in header — always visible while scrolling.</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>Cons</h4>
+      <ul>
+        <li>Loses the "I'm in the Resources tab" context — needs a clear back path (breadcrumb at top does this).</li>
+        <li>Mildly more routing/state work than the modal — ~half a day.</li>
+        <li>If users edit allocations 10× a day, the navigation overhead adds up vs. a modal pop-up.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- OPTION 2 — SIDE PANEL -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div class="option">
+  <span class="option-label">Option 2</span>
+  <div class="option-title">Slide-in side panel (drawer)</div>
+  <div class="option-tag">Panel slides in from the right at ~70% width. Resources tab visible behind it, slightly faded. Modern UX pattern (Linear, Slack thread view).</div>
+
+  <div class="stage panel">
+    <div class="browser">
+      <div class="browser-chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="url">analytics-tracker.tucsonaz.gov / resources</div></div>
+      <div class="app-header">
+        <span class="brand">📊 Analytics Project Tracker</span>
+        <div class="tabs">
+          <span class="tab">My Work</span>
+          <span class="tab">Projects</span>
+          <span class="tab active">Resources</span>
+          <span class="tab">Analytics</span>
+          <span class="tab">Settings</span>
+        </div>
+        <span class="who">Member B · BAA</span>
+      </div>
+
+      <div class="behind">
+        <div class="behind-content">
+          <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:8px;">Team Resources</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;font-size:9px;">
+            <div style="border:1px solid #E5E7EB;border-radius:4px;padding:6px;background:#FAFAF7;">Member A · 82%</div>
+            <div style="border:1px solid #E5E7EB;border-radius:4px;padding:6px;background:#FAFAF7;">Member B · 91%</div>
+            <div style="border:1px solid #E5E7EB;border-radius:4px;padding:6px;background:#FAFAF7;">Member C · 78%</div>
+            <div style="border:1px solid #E5E7EB;border-radius:4px;padding:6px;background:#FAFAF7;">Member D · 105%</div>
+            <div style="border:1px solid #E5E7EB;border-radius:4px;padding:6px;background:#FAFAF7;">Member E · 64%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="side-panel">
+        <div class="side-panel-header">
+          <div>
+            <div class="name">Edit Allocations · Member B</div>
+            <div class="sub">Data Intelligence · BAA · 70% project-available</div>
+          </div>
+          <div class="close">✕</div>
+        </div>
+        <div class="side-panel-body">
+          <div class="ae-range-bar">
+            <span><span class="ae-range-label">Apr 21 — May 26</span> · W17 – W22</span>
+            <span>◀ Prev · Current · Next ▶</span>
+          </div>
+          <table class="ae-grid">
+            <thead>
+              <tr>
+                <th class="proj-th">Project</th>
+                <th>Apr 21<br><span style="font-weight:600;font-size:7px;">W17</span></th>
+                <th>Apr 28<br><span style="font-weight:600;font-size:7px;">W18</span></th>
+                <th>May 5<br><span style="font-weight:600;font-size:7px;">W19</span></th>
+                <th class="ae-cur">May 12<br><span style="font-weight:600;font-size:7px;">W20</span></th>
+                <th>May 19<br><span style="font-weight:600;font-size:7px;">W21</span></th>
+                <th>May 26<br><span style="font-weight:600;font-size:7px;">W22</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="group-hdr"><td colspan="7">Leading (2)</td></tr>
+              <tr>
+                <td class="proj"><div class="name">Safe City Use of Force Dashboard <span class="status-active">Active</span></div></td>
+                <td class="cell"><span class="pct has-val">40</span></td>
+                <td class="cell"><span class="pct has-val">35</span></td>
+                <td class="cell"><span class="pct has-val">40</span></td>
+                <td class="cell ae-cur"><span class="pct has-val">45</span></td>
+                <td class="cell"><span class="pct has-val">50</span></td>
+                <td class="cell"><span class="pct has-val">45</span></td>
+              </tr>
+              <tr>
+                <td class="proj"><div class="name">Water Asset Map <span class="status-complete">Complete</span></div></td>
+                <td class="cell"><span class="pct has-val">25</span></td>
+                <td class="cell"><span class="pct has-val">30</span></td>
+                <td class="cell"><span class="pct has-val">10</span></td>
+                <td class="cell ae-cur ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+              </tr>
+              <tr class="group-hdr group-contrib"><td colspan="7">▼ Contributing (2)</td></tr>
+              <tr>
+                <td class="proj"><div class="name">Customer 311 Trend Report <span class="status-onhold">On Hold</span></div></td>
+                <td class="cell"><span class="pct has-val">20</span></td>
+                <td class="cell"><span class="pct has-val">10</span></td>
+                <td class="cell"><span class="pct">0</span></td>
+                <td class="cell ae-cur"><span class="pct">0</span></td>
+                <td class="cell"><span class="pct">0</span></td>
+                <td class="cell"><span class="pct has-val">15</span></td>
+              </tr>
+              <tr>
+                <td class="proj"><div class="name">Police RMS Integration <span class="status-canceled">Canceled</span></div></td>
+                <td class="cell"><span class="pct has-val">15</span></td>
+                <td class="cell"><span class="pct has-val">5</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-cur ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="tot-row">
+                <td class="proj">Total</td>
+                <td class="cell"><span class="tot-chip over">100%</span></td>
+                <td class="cell"><span class="tot-chip">80%</span></td>
+                <td class="cell"><span class="tot-chip">50%</span></td>
+                <td class="cell ae-cur"><span class="tot-chip">45%</span></td>
+                <td class="cell"><span class="tot-chip">50%</span></td>
+                <td class="cell"><span class="tot-chip">60%</span></td>
+              </tr>
+            </tfoot>
+          </table>
+          <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:10px;">
+            <button class="btn">Cancel</button>
+            <button class="btn btn-primary">Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Pros</h4>
+      <ul>
+        <li>Roomier than modal — 6 weeks fit without horizontal scroll; could push to 7–8.</li>
+        <li>Resources tab still visible behind — preserves "I came from here" context.</li>
+        <li>Modern UX feel; familiar pattern.</li>
+        <li>Lightest engineering lift — basically a re-styled modal with no nav route change.</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>Cons</h4>
+      <ul>
+        <li>Still narrower than full-page — sidebar context (capacity, legend) gets squeezed out.</li>
+        <li>The behind-content is more distraction than helpful at this width.</li>
+        <li>If most users want 8+ weeks visible, this only marginally improves on the current modal.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- OPTION 3 — INLINE EXPANSION -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div class="option">
+  <span class="option-label">Option 3</span>
+  <div class="option-title">Inline expansion on the Resources tab</div>
+  <div class="option-tag">Click a member row to expand it in place — the grid unfolds below the row, full Resources-tab width. Other rows stay collapsed and visible.</div>
+
+  <div class="stage">
+    <div class="browser">
+      <div class="browser-chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="url">analytics-tracker.tucsonaz.gov / resources</div></div>
+      <div class="app-header">
+        <span class="brand">📊 Analytics Project Tracker</span>
+        <div class="tabs">
+          <span class="tab">My Work</span>
+          <span class="tab">Projects</span>
+          <span class="tab active">Resources</span>
+          <span class="tab">Analytics</span>
+          <span class="tab">Settings</span>
+        </div>
+        <span class="who">Member B · BAA</span>
+      </div>
+
+      <div class="res-list">
+        <div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:6px;">Team Resources · Week of May 12</div>
+
+        <div class="res-row">
+          <span class="chevron">▶</span>
+          <span class="res-name">Member A</span>
+          <span class="res-meta">BAA · 7 projects</span>
+          <span class="res-util-bar"><div style="width:82%;"></div></span>
+          <span style="font-weight:700;font-size:11px;color:var(--navy);">82%</span>
+        </div>
+
+        <div class="res-row expanded">
+          <div class="res-row-head">
+            <span class="chevron">▶</span>
+            <span class="res-name">Member B</span>
+            <span class="res-meta">AI · 5 projects · 70% project-available</span>
+            <span class="res-util-bar"><div style="width:91%;"></div></span>
+            <span style="font-weight:700;font-size:11px;color:var(--navy);">91%</span>
+            <button class="btn btn-primary" style="margin-left:8px;">Apply</button>
+          </div>
+
+          <div class="ae-range-bar">
+            <span><span class="ae-range-label">Apr 14 — Jun 1</span> · W16 – W22</span>
+            <span>◀ Prev · Current · Next ▶</span>
+          </div>
+          <table class="ae-grid">
+            <thead>
+              <tr>
+                <th class="proj-th">Project</th>
+                <th>Apr 14<br><span style="font-weight:600;font-size:7px;">W16</span></th>
+                <th>Apr 21<br><span style="font-weight:600;font-size:7px;">W17</span></th>
+                <th>Apr 28<br><span style="font-weight:600;font-size:7px;">W18</span></th>
+                <th>May 5<br><span style="font-weight:600;font-size:7px;">W19</span></th>
+                <th class="ae-cur">May 12<br><span style="font-weight:600;font-size:7px;">W20</span></th>
+                <th>May 19<br><span style="font-weight:600;font-size:7px;">W21</span></th>
+                <th>May 26<br><span style="font-weight:600;font-size:7px;">W22</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="group-hdr"><td colspan="8">Leading (2)</td></tr>
+              <tr>
+                <td class="proj"><div class="name">Safe City Use of Force Dashboard <span class="status-active">Active</span></div></td>
+                <td class="cell"><span class="pct has-val">40</span></td>
+                <td class="cell"><span class="pct has-val">40</span></td>
+                <td class="cell"><span class="pct has-val">35</span></td>
+                <td class="cell"><span class="pct has-val">40</span></td>
+                <td class="cell ae-cur"><span class="pct has-val">45</span></td>
+                <td class="cell"><span class="pct has-val">50</span></td>
+                <td class="cell"><span class="pct has-val">45</span></td>
+              </tr>
+              <tr>
+                <td class="proj"><div class="name">Water Asset Map <span class="status-complete">Complete</span></div></td>
+                <td class="cell"><span class="pct has-val">30</span></td>
+                <td class="cell"><span class="pct has-val">25</span></td>
+                <td class="cell"><span class="pct has-val">30</span></td>
+                <td class="cell"><span class="pct has-val">10</span></td>
+                <td class="cell ae-cur ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+              </tr>
+              <tr class="group-hdr group-contrib"><td colspan="8">▼ Contributing (2)</td></tr>
+              <tr>
+                <td class="proj"><div class="name">Customer 311 Trend Report <span class="status-onhold">On Hold</span></div></td>
+                <td class="cell"><span class="pct has-val">10</span></td>
+                <td class="cell"><span class="pct has-val">20</span></td>
+                <td class="cell"><span class="pct has-val">10</span></td>
+                <td class="cell"><span class="pct">0</span></td>
+                <td class="cell ae-cur"><span class="pct">0</span></td>
+                <td class="cell"><span class="pct">0</span></td>
+                <td class="cell"><span class="pct has-val">15</span></td>
+              </tr>
+              <tr>
+                <td class="proj"><div class="name">Police RMS Integration <span class="status-canceled">Canceled</span></div></td>
+                <td class="cell"><span class="pct has-val">20</span></td>
+                <td class="cell"><span class="pct has-val">15</span></td>
+                <td class="cell"><span class="pct has-val">5</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-cur ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+                <td class="cell ae-out"><span class="pct">0</span></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="tot-row">
+                <td class="proj">Total</td>
+                <td class="cell"><span class="tot-chip">100%</span></td>
+                <td class="cell"><span class="tot-chip">100%</span></td>
+                <td class="cell"><span class="tot-chip">80%</span></td>
+                <td class="cell"><span class="tot-chip">50%</span></td>
+                <td class="cell ae-cur"><span class="tot-chip">45%</span></td>
+                <td class="cell"><span class="tot-chip">50%</span></td>
+                <td class="cell"><span class="tot-chip">60%</span></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="res-row">
+          <span class="chevron">▶</span>
+          <span class="res-name">Member C</span>
+          <span class="res-meta">BAA · 4 projects</span>
+          <span class="res-util-bar"><div style="width:78%;"></div></span>
+          <span style="font-weight:700;font-size:11px;color:var(--navy);">78%</span>
+        </div>
+        <div class="res-row">
+          <span class="chevron">▶</span>
+          <span class="res-name">Member D</span>
+          <span class="res-meta">AI · 2 projects</span>
+          <span class="res-util-bar"><div style="width:100%;background:#EF4444;"></div></span>
+          <span style="font-weight:700;font-size:11px;color:#991B1B;">105%</span>
+        </div>
+        <div class="res-row">
+          <span class="chevron">▶</span>
+          <span class="res-name">Member E</span>
+          <span class="res-meta">BAA · 6 projects</span>
+          <span class="res-util-bar"><div style="width:64%;"></div></span>
+          <span style="font-weight:700;font-size:11px;color:var(--navy);">64%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Pros</h4>
+      <ul>
+        <li>Zero context switch — you stay on Resources where you started.</li>
+        <li>Full Resources-tab width for the grid — 7+ weeks comfortably.</li>
+        <li>Easy to flip through members in sequence — collapse Member B, expand Member C.</li>
+        <li>The surrounding util bars give you a "calibrate by neighbor" view while editing.</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>Cons</h4>
+      <ul>
+        <li>Vertical scrolling: the Resources tab gets tall with an expanded row.</li>
+        <li>Save semantics fuzzier — auto-save on apply? Discard if user collapses? Worth deciding upfront.</li>
+        <li>Re-imagining the Resources tab itself is bigger surgery than a route or panel swap.</li>
+        <li>Multi-edit can lead to "did I save Member A?" confusion if you expand multiple rows.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- VERDICT -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div class="verdict">
+  <p><strong>My take, restated.</strong> If quick weekly tweaks are the dominant use case, <strong>Option 2 (side panel)</strong> is the smallest reasonable improvement over today's modal — same flow, just a bit more room. If month-end reflection or unit-lead review is the dominant pattern (multiple people, multiple weeks per session), <strong>Option 1 (full-page)</strong> wins decisively because of the sidebar capacity context and the extra 2–4 visible weeks.</p>
+  <p style="margin-top:10px;"><strong>Option 3 (inline expansion)</strong> is technically interesting but has the most ambiguous interaction model — the save semantics get weird and the Resources tab itself needs a redesign to accommodate it. I'd punt on this one unless the team explicitly wants a tab-redesign anyway.</p>
+  <p style="margin-top:10px;">Want me to push one of these to a working prototype, or refine the mockup with different sidebar content / different week-count assumptions?</p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Filtering concepts — live mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cardo:ital@0;1&family=Lato:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#002669; --green:#83AC16; --orange:#C24200; --yellow:#FFDB22;
+    --border:#E1E2DD; --text-body:#002855; --text-muted:#6B7280;
+    --surface:#F3F1EB; --surface-2:#EDEAE1; --white:#ffffff;
+    --pill-blue-bg:#EEF2FF; --pill-blue-fg:#002669;
+    --pill-amber-bg:#FFFBEB; --pill-amber-fg:#92400E;
+    --shadow:0 4px 16px rgba(0,0,0,0.12);
+  }
+  body[data-theme="dark"] {
+    --navy:#6E9BD6; --border:#343B45; --text-body:#E6E9ED; --text-muted:#9AA2AC;
+    --surface:#14171D; --surface-2:#2A2F38; --white:#20242C;
+    --pill-blue-bg:rgba(110,155,214,0.18); --pill-blue-fg:#A9C8F0;
+    --pill-amber-bg:rgba(245,200,66,0.16); --pill-amber-fg:#EBCF77;
+    --shadow:0 6px 22px rgba(0,0,0,0.5);
+    color-scheme:dark;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Lato',-apple-system,'Segoe UI',sans-serif; background:var(--surface); color:var(--text-body); }
+
+  /* chrome */
+  .appbar { display:flex; align-items:center; gap:14px; background:var(--navy); color:#fff; padding:11px 22px; }
+  body[data-theme="dark"] .appbar { background:#0D1117; }
+  .brand { font-weight:900; font-size:15px; letter-spacing:0.03em; }
+  .sub { font-family:'Cardo',Georgia,serif; font-style:italic; font-size:12px; opacity:0.82; }
+  .appbar .right { margin-left:auto; display:flex; align-items:center; gap:10px; }
+  .themebtn { font-family:inherit; font-size:12px; font-weight:700; color:#fff; background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.3); border-radius:6px; padding:6px 12px; cursor:pointer; }
+  .accent { height:4px; background:linear-gradient(90deg,#C24200 25%,#FFDB22 25%,#FFDB22 50%,#83AC16 50%,#83AC16 75%,#002669 75%); }
+
+  .conceptbar { display:flex; gap:6px; padding:12px 22px 0; background:var(--white); border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .ctab { padding:9px 16px; font-size:13px; font-weight:800; color:var(--text-muted); border-radius:9px 9px 0 0; cursor:pointer; border:1px solid transparent; border-bottom:none; }
+  .ctab.active { color:var(--navy); background:var(--surface); border-color:var(--border); }
+
+  .annot { background:var(--pill-amber-bg); border-left:4px solid #F59E0B; padding:9px 22px; font-size:12.5px; color:var(--pill-amber-fg); line-height:1.5; }
+  .annot b { font-weight:800; }
+
+  .stage { padding:16px 22px 60px; }
+
+  /* shared: results */
+  .count { font-family:'Cardo',Georgia,serif; font-style:italic; color:var(--text-muted); font-size:14px; margin:4px 0 10px; }
+  table { width:100%; border-collapse:collapse; background:var(--white); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  thead th { text-align:left; font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:#fff; background:var(--navy); padding:10px 12px; font-weight:800; }
+  body[data-theme="dark"] thead th { background:var(--white); color:var(--text-muted); border-bottom:1px solid var(--border); }
+  tbody td { padding:9px 12px; font-size:13px; border-bottom:1px solid var(--border); }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover td { background:var(--surface-2); }
+  .num { font-family:monospace; color:var(--text-muted); font-size:12px; }
+  .ptitle { font-weight:700; color:var(--text-body); }
+  .spill { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+  .empty-res { padding:40px; text-align:center; color:var(--text-muted); font-style:italic; font-family:'Cardo',serif; }
+
+  /* ============ CONCEPT A / D-custom : pill bar + dropdown panels ============ */
+  .pillbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+  .pwrap { position:relative; }
+  .fpill { font-family:inherit; font-size:12.5px; font-weight:700; color:var(--text-body); background:var(--white); border:1.5px solid var(--border); border-radius:18px; padding:6px 13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+  .fpill:hover { border-color:var(--navy); }
+  .fpill.on { border-color:var(--navy); background:var(--pill-blue-bg); color:var(--pill-blue-fg); }
+  .fpill .pcount { background:var(--navy); color:#fff; border-radius:10px; font-size:10px; font-weight:800; padding:1px 7px; }
+  body[data-theme="dark"] .fpill.on .pcount { color:#0D1117; }
+  .fpill .car { font-size:9px; opacity:0.6; }
+  .fpill.clear { border-style:dashed; color:var(--text-muted); }
+  .panel { position:absolute; top:calc(100% + 6px); left:0; z-index:30; width:250px; background:var(--white); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); padding:8px; display:none; }
+  .panel.open { display:block; }
+  .psearch { width:100%; font-family:inherit; font-size:12.5px; border:1px solid var(--border); border-radius:7px; padding:7px 9px; margin-bottom:6px; background:var(--surface-2); color:var(--text-body); outline:none; }
+  .psearch:focus { border-color:var(--navy); }
+  .prows { max-height:260px; overflow-y:auto; }
+  .prow { display:flex; align-items:center; gap:8px; padding:5px 6px; border-radius:6px; font-size:12.5px; cursor:pointer; }
+  .prow:hover { background:var(--surface-2); }
+  .prow.on { color:var(--pill-blue-fg); font-weight:700; }
+  .prow input { width:14px; height:14px; cursor:pointer; accent-color:var(--navy); }
+  .prow .pl { flex:1; }
+  .prow .pc { font-size:11px; color:var(--text-muted); font-weight:700; }
+  .prow .empty { color:var(--text-muted); font-size:12px; padding:6px; }
+
+  /* ============ CONCEPT B : collapsible sidebar ============ */
+  .blayout { display:flex; gap:18px; align-items:flex-start; }
+  .bside { flex:0 0 248px; background:var(--white); border:1px solid var(--border); border-radius:12px; padding:10px; }
+  .bside.hidden { display:none; }
+  .bmain { flex:1; min-width:0; }
+  .bside-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .bside-top .ttl { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--text-muted); }
+  .bsearch { width:100%; font-family:inherit; font-size:12.5px; border:1px solid var(--border); border-radius:7px; padding:7px 9px; margin-bottom:8px; background:var(--surface-2); color:var(--text-body); outline:none; }
+  .bsec { border-top:1px solid var(--border); }
+  .bsec-h { display:flex; align-items:center; gap:7px; padding:9px 4px; cursor:pointer; font-size:12.5px; font-weight:800; color:var(--text-body); user-select:none; }
+  .bsec-h .car { font-size:9px; color:var(--text-muted); transition:transform 0.12s; }
+  .bsec.open .bsec-h .car { transform:rotate(90deg); }
+  .bsec-h .secount { margin-left:auto; font-size:10px; font-weight:800; color:#fff; background:var(--navy); border-radius:10px; padding:1px 7px; }
+  body[data-theme="dark"] .bsec-h .secount { color:#0D1117; }
+  .bsec-body { display:none; padding:0 2px 8px; }
+  .bsec.open .bsec-body { display:block; }
+  .toggle-side { font-family:inherit; font-size:12px; font-weight:700; color:var(--navy); background:transparent; border:1.5px solid var(--border); border-radius:7px; padding:7px 12px; cursor:pointer; margin-bottom:12px; }
+
+  /* ============ CONCEPT C : token search ============ */
+  .tokwrap { position:relative; max-width:760px; margin-bottom:14px; }
+  .tokbox { display:flex; flex-wrap:wrap; align-items:center; gap:6px; border:1.5px solid var(--border); border-radius:10px; padding:8px 10px; background:var(--white); min-height:46px; cursor:text; }
+  .tokbox.focus { border-color:var(--navy); }
+  .tok { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; background:var(--pill-blue-bg); color:var(--pill-blue-fg); border-radius:7px; padding:3px 8px; }
+  .tok .k { opacity:0.7; font-weight:800; }
+  .tok .x { cursor:pointer; opacity:0.6; font-weight:800; }
+  .tok .x:hover { opacity:1; }
+  #tokin { flex:1; min-width:160px; border:none; outline:none; font-family:inherit; font-size:13.5px; background:transparent; color:var(--text-body); padding:4px 2px; }
+  .sugg { position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--white); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); z-index:30; max-height:300px; overflow-y:auto; display:none; }
+  .sugg.open { display:block; }
+  .sg { display:flex; align-items:center; gap:9px; padding:8px 11px; font-size:13px; cursor:pointer; }
+  .sg:hover, .sg.hl { background:var(--surface-2); }
+  .sg .kk { font-size:10px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase; color:var(--text-muted); min-width:62px; }
+  .sg .vv { flex:1; font-weight:600; }
+  .sg .cc { font-size:11px; color:var(--text-muted); font-weight:700; }
+  .tokhint { font-size:11.5px; color:var(--text-muted); margin-top:7px; font-style:italic; }
+
+  /* ============ CONCEPT D : presets ============ */
+  .presets { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:6px; }
+  .preset { font-family:inherit; font-size:13px; font-weight:800; color:var(--text-muted); background:var(--white); border:1.5px solid var(--border); border-radius:20px; padding:8px 16px; cursor:pointer; }
+  .preset:hover { border-color:var(--navy); }
+  .preset.on { background:var(--navy); color:#fff; border-color:var(--navy); }
+  body[data-theme="dark"] .preset.on { color:#0D1117; }
+  .preset.custom { border-style:dashed; }
+  .custom-wrap { margin-top:12px; padding-top:12px; border-top:1px dashed var(--border); display:none; }
+  .custom-wrap.open { display:block; }
+</style>
+</head>
+<body>
+  <div class="appbar">
+    <div>
+      <div class="brand">DATA INTELLIGENCE</div>
+      <div class="sub">Filtering concepts · interactive prototype</div>
+    </div>
+    <div class="right">
+      <button class="themebtn" onclick="toggleTheme()" id="themebtn">🌙 Dark</button>
+    </div>
+  </div>
+  <div class="accent"></div>
+
+  <div class="conceptbar" id="conceptbar"></div>
+  <div class="annot" id="annot"></div>
+
+  <div class="stage" id="stage"></div>
+
+<script>
+/* ---------------- mock data ---------------- */
+var TODAY = '2026-05-24';
+var MEMBERS = ['Peter Johnson','Jessica Fraver','James McGinnis','Kate Carter','Andrew Sutton','Joseph Ahumada','Liz Wilshin','Vladimir Berg'];
+var DEPTS = ['Police','Water','Transportation','City Clerk','Parks & Rec','Finance'];
+var CATS = ['Data Governance','Training & Enablement','Strategic Planning','Data Analysis & Insights','Reporting & BI','Compliance & Policy'];
+var STATUSES = ['Active','On Hold','Waiting for Response','Future','Scheduled','Complete','Canceled'];
+var PRIOS = ['High','Medium','Low'];
+
+function mk(num,title,status,prio,cat,mem,dept,due){ return {num:num,title:title,status:status,priority:prio,category:cat,member:mem,dept:dept,due:due}; }
+var DATA = [
+  mk('P-330','Application Development Standards & Governance','Active','High','Data Governance','Peter Johnson','City Clerk','2026-06-12'),
+  mk('P-259','Data Governance Framework Training — IT Staff','Active','Medium','Training & Enablement','Jessica Fraver','City Clerk','2026-05-20'),
+  mk('P-342','Finalize DGEC Charter with Executive Committee','Active','High','Strategic Planning','Peter Johnson','Finance','2026-05-30'),
+  mk('P-351','Analytics & AI ROI Analysis and Expansion','Future','Medium','Data Analysis & Insights','James McGinnis','Finance','2026-09-01'),
+  mk('P-352','Analytics & BI Training Course Series','Scheduled','Medium','Training & Enablement','Kate Carter','Parks & Rec','2026-07-15'),
+  mk('P-188','Police Use-of-Force Dashboard','Active','High','Reporting & BI','James McGinnis','Police','2026-05-18'),
+  mk('P-201','Water Quality Sampling Data Pipeline','Active','Medium','Data Analysis & Insights','Andrew Sutton','Water','2026-06-04'),
+  mk('P-219','Transit Ridership Trend Reports','On Hold','Low','Reporting & BI','Liz Wilshin','Transportation','2026-08-10'),
+  mk('P-244','Records Retention Policy Modernization','Waiting for Response','Medium','Compliance & Policy','Joseph Ahumada','City Clerk','2026-05-22'),
+  mk('P-277','Open Data Portal Refresh','Active','Medium','Data Governance','Kate Carter','Finance','2026-06-28'),
+  mk('P-281','Parks Maintenance Backlog Analytics','Active','Low','Data Analysis & Insights','Vladimir Berg','Parks & Rec','2026-05-15'),
+  mk('P-290','Crime Hotspot Predictive Model','Future','High','Data Analysis & Insights','James McGinnis','Police','2026-10-05'),
+  mk('P-301','Finance Close Reporting Automation','Scheduled','High','Reporting & BI','Jessica Fraver','Finance','2026-07-01'),
+  mk('P-118','Citywide Data Catalog','Complete','Medium','Data Governance','Peter Johnson','City Clerk','2026-03-12'),
+  mk('P-126','Water Meter Anomaly Detection','Complete','High','Data Analysis & Insights','Andrew Sutton','Water','2026-02-28'),
+  mk('P-133','GIS Training for Field Crews','Canceled','Low','Training & Enablement','Liz Wilshin','Transportation','2026-01-20'),
+  mk('P-309','Master Data Management Strategy','Active','High','Strategic Planning','Peter Johnson','Finance','2026-06-18'),
+  mk('P-314','Police Overtime Spend Analysis','Waiting for Response','Medium','Reporting & BI','Joseph Ahumada','Police','2026-05-21'),
+  mk('P-318','Parks Program Equity Study','On Hold','Medium','Data Analysis & Insights','Vladimir Berg','Parks & Rec','2026-09-12'),
+  mk('P-322','Transportation Asset Inventory BI','Active','Medium','Reporting & BI','Liz Wilshin','Transportation','2026-06-09'),
+  mk('P-205','Data Sharing Agreement Templates','Active','Low','Compliance & Policy','Joseph Ahumada','City Clerk','2026-05-25'),
+  mk('P-333','AI Use Policy & Guardrails','Future','High','Compliance & Policy','Peter Johnson','Finance','2026-11-01'),
+  mk('P-340','Self-Service BI Enablement','Scheduled','Medium','Training & Enablement','Kate Carter','Water','2026-08-01'),
+  mk('P-141','Council District Profile Reports','Complete','Low','Reporting & BI','Jessica Fraver','City Clerk','2026-04-02'),
+  mk('P-355','Sensor Telemetry Lakehouse POC','Future','Medium','Data Analysis & Insights','Andrew Sutton','Water','2026-10-20'),
+  mk('P-360','Quarterly Data Literacy Workshops','Active','Low','Training & Enablement','Liz Wilshin','Parks & Rec','2026-06-30')
+];
+
+var FIELD = { status:'status', priority:'priority', category:'category', member:'member', dept:'dept' };
+var VALUES = {
+  status: STATUSES.slice(),
+  priority: PRIOS.slice(),
+  category: CATS.slice().sort(),
+  member: MEMBERS.slice().sort(),
+  dept: DEPTS.slice().sort()
+};
+var FACETS = [
+  {key:'status', label:'Status'},
+  {key:'priority', label:'Priority'},
+  {key:'category', label:'Category'},
+  {key:'member', label:'Owner'},
+  {key:'dept', label:'Department'}
+];
+var OPEN_STATUSES = ['Active','On Hold','Waiting for Response','Future','Scheduled'];
+
+/* ---------------- shared filter state + engine ---------------- */
+var F = { status:[], priority:[], category:[], member:[], dept:[], search:'', overdue:false };
+
+function passesExcept(p, except) {
+  for (var i=0;i<FACETS.length;i++){
+    var k = FACETS[i].key;
+    if (k===except) continue;
+    if (F[k].length && F[k].indexOf(p[FIELD[k]])<0) return false;
+  }
+  if (F.overdue && !(p.due < TODAY && OPEN_STATUSES.indexOf(p.status)>=0)) return false;
+  if (F.search) {
+    var q = F.search.toLowerCase();
+    var hay = (p.title+' '+p.num+' '+p.member+' '+p.dept+' '+p.category).toLowerCase();
+    if (hay.indexOf(q)<0) return false;
+  }
+  return true;
+}
+function applyAll(){ return DATA.filter(function(p){ return passesExcept(p,null); }); }
+function countFor(key, value){
+  var n=0; DATA.forEach(function(p){ if (p[FIELD[key]]===value && passesExcept(p,key)) n++; }); return n;
+}
+function anyActive(){ return F.status.length||F.priority.length||F.category.length||F.member.length||F.dept.length||F.search||F.overdue; }
+function clearAll(){ F={status:[],priority:[],category:[],member:[],dept:[],search:'',overdue:false}; activePreset='all'; renderConcept(); }
+function toggleVal(key, idx){
+  var v=VALUES[key][idx]; var a=F[key]; var i=a.indexOf(v);
+  if (i>=0) a.splice(i,1); else a.push(v);
+  activePreset=null;
+  // targeted refresh: results + all visible rows + count chips (keeps inputs/focus)
+  renderResults(); refreshAllRows(); updateCountsUI();
+}
+
+/* ---------------- results ---------------- */
+function sColor(s){ return ({Active:'#83AC16','On Hold':'#C99A00','Waiting for Response':'#3B82F6',Future:'#C24200',Scheduled:'#9E0059',Complete:'#0088FF',Canceled:'#9CA3AF'})[s]||'#9CA3AF'; }
+function pColor(p){ return ({High:'#C24200',Medium:'#C99A00',Low:'#83AC16'})[p]||'#9CA3AF'; }
+function resultsHTML(){
+  var rows = applyAll();
+  var body = rows.length ? rows.map(function(p){
+    var over = p.due<TODAY && OPEN_STATUSES.indexOf(p.status)>=0;
+    return '<tr>'+
+      '<td class="num">'+p.num+'</td>'+
+      '<td class="ptitle">'+p.title+'</td>'+
+      '<td><span class="spill" style="background:'+sColor(p.status)+'22;color:'+sColor(p.status)+';"><span class="dot" style="background:'+sColor(p.status)+'"></span>'+p.status+'</span></td>'+
+      '<td><span class="spill" style="background:'+pColor(p.priority)+'22;color:'+pColor(p.priority)+';">'+p.priority+'</span></td>'+
+      '<td>'+p.category+'</td>'+
+      '<td>'+p.member+'</td>'+
+      '<td>'+p.dept+'</td>'+
+      '<td style="'+(over?'color:#DC2626;font-weight:700;':'color:var(--text-muted);')+'">'+p.due.slice(5)+'</td>'+
+      '</tr>';
+  }).join('') : '<tr><td colspan="8"><div class="empty-res">No projects match these filters.</div></td></tr>';
+  return '<div class="count" id="rescount">'+rows.length+' of '+DATA.length+' projects</div>'+
+    '<table><thead><tr><th>ID</th><th>Project</th><th>Status</th><th>Priority</th><th>Category</th><th>Owner</th><th>Dept</th><th>Due</th></tr></thead><tbody>'+body+'</tbody></table>';
+}
+function renderResults(){ var el=document.getElementById('results'); if(el) el.innerHTML=resultsHTML(); }
+
+/* shared checkbox rows (used by pill panels AND sidebar sections) */
+function rowsHTML(key){
+  var q=(rowSearch[key]||'').toLowerCase();
+  var vals=VALUES[key].filter(function(v){ return v.toLowerCase().indexOf(q)>=0; });
+  if(!vals.length) return '<div class="empty">no matches</div>';
+  return vals.map(function(v){
+    var idx=VALUES[key].indexOf(v); var on=F[key].indexOf(v)>=0; var c=countFor(key,v);
+    var dot = key==='status' ? '<span class="dot" style="background:'+sColor(v)+'"></span>' : (key==='priority' ? '<span class="dot" style="background:'+pColor(v)+'"></span>' : '');
+    return '<label class="prow'+(on?' on':'')+'"><input type="checkbox" '+(on?'checked':'')+' onchange="toggleVal(\''+key+'\','+idx+')">'+dot+'<span class="pl">'+v+'</span><span class="pc">'+c+'</span></label>';
+  }).join('');
+}
+var rowSearch = {};
+function setRowSearch(key,val){ rowSearch[key]=val; var el=document.getElementById('rows-'+key); if(el) el.innerHTML=rowsHTML(key); }
+function refreshAllRows(){ FACETS.forEach(function(f){ var el=document.getElementById('rows-'+f.key); if(el) el.innerHTML=rowsHTML(f.key); }); }
+function updateCountsUI(){
+  FACETS.forEach(function(f){
+    var n=F[f.key].length;
+    var badge=document.getElementById('badge-'+f.key);
+    if(badge){ badge.style.display=n?'':'none'; badge.textContent=n; var pill=badge.closest('.fpill'); if(pill) pill.classList.toggle('on', !!n); }
+    var sc=document.getElementById('secount-'+f.key);
+    if(sc){ sc.style.display=n?'':'none'; sc.textContent=n; }
+  });
+  var clr=document.getElementById('clearpill'); if(clr) clr.style.display=anyActive()?'':'none';
+}
+
+/* ================= CONCEPT A : pill bar + dropdowns ================= */
+function conceptA_HTML(){
+  return '<div class="pillbar" id="pillbar">'+pillBarInner()+'</div><div id="results"></div>';
+}
+function pillBarInner(){
+  return FACETS.map(function(f){
+    var n=F[f.key].length;
+    return '<div class="pwrap">'+
+      '<button class="fpill'+(n?' on':'')+'" onclick="togglePanel(\''+f.key+'\',event)">'+f.label+
+        ' <span class="pcount" id="badge-'+f.key+'" style="'+(n?'':'display:none;')+'">'+n+'</span>'+
+        ' <span class="car">▾</span></button>'+
+      '<div class="panel" id="panel-'+f.key+'">'+
+        '<input class="psearch" placeholder="Search '+f.label.toLowerCase()+'…" value="'+(rowSearch[f.key]||'')+'" oninput="setRowSearch(\''+f.key+'\',this.value)">'+
+        '<div class="prows" id="rows-'+f.key+'">'+rowsHTML(f.key)+'</div>'+
+      '</div></div>';
+  }).join('') +
+  '<button class="fpill clear" id="clearpill" onclick="clearAll()" style="'+(anyActive()?'':'display:none;')+'">Clear all ✕</button>';
+}
+var openPanelKey=null;
+function togglePanel(key,ev){
+  ev.stopPropagation();
+  var panel=document.getElementById('panel-'+key);
+  var wasOpen=panel.classList.contains('open');
+  closeAllPanels();
+  if(!wasOpen){ panel.classList.add('open'); openPanelKey=key; }
+}
+function closeAllPanels(){ document.querySelectorAll('.panel.open').forEach(function(p){p.classList.remove('open');}); openPanelKey=null; }
+document.addEventListener('click', function(e){ if(!e.target.closest('.pwrap')) closeAllPanels(); });
+
+/* ================= CONCEPT B : collapsible sidebar ================= */
+var bExpanded={}; var bSideHidden=false;
+function conceptB_HTML(){
+  return '<button class="toggle-side" onclick="bToggleSide()">'+(bSideHidden?'▶ Show filters':'◀ Hide filters')+'</button>'+
+    '<div class="blayout">'+
+      '<div class="bside'+(bSideHidden?' hidden':'')+'">'+
+        '<div class="bside-top"><span class="ttl">Filters</span>'+(anyActive()?'<span style="font-size:11px;color:var(--navy);cursor:pointer;font-weight:700;" onclick="clearAll()">Clear all</span>':'')+'</div>'+
+        '<input class="bsearch" placeholder="Search projects…" value="'+(F.search||'')+'" oninput="F.search=this.value;renderResults();">'+
+        FACETS.map(function(f){
+          var n=F[f.key].length; var open=bExpanded[f.key]||n>0;
+          return '<div class="bsec'+(open?' open':'')+'">'+
+            '<div class="bsec-h" onclick="bToggleSec(\''+f.key+'\')"><span class="car">▶</span>'+f.label+
+              '<span class="secount" id="secount-'+f.key+'" style="'+(n?'':'display:none;')+'">'+n+'</span></div>'+
+            '<div class="bsec-body">'+
+              (f.key==='member'||f.key==='category'||f.key==='dept' ? '<input class="bsearch" style="margin-bottom:6px;" placeholder="type to filter…" value="'+(rowSearch[f.key]||'')+'" oninput="setRowSearch(\''+f.key+'\',this.value)">' : '')+
+              '<div class="prows" id="rows-'+f.key+'">'+rowsHTML(f.key)+'</div>'+
+            '</div></div>';
+        }).join('')+
+      '</div>'+
+      '<div class="bmain"><div id="results"></div></div>'+
+    '</div>';
+}
+function bToggleSec(key){ bExpanded[key]=!(bExpanded[key]||F[key].length>0); renderConcept(); }
+function bToggleSide(){ bSideHidden=!bSideHidden; renderConcept(); }
+
+/* ================= CONCEPT C : token search ================= */
+var suggHL=-1;
+function conceptC_HTML(){
+  return '<div class="tokwrap">'+
+    '<div class="tokbox" id="tokbox" onclick="document.getElementById(\'tokin\').focus()">'+tokensHTML()+
+      '<input id="tokin" placeholder="Filter… try \'active\', \'police\', a name…" autocomplete="off" '+
+      'oninput="onTokInput()" onkeydown="onTokKey(event)" onfocus="document.getElementById(\'tokbox\').classList.add(\'focus\')" onblur="setTimeout(function(){document.getElementById(\'tokbox\').classList.remove(\'focus\');closeSugg();},150)"></div>'+
+    '<div class="sugg" id="sugg"></div>'+
+    '</div>'+
+    '<div class="tokhint">Type a value and pick a suggestion — e.g. <b>Active</b>, <b>High</b>, <b>Police</b>, or an owner\'s name. Tokens combine (AND across types, OR within). Backspace on empty input removes the last token.</div>'+
+    '<div id="results"></div>';
+}
+function tokensHTML(){
+  var out='';
+  FACETS.forEach(function(f){ F[f.key].forEach(function(v){
+    out+='<span class="tok"><span class="k">'+f.label+':</span>'+v+'<span class="x" onclick="rmTok(\''+f.key+'\',\''+v.replace(/'/g,"\\'")+'\',event)">✕</span></span>';
+  }); });
+  if(F.search) out+='<span class="tok"><span class="k">text:</span>'+F.search+'<span class="x" onclick="F.search=\'\';renderConcept();event.stopPropagation();">✕</span></span>';
+  return out;
+}
+function rmTok(key,v,ev){ ev.stopPropagation(); var i=F[key].indexOf(v); if(i>=0)F[key].splice(i,1); activePreset=null; renderConcept(); }
+function suggList(q){
+  q=q.toLowerCase(); var out=[];
+  FACETS.forEach(function(f){ VALUES[f.key].forEach(function(v){
+    if(F[f.key].indexOf(v)>=0) return;
+    if(!q || v.toLowerCase().indexOf(q)>=0 || f.label.toLowerCase().indexOf(q)>=0){
+      out.push({key:f.key,label:f.label,v:v,c:countFor(f.key,v)});
+    }
+  }); });
+  out.sort(function(a,b){ return b.c-a.c; });
+  return out.slice(0,9);
+}
+function onTokInput(){
+  var q=document.getElementById('tokin').value; var list=suggList(q); suggHL=-1;
+  var sg=document.getElementById('sugg');
+  if(!q && !list.length){ closeSugg(); return; }
+  sg.innerHTML=list.map(function(s,i){
+    var dot = s.key==='status'?'<span class="dot" style="background:'+sColor(s.v)+'"></span>':(s.key==='priority'?'<span class="dot" style="background:'+pColor(s.v)+'"></span>':'');
+    return '<div class="sg" data-i="'+i+'" onmousedown="pickSugg('+i+')"><span class="kk">'+s.label+'</span>'+dot+'<span class="vv">'+s.v+'</span><span class="cc">'+s.c+'</span></div>';
+  }).join('') || '<div class="sg"><span class="vv" style="color:var(--text-muted);">Press Enter to search text “'+q+'”</span></div>';
+  sg.classList.add('open'); window._sugg=list;
+}
+function pickSugg(i){ var s=window._sugg&&window._sugg[i]; if(!s) return; if(F[s.key].indexOf(s.v)<0)F[s.key].push(s.v); activePreset=null; document.getElementById('tokin').value=''; renderConcept(); setTimeout(function(){var t=document.getElementById('tokin');if(t)t.focus();},0); }
+function onTokKey(e){
+  var inp=e.target;
+  if(e.key==='Backspace' && !inp.value){
+    for(var i=FACETS.length-1;i>=0;i--){ var k=FACETS[i].key; if(F[k].length){ F[k].pop(); renderConcept(); return; } }
+    if(F.search){ F.search=''; renderConcept(); }
+    return;
+  }
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); var els=document.querySelectorAll('#sugg .sg'); if(!els.length)return; suggHL=(suggHL+(e.key==='ArrowDown'?1:-1)+els.length)%els.length; els.forEach(function(el,i){el.classList.toggle('hl',i===suggHL);}); }
+  if(e.key==='Enter'){ if(suggHL>=0){ pickSugg(suggHL); } else if(inp.value){ F.search=inp.value; inp.value=''; renderConcept(); } }
+}
+function closeSugg(){ var s=document.getElementById('sugg'); if(s)s.classList.remove('open'); }
+
+/* ================= CONCEPT D : presets ================= */
+var activePreset='all';
+var PRESETS=[
+  {id:'all', label:'All', apply:function(){ Object.assign(F,{status:[],priority:[],category:[],member:[],dept:[],search:'',overdue:false}); }},
+  {id:'mine', label:'My Work', apply:function(){ Object.assign(F,{status:OPEN_STATUSES.slice(),priority:[],category:[],member:['Peter Johnson'],dept:[],search:'',overdue:false}); }},
+  {id:'open', label:'Open Projects', apply:function(){ Object.assign(F,{status:OPEN_STATUSES.slice(),priority:[],category:[],member:[],dept:[],search:'',overdue:false}); }},
+  {id:'overdue', label:'Overdue', apply:function(){ Object.assign(F,{status:[],priority:[],category:[],member:[],dept:[],search:'',overdue:true}); }},
+  {id:'high', label:'High Priority', apply:function(){ Object.assign(F,{status:OPEN_STATUSES.slice(),priority:['High'],category:[],member:[],dept:[],search:'',overdue:false}); }}
+];
+var customOpen=false;
+function conceptD_HTML(){
+  return '<div class="presets">'+
+    PRESETS.map(function(p){ return '<button class="preset'+(activePreset===p.id?' on':'')+'" onclick="applyPreset(\''+p.id+'\')">'+p.label+'</button>'; }).join('')+
+    '<button class="preset custom'+(customOpen?' on':'')+'" onclick="toggleCustom()">⚙ Custom ▾</button>'+
+    '</div>'+
+    '<div class="custom-wrap'+(customOpen?' open':'')+'"><div class="pillbar" id="pillbar">'+pillBarInner()+'</div></div>'+
+    '<div id="results"></div>';
+}
+function applyPreset(id){ var p=PRESETS.find(function(x){return x.id===id;}); if(p){ p.apply(); activePreset=id; customOpen=(id==='all'?customOpen:false);} renderConcept(); }
+function toggleCustom(){ customOpen=!customOpen; renderConcept(); }
+
+/* ---------------- concept switching / chrome ---------------- */
+var CONCEPTS=[
+  {id:'A', tab:'Chip bar + dropdowns', annot:'<b>Concept A — Chip bar + dropdowns.</b> Facets live as pills above a full-width table (sidebar gone). Click a pill to open a checklist with a search box + live counts. Selected count shows on the pill. Familiar from Airtable / Notion.', html:conceptA_HTML},
+  {id:'B', tab:'Collapsible sidebar', annot:'<b>Concept B — Collapsible sidebar.</b> Keeps the sidebar but sections are accordions (open only when used), long facets get a search box, and the whole panel hides for full width. Lowest-effort evolution of what you have today.', html:conceptB_HTML},
+  {id:'C', tab:'Token search', annot:'<b>Concept C — Token search.</b> One smart box: type a value, pick a suggestion, it becomes a token. Fast for power users and copy-pasteable. Best paired with pills (discoverability) rather than used alone.', html:conceptC_HTML},
+  {id:'D', tab:'Preset views', annot:'<b>Concept D — Preset views first.</b> One-click presets cover the common asks; “⚙ Custom” reveals the full pill bar for ad-hoc work. Optimizes for the 80% who want a known view. Builds on your Saved Views.', html:conceptD_HTML}
+];
+var cur='A';
+function renderConcept(){
+  document.getElementById('conceptbar').innerHTML = CONCEPTS.map(function(c){
+    return '<div class="ctab'+(c.id===cur?' active':'')+'" onclick="switchConcept(\''+c.id+'\')">'+c.tab+'</div>';
+  }).join('');
+  var c=CONCEPTS.find(function(x){return x.id===cur;});
+  document.getElementById('annot').innerHTML=c.annot;
+  document.getElementById('stage').innerHTML=c.html();
+  renderResults();
+}
+function switchConcept(id){ cur=id; closeSugg(); renderConcept(); }
+function toggleTheme(){
+  var d=document.body.getAttribute('data-theme')==='dark';
+  document.body.setAttribute('data-theme', d?'':'dark');
+  document.getElementById('themebtn').textContent = d?'🌙 Dark':'☀ Light';
+}
+renderConcept();
+</script>
+</body>
+</html>

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Allocation editor — navigation alternatives</title>
+<style>
+  :root {
+    --navy: #002669;
+    --border: #E1E2DD;
+    --text-body: #002855;
+    --text-muted: #6B7280;
+    --bg: #F9FAFB;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 28px 32px 60px;
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text-body);
+    max-width: 1500px; margin: 0 auto;
+  }
+  h1 { margin: 0 0 4px 0; font-size: 22px; color: var(--navy); font-weight: 800; }
+  .lead { color: var(--text-muted); margin: 0 0 24px 0; font-size: 13px; }
+
+  .opt {
+    background: #fff; border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px 24px; margin-bottom: 24px;
+  }
+  .opt-label {
+    display: inline-block; font-size: 10px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 3px 10px; border-radius: 12px;
+    background: var(--navy); color: #fff;
+    margin-bottom: 6px;
+  }
+  .opt-title { font-size: 17px; font-weight: 800; color: var(--navy); margin: 4px 0 4px 0; }
+  .opt-tag { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+
+  .stage {
+    background: #E5E7EB; border-radius: 10px; padding: 14px;
+  }
+  .browser {
+    background: #fff; border: 1px solid #CBD5E1; border-radius: 8px;
+    overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  }
+  .browser-chrome {
+    background: #F3F4F6; padding: 6px 10px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; color: var(--text-muted);
+    border-bottom: 1px solid #E5E7EB;
+  }
+  .browser-chrome .dot { width: 8px; height: 8px; border-radius: 50%; background: #D1D5DB; }
+  .browser-chrome .url { margin-left: 8px; padding: 3px 10px; background: #fff; border-radius: 12px; border: 1px solid #E5E7EB; flex: 1; max-width: 600px; }
+  .app-header {
+    background: var(--navy); color: #fff;
+    padding: 8px 16px; display: flex; align-items: center; gap: 16px;
+    font-size: 11px;
+  }
+  .app-header .brand { font-weight: 800; font-size: 13px; letter-spacing: 0.04em; }
+  .app-header .tabs { display: flex; gap: 14px; opacity: 0.85; }
+  .app-header .tabs .tab { padding: 2px 4px; }
+  .app-header .tabs .tab.active { border-bottom: 2px solid #fff; padding-bottom: 0; font-weight: 700; }
+  .app-header .who { margin-left: auto; opacity: 0.85; }
+
+  /* ── shared grid/sidebar styles ── */
+  .ae-page {
+    display: grid; grid-template-columns: 220px 1fr; gap: 16px;
+    padding: 14px 18px;
+  }
+  .ae-sidebar {
+    background: #FAFAF7; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px; font-size: 11px;
+  }
+  .ae-sidebar h3 {
+    margin: 0 0 6px 0; font-size: 10px; font-weight: 800; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .ae-sidebar .person-name { font-size: 14px; font-weight: 800; color: var(--navy); margin-bottom: 2px; }
+  .ae-sidebar .person-sub { font-size: 10px; color: var(--text-muted); margin-bottom: 10px; }
+  .cap-row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .cap-row span:last-child { font-weight: 700; color: var(--navy); font-variant-numeric: tabular-nums; }
+  .ae-main {
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px;
+  }
+  .ae-range-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #F3F4F6; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px;
+    font-size: 10px; color: var(--text-muted);
+  }
+  .ae-range-bar .ae-range-label { font-weight: 700; color: var(--navy); font-size: 11px; }
+  .ae-grid { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .ae-grid th, .ae-grid td { border-bottom: 1px solid #F1F1EC; padding: 4px 3px; }
+  .ae-grid th {
+    background: #F3F4F6; color: var(--navy);
+    font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em;
+    font-size: 8px; padding: 5px 3px; text-align: center;
+  }
+  .ae-grid th.proj-th { text-align: left; padding-left: 8px; min-width: 180px; }
+  .ae-grid td.proj { padding-left: 8px; }
+  .ae-grid td.proj .name { font-weight: 700; color: var(--navy); font-size: 11px; }
+  .ae-grid td.cell { text-align: center; }
+  .pct { display: inline-block; min-width: 28px; padding: 2px 4px; border: 1px solid var(--border); border-radius: 3px; font-size: 10px; font-weight: 700; }
+  .pct.has-val { background: #EEF2FF; color: var(--navy); border-color: var(--navy); }
+  .ae-cur { background: #FEF9C3 !important; }
+  .group-hdr td { background: var(--navy); color: #fff; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 8px; }
+  .status-active { color: #166534; background: rgba(34,197,94,0.13); padding: 0 4px; border-radius: 3px; font-size: 8px; font-weight: 700; text-transform: uppercase; }
+
+  /* ── shared button styles ── */
+  .btn { font-size: 11px; font-weight: 700; padding: 5px 11px; border-radius: 5px; border: 1px solid var(--border); background: #fff; color: var(--text-body); cursor: pointer; }
+  .btn-ghost { background: transparent; border: 1px solid transparent; color: var(--text-muted); }
+  .btn-primary { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+  /* ──────────────────────────────────────────────────────────────── */
+  /* OPTION 1 — Prominent back banner */
+  /* ──────────────────────────────────────────────────────────────── */
+  .back-banner {
+    background: linear-gradient(90deg, #002669 0%, #0E4FA0 100%);
+    color: #fff; padding: 12px 24px;
+    display: flex; align-items: center; gap: 18px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  }
+  .back-banner .back-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.12); color: #fff;
+    padding: 9px 18px 9px 14px;
+    border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .back-banner .back-btn:hover { background: rgba(255,255,255,0.22); }
+  .back-banner .back-btn .arrow { font-size: 18px; line-height: 1; }
+  .back-banner .ctx { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .back-banner .ctx .mode { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.75; font-weight: 700; }
+  .back-banner .ctx .who  { font-size: 16px; font-weight: 800; }
+  .back-banner .actions { display: flex; gap: 8px; }
+  .back-banner .actions .btn-cancel { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 7px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+  .back-banner .actions .btn-apply  { background: #22C55E; color: #fff; border: 0; padding: 7px 16px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+
+  /* ──────────────────────────────────────────────────────────────── */
+  /* OPTION 2 — Mode toggle pill */
+  /* ──────────────────────────────────────────────────────────────── */
+  .mode-toggle-bar {
+    background: #fff;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px;
+  }
+  .mode-toggle {
+    display: inline-flex; background: #F3F4F6; border-radius: 999px;
+    padding: 3px; gap: 0;
+  }
+  .mode-toggle button {
+    border: 0; background: transparent; padding: 7px 16px;
+    border-radius: 999px;
+    font-family: 'Lato', sans-serif; font-size: 12px; font-weight: 700;
+    color: var(--text-muted); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .mode-toggle button:hover { color: var(--navy); }
+  .mode-toggle button.on {
+    background: var(--navy); color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+  .mode-toggle button .ico { font-size: 12px; }
+  .mode-toggle-bar .who-ctx { font-size: 11px; color: var(--text-muted); }
+  .mode-toggle-bar .who-ctx strong { color: var(--navy); }
+  .mode-toggle-bar .actions { margin-left: auto; display: flex; gap: 8px; }
+
+  /* ──────────────────────────────────────────────────────────────── */
+  /* OPTION 3 — Persistent member sidebar + content tabs */
+  /* ──────────────────────────────────────────────────────────────── */
+  .res-layout3 {
+    display: grid; grid-template-columns: 220px 1fr;
+    gap: 0; min-height: 360px;
+    border-top: 1px solid var(--border);
+  }
+  .member-rail {
+    background: #FAFAF7; border-right: 1px solid var(--border);
+    padding: 12px 8px;
+    font-size: 11px;
+  }
+  .member-rail h4 {
+    margin: 0 0 8px 8px; font-size: 10px; font-weight: 800; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .mr-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; border-radius: 5px; cursor: pointer;
+    font-size: 11px;
+  }
+  .mr-row:hover { background: #fff; }
+  .mr-row.selected { background: #002669; color: #fff; }
+  .mr-row.selected .mr-name { color: #fff; }
+  .mr-row.selected .mr-util { color: #fff; opacity: 0.8; }
+  .mr-row .mr-name { font-weight: 700; color: var(--navy); flex: 1; }
+  .mr-row .mr-util { font-weight: 700; font-size: 10px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+  .content-pane { padding: 14px 18px; background: #fff; }
+  .pane-tabs {
+    display: flex; gap: 0; border-bottom: 2px solid #F1F1EC;
+    margin-bottom: 16px;
+  }
+  .pane-tab {
+    padding: 8px 16px; font-size: 12px; font-weight: 700;
+    color: var(--text-muted); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .pane-tab:hover { color: var(--navy); }
+  .pane-tab.active {
+    color: var(--navy); border-bottom-color: var(--navy);
+  }
+  .pane-tab .badge {
+    background: #F3F4F6; color: var(--text-muted);
+    font-size: 9px; padding: 1px 5px; border-radius: 8px; font-weight: 700;
+  }
+  .pane-tab.active .badge { background: var(--navy); color: #fff; }
+  .pane-body { font-size: 11px; }
+  .pane-actions { display: flex; gap: 8px; margin-left: auto; align-items: center; }
+
+  /* ──────────────────────────────────────────────────────────────── */
+  /* Pros/cons */
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; font-size: 12px; }
+  .pros-cons h4 { margin: 0 0 4px 0; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+  .pros-cons .pros h4 { color: #166534; }
+  .pros-cons .cons h4 { color: #991B1B; }
+  .pros-cons ul { margin: 0; padding-left: 18px; }
+  .pros-cons li { margin: 3px 0; line-height: 1.4; }
+
+  .verdict {
+    background: #fff; border: 1px solid #E8E6DF; border-left: 4px solid var(--navy);
+    border-radius: 8px; padding: 14px 18px; font-size: 13px;
+    margin-top: 24px;
+  }
+  .verdict strong { color: var(--navy); }
+</style>
+</head>
+<body>
+
+<h1>Allocation editor — navigation alternatives</h1>
+<p class="lead">Three more-distinctive ways to surface "you're in the editor, here's how to leave" than the current breadcrumb. Same browser frame and same editor body in each panel so the focus is on the nav element.</p>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- OPTION 1 — Prominent back banner -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div class="opt">
+  <span class="opt-label">Option 1</span>
+  <div class="opt-title">Prominent back banner</div>
+  <div class="opt-tag">Replaces the subtle breadcrumb with a navy banner running the full width of the editor. A button-styled "← Team Resources" on the left is unmistakable. Member name appears as a large title; Cancel/Apply on the right.</div>
+
+  <div class="stage">
+    <div class="browser">
+      <div class="browser-chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="url">/ resources / member-b / edit-allocations</div></div>
+      <div class="app-header">
+        <span class="brand">📊 Analytics Project Tracker</span>
+        <div class="tabs"><span class="tab">My Work</span><span class="tab">Projects</span><span class="tab active">Resources</span><span class="tab">Analytics</span><span class="tab">Settings</span></div>
+        <span class="who">Peter Johnson</span>
+      </div>
+
+      <div class="back-banner">
+        <button class="back-btn"><span class="arrow">←</span> Team Resources</button>
+        <div class="ctx">
+          <div class="mode">Editing allocations for</div>
+          <div class="who">Member B</div>
+        </div>
+        <div class="actions">
+          <button class="btn-cancel">Cancel</button>
+          <button class="btn-apply">✓ Apply changes</button>
+        </div>
+      </div>
+
+      <div class="ae-page">
+        <aside class="ae-sidebar">
+          <div class="person-name">Member B</div>
+          <div class="person-sub">Data Intelligence · BAA · 70% project-available</div>
+          <h3>Current week</h3>
+          <div class="cap-row"><span>Project capacity</span><span>28h</span></div>
+          <div class="cap-row"><span>Allocated</span><span>25.5h</span></div>
+          <div class="cap-row"><span>Utilization</span><span>91%</span></div>
+        </aside>
+        <div class="ae-main">
+          <div class="ae-range-bar">
+            <span><span class="ae-range-label">Apr 21 — May 26</span> · W17 – W22</span>
+            <span>◀ Prev · Current · Next ▶</span>
+          </div>
+          <table class="ae-grid">
+            <thead><tr><th class="proj-th">Project</th><th>W17</th><th>W18</th><th>W19</th><th class="ae-cur">W20</th><th>W21</th><th>W22</th></tr></thead>
+            <tbody>
+              <tr class="group-hdr"><td colspan="7">Leading (1)</td></tr>
+              <tr><td class="proj"><div class="name">Safe City Dashboard <span class="status-active">Active</span></div></td>
+                <td class="cell"><span class="pct has-val">40</span></td>
+                <td class="cell"><span class="pct has-val">35</span></td>
+                <td class="cell"><span class="pct has-val">40</span></td>
+                <td class="cell ae-cur"><span class="pct has-val">45</span></td>
+                <td class="cell"><span class="pct has-val">50</span></td>
+                <td class="cell"><span class="pct has-val">45</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Pros</h4>
+      <ul>
+        <li>Impossible to miss — colored banner runs full width with a clearly-buttoned back affordance.</li>
+        <li>Member name reads as a large page title, reinforces context.</li>
+        <li>Cancel/Apply visually grouped with back action.</li>
+        <li>Maps cleanly to common app patterns (Linear, GitHub PR editor).</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>Cons</h4>
+      <ul>
+        <li>Adds vertical real estate (~50px) above the editor.</li>
+        <li>The navy banner is heavy visually — pulls the eye away from the grid.</li>
+        <li>Color competes with the app header; some designers would call this redundant.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- OPTION 2 — Mode toggle pill -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div class="opt">
+  <span class="opt-label">Option 2</span>
+  <div class="opt-title">Mode toggle pill</div>
+  <div class="opt-tag">A two-option toggle ("Team Summary" / "Edit · Member B") shows the modes as equal peers. Clicking either chip switches view. Member context lives next to the toggle. Click "Team Summary" to leave the editor.</div>
+
+  <div class="stage">
+    <div class="browser">
+      <div class="browser-chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="url">/ resources / member-b / edit-allocations</div></div>
+      <div class="app-header">
+        <span class="brand">📊 Analytics Project Tracker</span>
+        <div class="tabs"><span class="tab">My Work</span><span class="tab">Projects</span><span class="tab active">Resources</span><span class="tab">Analytics</span><span class="tab">Settings</span></div>
+        <span class="who">Peter Johnson</span>
+      </div>
+
+      <div class="mode-toggle-bar">
+        <div class="mode-toggle">
+          <button><span class="ico">👥</span> Team Summary</button>
+          <button class="on"><span class="ico">✏️</span> Edit Allocations</button>
+        </div>
+        <div class="who-ctx">for <strong>Member B</strong> · Data Intelligence · BAA</div>
+        <div class="actions">
+          <button class="btn btn-ghost">Cancel</button>
+          <button class="btn btn-primary">✓ Apply changes</button>
+        </div>
+      </div>
+
+      <div class="ae-page">
+        <aside class="ae-sidebar">
+          <div class="person-name">Member B</div>
+          <div class="person-sub">Data Intelligence · BAA · 70% project-available</div>
+          <h3>Current week</h3>
+          <div class="cap-row"><span>Project capacity</span><span>28h</span></div>
+          <div class="cap-row"><span>Allocated</span><span>25.5h</span></div>
+          <div class="cap-row"><span>Utilization</span><span>91%</span></div>
+        </aside>
+        <div class="ae-main">
+          <div class="ae-range-bar">
+            <span><span class="ae-range-label">Apr 21 — May 26</span> · W17 – W22</span>
+            <span>◀ Prev · Current · Next ▶</span>
+          </div>
+          <table class="ae-grid">
+            <thead><tr><th class="proj-th">Project</th><th>W17</th><th>W18</th><th>W19</th><th class="ae-cur">W20</th><th>W21</th><th>W22</th></tr></thead>
+            <tbody>
+              <tr class="group-hdr"><td colspan="7">Leading (1)</td></tr>
+              <tr><td class="proj"><div class="name">Safe City Dashboard <span class="status-active">Active</span></div></td>
+                <td class="cell"><span class="pct has-val">40</span></td>
+                <td class="cell"><span class="pct has-val">35</span></td>
+                <td class="cell"><span class="pct has-val">40</span></td>
+                <td class="cell ae-cur"><span class="pct has-val">45</span></td>
+                <td class="cell"><span class="pct has-val">50</span></td>
+                <td class="cell"><span class="pct has-val">45</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Pros</h4>
+      <ul>
+        <li>Two-state design makes both directions feel "first-class" — Team Summary isn't a back action, it's a peer view.</li>
+        <li>Lighter visual weight than the banner; doesn't compete with the app header.</li>
+        <li>Pill toggle is a familiar pattern (already used elsewhere in the app for chart/table, unit filters).</li>
+        <li>Clicking "Team Summary" is one click; same as a back button.</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>Cons</h4>
+      <ul>
+        <li>Less "I am editing right now" tension — the toggle reads more like a calm choice between two views.</li>
+        <li>Two-mode framing is slightly more abstract than a back button (users have to understand it's a toggle).</li>
+        <li>If we ever add a third mode (e.g., "Notes"), the pill stops scaling cleanly.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- OPTION 3 — Persistent member rail + content tabs -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div class="opt">
+  <span class="opt-label">Option 3</span>
+  <div class="opt-title">Persistent member rail + content tabs</div>
+  <div class="opt-tag">Member list stays pinned on the left at all times. Content area to the right has two tabs ("Summary" / "Edit Allocations") that switch the view for the currently-selected member. Click any member in the rail to switch person; the active tab stays. Lets a lead edit Member A → B → C without ever leaving the editing layout.</div>
+
+  <div class="stage">
+    <div class="browser">
+      <div class="browser-chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="url">/ resources / member-b / edit-allocations</div></div>
+      <div class="app-header">
+        <span class="brand">📊 Analytics Project Tracker</span>
+        <div class="tabs"><span class="tab">My Work</span><span class="tab">Projects</span><span class="tab active">Resources</span><span class="tab">Analytics</span><span class="tab">Settings</span></div>
+        <span class="who">Peter Johnson</span>
+      </div>
+
+      <div class="res-layout3">
+        <aside class="member-rail">
+          <h4>Team (10)</h4>
+          <div class="mr-row"><span class="mr-name">Member A</span><span class="mr-util">82%</span></div>
+          <div class="mr-row selected"><span class="mr-name">Member B</span><span class="mr-util">91%</span></div>
+          <div class="mr-row"><span class="mr-name">Member C</span><span class="mr-util">78%</span></div>
+          <div class="mr-row"><span class="mr-name">Member D</span><span class="mr-util" style="color:#991B1B;">105%</span></div>
+          <div class="mr-row"><span class="mr-name">Member E</span><span class="mr-util">64%</span></div>
+          <div class="mr-row"><span class="mr-name">Member F</span><span class="mr-util">88%</span></div>
+          <div class="mr-row"><span class="mr-name">Member G</span><span class="mr-util">72%</span></div>
+          <div class="mr-row"><span class="mr-name">Member H</span><span class="mr-util">85%</span></div>
+        </aside>
+        <div class="content-pane">
+          <div class="pane-tabs">
+            <span class="pane-tab">👥 Summary</span>
+            <span class="pane-tab active">✏️ Edit Allocations</span>
+            <div class="pane-actions">
+              <button class="btn btn-ghost">Discard</button>
+              <button class="btn btn-primary">✓ Apply changes</button>
+            </div>
+          </div>
+          <div class="pane-body">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;">
+              <div>
+                <div style="font-size:14px;font-weight:800;color:var(--navy);">Member B</div>
+                <div style="font-size:10px;color:var(--text-muted);">Data Intelligence · BAA · 70% project-available</div>
+              </div>
+              <div style="font-size:10px;color:var(--text-muted);">Cap 28h · Allocated 25.5h · 91%</div>
+            </div>
+            <div class="ae-range-bar">
+              <span><span class="ae-range-label">Apr 21 — May 26</span> · W17 – W22</span>
+              <span>◀ Prev · Current · Next ▶</span>
+            </div>
+            <table class="ae-grid">
+              <thead><tr><th class="proj-th">Project</th><th>W17</th><th>W18</th><th>W19</th><th class="ae-cur">W20</th><th>W21</th><th>W22</th></tr></thead>
+              <tbody>
+                <tr class="group-hdr"><td colspan="7">Leading (1)</td></tr>
+                <tr><td class="proj"><div class="name">Safe City Dashboard <span class="status-active">Active</span></div></td>
+                  <td class="cell"><span class="pct has-val">40</span></td>
+                  <td class="cell"><span class="pct has-val">35</span></td>
+                  <td class="cell"><span class="pct has-val">40</span></td>
+                  <td class="cell ae-cur"><span class="pct has-val">45</span></td>
+                  <td class="cell"><span class="pct has-val">50</span></td>
+                  <td class="cell"><span class="pct has-val">45</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Pros</h4>
+      <ul>
+        <li>Most powerful for the unit-lead workflow — edit Member A, click Member B in the rail, edit, click C, etc., never leaving the editing layout.</li>
+        <li>"Summary" / "Edit Allocations" tabs make both modes equally first-class, like Option 2 but more spatial.</li>
+        <li>Resources is no longer "the page you leave to edit" — it's a tab within a richer member workspace.</li>
+        <li>Selected member is always visually highlighted in the rail; never lose context.</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>Cons</h4>
+      <ul>
+        <li>Biggest architectural shift — the Resources tab itself needs to be re-organized around this rail+pane layout.</li>
+        <li>Save semantics get fuzzier when clicking another member with unsaved edits (auto-save? prompt?).</li>
+        <li>Smallest grid area of the three options (the member rail eats ~220px on the left).</li>
+        <li>Most engineering work — likely 1–2 days of refactor.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- VERDICT -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div class="verdict">
+  <p><strong>How to choose between them.</strong> The right answer depends on the primary user persona:</p>
+  <ul style="margin-top:8px;">
+    <li><strong>If team members editing their own allocations</strong> is the main flow → <strong>Option 1 (back banner)</strong> is the cleanest. It says "you're doing one focused thing, here's how to leave." Single-purpose, single-direction.</li>
+    <li><strong>If unit leads doing reviews</strong> (going back-and-forth between summary and edit, sometimes for the same person twice) → <strong>Option 2 (mode toggle)</strong> wins because the toggle makes it cheap to flip views.</li>
+    <li><strong>If unit leads editing multiple members in a session</strong> → <strong>Option 3 (member rail)</strong> is decisively better because you never leave the editing layout. The whole "navigate-back-then-pick-next-member" overhead disappears.</li>
+  </ul>
+  <p style="margin-top:10px;font-size:12px;color:var(--text-muted);">My instinct: <strong>Option 1 ships fastest with the biggest "distinctiveness" win</strong> over what's currently there. Option 3 is the right long-term direction if you expect lead-review workflows to grow. Option 2 is the smallest delta from today's design.</p>
+  <p style="margin-top:10px;font-size:12px;color:var(--text-muted);">Which one calls to you?</p>
+</div>
+
+</body>
+</html>

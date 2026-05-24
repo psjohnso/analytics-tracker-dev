@@ -16,6 +16,7 @@ function svCaptureCurrent() {
     if (Array.isArray(activeFilters[k]) && activeFilters[k].length) f[k] = activeFilters[k].slice();
   });
   if (activeFilters.dataProgram) f.dataProgram = true;
+  if (activeFilters.overdue) f.overdue = true;
   if (activeFilters.search) f.search = activeFilters.search;
   return f;
 }
@@ -26,6 +27,7 @@ function svHasAnyFilters(f) {
     if (Array.isArray(f[SV_ARRAY_FILTERS[i]]) && f[SV_ARRAY_FILTERS[i]].length) return true;
   }
   if (f.dataProgram) return true;
+  if (f.overdue) return true;
   if (f.search) return true;
   return false;
 }
@@ -39,8 +41,58 @@ function svFiltersEqual(a, b) {
     for (var j = 0; j < ak.length; j++) if (ak[j] !== bk[j]) return false;
   }
   if (!!a.dataProgram !== !!b.dataProgram) return false;
+  if (!!a.overdue !== !!b.overdue) return false;
   if ((a.search || '') !== (b.search || '')) return false;
   return true;
+}
+
+// Apply a sparse filter snapshot (used by both saved views and built-in
+// presets). Missing keys reset to empty/false, so applying a snapshot cleanly
+// clears unrelated filters left on from a previous selection.
+function applyFilterSnapshot(snap) {
+  snap = snap || {};
+  SV_ARRAY_FILTERS.forEach(function(k) {
+    activeFilters[k] = snap[k] ? snap[k].slice() : [];
+  });
+  activeFilters.dataProgram = snap.dataProgram === true;
+  activeFilters.overdue = snap.overdue === true;
+  activeFilters.search = snap.search || '';
+  var si = document.getElementById('search-input');
+  if (si) si.value = activeFilters.search;
+  // Keep the toolbar quick-filter toggles visually in sync.
+  if (typeof resetQuickFilterBtn === 'function') {
+    resetQuickFilterBtn('open-projects-btn', '#83AC16');
+    resetQuickFilterBtn('open-tasks-btn', '#C24200');
+  }
+}
+
+// ── Built-in presets (always present, computed; not stored) ──────────────
+// "My work" follows the signed-in user. Status presets set BOTH project and
+// task status so they behave the same on either sub-tab.
+var svLastAppliedId = null;
+function builtinPresets() {
+  var me = (typeof Auth !== 'undefined' && Auth && Auth.fullName) ? Auth.fullName : null;
+  var openP = (typeof OPEN_PROJECT_STATUSES !== 'undefined') ? OPEN_PROJECT_STATUSES.slice() : [];
+  var openT = (typeof OPEN_TASK_STATUSES !== 'undefined') ? OPEN_TASK_STATUSES.slice() : [];
+  var list = [{ id: '__all', name: 'All', builtin: true, filters: {} }];
+  if (me) list.push({ id: '__mine', name: 'My work', builtin: true, filters: { member: [me], status: openP, taskStatus: openT } });
+  list.push({ id: '__open', name: 'Open', builtin: true, filters: { status: openP, taskStatus: openT } });
+  list.push({ id: '__overdue', name: 'Overdue', builtin: true, filters: { overdue: true } });
+  list.push({ id: '__high', name: 'High priority', builtin: true, filters: { priority: ['High'], status: openP, taskStatus: openT } });
+  return list;
+}
+
+function applyPreset(id) {
+  var bp = builtinPresets();
+  var p = null;
+  for (var i = 0; i < bp.length; i++) if (bp[i].id === id) { p = bp[i]; break; }
+  if (!p) return;
+  applyFilterSnapshot(p.filters);
+  svLastAppliedId = null; // built-ins aren't a saved view, so no "unsaved" tracking
+  if (typeof currentPage !== 'undefined') currentPage = 1;
+  closePresetMenus();
+  markDataDirty();
+  render();
 }
 
 function applySavedView(id) {
@@ -49,18 +101,10 @@ function applySavedView(id) {
   for (var i = 0; i < views.length; i++) if (views[i].id === id) { view = views[i]; break; }
   if (!view) return;
 
-  // Reset every filter, then apply the saved snapshot. Missing keys =
-  // empty/false, so applying a sparse view cleanly clears unrelated
-  // filters that were stuck on from a previous selection.
-  SV_ARRAY_FILTERS.forEach(function(k) {
-    activeFilters[k] = (view.filters && view.filters[k]) ? view.filters[k].slice() : [];
-  });
-  activeFilters.dataProgram = view.filters && view.filters.dataProgram === true;
-  activeFilters.search = (view.filters && view.filters.search) || '';
-
-  var si = document.getElementById('search-input');
-  if (si) si.value = activeFilters.search;
-
+  applyFilterSnapshot(view.filters);
+  svLastAppliedId = view.id;
+  if (typeof currentPage !== 'undefined') currentPage = 1;
+  closePresetMenus();
   markDataDirty();
   render();
   if (typeof showToast === 'function') showToast('Applied view: ' + view.name, 'success');
@@ -170,50 +214,61 @@ function commitSaveViewModal() {
   // Refresh the sidebar's saved-views section directly — render() alone
   // wouldn't rebuild it, since buildSidebarFilters only runs when the
   // dataDirty flag is set.
-  renderSavedViews();
+  renderPresetBar();
 }
 
-// Mark one saved view as the default (auto-applied on every app load).
-// Clicking the star on the currently-default view clears it. Only one
-// view can be default at a time.
-function setSavedViewAsDefault(id, event) {
+// Default view (auto-applied on every app load). Stored as a single id in
+// UserPrefs.defaultView — works for BOTH built-in presets (id starts with "__")
+// and the user's saved views. Clicking the star on the current default clears it.
+function getDefaultViewId() {
+  if (UserPrefs && UserPrefs.defaultView) return UserPrefs.defaultView;
+  // Legacy migration: a saved view previously flagged isDefault.
+  var views = (UserPrefs && UserPrefs.savedViews) || [];
+  for (var i = 0; i < views.length; i++) if (views[i].isDefault) return views[i].id;
+  return '';
+}
+
+function setDefaultView(id, event) {
   if (event) { event.stopPropagation(); event.preventDefault(); }
-  if (!UserPrefs || !UserPrefs.savedViews) return;
-  var views = UserPrefs.savedViews;
-  var target = null;
-  for (var i = 0; i < views.length; i++) if (views[i].id === id) { target = views[i]; break; }
-  if (!target) return;
-  var wasDefault = !!target.isDefault;
-  views.forEach(function(v) { v.isDefault = false; });
-  if (!wasDefault) target.isDefault = true;
+  if (!UserPrefs) return;
+  var cur = getDefaultViewId();
+  UserPrefs.defaultView = (cur === id) ? '' : id;
+  // Single source of truth: clear any legacy per-view flags.
+  (UserPrefs.savedViews || []).forEach(function(v) { v.isDefault = false; });
   saveUserPrefs();
   if (typeof showToast === 'function') {
-    showToast(wasDefault ? 'Default cleared.' : 'Default: ' + target.name + ' (applies on load)', 'success');
+    showToast(UserPrefs.defaultView ? ('Default: ' + presetName(UserPrefs.defaultView) + ' (applies on load)') : 'Default cleared.', 'success');
   }
-  renderSavedViews();
+  closePresetMenus();
+  renderPresetBar();
 }
 
-function getDefaultSavedView() {
-  if (!UserPrefs || !UserPrefs.savedViews) return null;
-  for (var i = 0; i < UserPrefs.savedViews.length; i++) {
-    if (UserPrefs.savedViews[i].isDefault) return UserPrefs.savedViews[i];
-  }
+// Resolve an id (built-in or saved) to its display name / filter snapshot.
+function presetName(id) {
+  if (!id) return '';
+  var bp = builtinPresets();
+  for (var i = 0; i < bp.length; i++) if (bp[i].id === id) return bp[i].name;
+  var views = (UserPrefs && UserPrefs.savedViews) || [];
+  for (var j = 0; j < views.length; j++) if (views[j].id === id) return views[j].name;
+  return '';
+}
+function resolveViewSnapshot(id) {
+  var bp = builtinPresets();
+  for (var i = 0; i < bp.length; i++) if (bp[i].id === id) return bp[i].filters;
+  var views = (UserPrefs && UserPrefs.savedViews) || [];
+  for (var j = 0; j < views.length; j++) if (views[j].id === id) return views[j].filters || {};
   return null;
 }
 
-// Apply the user's default saved view (if any) directly to activeFilters.
+// Apply the user's default view (built-in or saved) directly to activeFilters.
 // Called once at bootstrap, after loadUserPrefs and before the first render.
-// We don't call render() here — the bootstrap render is right behind us.
 function applyDefaultSavedViewOnLoad() {
-  var def = getDefaultSavedView();
-  if (!def) return;
-  SV_ARRAY_FILTERS.forEach(function(k) {
-    activeFilters[k] = (def.filters && def.filters[k]) ? def.filters[k].slice() : [];
-  });
-  activeFilters.dataProgram = def.filters && def.filters.dataProgram === true;
-  activeFilters.search = (def.filters && def.filters.search) || '';
-  var si = document.getElementById('search-input');
-  if (si) si.value = activeFilters.search;
+  var id = getDefaultViewId();
+  if (!id) return;
+  var snap = resolveViewSnapshot(id);
+  if (!snap) return;
+  applyFilterSnapshot(snap);
+  svLastAppliedId = (id.indexOf('__') === 0) ? null : id;
 }
 
 function deleteSavedView(id, event) {
@@ -227,47 +282,123 @@ function deleteSavedView(id, event) {
   if (!confirm('Delete view "' + view.name + '"?')) return;
   UserPrefs.savedViews = UserPrefs.savedViews.filter(function(v) { return v.id !== id; });
   saveUserPrefs();
-  renderSavedViews();
+  renderPresetBar();
 }
 
-// Fill the #saved-views-section container with chips + an Add button.
-// Called from buildSidebarFilters so views re-render when filters change
-// and we can highlight the chip whose snapshot matches the live state.
-function renderSavedViews() {
-  var container = document.getElementById('saved-views-section');
-  if (!container) return;
-  var views = (UserPrefs && UserPrefs.savedViews) || [];
+// Overwrite a saved view's stored filters with the current selection.
+function updateSavedView(id, event) {
+  if (event) { event.stopPropagation(); event.preventDefault(); }
+  if (!UserPrefs || !UserPrefs.savedViews) return;
+  var v = null;
+  for (var i = 0; i < UserPrefs.savedViews.length; i++) if (UserPrefs.savedViews[i].id === id) { v = UserPrefs.savedViews[i]; break; }
+  if (!v) return;
+  v.filters = svCaptureCurrent();
+  saveUserPrefs();
+  svLastAppliedId = id;
+  closePresetMenus();
+  if (typeof showToast === 'function') showToast('Updated view: ' + v.name, 'success');
+  renderPresetBar();
+}
 
-  // Hide the section entirely when no views are saved AND no filters are
-  // currently set — keeps the sidebar tidy for fresh users.
-  var current = svCaptureCurrent();
-  var hasActiveFilters = svHasAnyFilters(current);
-  if (!views.length && !hasActiveFilters) { container.innerHTML = ''; return; }
+function renameSavedView(id, event) {
+  if (event) { event.stopPropagation(); event.preventDefault(); }
+  if (!UserPrefs || !UserPrefs.savedViews) return;
+  var v = null;
+  for (var i = 0; i < UserPrefs.savedViews.length; i++) if (UserPrefs.savedViews[i].id === id) { v = UserPrefs.savedViews[i]; break; }
+  if (!v) return;
+  var name = prompt('Rename view:', v.name);
+  if (name === null) return;
+  name = name.trim().slice(0, 40);
+  if (!name) return;
+  v.name = name;
+  saveUserPrefs();
+  closePresetMenus();
+  renderPresetBar();
+}
+
+// ── Per-view "⋯" dropdown menu ───────────────────────────────────────────
+var svOpenMenuId = null;
+function togglePresetMenu(id, event) {
+  if (event) { event.stopPropagation(); event.preventDefault(); }
+  var was = svOpenMenuId === id;
+  closePresetMenus();
+  if (!was) {
+    var m = document.getElementById('pmenu-' + id);
+    if (m) { m.classList.add('open'); svOpenMenuId = id; }
+  }
+}
+function closePresetMenus() {
+  var open = document.querySelectorAll('.preset-menu.open');
+  for (var i = 0; i < open.length; i++) open[i].classList.remove('open');
+  svOpenMenuId = null;
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest || !e.target.closest('.preset-chip')) closePresetMenus();
+  });
+}
+function builtinMenuItems(p) {
+  var isDef = getDefaultViewId() === p.id;
+  return '<div class="pm-item" onclick="setDefaultView(\'' + p.id + '\', event)"><span class="pm-ic">★</span>' + (isDef ? 'Default view ✓' : 'Set as default') + '</div>';
+}
+function presetMenuItems(v) {
+  var isDef = getDefaultViewId() === v.id;
+  return '' +
+    '<div class="pm-item" onclick="setDefaultView(\'' + v.id + '\', event)"><span class="pm-ic">★</span>' + (isDef ? 'Default view ✓' : 'Set as default') + '</div>' +
+    '<div class="pm-item" onclick="updateSavedView(\'' + v.id + '\', event)"><span class="pm-ic">⤓</span>Update to current filters</div>' +
+    '<div class="pm-item" onclick="renameSavedView(\'' + v.id + '\', event)"><span class="pm-ic">✎</span>Rename…</div>' +
+    '<div class="pm-item danger" onclick="deleteSavedView(\'' + v.id + '\', event)"><span class="pm-ic">🗑</span>Delete</div>';
+}
+
+// Render the preset bar above the results: built-in presets + the user's saved
+// views as chips (each with a live count + a ⋯ menu) + a Save-view button.
+// Shown only on the filterable sub-tabs. Called from updateFilterIndicator.
+function renderPresetBar() {
+  var bar = document.getElementById('preset-bar');
+  if (!bar) return;
+  var onFilterTab = (typeof currentTab !== 'undefined') && (currentTab === 'projects' || currentTab === 'tasks');
+  if (!onFilterTab) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
+  bar.style.display = '';
+
+  var cur = svCaptureCurrent();
+  var builtins = builtinPresets();
+  var saved = (UserPrefs && UserPrefs.savedViews) || [];
+  var defId = getDefaultViewId();
 
   var activeId = null;
-  for (var i = 0; i < views.length; i++) {
-    if (svFiltersEqual(current, views[i].filters || {})) { activeId = views[i].id; break; }
+  for (var i = 0; i < builtins.length; i++) if (svFiltersEqual(cur, builtins[i].filters)) { activeId = builtins[i].id; break; }
+  if (!activeId) for (var j = 0; j < saved.length; j++) if (svFiltersEqual(cur, saved[j].filters || {})) { activeId = saved[j].id; break; }
+
+  var html = '<span class="preset-group-label">Views</span>';
+  builtins.forEach(function(p) {
+    var on = p.id === activeId;
+    html += '<span class="preset-chip builtin' + (on ? ' on' : '') + '" onclick="applyPreset(\'' + p.id + '\')" title="Apply this preset">' +
+      (defId === p.id ? '<span class="pc-star" title="Default view">★</span>' : '') +
+      '<span class="pc-name">' + esc(p.name) + '</span>' +
+      '<span class="pc-kebab" onclick="togglePresetMenu(\'' + p.id + '\', event)" title="Preset options">⋯</span>' +
+      '<div class="preset-menu" id="pmenu-' + p.id + '">' + builtinMenuItems(p) + '</div>' +
+    '</span>';
+  });
+  if (saved.length) html += '<span class="preset-div"></span>';
+  saved.forEach(function(v) {
+    var on = v.id === activeId;
+    html += '<span class="preset-chip saved' + (on ? ' on' : '') + '" onclick="applySavedView(\'' + v.id + '\')" title="Apply this view">' +
+      (defId === v.id ? '<span class="pc-star" title="Default view">★</span>' : '') +
+      '<span class="pc-name">' + esc(v.name) + '</span>' +
+      '<span class="pc-kebab" onclick="togglePresetMenu(\'' + v.id + '\', event)" title="View options">⋯</span>' +
+      '<div class="preset-menu" id="pmenu-' + v.id + '">' + presetMenuItems(v) + '</div>' +
+    '</span>';
+  });
+  html += '<button class="preset-chip save" onclick="saveCurrentView()" title="Save the current filters as a reusable view">💾 Save view</button>';
+
+  // "Unsaved changes" affordance: if a saved view was applied then edited.
+  if (svLastAppliedId) {
+    var lv = null;
+    for (var k = 0; k < saved.length; k++) if (saved[k].id === svLastAppliedId) { lv = saved[k]; break; }
+    if (lv && !svFiltersEqual(cur, lv.filters || {})) {
+      html += '<span class="preset-mod">● unsaved — <span class="pm-link" onclick="updateSavedView(\'' + lv.id + '\')">update “' + esc(lv.name) + '”</span></span>';
+    }
   }
 
-  var html = '<div class="sidebar-label">My views</div>';
-  if (views.length) {
-    html += '<div class="saved-views-list">';
-    views.forEach(function(v) {
-      var active = v.id === activeId;
-      var isDef = !!v.isDefault;
-      var starTitle = isDef ? 'Default view — applies on load (click to clear)' : 'Set as default (applies on load)';
-      html += '<div class="saved-view-chip' + (active ? ' active' : '') + '" onclick="applySavedView(\'' + v.id + '\')" title="Apply this view">' +
-        '<button class="sv-star' + (isDef ? ' is-default' : '') + '" onclick="setSavedViewAsDefault(\'' + v.id + '\', event)" title="' + starTitle + '">★</button>' +
-        '<span class="sv-name">' + esc(v.name) + '</span>' +
-        '<button class="sv-delete" onclick="deleteSavedView(\'' + v.id + '\', event)" title="Delete view">×</button>' +
-      '</div>';
-    });
-    html += '</div>';
-  }
-  if (hasActiveFilters && !activeId) {
-    html += '<button class="saved-view-add" onclick="saveCurrentView()">＋ Save current filters as view</button>';
-  } else if (!views.length) {
-    html += '<div class="saved-view-hint">Apply some filters, then save them here.</div>';
-  }
-  container.innerHTML = html;
+  bar.innerHTML = html;
 }
