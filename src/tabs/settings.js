@@ -104,7 +104,8 @@ function buildPreferencesPanel() {
       { id: 'sonoran',   label: 'Sonoran Sunset', p: '#8B3A1A', s: '#F77F00', bg: '#FFF4DC' },
       { id: 'twilight',  label: 'Desert Twilight',p: '#3D2660', s: '#C2185B', bg: '#F5EFFA' },
       { id: 'pueblo',    label: 'Pueblo',         p: '#7A3520', s: '#D77845', bg: '#FAEED9' },
-      { id: 'saguaro',   label: 'Saguaro',        p: '#2D4F1E', s: '#C04020', bg: '#EDF1E2' }
+      { id: 'saguaro',   label: 'Saguaro',        p: '#2D4F1E', s: '#C04020', bg: '#EDF1E2' },
+      { id: 'dark',      label: 'Dark (beta)',    p: '#0D1117', s: '#6E9BD6', bg: '#20242C' }
     ];
     var cards = themes.map(function(t) {
       var sel = t.id === current;
@@ -116,7 +117,7 @@ function buildPreferencesPanel() {
           '<div style="flex:1;background:' + t.s + ';"></div>' +
           '<div style="flex:2;background:' + t.bg + ';"></div>' +
         '</div>';
-      return '<button type="button" onclick="setTheme(\'' + t.id + '\')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px;border:' + ring + ';background:#fff;border-radius:10px;cursor:pointer;font-family:Lato,sans-serif;">' +
+      return '<button type="button" onclick="setTheme(\'' + t.id + '\')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px;border:' + ring + ';background:var(--white);border-radius:10px;cursor:pointer;font-family:Lato,sans-serif;">' +
         preview +
         '<span style="font-size:11px;font-weight:700;color:var(--text-body);white-space:nowrap;">' + esc(t.label) + (sel ? ' ✓' : '') + '</span>' +
       '</button>';
@@ -135,7 +136,7 @@ function buildPreferencesPanel() {
     var presets = ['🎯','🐢','🦊','🐙','🦉','🦄','🌵','🌮','🍕','☕','🎨','🎮','🎸','🚀','💻','📊','✨','🔥','⚡','🌟'];
     var presetBtns = presets.map(function(e) {
       var sel = e === current;
-      return '<button type="button" onclick="setAvatarEmoji(\'' + e + '\')" title="' + e + '" style="font-size:18px;width:32px;height:32px;border:1px solid ' + (sel ? 'var(--navy)' : 'var(--border)') + ';' + (sel ? 'background:#EEF2FF;' : 'background:#fff;') + 'border-radius:6px;cursor:pointer;padding:0;line-height:1;">' + e + '</button>';
+      return '<button type="button" onclick="setAvatarEmoji(\'' + e + '\')" title="' + e + '" style="font-size:18px;width:32px;height:32px;border:1px solid ' + (sel ? 'var(--navy)' : 'var(--border)') + ';' + (sel ? 'background:#EEF2FF;' : 'background:var(--white);') + 'border-radius:6px;cursor:pointer;padding:0;line-height:1;">' + e + '</button>';
     }).join('');
     return '<div style="padding:14px 0;border-bottom:1px solid #F3F1EB;">' +
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;">' +
@@ -146,7 +147,7 @@ function buildPreferencesPanel() {
         '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' +
           '<input type="text" id="pref-avatarEmoji" value="' + esc(current) + '" maxlength="8" placeholder="—" onkeydown="if(event.key===\'Enter\')commitAvatarEmoji();" style="width:60px;text-align:center;font-size:22px;padding:6px;border:1px solid var(--border);border-radius:6px;font-family:Lato,sans-serif;">' +
           '<button type="button" onclick="commitAvatarEmoji()" style="font-size:12px;font-weight:700;padding:6px 12px;border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:6px;cursor:pointer;font-family:Lato,sans-serif;">Set</button>' +
-          (current ? '<button type="button" onclick="setAvatarEmoji(\'\')" style="font-size:11px;font-weight:700;padding:6px 10px;border:1px solid var(--border);background:#fff;color:var(--text-muted);border-radius:6px;cursor:pointer;font-family:Lato,sans-serif;">Clear</button>' : '') +
+          (current ? '<button type="button" onclick="setAvatarEmoji(\'\')" style="font-size:11px;font-weight:700;padding:6px 10px;border:1px solid var(--border);background:var(--white);color:var(--text-muted);border-radius:6px;cursor:pointer;font-family:Lato,sans-serif;">Clear</button>' : '') +
         '</div>' +
       '</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;justify-content:flex-end;">' + presetBtns + '</div>' +
@@ -173,7 +174,7 @@ function buildPreferencesPanel() {
       return '<button type="button" onclick="updatePref(\'accentColor\',\'' + hex + '\')" title="' + hex + '" style="width:24px;height:24px;border-radius:50%;border:' + ring + ';outline:1px solid var(--border);background:' + hex + ';cursor:pointer;padding:0;"></button>';
     }).join('');
     var customVal = currentHex || '#0C447C';
-    var resetBtn = currentHex ? '<button type="button" onclick="updatePref(\'accentColor\',\'\')" style="font-size:11px;font-weight:700;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text-muted);cursor:pointer;font-family:Lato,sans-serif;">Reset</button>' : '';
+    var resetBtn = currentHex ? '<button type="button" onclick="updatePref(\'accentColor\',\'\')" style="font-size:11px;font-weight:700;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--white);color:var(--text-muted);cursor:pointer;font-family:Lato,sans-serif;">Reset</button>' : '';
     return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F3F1EB;gap:20px;">' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="font-size:13px;font-weight:700;color:var(--text-body);">Accent color</div>' +
@@ -235,7 +236,7 @@ function buildPreferencesPanel() {
       '<label style="position:relative;width:40px;height:22px;flex-shrink:0;">' +
         '<input type="checkbox" id="pref-' + id + '"' + checked + ' onchange="updatePref(\'' + id + '\',this.checked)" style="opacity:0;width:0;height:0;position:absolute;">' +
         '<span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:' + (currentVal ? 'var(--navy)' : '#D3D1C7') + ';border-radius:11px;transition:background 0.2s;">' +
-          '<span style="position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:3px;left:' + (currentVal ? '21px' : '3px') + ';transition:left 0.2s;"></span>' +
+          '<span style="position:absolute;width:16px;height:16px;background:var(--white);border-radius:50%;top:3px;left:' + (currentVal ? '21px' : '3px') + ';transition:left 0.2s;"></span>' +
         '</span>' +
       '</label>' +
     '</div>';
@@ -342,7 +343,7 @@ function buildPreferencesPanel() {
       html += '<label style="position:relative;width:40px;height:22px;flex-shrink:0;">';
       html += '<input type="checkbox" id="pref-beta-' + key + '"' + (isEnabled ? ' checked' : '') + ' onchange="updateBetaPref(\'' + key + '\',this.checked)" style="opacity:0;width:0;height:0;position:absolute;">';
       html += '<span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:' + (isEnabled ? '#C24200' : '#D3D1C7') + ';border-radius:11px;transition:background 0.2s;">';
-      html += '<span style="position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:3px;left:' + (isEnabled ? '21px' : '3px') + ';transition:left 0.2s;"></span>';
+      html += '<span style="position:absolute;width:16px;height:16px;background:var(--white);border-radius:50%;top:3px;left:' + (isEnabled ? '21px' : '3px') + ';transition:left 0.2s;"></span>';
       html += '</span>';
       html += '</label>';
       html += '</div>';
@@ -604,7 +605,7 @@ function renderSettingsPage(area) {
   else if (_settingsSection === 'allocations') {
     var prPct = Math.round((_productivityRatio || 0.75) * 100);
     panelHtml = '<div class="settings-panel-title">Allocations</div>' +
-      '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:18px 20px;margin-bottom:24px;">' +
+      '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:10px;padding:18px 20px;margin-bottom:24px;">' +
         '<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">Capacity formula</div>' +
         '<div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Each person\'s weekly project capacity = (scheduled hours − absences) × <strong>productivity ratio</strong> × their project-available %.</div>' +
         '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
@@ -646,7 +647,7 @@ function renderSettingsPage(area) {
       var stats = TEAM_TIME_STATS[name] || { totalHours: 0, weekHours: 0, lastDate: '', entryCount: 0 };
       var initials = name.split(' ').map(function(w) { return w[0]; }).join('').slice(0,2).toUpperCase();
       var statusBadge = '';
-      if (!enabled) statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#F3F1EB;color:#9CA3AF;">Disabled</span>';
+      if (!enabled) statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--surface-2);color:#9CA3AF;">Disabled</span>';
       else if (stats.lastDate === todayStr) statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#D1FAE5;color:#065F46;">Logging today</span>';
       else if (stats.weekHours > 0) statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#DBEAFE;color:#1E40AF;">Active this week</span>';
       else if (stats.entryCount > 0) statusBadge = '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:#FEF3C7;color:#92400E;">Inactive</span>';
@@ -664,20 +665,20 @@ function renderSettingsPage(area) {
     panelHtml = '<div class="settings-panel-title">Time tracking</div>' +
       '<div class="settings-panel-desc">Monitor team time tracking adoption and activity.</div>' +
       '<div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">' +
-        '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center;">' +
+        '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center;">' +
           '<div style="font-size:22px;font-weight:800;color:var(--navy);">' + ttEnabled.length + '<span style="font-size:13px;font-weight:600;color:var(--text-muted);">/' + activeNamesArr.length + '</span></div>' +
           '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Enabled</div>' +
         '</div>' +
-        '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center;">' +
+        '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center;">' +
           '<div style="font-size:22px;font-weight:800;color:var(--navy);">' + ttWithEntries.length + '</div>' +
           '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Have logged time</div>' +
         '</div>' +
-        '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center;">' +
+        '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;flex:1;min-width:120px;text-align:center;">' +
           '<div style="font-size:22px;font-weight:800;color:var(--navy);">' + Math.round(activeNamesArr.reduce(function(s, n) { return s + ((TEAM_TIME_STATS[n] || {}).weekHours || 0); }, 0) * 10) / 10 + 'h</div>' +
           '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Team hours this week</div>' +
         '</div>' +
       '</div>' +
-      '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:#fff;">' +
+      '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:var(--white);">' +
         '<table class="member-table" style="margin:0;">' +
           '<thead><tr><th style="text-align:left;">Team Member</th><th style="text-align:center;">Status</th><th style="text-align:right;">This Week</th><th style="text-align:right;">All Time</th><th style="text-align:right;">Last Entry</th><th style="text-align:right;">Entries</th></tr></thead>' +
           '<tbody>' + ttRows + '</tbody>' +
@@ -732,7 +733,7 @@ function renderSettingsPage(area) {
     var aiPhaseChecked = _aiPhaseAssignment ? ' checked' : '';
     panelHtml = '<div class="settings-panel-title">AI features</div>' +
       '<div class="settings-panel-desc">Configure AI-assisted features across the application.</div>' +
-      '<div style="display:flex;flex-direction:column;gap:12px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;">' +
+      '<div style="display:flex;flex-direction:column;gap:12px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;">' +
         '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-body);">' +
           '<input type="checkbox" id="ai-phase-toggle"' + aiPhaseChecked + ' onchange="toggleAiPhaseAssignment(this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy);">' +
           'AI Phase Assignment' +
@@ -761,7 +762,7 @@ function renderSettingsPage(area) {
     var devChecked = Auth.devMode ? ' checked' : '';
     panelHtml = '<div class="settings-panel-title">Developer</div>' +
       '<div class="settings-panel-desc">Advanced tools and diagnostic features.</div>' +
-      '<div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px;">' +
+      '<div style="display:flex;align-items:center;gap:12px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:16px;">' +
         '<label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-body);">' +
           '<input type="checkbox" id="dev-mode-toggle"' + devChecked + ' onchange="toggleDevMode(this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy);">' +
           'Enable Developer Mode' +

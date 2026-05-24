@@ -467,7 +467,7 @@ function updateFilterIndicator() {
   }
   indicator.style.display = '';
 
-  var chipStyle = 'display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:#fff;border:1px solid #FED7AA;color:#9A3412;white-space:nowrap;';
+  var chipStyle = 'display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--white);border:1px solid #FED7AA;color:#9A3412;white-space:nowrap;';
   var xStyle = 'cursor:pointer;font-weight:700;opacity:0.6;margin-left:2px;';
   var chips = '';
 

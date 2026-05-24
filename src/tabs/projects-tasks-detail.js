@@ -91,7 +91,7 @@ function renderPhaseStepper(projectTitle) {
   var fillPct = phases.length > 1 ? Math.round((cur / (phases.length - 1)) * 100) : 0;
   var html = '<div class="detail-section">';
   html += '<div class="detail-section-label">Project lifecycle</div>';
-  html += '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:16px;">';
+  html += '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:10px;padding:16px;">';
   var cp = phases[cur];
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">';
   html += '<div style="font-size:13px;font-weight:700;color:var(--navy);">Phase ' + cp.id + ' — ' + esc(LIFECYCLE_PHASES[cp.id].name) + '</div>';
@@ -206,11 +206,11 @@ function renderPhaseGroupedTasks(projectTitle, relTasks) {
         ['Active','Pending','On Hold','Waiting for Response','Complete','Canceled'].forEach(function(s) { html += '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + s + '</option>'; });
         html += '</select></div>';
         html += '<div class="detail-task-cell"><span class="priority-badge priority-' + (t.priority||'null') + '">' + (t.priority||'—') + '</span></div>';
-        html += '<div onclick="event.stopPropagation()"><select class="dt-inline-select" data-task-id="' + t.objectId + '" onchange="inlineTaskAssignee(this)" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid #E8E6DF;color:' + (t.assignee ? '#374151' : '#9CA3AF') + ';font-family:Lato,sans-serif;cursor:pointer;width:100%;background:#fff;"><option value=""' + (!t.assignee ? ' selected' : '') + '>Unassigned</option>';
+        html += '<div onclick="event.stopPropagation()"><select class="dt-inline-select" data-task-id="' + t.objectId + '" onchange="inlineTaskAssignee(this)" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid #E8E6DF;color:' + (t.assignee ? 'var(--text-body)' : 'var(--text-muted)') + ';font-family:Lato,sans-serif;cursor:pointer;width:100%;background:var(--white);"><option value=""' + (!t.assignee ? ' selected' : '') + '>Unassigned</option>';
         var _members = RESOURCES_DATA ? Object.keys(RESOURCES_DATA.people).filter(function(n) { return isFullMember(n); }).sort() : [];
         _members.forEach(function(n) { html += '<option value="' + esc(n) + '"' + (t.assignee === n ? ' selected' : '') + '>' + esc(n) + '</option>'; });
         html += '</select></div>';
-        html += '<div onclick="event.stopPropagation()"><input type="date" class="dt-inline-date" data-task-id="' + t.objectId + '" data-has-due="' + (t.due ? '1' : '') + '" onchange="inlineTaskDueDate(this)" value="' + (t.working_due||t.due||'') + '" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid #E8E6DF;color:' + ((t.working_due||t.due) ? '#374151' : '#9CA3AF') + ';font-family:Lato,sans-serif;cursor:pointer;width:100%;"></div>';
+        html += '<div onclick="event.stopPropagation()"><input type="date" class="dt-inline-date" data-task-id="' + t.objectId + '" data-has-due="' + (t.due ? '1' : '') + '" onchange="inlineTaskDueDate(this)" value="' + (t.working_due||t.due||'') + '" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid #E8E6DF;color:' + ((t.working_due||t.due) ? 'var(--text-body)' : 'var(--text-muted)') + ';font-family:Lato,sans-serif;cursor:pointer;width:100%;"></div>';
         html += '<div class="detail-task-cell" style="font-weight:700;color:var(--navy);">' + hrsDisplay + '</div>';
         html += '</div>';
       });
@@ -221,7 +221,7 @@ function renderPhaseGroupedTasks(projectTitle, relTasks) {
   });
   if (grouped.ungrouped.length > 0) {
     html += '<div class="phase-section-header" onclick="togglePhaseSection(\'ungrouped\')">';
-    html += '<span class="phase-section-pill" style="background:#F3F1EB;color:#6B7280;">—</span>';
+    html += '<span class="phase-section-pill" style="background:var(--surface-2);color:#6B7280;">—</span>';
     html += '<span class="phase-section-name">Unlinked tasks</span>';
     html += '<span class="phase-section-progress" style="color:#9CA3AF;">' + grouped.ungrouped.length + '</span>';
     html += '<span class="phase-section-chevron" id="phase-chevron-ungrouped">▸</span>';
@@ -239,11 +239,11 @@ function renderPhaseGroupedTasks(projectTitle, relTasks) {
       ['Active','Pending','On Hold','Waiting for Response','Complete','Canceled'].forEach(function(s) { html += '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + s + '</option>'; });
       html += '</select></div>';
       html += '<div class="detail-task-cell"><span class="priority-badge priority-' + (t.priority||'null') + '">' + (t.priority||'—') + '</span></div>';
-      html += '<div onclick="event.stopPropagation()"><select class="dt-inline-select" data-task-id="' + t.objectId + '" onchange="inlineTaskAssignee(this)" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid #E8E6DF;color:' + (t.assignee ? '#374151' : '#9CA3AF') + ';font-family:Lato,sans-serif;cursor:pointer;width:100%;background:#fff;"><option value=""' + (!t.assignee ? ' selected' : '') + '>Unassigned</option>';
+      html += '<div onclick="event.stopPropagation()"><select class="dt-inline-select" data-task-id="' + t.objectId + '" onchange="inlineTaskAssignee(this)" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid #E8E6DF;color:' + (t.assignee ? 'var(--text-body)' : 'var(--text-muted)') + ';font-family:Lato,sans-serif;cursor:pointer;width:100%;background:var(--white);"><option value=""' + (!t.assignee ? ' selected' : '') + '>Unassigned</option>';
       var _members2 = RESOURCES_DATA ? Object.keys(RESOURCES_DATA.people).filter(function(n) { return isFullMember(n); }).sort() : [];
       _members2.forEach(function(n) { html += '<option value="' + esc(n) + '"' + (t.assignee === n ? ' selected' : '') + '>' + esc(n) + '</option>'; });
       html += '</select></div>';
-      html += '<div onclick="event.stopPropagation()"><input type="date" class="dt-inline-date" data-task-id="' + t.objectId + '" data-has-due="' + (t.due ? '1' : '') + '" onchange="inlineTaskDueDate(this)" value="' + (t.working_due||t.due||'') + '" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid #E8E6DF;color:' + ((t.working_due||t.due) ? '#374151' : '#9CA3AF') + ';font-family:Lato,sans-serif;cursor:pointer;width:100%;"></div>';
+      html += '<div onclick="event.stopPropagation()"><input type="date" class="dt-inline-date" data-task-id="' + t.objectId + '" data-has-due="' + (t.due ? '1' : '') + '" onchange="inlineTaskDueDate(this)" value="' + (t.working_due||t.due||'') + '" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid #E8E6DF;color:' + ((t.working_due||t.due) ? 'var(--text-body)' : 'var(--text-muted)') + ';font-family:Lato,sans-serif;cursor:pointer;width:100%;"></div>';
       html += '<div class="detail-task-cell" style="font-weight:700;color:var(--navy);">' + hrsDisplay + '</div>';
       html += '</div>';
     });
@@ -304,17 +304,17 @@ async function openSuggestPicker(projectObjectId) {
     '<div style="padding:8px 0;">' +
       '<div style="font-size:13px;font-weight:700;color:#92400E;margin-bottom:10px;">Choose a detail level:</div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
-        '<div onclick="suggestWithDetail(\'low\')" style="flex:1;min-width:140px;cursor:pointer;background:#fff;border:2px solid ' + (_suggestDetail === 'low' ? 'var(--navy)' : '#E8E6DF') + ';border-radius:10px;padding:14px;text-align:center;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'var(--navy)\'" onmouseout="this.style.borderColor=\'' + (_suggestDetail === 'low' ? 'var(--navy)' : '#E8E6DF') + '\'">' +
+        '<div onclick="suggestWithDetail(\'low\')" style="flex:1;min-width:140px;cursor:pointer;background:var(--white);border:2px solid ' + (_suggestDetail === 'low' ? 'var(--navy)' : '#E8E6DF') + ';border-radius:10px;padding:14px;text-align:center;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'var(--navy)\'" onmouseout="this.style.borderColor=\'' + (_suggestDetail === 'low' ? 'var(--navy)' : '#E8E6DF') + '\'">' +
           '<div style="font-size:20px;margin-bottom:4px;">📋</div>' +
           '<div style="font-size:13px;font-weight:800;color:var(--navy);">Low</div>' +
           '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Major phases<br>1-3 days each<br>4-8 tasks</div>' +
         '</div>' +
-        '<div onclick="suggestWithDetail(\'medium\')" style="flex:1;min-width:140px;cursor:pointer;background:#fff;border:2px solid ' + (_suggestDetail === 'medium' ? 'var(--navy)' : '#E8E6DF') + ';border-radius:10px;padding:14px;text-align:center;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'var(--navy)\'" onmouseout="this.style.borderColor=\'' + (_suggestDetail === 'medium' ? 'var(--navy)' : '#E8E6DF') + '\'">' +
+        '<div onclick="suggestWithDetail(\'medium\')" style="flex:1;min-width:140px;cursor:pointer;background:var(--white);border:2px solid ' + (_suggestDetail === 'medium' ? 'var(--navy)' : '#E8E6DF') + ';border-radius:10px;padding:14px;text-align:center;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'var(--navy)\'" onmouseout="this.style.borderColor=\'' + (_suggestDetail === 'medium' ? 'var(--navy)' : '#E8E6DF') + '\'">' +
           '<div style="font-size:20px;margin-bottom:4px;">📝</div>' +
           '<div style="font-size:13px;font-weight:800;color:var(--navy);">Medium</div>' +
           '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Grouped activities<br>4-16 hours each<br>8-15 tasks</div>' +
         '</div>' +
-        '<div onclick="suggestWithDetail(\'high\')" style="flex:1;min-width:140px;cursor:pointer;background:#fff;border:2px solid ' + (_suggestDetail === 'high' ? 'var(--navy)' : '#E8E6DF') + ';border-radius:10px;padding:14px;text-align:center;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'var(--navy)\'" onmouseout="this.style.borderColor=\'' + (_suggestDetail === 'high' ? 'var(--navy)' : '#E8E6DF') + '\'">' +
+        '<div onclick="suggestWithDetail(\'high\')" style="flex:1;min-width:140px;cursor:pointer;background:var(--white);border:2px solid ' + (_suggestDetail === 'high' ? 'var(--navy)' : '#E8E6DF') + ';border-radius:10px;padding:14px;text-align:center;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'var(--navy)\'" onmouseout="this.style.borderColor=\'' + (_suggestDetail === 'high' ? 'var(--navy)' : '#E8E6DF') + '\'">' +
           '<div style="font-size:20px;margin-bottom:4px;">🔬</div>' +
           '<div style="font-size:13px;font-weight:800;color:var(--navy);">High</div>' +
           '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Atomic steps<br>1-8 hours each<br>15-25+ tasks</div>' +
@@ -651,11 +651,11 @@ function buildStrategicAlignmentSection(p) {
 
   var html = '<div class="detail-section"><div class="detail-section-label">Strategic Alignment</div>';
   // Row 1: IT Initiative | City Initiative
-  html += row(cell('IT Initiative', p.it_initiative, '#EEF2FF', '#002669') + cell('City Initiative', p.city_initiative, '#FFF7ED', '#9A3412'));
+  html += row(cell('IT Initiative', p.it_initiative, 'var(--pill-blue-bg)', 'var(--pill-blue-fg)') + cell('City Initiative', p.city_initiative, 'var(--pill-orange-bg)', 'var(--pill-orange-fg)'));
   // Row 2: IT Priority Project | Data Program Goal
-  html += row(cell('IT Priority Project', p.it_priority_project, '#F0FDF4', '#166534') + cell('Data Program Goal', p.dp_goal, '#FDF4FF', '#86198F'));
+  html += row(cell('IT Priority Project', p.it_priority_project, 'var(--pill-green-bg)', 'var(--pill-green-fg)') + cell('Data Program Goal', p.dp_goal, 'var(--pill-purple-bg)', 'var(--pill-purple-fg)'));
   // Row 3: WWC Practice | WWC Criteria
-  html += row(cell('WWC Foundational Practice', p.wwc_practice, '#FFFBEB', '#92400E') + cell('WWC Criteria', p.wwc_criteria, '#F0F9FF', '#0C4A6E'));
+  html += row(cell('WWC Foundational Practice', p.wwc_practice, 'var(--pill-amber-bg)', 'var(--pill-amber-fg)') + cell('WWC Criteria', p.wwc_criteria, 'var(--pill-cyan-bg)', 'var(--pill-cyan-fg)'));
   html += '</div>';
   return html;
 }
@@ -745,7 +745,7 @@ function buildProjectTimeline(p, relTasks) {
   html += '<div style="position:relative;height:16px;margin-bottom:2px;">' + months + '</div>';
 
   html += '<div id="' + tlId + '" style="position:relative;cursor:crosshair;" onmousemove="tlHover(event,this)" onmouseleave="tlLeave(this)" data-tasks="' + taskDataJson.replace(/"/g, '&quot;') + '" data-range-start="' + rangeStart + '" data-total-days="' + totalDays + '">';
-  html += '<div style="position:relative;height:28px;background:#F3F1EB;border-radius:6px;overflow:hidden;">';
+  html += '<div style="position:relative;height:28px;background:var(--surface-2);border-radius:6px;overflow:hidden;">';
   html += '<div style="position:absolute;left:' + projLeftPct + '%;width:' + projWidthPct + '%;height:100%;background:var(--navy);border-radius:6px;"></div>';
   if (todayPct > 0 && todayPct < 100) {
     html += '<div style="position:absolute;left:' + todayPct + '%;top:0;bottom:0;width:2px;background:#EF4444;opacity:0.8;z-index:3;"></div>';
@@ -808,7 +808,7 @@ function renderProjectDetail(id) {
 
   const memberChips = allMembers.map(name => {
     const av = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-    return `<span style="display:inline-flex;align-items:center;gap:5px;background:#F3F1EB;border:1px solid #E8E6DF;border-radius:20px;padding:4px 12px 4px 6px;font-size:12px;white-space:nowrap;color:var(--text-body);">
+    return `<span style="display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);border:1px solid #E8E6DF;border-radius:20px;padding:4px 12px 4px 6px;font-size:12px;white-space:nowrap;color:var(--text-body);">
       <span style="width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:8px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">${av}</span>${esc(name)}</span>`;
   }).join('');
 
@@ -831,13 +831,13 @@ function renderProjectDetail(id) {
       </div>
       <div class="detail-task-cell"><span class="priority-badge priority-${t.priority||'null'}">${t.priority||'—'}</span></div>
       <div onclick="event.stopPropagation()">
-        <select class="dt-inline-select" data-task-id="${t.objectId}" onchange="inlineTaskAssignee(this)" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid #E8E6DF;color:${t.assignee ? '#374151' : '#9CA3AF'};font-family:Lato,sans-serif;cursor:pointer;width:100%;background:#fff;">
+        <select class="dt-inline-select" data-task-id="${t.objectId}" onchange="inlineTaskAssignee(this)" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid #E8E6DF;color:${t.assignee ? 'var(--text-body)' : 'var(--text-muted)'};font-family:Lato,sans-serif;cursor:pointer;width:100%;background:var(--white);">
           <option value=""${!t.assignee ? ' selected' : ''}>Unassigned</option>
           ${(RESOURCES_DATA ? Object.keys(RESOURCES_DATA.people).filter(function(n) { return RESOURCES_DATA.people[n].active !== false; }).sort() : []).map(function(n) { return '<option value="' + esc(n) + '"' + (t.assignee === n ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('')}
         </select>
       </div>
       <div onclick="event.stopPropagation()">
-        <input type="date" class="dt-inline-date" data-task-id="${t.objectId}" data-has-due="${t.due ? '1' : ''}" onchange="inlineTaskDueDate(this)" value="${t.working_due||t.due||''}" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid #E8E6DF;color:${(t.working_due||t.due) ? '#374151' : '#9CA3AF'};font-family:Lato,sans-serif;cursor:pointer;width:100%;">
+        <input type="date" class="dt-inline-date" data-task-id="${t.objectId}" data-has-due="${t.due ? '1' : ''}" onchange="inlineTaskDueDate(this)" value="${t.working_due||t.due||''}" style="font-size:11px;padding:2px 4px;border-radius:6px;border:1px solid #E8E6DF;color:${(t.working_due||t.due) ? 'var(--text-body)' : 'var(--text-muted)'};font-family:Lato,sans-serif;cursor:pointer;width:100%;">
       </div>
       <div class="detail-task-cell" style="font-weight:700;color:var(--navy);">${hrsDisplay}</div>
     </div>`;
@@ -891,7 +891,7 @@ function renderProjectDetail(id) {
   // Project hours total
   const projTotalHrs = getProjectHours(p.title);
   const projMyHrs = getMyProjectHours(p.title);
-  const projHrsRow = relTasks.length && projTotalHrs > 0 ? `<div class="detail-task-row" style="background:#F0F4FF;cursor:default;font-weight:700;">
+  const projHrsRow = relTasks.length && projTotalHrs > 0 ? `<div class="detail-task-row" style="background:var(--surface-2);cursor:default;font-weight:700;">
     <div></div>
     <div></div>
     <div class="detail-task-title" style="font-weight:800;color:var(--navy);">Total</div>
@@ -924,7 +924,7 @@ function renderProjectDetail(id) {
         <div class="detail-hero-title">${esc(p.title)}</div>
         <div class="detail-hero-badges">
           <span class="priority-badge priority-${p.priority||'null'}">${p.priority||'—'}</span>
-          ${p.is_data_program ? '<span class="detail-hero-chip" style="background:#FFF7ED;color:#9A3412;border-color:#FED7AA;">Data Program</span>' : ''}
+          ${p.is_data_program ? '<span class="detail-hero-chip" style="background:var(--pill-orange-bg);color:var(--pill-orange-fg);border-color:transparent;">Data Program</span>' : ''}
           ${projTotalHrs > 0 ? `<span class="detail-hero-chip">⏱ ${hoursLabel(projTotalHrs, projMyHrs)}</span>` : ''}
           ${p.actual_end ? `<span class="detail-hero-chip">✓ Completed ${p.actual_end}</span>` : ''}
         </div>
@@ -941,7 +941,7 @@ function renderProjectDetail(id) {
           <div class="detail-meta-item"><label>Unit</label><p>${esc(p.itd_team||'—')}</p></div>
           <div class="detail-meta-item"><label>Category</label><p>${esc(p.category||'—')}</p></div>
           <div class="detail-meta-item"><label>Project Size</label><p>${esc(p.project_size||'—')}</p></div>
-          <div class="detail-meta-item"><label>Data Program</label><p>${p.is_data_program ? '<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:#FFF7ED;color:#9A3412;">Yes</span>' : '—'}</p></div>
+          <div class="detail-meta-item"><label>Data Program</label><p>${p.is_data_program ? '<span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--pill-orange-bg);color:var(--pill-orange-fg);">Yes</span>' : '—'}</p></div>
           <div class="detail-meta-item"><label>Start Date</label><p>${p.start||'—'}</p></div>
           <div class="detail-meta-item"><label>Working Due Date</label><p>${p.working_due || p.end || '—'}</p></div>
           ${p.actual_end ? `<div class="detail-meta-item"><label>Actual End</label><p>${p.actual_end}</p></div>` : ''}
@@ -1010,12 +1010,12 @@ function renderProjectDetail(id) {
               '<div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">' + initials + '</div>' +
               '<div style="flex:1;min-width:0;">' +
                 '<div style="font-size:13px;font-weight:700;color:var(--navy);">' + esc(ph.name) + '</div>' +
-                '<div style="height:4px;background:#E8E6DF;border-radius:2px;margin-top:3px;"><div style="height:4px;background:var(--navy);border-radius:2px;width:' + barPct + '%;"></div></div>' +
+                '<div style="height:4px;background:var(--surface-2);border-radius:2px;margin-top:3px;"><div style="height:4px;background:var(--navy);border-radius:2px;width:' + barPct + '%;"></div></div>' +
               '</div>' +
               '<div style="font-size:14px;font-weight:800;color:var(--navy);min-width:50px;text-align:right;">' + ph.hours + 'h</div>' +
             '</div>';
           }).join('');
-          return '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;">' +
+          return '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:10px;padding:12px 16px;">' +
             rows +
             '<div style="display:flex;justify-content:space-between;padding:8px 0 0;margin-top:4px;border-top:2px solid #E8E6DF;font-size:13px;font-weight:800;color:var(--navy);">' +
               '<span>Total</span><span>' + totalHrs + 'h</span>' +

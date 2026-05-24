@@ -80,7 +80,7 @@ function _calibQLabel(q) { var parts = String(q).split('-Q'); return 'Q' + parts
 function _calibTrendTile(projStats, plannedField) {
   var series = _calibQuarterlyTrend(projStats, plannedField, 8).filter(function(s) { return s.n >= 2; });
   if (series.length < 2) {
-    return '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:12px;color:var(--text-muted);">Estimate-accuracy trend needs at least two completion quarters with data — it will appear as more projects complete.</div>';
+    return '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:12px;color:var(--text-muted);">Estimate-accuracy trend needs at least two completion quarters with data — it will appear as more projects complete.</div>';
   }
   var latest = series[series.length - 1];
   var earlier = series.slice(0, series.length - 1);
@@ -111,7 +111,7 @@ function _calibTrendTile(projStats, plannedField) {
   svg += '<text x="' + x(series.length - 1) + '" y="' + (H - 4) + '" text-anchor="end" font-size="8" fill="#9CA3AF" font-family="Lato,sans-serif">' + _calibQLabel(latest.q) + '</text>';
   svg += '</svg>';
 
-  var html = '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:14px 18px;margin-bottom:16px;">';
+  var html = '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:10px;padding:14px 18px;margin-bottom:16px;">';
   html += '<div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:8px;">Are we learning to estimate?</div>';
   html += '<div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap;">';
   html += '<div style="flex:0 0 auto;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);">Latest quarter</div>';
@@ -188,7 +188,7 @@ function _calibAggregate(items, keyFn) {
 }
 
 function _calibRenderTable(title, keyColLabel, data) {
-  var html = '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:12px;padding:16px 20px;margin-bottom:16px;">';
+  var html = '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:12px;padding:16px 20px;margin-bottom:16px;">';
   html += '<div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:12px;">' + esc(title) + '</div>';
   if (data.length === 0) {
     html += '<div style="color:var(--text-muted);font-size:12px;font-style:italic;">No projects completed in this window with planned & actual dates set.</div></div>';
@@ -224,7 +224,7 @@ function _calibRenderSizeTable(data) {
   var sizes = ['S', 'M', 'L', 'XL'];
   var byKey = {};
   data.forEach(function(g) { byKey[g.key] = g; });
-  var html = '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:#fff;"><table class="member-table" style="margin:0;">';
+  var html = '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:var(--white);"><table class="member-table" style="margin:0;">';
   html += '<thead><tr><th>Size</th>';
   html += '<th style="text-align:right;">Projects</th>';
   html += '<th style="text-align:right;">Default</th>';
@@ -361,7 +361,7 @@ function buildInsightsPage() {
 
   if (completed.length === 0) {
     return '<div style="padding:28px 32px;"><div style="margin-bottom:24px;"><div style="font-size:22px;font-weight:800;color:var(--navy);margin-bottom:4px;">💡 Project Insights</div><div style="font-size:13px;color:var(--text-muted);">Retrospective data from completed projects.</div></div>' +
-      '<div style="text-align:center;padding:60px;color:var(--text-muted);font-size:14px;background:#fff;border:1px solid #E8E6DF;border-radius:12px;"><div style="font-size:48px;margin-bottom:12px;">📊</div><div style="font-weight:700;font-size:16px;margin-bottom:6px;color:var(--navy);">No completed projects yet</div><div>As projects are completed and time is logged, charts and retrospective data will appear here.</div></div></div>';
+      '<div style="text-align:center;padding:60px;color:var(--text-muted);font-size:14px;background:var(--white);border:1px solid #E8E6DF;border-radius:12px;"><div style="font-size:48px;margin-bottom:12px;">📊</div><div style="font-weight:700;font-size:16px;margin-bottom:6px;color:var(--navy);">No completed projects yet</div><div>As projects are completed and time is logged, charts and retrospective data will appear here.</div></div></div>';
   }
 
   // === DURATION CALIBRATION SECTION ===
@@ -440,7 +440,7 @@ function buildInsightsPage() {
     catSvg += '<text x="' + (catLabelW + bw + 6) + '" y="' + (y + catBarH / 2 + 4) + '" font-size="10" font-weight="700" fill="#374151" font-family="Lato,sans-serif">' + c.hours + 'h</text>';
   });
   catSvg += '</svg>';
-  var byCatTable = '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:#fff;"><table class="member-table" style="margin:0;"><thead><tr><th>Category</th><th style="text-align:center;">Projects</th><th style="text-align:right;">Total Hours</th><th style="text-align:right;">Avg Hours</th></tr></thead><tbody>' +
+  var byCatTable = '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:var(--white);"><table class="member-table" style="margin:0;"><thead><tr><th>Category</th><th style="text-align:center;">Projects</th><th style="text-align:right;">Total Hours</th><th style="text-align:right;">Avg Hours</th></tr></thead><tbody>' +
     catEntries.map(function(c) { return '<tr><td style="font-weight:700;color:var(--navy);max-width:200px;overflow:hidden;text-overflow:ellipsis;">' + esc(c.category) + '</td><td style="text-align:center;">' + c.count + '</td><td style="text-align:right;">' + c.hours + 'h</td><td style="text-align:right;">' + (c.avg > 0 ? c.avg + 'h' : '—') + '</td></tr>'; }).join('') + '</tbody></table></div>';
 
   // === CHART 3: Timeline scatter ===
@@ -488,7 +488,7 @@ function buildInsightsPage() {
     if (p.onTime === false) onTimeBadge = '<span style="font-size:10px;color:#EF4444;font-weight:700;">Late</span>';
     return '<tr><td style="font-weight:700;color:var(--navy);max-width:200px;overflow:hidden;text-overflow:ellipsis;" title="' + esc(p.title) + '">' + esc(p.title) + '</td><td style="text-align:center;">' + sizeBadge + '</td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--text-muted);">' + esc(p.category) + '</td><td style="text-align:right;font-weight:700;">' + (p.hours > 0 ? p.hours + 'h' : '—') + '</td><td style="text-align:center;">' + (p.teamSize > 0 ? p.teamSize : '—') + '</td><td style="text-align:right;">' + (p.durWeeks ? p.durWeeks + ' wks' : '—') + '</td><td style="text-align:center;">' + onTimeBadge + '</td></tr>';
   }).join('');
-  var projTable = '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:#fff;"><table class="member-table" style="margin:0;"><thead><tr><th>Project</th><th style="text-align:center;">Size</th><th>Category</th><th style="text-align:right;">Hours</th><th style="text-align:center;">Team</th><th style="text-align:right;">Duration</th><th style="text-align:center;">Delivery</th></tr></thead><tbody>' + projRows + '</tbody></table></div>';
+  var projTable = '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:var(--white);"><table class="member-table" style="margin:0;"><thead><tr><th>Project</th><th style="text-align:center;">Size</th><th>Category</th><th style="text-align:right;">Hours</th><th style="text-align:center;">Team</th><th style="text-align:right;">Duration</th><th style="text-align:center;">Delivery</th></tr></thead><tbody>' + projRows + '</tbody></table></div>';
 
   // === CHART 4: Team donut ===
   var teamMap = {};
@@ -524,7 +524,7 @@ function buildInsightsPage() {
       donutSvg += '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px;"><div style="width:10px;height:10px;border-radius:2px;background:' + col + ';flex-shrink:0;"></div><span style="flex:1;color:#374151;font-weight:600;">' + esc(t.name) + '</span><span style="font-weight:700;color:var(--navy);">' + t.hours + 'h</span><span style="font-size:10px;color:#9CA3AF;min-width:30px;text-align:right;">' + Math.round(t.hours / teamTotal * 100) + '%</span></div>';
     });
     donutSvg += '</div></div>';
-    teamTable = '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:#fff;"><table class="member-table" style="margin:0;"><thead><tr><th>Team Member</th><th style="text-align:right;">Hours</th><th style="text-align:right;">% of Total</th></tr></thead><tbody>' +
+    teamTable = '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:var(--white);"><table class="member-table" style="margin:0;"><thead><tr><th>Team Member</th><th style="text-align:right;">Hours</th><th style="text-align:right;">% of Total</th></tr></thead><tbody>' +
       teamEntries.map(function(t) { return '<tr><td style="font-weight:700;color:var(--navy);">' + esc(t.name) + '</td><td style="text-align:right;">' + t.hours + 'h</td><td style="text-align:right;">' + Math.round(t.hours / teamTotal * 100) + '%</td></tr>'; }).join('') + '</tbody></table></div>';
   }
 
@@ -537,12 +537,12 @@ function buildInsightsPage() {
   html += (typeof buildRiskSection === 'function' ? buildRiskSection() : '');
   html += buildPlannedActualSection();
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px;">';
-  html += '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:16px;padding:16px 20px;"><div style="display:flex;align-items:center;margin-bottom:12px;"><div style="font-size:15px;font-weight:800;color:var(--navy);">Effort by project size <span style="font-size:11px;font-weight:600;color:var(--text-muted);margin-left:6px;">B · Size calibration in Table view</span></div>' + insToggleBtns('size') + '</div><div id="ins-size-chart" style="padding:8px 0;">' + sizeSvg + '</div><div id="ins-size-table" style="display:none;">' + bySizeTable + '</div></div>';
-  html += '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:16px;padding:16px 20px;"><div style="display:flex;align-items:center;margin-bottom:12px;"><div style="font-size:15px;font-weight:800;color:var(--navy);">Effort by category</div>' + insToggleBtns('cat') + '</div><div id="ins-cat-chart" style="padding:8px 0;">' + catSvg + '</div><div id="ins-cat-table" style="display:none;">' + byCatTable + '</div></div>';
+  html += '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:16px;padding:16px 20px;"><div style="display:flex;align-items:center;margin-bottom:12px;"><div style="font-size:15px;font-weight:800;color:var(--navy);">Effort by project size <span style="font-size:11px;font-weight:600;color:var(--text-muted);margin-left:6px;">B · Size calibration in Table view</span></div>' + insToggleBtns('size') + '</div><div id="ins-size-chart" style="padding:8px 0;">' + sizeSvg + '</div><div id="ins-size-table" style="display:none;">' + bySizeTable + '</div></div>';
+  html += '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:16px;padding:16px 20px;"><div style="display:flex;align-items:center;margin-bottom:12px;"><div style="font-size:15px;font-weight:800;color:var(--navy);">Effort by category</div>' + insToggleBtns('cat') + '</div><div id="ins-cat-chart" style="padding:8px 0;">' + catSvg + '</div><div id="ins-cat-table" style="display:none;">' + byCatTable + '</div></div>';
   html += '</div>';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px;">';
-  html += '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:16px;padding:16px 20px;"><div style="display:flex;align-items:center;margin-bottom:12px;"><div style="font-size:15px;font-weight:800;color:var(--navy);">Completion timeline</div>' + insToggleBtns('timeline') + '</div><div id="ins-timeline-chart" style="padding:8px 0;">' + (tlSvg || '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:12px;">Not enough date data yet</div>') + '</div><div id="ins-timeline-table" style="display:none;">' + projTable + '</div></div>';
-  html += '<div style="background:#fff;border:1px solid #E8E6DF;border-radius:16px;padding:16px 20px;"><div style="display:flex;align-items:center;margin-bottom:12px;"><div style="font-size:15px;font-weight:800;color:var(--navy);">Hours by team member</div>' + insToggleBtns('team') + '</div><div id="ins-team-chart" style="padding:8px 0;">' + (donutSvg || '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:12px;">No time entries recorded yet</div>') + '</div><div id="ins-team-table" style="display:none;">' + (teamTable || '') + '</div></div>';
+  html += '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:16px;padding:16px 20px;"><div style="display:flex;align-items:center;margin-bottom:12px;"><div style="font-size:15px;font-weight:800;color:var(--navy);">Completion timeline</div>' + insToggleBtns('timeline') + '</div><div id="ins-timeline-chart" style="padding:8px 0;">' + (tlSvg || '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:12px;">Not enough date data yet</div>') + '</div><div id="ins-timeline-table" style="display:none;">' + projTable + '</div></div>';
+  html += '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:16px;padding:16px 20px;"><div style="display:flex;align-items:center;margin-bottom:12px;"><div style="font-size:15px;font-weight:800;color:var(--navy);">Hours by team member</div>' + insToggleBtns('team') + '</div><div id="ins-team-chart" style="padding:8px 0;">' + (donutSvg || '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:12px;">No time entries recorded yet</div>') + '</div><div id="ins-team-table" style="display:none;">' + (teamTable || '') + '</div></div>';
   html += '</div></div>';
   return html;
 }
@@ -690,11 +690,11 @@ function _paComputeAggregation() {
 
 function _paHrs(h) { return Math.round(h) + 'h'; }
 function _paNote(msg) {
-  return '<div style="background:#fff;border:1px dashed #E8E6DF;border-radius:10px;padding:24px;text-align:center;color:var(--text-muted);font-size:13px;line-height:1.5;">' + msg + '</div>';
+  return '<div style="background:var(--white);border:1px dashed #E8E6DF;border-radius:10px;padding:24px;text-align:center;color:var(--text-muted);font-size:13px;line-height:1.5;">' + msg + '</div>';
 }
 function _paVarChip(planned, actual) {
   if (!planned || planned <= 0) {
-    if (actual > 0) return '<span style="display:inline-block;background:#F3F4F6;color:#6B7280;padding:2px 8px;border-radius:10px;font-weight:700;font-size:11px;">unplanned</span>';
+    if (actual > 0) return '<span style="display:inline-block;background:var(--surface-2);color:#6B7280;padding:2px 8px;border-radius:10px;font-weight:700;font-size:11px;">unplanned</span>';
     return '<span style="color:var(--text-muted);">—</span>';
   }
   var r = actual / planned;
@@ -741,12 +741,12 @@ function buildPlannedActualSection() {
   }
 
   html += '<div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Across ' + agg.weeksCovered + ' reflected week' + (agg.weeksCovered === 1 ? '' : 's') + ' (current and future weeks are excluded — not yet reflected). Click an employee to expand their projects in that category.</div>';
-  html += '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:#fff;"><table class="member-table" style="margin:0;"><thead><tr>';
+  html += '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:var(--white);"><table class="member-table" style="margin:0;"><thead><tr>';
   html += '<th>Category / Employee</th><th style="text-align:right;">Planned</th><th style="text-align:right;">Actual</th><th style="text-align:center;">Variance</th></tr></thead><tbody>';
 
   var rowSeq = 0;
   agg.categories.forEach(function(cat) {
-    html += '<tr style="background:#F8FAFC;"><td style="font-weight:800;color:var(--navy);">' + esc(cat.category) + '</td>'
+    html += '<tr style="background:var(--surface-2);"><td style="font-weight:800;color:var(--navy);">' + esc(cat.category) + '</td>'
       + '<td style="text-align:right;font-weight:700;">' + _paHrs(cat.planned) + '</td>'
       + '<td style="text-align:right;font-weight:700;">' + _paHrs(cat.actual) + '</td>'
       + '<td style="text-align:center;">' + _paVarChip(cat.planned, cat.actual) + '</td></tr>';
@@ -759,7 +759,7 @@ function buildPlannedActualSection() {
         + '<td style="text-align:right;">' + _paHrs(emp.actual) + '</td>'
         + '<td style="text-align:center;">' + _paVarChip(emp.planned, emp.actual) + '</td></tr>';
       emp.projects.forEach(function(pr) {
-        html += '<tr data-pa-parent="' + id + '" style="display:none;background:#FCFCFB;">'
+        html += '<tr data-pa-parent="' + id + '" style="display:none;background:var(--surface-2);">'
           + '<td style="padding-left:48px;font-size:12px;color:var(--text-body);">' + esc(pr.title) + '</td>'
           + '<td style="text-align:right;font-size:12px;">' + _paHrs(pr.planned) + '</td>'
           + '<td style="text-align:right;font-size:12px;">' + _paHrs(pr.actual) + '</td>'

@@ -287,11 +287,11 @@ function buildRiskSection() {
   html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">In-flight early-warning score from leading indicators (schedule drift, overdue/aging tasks, stalled work, pace, single-thread staffing). Additive and transparent — click a project for the per-factor breakdown. Tune weights and the calibration set in Settings → Project Risk.</div>';
 
   if (!scored.length) {
-    html += '<div style="background:#fff;border:1px dashed #E8E6DF;border-radius:10px;padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">No active or scheduled projects to score.</div></div>';
+    html += '<div style="background:var(--white);border:1px dashed #E8E6DF;border-radius:10px;padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">No active or scheduled projects to score.</div></div>';
     return html;
   }
 
-  html += '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:#fff;"><table class="member-table" style="margin:0;"><thead><tr>';
+  html += '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:var(--white);"><table class="member-table" style="margin:0;"><thead><tr>';
   html += '<th>Project</th><th style="text-align:center;">Risk</th><th>Top drivers</th><th>Lead</th></tr></thead><tbody>';
   scored.forEach(function(row, i) {
     var p = row.p, r = row.r, id = 'rk' + i;
@@ -301,7 +301,7 @@ function buildRiskSection() {
     html += '<td>' + _rkChips(r.factors) + '</td>';
     html += '<td style="font-size:12px;">' + esc(p.contact || '—') + '</td></tr>';
     // Hidden breakdown row
-    html += '<tr data-rk-parent="' + id + '" style="display:none;background:#FCFCFB;"><td colspan="4" style="padding:12px 18px;">';
+    html += '<tr data-rk-parent="' + id + '" style="display:none;background:var(--surface-2);"><td colspan="4" style="padding:12px 18px;">';
     html += _rkBreakdownHtml(r);
     html += '</td></tr>';
   });
@@ -318,7 +318,7 @@ function _rkBreakdownHtml(r) {
     var barColor = f.na ? '#E5E7EB' : (f.severity >= 0.66 ? '#DC2626' : f.severity >= 0.33 ? '#CA8A04' : '#16A34A');
     html += '<div style="display:grid;grid-template-columns:170px 1fr 90px;gap:10px;align-items:center;' + (f.na ? 'opacity:0.5;' : '') + '">';
     html += '<div><div style="font-weight:700;font-size:12px;color:var(--navy);">' + esc(f.label) + '</div><div style="font-size:11px;color:var(--text-muted);">' + esc(f.detail) + '</div></div>';
-    html += '<div style="height:9px;background:#E5E7EB;border-radius:5px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + barColor + ';"></div></div>';
+    html += '<div style="height:9px;background:var(--surface-2);border-radius:5px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + barColor + ';"></div></div>';
     html += '<div style="text-align:right;font-weight:800;font-size:12px;font-variant-numeric:tabular-nums;">' + (f.na ? 'n/a' : (Math.round(f.points) + '/' + f.weight)) + '</div>';
     html += '</div>';
   });
@@ -362,10 +362,10 @@ function renderRiskConfigPanel() {
   // Weights
   html += '<div class="settings-section"><div class="settings-section-header">Factor weights</div>';
   html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Relative weight of each risk factor. The score is the weighted average of the factors that have data (n/a factors are excluded and their weight redistributed). Total: <strong id="rk-weight-total">' + totalWeight + '</strong>.</div>';
-  html += '<div class="tbl-wrap" style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:8px 14px;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
+  html += '<div class="tbl-wrap" style="background:var(--white);border:1px solid #E8E6DF;border-radius:10px;padding:8px 14px;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
   html += '<thead><tr><th style="text-align:left;padding:6px;">Factor</th><th style="width:90px;text-align:right;padding:6px;">Weight</th><th style="text-align:left;padding:6px;">What it measures</th></tr></thead><tbody>';
   RISK_FACTORS.forEach(function(f) {
-    var statusTag = f.status === 'pending' ? ' <span style="font-size:9px;font-weight:700;background:#F3F4F6;color:#6B7280;padding:1px 5px;border-radius:6px;">pending data</span>' : '';
+    var statusTag = f.status === 'pending' ? ' <span style="font-size:9px;font-weight:700;background:var(--surface-2);color:#6B7280;padding:1px 5px;border-radius:6px;">pending data</span>' : '';
     html += '<tr><td style="padding:6px;font-weight:700;color:var(--navy);">' + esc(f.label) + statusTag + '</td>';
     html += '<td style="padding:6px;text-align:right;"><input type="number" min="0" max="100" value="' + (w[f.key] || 0) + '" onchange="rkCfgSet(\'weights\',\'' + f.key + '\',this.value)" style="width:64px;padding:4px 6px;border:1px solid var(--border);border-radius:5px;text-align:right;"></td>';
     html += '<td style="padding:6px;color:var(--text-muted);">' + esc(f.desc) + '</td></tr>';
@@ -424,7 +424,7 @@ function renderRiskCalibTable() {
   if (!c) return;
   var ctx = _rkBuildContext();
   var modeLabel = {}; RISK_MODES.forEach(function(m) { modeLabel[m.key] = m; });
-  var html = '<div class="tbl-wrap" style="background:#fff;border:1px solid #E8E6DF;border-radius:10px;padding:8px 14px;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
+  var html = '<div class="tbl-wrap" style="background:var(--white);border:1px solid #E8E6DF;border-radius:10px;padding:8px 14px;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
   html += '<thead><tr><th style="text-align:left;padding:6px;">Project</th><th style="text-align:left;padding:6px;">Failure mode</th><th style="text-align:center;padding:6px;">Expected</th><th style="text-align:center;padding:6px;">Current score</th><th style="text-align:center;padding:6px;">Match</th><th style="padding:6px;"></th></tr></thead><tbody>';
   if (!_riskConfig.calibration.length) {
     html += '<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--text-muted);font-style:italic;">No calibration projects yet. Add some below.</td></tr>';

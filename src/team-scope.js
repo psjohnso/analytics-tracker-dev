@@ -223,7 +223,7 @@ function renderTeamSwitcher() {
   // Team lens — grouped by department (optgroups) when an org structure is set.
   function _tsOption(t) {
     var sel = cur && ((typeof sameTeam === 'function') ? sameTeam(t, cur) : (t === cur));
-    return '<option value="' + _tsEsc(t) + '" style="color:#111;background:#fff;"' + (sel ? ' selected' : '') + '>' + _tsEsc(t) + '</option>';
+    return '<option value="' + _tsEsc(t) + '" style="color:#111;background:var(--white);"' + (sel ? ' selected' : '') + '>' + _tsEsc(t) + '</option>';
   }
   var opts = '<option value=""' + (cur ? '' : ' selected') + '>All teams</option>';
   var teams = allKnownTeams();
@@ -261,7 +261,7 @@ function renderTeamSwitcher() {
   if (cur) roleItems.push(['lead', 'Lead of ' + cur]);
   roleItems.push(['member', cur ? ('Member of ' + cur) : 'Member (view as)']);
   var ropts = roleItems.map(function (r) {
-    return '<option value="' + r[0] + '"' + (role === r[0] ? ' selected' : '') + ' style="color:#111;background:#fff;">' + _tsEsc(r[1]) + '</option>';
+    return '<option value="' + r[0] + '"' + (role === r[0] ? ' selected' : '') + ' style="color:#111;background:var(--white);">' + _tsEsc(r[1]) + '</option>';
   }).join('');
   html += ' <select title="Act as role — admin only" onchange="setActAsRole(this.value)" style="' + sStyle + 'max-width:190px;' + (role !== 'admin' ? 'background:#FEF3C7;' : '') + '">' + ropts + '</select>';
 

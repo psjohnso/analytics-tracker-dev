@@ -85,10 +85,10 @@ function renderAllocDefaultsEditor() {
   var sizes = ['S', 'M', 'L', 'XL'];
   var sizeLabels = { S: 'Small', M: 'Medium', L: 'Large', XL: 'Extra large' };
   var roles = ['Lead', 'Contributor', 'Reviewer'];
-  var html = '<table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #E8E6DF;border-radius:10px;overflow:hidden;font-size:13px;">';
-  html += '<thead><tr><th style="background:#FDFCF8;padding:10px 14px;text-align:left;font-weight:700;color:var(--navy);border-bottom:2px solid #E8E6DF;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;">Size</th>';
+  var html = '<table style="width:100%;border-collapse:collapse;background:var(--white);border:1px solid #E8E6DF;border-radius:10px;overflow:hidden;font-size:13px;">';
+  html += '<thead><tr><th style="background:var(--surface-2);padding:10px 14px;text-align:left;font-weight:700;color:var(--navy);border-bottom:2px solid #E8E6DF;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;">Size</th>';
   roles.forEach(function(r) {
-    html += '<th style="background:#FDFCF8;padding:10px 14px;text-align:center;font-weight:700;color:var(--navy);border-bottom:2px solid #E8E6DF;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;">' + r + '</th>';
+    html += '<th style="background:var(--surface-2);padding:10px 14px;text-align:center;font-weight:700;color:var(--navy);border-bottom:2px solid #E8E6DF;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;">' + r + '</th>';
   });
   html += '</tr></thead><tbody>';
   sizes.forEach(function(s) {
@@ -537,7 +537,7 @@ function renderStatusHistoryEditor() {
     return '<option value="' + s + '">' + s + '</option>';
   }).join('');
 
-  container.innerHTML = '<div style="margin-top:16px;background:#F7F5EF;border:1px solid var(--border);border-radius:10px;padding:16px;">' +
+  container.innerHTML = '<div style="margin-top:16px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:16px;">' +
     '<div style="font-size:13px;font-weight:800;color:var(--navy);margin-bottom:10px;">Status History Editor</div>' +
     '<div style="margin-bottom:12px;">' + rowsHtml + '</div>' +
     '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
@@ -725,9 +725,9 @@ async function loadAndRenderTrash() {
       issue:   '<span style="display:inline-block;background:#FEE2E2;color:#991B1B;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase;">🐛 Issue</span>',
     };
 
-    var html = '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
+    var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
     html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
-    html += '<thead><tr style="background:#FDFCF8;">' +
+    html += '<thead><tr style="background:var(--surface-2);">' +
       '<th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--navy);border-bottom:2px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">Type</th>' +
       '<th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--navy);border-bottom:2px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">Title</th>' +
       '<th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--navy);border-bottom:2px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">Deleted by</th>' +
@@ -745,7 +745,7 @@ async function loadAndRenderTrash() {
       html += '<td style="padding:12px 14px;color:var(--text-muted);font-size:12px;">' + _trashTimeAgo(item.deleted_at) + '</td>';
       html += '<td style="padding:12px 14px;text-align:right;white-space:nowrap;">';
       html += '<button onclick="restoreFromTrash(\'' + item.type + '\',' + item.oid + ')" style="padding:5px 12px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;margin-right:6px;">Restore</button>';
-      html += '<button onclick="hardDeleteFromTrash(\'' + item.type + '\',' + item.oid + ',\'' + escapeAttr(item.title) + '\')" style="padding:5px 12px;background:#fff;color:#EF4444;border:1px solid #FECACA;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Permanent delete</button>';
+      html += '<button onclick="hardDeleteFromTrash(\'' + item.type + '\',' + item.oid + ',\'' + escapeAttr(item.title) + '\')" style="padding:5px 12px;background:var(--white);color:#EF4444;border:1px solid #FECACA;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Permanent delete</button>';
       html += '</td>';
       html += '</tr>';
     });
@@ -835,8 +835,8 @@ function buildDataProgramConfigPanel() {
   var html = '<div class="settings-panel-title">Data Program teams</div>';
   html += '<div class="settings-panel-desc">The four cross-team groups that make up the City Data Program. These names, colors, and descriptions appear everywhere the program is shown &mdash; project Classification fields, the "DA Lead" / "EDI Lead" badges in Team Members, the Overview Data Program section, and the lobby Slideshow.</div>';
 
-  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
-  html += '<div style="display:grid;grid-template-columns:36px 70px 60px minmax(0,1.2fr) minmax(0,2fr) 90px;gap:10px;align-items:center;padding:10px 14px;background:#FDFCF8;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
+  html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
+  html += '<div style="display:grid;grid-template-columns:36px 70px 60px minmax(0,1.2fr) minmax(0,2fr) 90px;gap:10px;align-items:center;padding:10px 14px;background:var(--surface-2);border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
   html += '<span title="Reorder">Order</span><span>ID</span><span>Color</span><span>Name</span><span>Description</span><span style="text-align:right;">Actions</span>';
   html += '</div>';
 
@@ -845,11 +845,11 @@ function buildDataProgramConfigPanel() {
     var isLast = (i === draft.teams.length - 1);
     html += '<div style="display:grid;grid-template-columns:36px 70px 60px minmax(0,1.2fr) minmax(0,2fr) 90px;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);">';
     html += '<div style="display:flex;flex-direction:column;gap:2px;">';
-    html += '<button onclick="dpEditMove(\'' + esc(t.id) + '\', -1)"' + (isFirst ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:#fff;border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (isFirst ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▲</button>';
-    html += '<button onclick="dpEditMove(\'' + esc(t.id) + '\', 1)"' + (isLast ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:#fff;border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (isLast ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▼</button>';
+    html += '<button onclick="dpEditMove(\'' + esc(t.id) + '\', -1)"' + (isFirst ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:var(--white);border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (isFirst ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▲</button>';
+    html += '<button onclick="dpEditMove(\'' + esc(t.id) + '\', 1)"' + (isLast ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:var(--white);border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (isLast ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▼</button>';
     html += '</div>';
     html += '<input type="text" value="' + esc(t.id) + '" oninput="dpEditField(\'' + esc(t.id) + '\', \'id\', this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:Lato,sans-serif;font-weight:700;color:var(--navy);min-width:0;width:100%;">';
-    html += '<input type="color" value="' + esc(t.color || '#002669') + '" oninput="dpEditField(\'' + esc(t.id) + '\', \'color\', this.value)" style="width:48px;height:30px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:#fff;padding:2px;">';
+    html += '<input type="color" value="' + esc(t.color || '#002669') + '" oninput="dpEditField(\'' + esc(t.id) + '\', \'color\', this.value)" style="width:48px;height:30px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--white);padding:2px;">';
     html += '<input type="text" value="' + esc(t.name) + '" oninput="dpEditField(\'' + esc(t.id) + '\', \'name\', this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:Lato,sans-serif;color:var(--text-body);min-width:0;width:100%;">';
     html += '<input type="text" value="' + esc(t.description || '') + '" oninput="dpEditField(\'' + esc(t.id) + '\', \'description\', this.value)" placeholder="Brief description…" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:Lato,sans-serif;color:var(--text-muted);min-width:0;width:100%;">';
     html += '<div style="text-align:right;"><button onclick="dpEditDelete(\'' + esc(t.id) + '\')" style="padding:4px 8px;border:1px solid #FECACA;background:#FEF2F2;color:#B91C1C;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;font-family:Lato,sans-serif;">🗑 Remove</button></div>';
@@ -858,9 +858,9 @@ function buildDataProgramConfigPanel() {
   html += '</div>';
 
   html += '<div style="margin-top:14px;display:flex;gap:8px;align-items:center;">';
-  html += '<button onclick="dpEditAdd()" class="settings-btn" style="background:#fff;border:1px solid var(--border);color:var(--navy);">+ Add team</button>';
+  html += '<button onclick="dpEditAdd()" class="settings-btn" style="background:var(--white);border:1px solid var(--border);color:var(--navy);">+ Add team</button>';
   html += '<button onclick="dpEditSave()" class="settings-btn settings-btn-primary" style="margin-left:auto;">Save changes</button>';
-  html += '<button onclick="dpEditDiscard()" class="settings-btn" style="background:#fff;border:1px solid var(--border);color:var(--navy);">Discard</button>';
+  html += '<button onclick="dpEditDiscard()" class="settings-btn" style="background:var(--white);border:1px solid var(--border);color:var(--navy);">Discard</button>';
   html += '</div>';
 
   html += '<div style="background:#FFFBEB;border-left:3px solid #FCD34D;border-radius:0 6px 6px 0;padding:10px 14px;margin-top:14px;font-size:12px;color:#92400E;">';
@@ -1030,8 +1030,8 @@ function _tiArrayRowControls(section, idx, total) {
   var isFirst = idx === 0;
   var isLast = idx === total - 1;
   var html = '<div style="display:flex;flex-direction:column;gap:2px;">';
-  html += '<button onclick="tiEditMove(\'' + section + '\',' + idx + ',-1)"' + (isFirst ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:#fff;border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (isFirst ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▲</button>';
-  html += '<button onclick="tiEditMove(\'' + section + '\',' + idx + ',1)"' + (isLast ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:#fff;border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (isLast ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▼</button>';
+  html += '<button onclick="tiEditMove(\'' + section + '\',' + idx + ',-1)"' + (isFirst ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:var(--white);border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (isFirst ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▲</button>';
+  html += '<button onclick="tiEditMove(\'' + section + '\',' + idx + ',1)"' + (isLast ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:var(--white);border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (isLast ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▼</button>';
   html += '</div>';
   return html;
 }
@@ -1062,7 +1062,7 @@ function buildTeamIntroConfigPanel() {
   html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#EEF2FF;border:1px solid #C7D2FE;border-radius:8px;padding:8px 12px;font-size:12px;color:var(--navy);margin-bottom:16px;">';
   if (isAdminUser) {
     var _tiTeams = (typeof allKnownTeams === 'function') ? allKnownTeams() : [_tiHomeTeam()];
-    html += 'Editing intro for: <select onchange="tiSetEditTeam(this.value)" style="font-family:Lato,sans-serif;font-size:12px;font-weight:700;color:var(--navy);border:1px solid #C7D2FE;border-radius:5px;padding:3px 8px;background:#fff;">' +
+    html += 'Editing intro for: <select onchange="tiSetEditTeam(this.value)" style="font-family:Lato,sans-serif;font-size:12px;font-weight:700;color:var(--navy);border:1px solid #C7D2FE;border-radius:5px;padding:3px 8px;background:var(--white);">' +
       _tiTeams.map(function(t) {
         var sel = (typeof sameTeam === 'function') ? sameTeam(t, _tiEditTeam) : (t === _tiEditTeam);
         return '<option value="' + esc(t) + '"' + (sel ? ' selected' : '') + '>' + esc(t) + '</option>';
@@ -1080,8 +1080,8 @@ function buildTeamIntroConfigPanel() {
 
   // Services section
   html += _tiSectionHeader('What we do · service areas', 'Each row is one service card on the Overview page.');
-  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
-  html += '<div style="display:grid;grid-template-columns:36px 50px minmax(0,1fr) minmax(0,2fr) 50px;gap:10px;align-items:center;padding:8px 12px;background:#FDFCF8;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
+  html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
+  html += '<div style="display:grid;grid-template-columns:36px 50px minmax(0,1fr) minmax(0,2fr) 50px;gap:10px;align-items:center;padding:8px 12px;background:var(--surface-2);border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
   html += '<span>Order</span><span>Icon</span><span>Title</span><span>Description</span><span></span>';
   html += '</div>';
   draft.services.forEach(function(s, i) {
@@ -1094,14 +1094,14 @@ function buildTeamIntroConfigPanel() {
     html += '</div>';
   });
   html += '</div>';
-  html += '<div style="margin-top:8px;"><button onclick="tiEditAdd(\'services\')" class="settings-btn" style="background:#fff;border:1px solid var(--border);color:var(--navy);">+ Add service</button></div>';
+  html += '<div style="margin-top:8px;"><button onclick="tiEditAdd(\'services\')" class="settings-btn" style="background:var(--white);border:1px solid var(--border);color:var(--navy);">+ Add service</button></div>';
 
   // Goals section
   html += _tiSectionHeader('Goals · this year', 'Year-tagged objectives. Update annually. Goal body supports inline HTML (<code>&lt;code&gt;</code>, <code>&lt;strong&gt;</code>, etc.).');
   html += _tiInputRow('Goals heading', 'goalsHeading', draft.goalsHeading, 'Where we’re going · 2026');
   html += _tiInputRow('Goals lede', 'goalsLede', draft.goalsLede, 'Four bets that define a successful year.');
-  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:10px;">';
-  html += '<div style="display:grid;grid-template-columns:36px 50px minmax(0,1fr) minmax(0,2fr) 50px;gap:10px;align-items:center;padding:8px 12px;background:#FDFCF8;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
+  html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:10px;">';
+  html += '<div style="display:grid;grid-template-columns:36px 50px minmax(0,1fr) minmax(0,2fr) 50px;gap:10px;align-items:center;padding:8px 12px;background:var(--surface-2);border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
   html += '<span>Order</span><span>#</span><span>Title</span><span>Body (HTML)</span><span></span>';
   html += '</div>';
   draft.goals.forEach(function(g, i) {
@@ -1114,12 +1114,12 @@ function buildTeamIntroConfigPanel() {
     html += '</div>';
   });
   html += '</div>';
-  html += '<div style="margin-top:8px;"><button onclick="tiEditAdd(\'goals\')" class="settings-btn" style="background:#fff;border:1px solid var(--border);color:var(--navy);">+ Add goal</button></div>';
+  html += '<div style="margin-top:8px;"><button onclick="tiEditAdd(\'goals\')" class="settings-btn" style="background:var(--white);border:1px solid var(--border);color:var(--navy);">+ Add goal</button></div>';
 
   // Partners section
   html += _tiSectionHeader('Partner departments', '"Match" terms (comma-separated) are substring patterns used to count active projects per partner. Match is lowercased before comparison.');
-  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
-  html += '<div style="display:grid;grid-template-columns:36px 50px minmax(0,1.2fr) minmax(0,1.5fr) 50px;gap:10px;align-items:center;padding:8px 12px;background:#FDFCF8;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
+  html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
+  html += '<div style="display:grid;grid-template-columns:36px 50px minmax(0,1.2fr) minmax(0,1.5fr) 50px;gap:10px;align-items:center;padding:8px 12px;background:var(--surface-2);border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
   html += '<span>Order</span><span>Icon</span><span>Display name</span><span>Match terms (comma-separated)</span><span></span>';
   html += '</div>';
   draft.partners.forEach(function(pt, i) {
@@ -1133,7 +1133,7 @@ function buildTeamIntroConfigPanel() {
     html += '</div>';
   });
   html += '</div>';
-  html += '<div style="margin-top:8px;"><button onclick="tiEditAdd(\'partners\')" class="settings-btn" style="background:#fff;border:1px solid var(--border);color:var(--navy);">+ Add partner</button></div>';
+  html += '<div style="margin-top:8px;"><button onclick="tiEditAdd(\'partners\')" class="settings-btn" style="background:var(--white);border:1px solid var(--border);color:var(--navy);">+ Add partner</button></div>';
 
   // About app section
   html += _tiSectionHeader('About this app', 'The blurb at the bottom of the Overview tab. HTML allowed.');
@@ -1142,7 +1142,7 @@ function buildTeamIntroConfigPanel() {
   // Action buttons
   html += '<div style="margin-top:24px;display:flex;gap:8px;align-items:center;padding-top:18px;border-top:1px solid var(--border);">';
   html += '<button onclick="tiEditSave()" class="settings-btn settings-btn-primary">Save changes</button>';
-  html += '<button onclick="tiEditDiscard()" class="settings-btn" style="background:#fff;border:1px solid var(--border);color:var(--navy);">Discard</button>';
+  html += '<button onclick="tiEditDiscard()" class="settings-btn" style="background:var(--white);border:1px solid var(--border);color:var(--navy);">Discard</button>';
   html += '<span style="font-size:11px;color:var(--text-muted);margin-left:auto;">Visible to everyone after their next page refresh.</span>';
   html += '</div>';
 
@@ -1254,7 +1254,7 @@ function buildProjectIntakePanel() {
   html += '<div style="display:flex;flex-direction:column;gap:10px;max-width:580px;">';
   teams.forEach(function(t) {
     var on = (typeof teamCreatesDirectly === 'function') && teamCreatesDirectly(t);
-    html += '<label style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 16px;cursor:pointer;">' +
+    html += '<label style="display:flex;align-items:center;gap:12px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px 16px;cursor:pointer;">' +
       '<input type="checkbox"' + (on ? ' checked' : '') + ' onchange="toggleDirectProjectTeam(' + JSON.stringify(t).replace(/"/g, '&quot;') + ', this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--navy);flex-shrink:0;">' +
       '<div><div style="font-weight:800;color:var(--navy);">' + esc(t) + '</div>' +
       '<div style="font-size:12px;color:var(--text-muted);">' + (on ? 'Creates projects directly — Submit Idea review skipped' : 'Uses the Submit Idea review process') + '</div></div>' +
@@ -1335,7 +1335,7 @@ function _orgRerender() {
 }
 
 // Shared inline styles (kept here so the editor needs no app.css changes).
-var _ORG_INP = 'font-family:inherit;font-weight:700;color:var(--navy);border:1.5px solid var(--navy);border-radius:6px;padding:5px 9px;outline:none;background:#fff;';
+var _ORG_INP = 'font-family:inherit;font-weight:700;color:var(--navy);border:1.5px solid var(--navy);border-radius:6px;padding:5px 9px;outline:none;background:var(--white);';
 
 function buildOrgEditorPanel() {
   if (typeof isAdmin === 'function' && !isAdmin()) {
@@ -1351,16 +1351,16 @@ function buildOrgEditorPanel() {
   }
 
   function unitChip(u, di, ti, ui) {
-    return '<span style="display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--border);border-radius:20px;padding:3px 6px 3px 11px;font-size:12px;font-weight:600;color:var(--navy);">' +
+    return '<span style="display:inline-flex;align-items:center;gap:5px;background:var(--white);border:1px solid var(--border);border-radius:20px;padding:3px 6px 3px 11px;font-size:12px;font-weight:600;color:var(--navy);">' +
       esc(u) +
-      '<span title="Remove unit" onclick="orgRemoveUnit(' + di + ',' + ti + ',' + ui + ')" style="width:16px;height:16px;border-radius:50%;background:#F3F1EB;color:#9A3412;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;">✕</span>' +
+      '<span title="Remove unit" onclick="orgRemoveUnit(' + di + ',' + ti + ',' + ui + ')" style="width:16px;height:16px;border-radius:50%;background:var(--surface-2);color:#9A3412;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;">✕</span>' +
     '</span>';
   }
 
   function teamHead(t, di, ti, teamCount) {
     var editing = _orgEdit && _orgEdit.kind === 'team' && _orgEdit.di === di && _orgEdit.ti === ti;
     if (editing) {
-      return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#FBFAF7;border-bottom:1px solid var(--border);">' +
+      return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface-2);border-bottom:1px solid var(--border);">' +
         '<input id="org-ed-name" value="' + esc(t.name) + '" placeholder="Team name" onkeydown="orgEditKey(event)" style="' + _ORG_INP + 'font-size:13px;min-width:220px;">' +
         okCancel('orgCommitEdit()', 'orgCancelEdit()') +
         '<span style="margin-left:auto;"></span>' +
@@ -1368,7 +1368,7 @@ function buildOrgEditorPanel() {
     }
     var units = t.units || [];
     var meta = units.length ? ('· ' + units.length + ' unit' + (units.length === 1 ? '' : 's')) : '· no units';
-    return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#FBFAF7;border-bottom:1px solid var(--border);">' +
+    return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface-2);border-bottom:1px solid var(--border);">' +
       '<span onclick="orgStartEdit(\'team\',' + di + ',' + ti + ')" title="Click to rename" style="font-size:13.5px;font-weight:800;color:var(--navy);cursor:text;">' + esc(t.name) + '</span>' +
       '<span style="font-size:11px;color:var(--text-muted);">' + meta + '</span>' +
       '<span style="margin-left:auto;"></span>' +
@@ -1387,7 +1387,7 @@ function buildOrgEditorPanel() {
       unitsHtml += '<input id="org-ad-input" placeholder="unit name… ⏎" onkeydown="orgAddKey(event)" style="' + _ORG_INP + 'font-size:12px;width:160px;border-radius:20px;padding:3px 10px;">' +
         okCancel('orgCommitAdd()', 'orgCancelAdd()');
     } else {
-      unitsHtml += '<span onclick="orgStartAdd(\'unit\',' + di + ',' + ti + ')" style="display:inline-flex;align-items:center;gap:4px;border:1px dashed #C7D2FE;background:#F8FAFF;border-radius:20px;padding:3px 11px;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;">＋ add unit</span>';
+      unitsHtml += '<span onclick="orgStartAdd(\'unit\',' + di + ',' + ti + ')" style="display:inline-flex;align-items:center;gap:4px;border:1px dashed #C7D2FE;background:var(--surface-2);border-radius:20px;padding:3px 11px;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;">＋ add unit</span>';
     }
     return '<div style="border:1px solid var(--border);border-radius:9px;margin-bottom:10px;">' +
       teamHead(t, di, ti, teamCount) +
@@ -1427,7 +1427,7 @@ function buildOrgEditorPanel() {
         okCancel('orgCommitAdd()', 'orgCancelAdd()') +
       '</div>';
     } else {
-      body += '<div style="padding:4px 2px 0;"><button onclick="orgStartAdd(\'team\',' + di + ')" style="border:1px dashed var(--border);background:#fff;color:var(--navy);border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;width:100%;text-align:left;">＋ Add team to ' + esc(dep.name) + '</button></div>';
+      body += '<div style="padding:4px 2px 0;"><button onclick="orgStartAdd(\'team\',' + di + ')" style="border:1px dashed var(--border);background:var(--white);color:var(--navy);border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;width:100%;text-align:left;">＋ Add team to ' + esc(dep.name) + '</button></div>';
     }
     return '<div style="border:1px solid var(--border);border-radius:11px;margin-bottom:16px;overflow:hidden;">' +
       deptHead(dep, di, deptCount) +
@@ -1447,7 +1447,7 @@ function buildOrgEditorPanel() {
       okCancel('orgCommitAdd()', 'orgCancelAdd()') +
     '</div>';
   } else {
-    html += '<button onclick="orgStartAdd(\'dept\')" style="border:1px dashed var(--navy);background:#F8FAFF;color:var(--navy);border-radius:9px;padding:11px 14px;font-size:13px;font-weight:800;cursor:pointer;width:100%;text-align:center;">＋ Add department</button>';
+    html += '<button onclick="orgStartAdd(\'dept\')" style="border:1px dashed var(--navy);background:var(--surface-2);color:var(--navy);border-radius:9px;padding:11px 14px;font-size:13px;font-weight:800;cursor:pointer;width:100%;text-align:center;">＋ Add department</button>';
   }
 
   html += '<div style="display:flex;gap:10px;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">' +

@@ -201,7 +201,7 @@ function buildIssuesPage() {
       // Actions
       html += '<div class="issue-card-actions">';
       var statuses = ['Submitted', 'Accepted', 'In Progress', 'User Testing', 'Done'];
-      html += '<select class="issue-action-btn" style="padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:11px;font-weight:600;font-family:Lato,sans-serif;cursor:pointer;color:var(--navy);" onchange="changeIssueStatus(' + iss.objectId + ',this.value)" onclick="event.stopPropagation()">';
+      html += '<select class="issue-action-btn" style="padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--white);font-size:11px;font-weight:600;font-family:Lato,sans-serif;cursor:pointer;color:var(--navy);" onchange="changeIssueStatus(' + iss.objectId + ',this.value)" onclick="event.stopPropagation()">';
       statuses.forEach(function(s) {
         html += '<option value="' + s + '"' + (iss.status === s ? ' selected' : '') + '>' + s + '</option>';
       });

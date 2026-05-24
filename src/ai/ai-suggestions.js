@@ -243,7 +243,7 @@ function renderSuggestions(project) {
     });
     // Editable assignee dropdown
     var members = RESOURCES_DATA ? Object.keys(RESOURCES_DATA.people).filter(function(n) { return RESOURCES_DATA.people[n].active !== false; }).sort() : (FM_ACTIVE_MEMBERS || FM_TASK_ASSIGNEES || []);
-    html += '<select id="suggest-assignee-' + i + '" onchange="suggestAssigneeChange(' + i + ',this.value)" style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #E8E6DF;border-radius:6px;font-family:Lato,sans-serif;color:var(--navy);background:#F9FAFB;cursor:pointer;">';
+    html += '<select id="suggest-assignee-' + i + '" onchange="suggestAssigneeChange(' + i + ',this.value)" style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid #E8E6DF;border-radius:6px;font-family:Lato,sans-serif;color:var(--navy);background:var(--surface-2);cursor:pointer;">';
     html += '<option value="">Unassigned</option>';
     members.forEach(function(m) {
       var sel = (task.suggested_assignee === m) ? ' selected' : '';
@@ -417,7 +417,7 @@ async function suggestPhaseRequirements(taskId) {
     });
 
     if (suggestions.length === 0) {
-      panel.innerHTML = '<div style="padding:12px 16px;background:#F3F1EB;border:1px solid #E8E6DF;border-radius:8px;font-size:12px;color:var(--text-muted);">' +
+      panel.innerHTML = '<div style="padding:12px 16px;background:var(--surface-2);border:1px solid #E8E6DF;border-radius:8px;font-size:12px;color:var(--text-muted);">' +
         '✨ AI analyzed this task but no clear phase requirement match was found. You can assign one manually via Edit.</div>';
       setTimeout(function() { if (panel) panel.style.display = 'none'; }, 5000);
       return;
@@ -439,7 +439,7 @@ async function suggestPhaseRequirements(taskId) {
     });
     sugHtml += '<div style="display:flex;gap:8px;margin-top:10px;">';
     sugHtml += '<button onclick="acceptPhaseSuggestions()" style="padding:6px 16px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Accept</button>';
-    sugHtml += '<button onclick="dismissPhaseSuggestions()" style="padding:6px 16px;background:#F3F1EB;color:var(--text-body);border:1px solid #E8E6DF;border-radius:6px;font-size:12px;font-weight:600;font-family:Lato,sans-serif;cursor:pointer;">Dismiss</button>';
+    sugHtml += '<button onclick="dismissPhaseSuggestions()" style="padding:6px 16px;background:var(--surface-2);color:var(--text-body);border:1px solid #E8E6DF;border-radius:6px;font-size:12px;font-weight:600;font-family:Lato,sans-serif;cursor:pointer;">Dismiss</button>';
     sugHtml += '</div></div>';
     panel.innerHTML = sugHtml;
   } catch (err) {

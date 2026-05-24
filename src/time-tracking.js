@@ -296,7 +296,7 @@ function renderTaskHistorySection(t) {
       html += '<span style="font-weight:700;color:' + toColor + ';">' + esc(item.to) + '</span>';
       html += '</div>';
       if (item.reason) {
-        html += '<div style="font-size:12px;color:var(--text-body);margin-top:4px;padding:6px 10px;background:#F9F8F4;border-radius:6px;border:1px solid #E8E6DF;font-style:italic;">"' + esc(item.reason) + '"</div>';
+        html += '<div style="font-size:12px;color:var(--text-body);margin-top:4px;padding:6px 10px;background:var(--surface-2);border-radius:6px;border:1px solid #E8E6DF;font-style:italic;">"' + esc(item.reason) + '"</div>';
       }
       html += '</div>';
     } else {

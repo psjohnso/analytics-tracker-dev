@@ -854,7 +854,7 @@ function renderProjectReviewCard(p, rt) {
   if (risk) {
     html += '<div style="display:flex;align-items:center;gap:6px;">' +
       (typeof _rkBadge === 'function' ? _rkBadge(risk.score, risk.band) : '') +
-      '<button onclick="event.stopPropagation();rkToggle(\'' + rkId + '\')" style="border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:6px;padding:3px 8px;font-weight:700;font-size:10px;cursor:pointer;font-family:Lato,sans-serif;">Why? <span id="rk-caret-' + rkId + '">▸</span></button>' +
+      '<button onclick="event.stopPropagation();rkToggle(\'' + rkId + '\')" style="border:1px solid var(--navy);background:var(--white);color:var(--navy);border-radius:6px;padding:3px 8px;font-weight:700;font-size:10px;cursor:pointer;font-family:Lato,sans-serif;">Why? <span id="rk-caret-' + rkId + '">▸</span></button>' +
     '</div>';
   }
   html += '<span class="pr-status-badge ' + statusCls + '">' + esc(p.status || '—') + '</span>';
@@ -865,7 +865,7 @@ function renderProjectReviewCard(p, rt) {
   // Body
   html += '<div class="pr-card-body">';
   if (risk) {
-    html += '<div data-rk-parent="' + rkId + '" style="display:none;margin-bottom:14px;border:1px solid #E8E6DF;border-radius:8px;background:#FCFCFB;padding:12px 14px;">' +
+    html += '<div data-rk-parent="' + rkId + '" style="display:none;margin-bottom:14px;border:1px solid #E8E6DF;border-radius:8px;background:var(--surface-2);padding:12px 14px;">' +
       (typeof _rkBreakdownHtml === 'function' ? _rkBreakdownHtml(risk) : '') + '</div>';
   }
 
@@ -1225,7 +1225,7 @@ function renderReviewTypesTable() {
   var _visibleRts = (_reviewTypes || []).filter(function(rt) { return _prRtInActorTeam(rt); });
   if (!_visibleRts.length) {
     var _forYour = _prRtActorLeadTeam() ? ' for your team' : '';
-    container.innerHTML = '<div style="background:#fff;border:1px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-muted);font-style:italic;font-family:Cardo,serif;">No review types' + _forYour + ' yet. Click &ldquo;Add review type&rdquo; to create one.</div>';
+    container.innerHTML = '<div style="background:var(--white);border:1px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--text-muted);font-style:italic;font-family:Cardo,serif;">No review types' + _forYour + ' yet. Click &ldquo;Add review type&rdquo; to create one.</div>';
     return;
   }
   var html = '<table class="pr-rt-table">';

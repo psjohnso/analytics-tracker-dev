@@ -298,7 +298,7 @@
       '<div style="max-width:900px;margin:0 auto;">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;">' +
       '<div style="font-size:24px;font-weight:800;">🧪 Smoke tests</div>' +
-      '<button onclick="document.getElementById(\'test-harness-panel\').remove();" style="padding:6px 16px;background:#fff;color:#000;border:none;border-radius:6px;font-weight:700;cursor:pointer;">Close ✕</button>' +
+      '<button onclick="document.getElementById(\'test-harness-panel\').remove();" style="padding:6px 16px;background:var(--white);color:#000;border:none;border-radius:6px;font-weight:700;cursor:pointer;">Close ✕</button>' +
       '</div>' +
       '<div style="display:inline-block;padding:8px 18px;border-radius:8px;background:' + summaryBg + ';font-size:15px;font-weight:700;margin-bottom:18px;">' +
       passed + ' / ' + (passed + failed) + ' passed' +

@@ -306,9 +306,9 @@ function buildGanttBars() {
   // Group by role: Leading first, then Contributing, then Reviewing
   var roleOrder = ['Leading', 'Contributing', 'Reviewing'];
   var roleStyles = {
-    'Leading': { color: '#0C447C', bg: '#E6F1FB', border: '#185FA5' },
-    'Contributing': { color: '#444441', bg: '#F1EFE8', border: '#888780' },
-    'Reviewing': { color: '#3C3489', bg: '#EEEDFE', border: '#534AB7' }
+    'Leading': { color: 'var(--pill-blue-fg)', bg: 'var(--pill-blue-bg)', border: '#185FA5' },
+    'Contributing': { color: 'var(--text-muted)', bg: 'var(--surface-2)', border: '#888780' },
+    'Reviewing': { color: 'var(--pill-purple-fg)', bg: 'var(--pill-purple-bg)', border: '#534AB7' }
   };
   var hasMultipleRoles = roleOrder.filter(function(r) { return ganttItems.some(function(g) { return g.role === r; }); }).length > 1;
 
@@ -326,7 +326,7 @@ function buildGanttBars() {
     }
     roleItems.forEach(function(g) {
     const accentColor = GANTT_ACCENT_COLORS[ganttProjIdx % GANTT_ACCENT_COLORS.length];
-    const bandBg = ganttProjIdx % 2 === 0 ? 'var(--white)' : '#FDFCF8';
+    const bandBg = ganttProjIdx % 2 === 0 ? 'var(--white)' : 'var(--surface-2)';
     ganttProjIdx++;
     const sc = STATUS_COLOR(g.status) || '#3B82F6';
     const leftPct = ganttPct(g.start || todayStr);
@@ -956,7 +956,7 @@ function renderMyWork(area) {
     const memberNames = Object.keys(RESOURCES_DATA.people).filter(function(n) { return isFullMember(n) && (typeof inCurrentTeamPerson !== 'function' || inCurrentTeamPerson(n)); }).sort();
     html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:0;">';
     html += '<div class="mywork-subtitle" style="margin-bottom:0;">' + today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) + '</div>';
-    html += '<select onchange="switchMyWorkUser(this)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--navy);font-weight:600;cursor:pointer;">';
+    html += '<select onchange="switchMyWorkUser(this)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--white);color:var(--navy);font-weight:600;cursor:pointer;">';
     memberNames.forEach(function(n) {
       const selected = (n === name) ? ' selected' : '';
       const label = (n === Auth.fullName) ? n + ' (me)' : n;
@@ -964,7 +964,7 @@ function renderMyWork(area) {
     });
     html += '</select>';
     if (!isViewingSelf) {
-      html += '<button onclick="switchMyWorkUser({value:\'' + esc(Auth.fullName).replace(/'/g, "\\'") + '\'})" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:#F3F1EB;cursor:pointer;font-weight:600;">← Back to My Work</button>';
+      html += '<button onclick="switchMyWorkUser({value:\'' + esc(Auth.fullName).replace(/'/g, "\\'") + '\'})" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface-2);cursor:pointer;font-weight:600;">← Back to My Work</button>';
     }
     html += '</div>';
   } else {
@@ -1020,10 +1020,10 @@ function renderMyWork(area) {
     var todayEntries = getTodayEntries();
     var activeTimers = getActiveTimers();
     if (todayEntries.length === 0 && activeTimers.length === 0) {
-      html += '<div class="mywork-full-width" style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">';
+      html += '<div class="mywork-full-width" style="background:var(--pill-amber-bg);border:1px solid var(--pill-amber-bg);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">';
       html += '<span style="font-size:16px;flex-shrink:0;">&#9201;</span>';
-      html += '<div style="flex:1;"><span style="font-size:12px;font-weight:700;color:#92400E;">No time logged today</span>';
-      html += '<span style="font-size:12px;color:#92400E;opacity:0.8;"> — Start a timer on one of your tasks to keep your records current.</span></div>';
+      html += '<div style="flex:1;"><span style="font-size:12px;font-weight:700;color:var(--pill-amber-fg);">No time logged today</span>';
+      html += '<span style="font-size:12px;color:var(--pill-amber-fg);opacity:0.8;"> — Start a timer on one of your tasks to keep your records current.</span></div>';
       html += '</div>';
     }
   }
@@ -1418,12 +1418,12 @@ function renderMyWork(area) {
     html += '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:10px;padding:8px 0;border-bottom:1px solid var(--border);">';
 
     html += '<div style="position:relative;display:inline-block;" id="gantt-filter-wrap">';
-    html += '<button onclick="toggleGanttDropdown()" style="font-size:11px;padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-weight:600;color:var(--navy);display:flex;align-items:center;gap:6px;">';
+    html += '<button onclick="toggleGanttDropdown()" style="font-size:11px;padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:var(--white);cursor:pointer;font-weight:600;color:var(--navy);display:flex;align-items:center;gap:6px;">';
     html += '📁 Projects (' + visibleCount + '/' + ganttItems.length + ') <span style="font-size:9px;">▼</span></button>';
-    html += '<div id="gantt-filter-dropdown" style="display:none;position:absolute;top:100%;left:0;z-index:100;background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:8px 0;min-width:260px;max-height:300px;overflow-y:auto;margin-top:4px;">';
+    html += '<div id="gantt-filter-dropdown" style="display:none;position:absolute;top:100%;left:0;z-index:100;background:var(--white);border:1px solid var(--border);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:8px 0;min-width:260px;max-height:300px;overflow-y:auto;margin-top:4px;">';
     html += '<div style="display:flex;gap:6px;padding:4px 12px 8px;border-bottom:1px solid var(--border);">';
-    html += '<button onclick="ganttSelectAll(true)" style="font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:#F3F1EB;cursor:pointer;font-weight:700;">All</button>';
-    html += '<button onclick="ganttSelectAll(false)" style="font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:#F3F1EB;cursor:pointer;font-weight:700;">None</button>';
+    html += '<button onclick="ganttSelectAll(true)" style="font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface-2);cursor:pointer;font-weight:700;">All</button>';
+    html += '<button onclick="ganttSelectAll(false)" style="font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface-2);cursor:pointer;font-weight:700;">None</button>';
     html += '</div>';
     ganttItems.forEach(function(g) {
       const sc = STATUS_COLOR(g.status) || '#3B82F6';

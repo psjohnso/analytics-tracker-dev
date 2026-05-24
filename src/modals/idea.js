@@ -90,9 +90,9 @@ function openSimpleIdeaForm() {
       </div>
       Please make sure you've discussed this idea with your respective team lead first:
       <div style="display:flex;gap:10px;margin:10px 0 4px;flex-wrap:wrap;">
-        <span style="background:#fff;border:1.5px solid #F59E0B;border-radius:20px;padding:4px 14px;font-weight:700;">🤖 AI Team Lead</span>
-        <span style="background:#fff;border:1.5px solid #F59E0B;border-radius:20px;padding:4px 14px;font-weight:700;">📊 Analytics Team Lead</span>
-        <span style="background:#fff;border:1.5px solid #F59E0B;border-radius:20px;padding:4px 14px;font-weight:700;">🗺️ GIS Team Lead</span>
+        <span style="background:var(--white);border:1.5px solid #F59E0B;border-radius:20px;padding:4px 14px;font-weight:700;">🤖 AI Team Lead</span>
+        <span style="background:var(--white);border:1.5px solid #F59E0B;border-radius:20px;padding:4px 14px;font-weight:700;">📊 Analytics Team Lead</span>
+        <span style="background:var(--white);border:1.5px solid #F59E0B;border-radius:20px;padding:4px 14px;font-weight:700;">🗺️ GIS Team Lead</span>
       </div>
       This ensures your team lead is prepared to speak to the idea at the Monday review meeting.
     </div>
@@ -131,8 +131,8 @@ function renderGuidedStep1() {
   body.innerHTML = `
     <div style="display:flex;gap:6px;margin-bottom:16px;">
       <div style="flex:1;height:4px;background:var(--navy);border-radius:2px;"></div>
-      <div style="flex:1;height:4px;background:#E8E6DF;border-radius:2px;"></div>
-      <div style="flex:1;height:4px;background:#E8E6DF;border-radius:2px;"></div>
+      <div style="flex:1;height:4px;background:var(--surface-2);border-radius:2px;"></div>
+      <div style="flex:1;height:4px;background:var(--surface-2);border-radius:2px;"></div>
     </div>
     <div class="idea-field">
       <label>Idea Title <span class="req">*</span></label>
@@ -275,7 +275,7 @@ function renderGuidedStep2() {
   var html = '<div style="display:flex;gap:6px;margin-bottom:16px;">';
   html += '<div style="flex:1;height:4px;background:var(--navy);border-radius:2px;"></div>';
   html += '<div style="flex:1;height:4px;background:var(--navy);border-radius:2px;"></div>';
-  html += '<div style="flex:1;height:4px;background:#E8E6DF;border-radius:2px;"></div>';
+  html += '<div style="flex:1;height:4px;background:var(--surface-2);border-radius:2px;"></div>';
   html += '</div>';
 
   html += '<div style="background:#F0F4FF;border:1px solid #BFDBFE;border-radius:6px;padding:10px 14px;font-size:12px;color:#1E40AF;margin-bottom:12px;">These questions were generated based on your project description and category. They help leadership evaluate and schedule your idea.</div>';

@@ -414,15 +414,15 @@ function buildSlideshowConfigPanel() {
   html += '<div class="settings-panel-desc">Configure the lobby-display slideshow that cycles through the Overview dashboard panels. Members can opt in to see the Slideshow tab via their own Preferences. The slide list, order, and timing here are team-wide.</div>';
 
   // Default duration row
-  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">';
+  html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">';
   html += '<label style="font-size:13px;font-weight:700;color:var(--text-body);">Default duration per slide</label>';
   html += '<input id="slideshow-default-dur" type="number" min="3" max="300" value="' + draft.defaultDurationSec + '" oninput="slideshowEditDefaultDur(this.value)" style="width:80px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:Lato,sans-serif;">';
   html += '<span style="font-size:12px;color:var(--text-muted);">seconds. Used when a slide doesn\'t have its own duration set.</span>';
   html += '</div>';
 
   // Slide rows
-  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
-  html += '<div style="display:grid;grid-template-columns:28px 36px 1fr 110px;gap:10px;align-items:center;padding:10px 14px;background:#FDFCF8;border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
+  html += '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
+  html += '<div style="display:grid;grid-template-columns:28px 36px 1fr 110px;gap:10px;align-items:center;padding:10px 14px;background:var(--surface-2);border-bottom:2px solid var(--border);font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">';
   html += '<span title="Enabled"></span><span title="Reorder">Order</span><span>Slide</span><span style="text-align:right;">Duration</span>';
   html += '</div>';
   draft.slides.forEach(function(s, i) {
@@ -432,8 +432,8 @@ function buildSlideshowConfigPanel() {
     html += '<div style="display:grid;grid-template-columns:28px 36px 1fr 110px;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);">';
     html += '<input type="checkbox"' + checked + ' onchange="slideshowEditToggle(\'' + esc(s.id) + '\', this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--navy);">';
     html += '<div style="display:flex;flex-direction:column;gap:2px;">';
-    html += '<button onclick="slideshowEditMove(\'' + esc(s.id) + '\', -1)"' + (i === 0 ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:#fff;border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (i === 0 ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▲</button>';
-    html += '<button onclick="slideshowEditMove(\'' + esc(s.id) + '\', 1)"' + (i === draft.slides.length - 1 ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:#fff;border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (i === draft.slides.length - 1 ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▼</button>';
+    html += '<button onclick="slideshowEditMove(\'' + esc(s.id) + '\', -1)"' + (i === 0 ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:var(--white);border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (i === 0 ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▲</button>';
+    html += '<button onclick="slideshowEditMove(\'' + esc(s.id) + '\', 1)"' + (i === draft.slides.length - 1 ? ' disabled' : '') + ' style="padding:0;width:30px;height:14px;border:1px solid var(--border);background:var(--white);border-radius:3px;font-size:9px;cursor:pointer;line-height:1;color:var(--navy);' + (i === draft.slides.length - 1 ? 'opacity:0.3;cursor:not-allowed;' : '') + '">▼</button>';
     html += '</div>';
     html += '<div style="font-size:13px;color:var(--text-body);font-weight:600;">' + esc(title) + '</div>';
     html += '<div style="display:flex;align-items:center;gap:4px;justify-content:flex-end;">';
@@ -447,7 +447,7 @@ function buildSlideshowConfigPanel() {
   // Action buttons
   html += '<div style="margin-top:14px;display:flex;gap:8px;align-items:center;">';
   html += '<button onclick="slideshowEditSave()" class="settings-btn settings-btn-primary">Save changes</button>';
-  html += '<button onclick="slideshowEditDiscard()" class="settings-btn" style="background:#fff;border:1px solid var(--border);color:var(--navy);">Discard</button>';
+  html += '<button onclick="slideshowEditDiscard()" class="settings-btn" style="background:var(--white);border:1px solid var(--border);color:var(--navy);">Discard</button>';
   html += '<span style="font-size:11px;color:var(--text-muted);margin-left:auto;">Changes apply to everyone next time they open the Slideshow tab.</span>';
   html += '</div>';
 

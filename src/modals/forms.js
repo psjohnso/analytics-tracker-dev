@@ -1273,7 +1273,7 @@ function updateDurationEstimate() {
   var partnerStats = partner ? _durStats(all.filter(function(p) { return (p.partner_dept || '') === partner; })) : null;
 
   if (!catStats && !partnerStats) {
-    box.innerHTML = '<div style="margin-top:10px;border:1px dashed var(--border);border-radius:8px;background:#F8FAFC;padding:14px;text-align:center;font-size:12px;color:var(--text-muted);">Pick a <strong>category</strong> below (and ideally a partner department) to estimate this project\'s duration from similar completed projects.</div>';
+    box.innerHTML = '<div style="margin-top:10px;border:1px dashed var(--border);border-radius:8px;background:var(--surface-2);padding:14px;text-align:center;font-size:12px;color:var(--text-muted);">Pick a <strong>category</strong> below (and ideally a partner department) to estimate this project\'s duration from similar completed projects.</div>';
     return;
   }
   var median, n, base, basis;
@@ -1301,7 +1301,7 @@ function updateDurationEstimate() {
   if (startVal) { var d = new Date(startVal + 'T12:00:00'); d.setDate(d.getDate() + wks * 7); sugg = d.toISOString().slice(0, 10); }
   var suggLabel = sugg ? new Date(sugg + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 
-  var html = '<div style="margin-top:10px;border:1px solid #D9E2F2;border-radius:10px;background:#F5F8FF;padding:14px 16px;">';
+  var html = '<div style="margin-top:10px;border:1px solid #D9E2F2;border-radius:10px;background:var(--surface-2);padding:14px 16px;">';
   html += '<div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">';
   html += '<div style="flex:0 0 auto;"><div style="font-size:30px;font-weight:900;color:var(--navy);line-height:1;">' + wks + ' wks</div><div style="font-size:11px;color:var(--text-muted);">&asymp; ' + (months >= 2 ? months.toFixed(months < 8 ? 1 : 0) : months.toFixed(1)) + ' months</div></div>';
   html += '<div style="flex:1;min-width:200px;">';
@@ -1327,7 +1327,7 @@ function buildProjectForm(p) {
   // Original End Date is locked once project reaches Active status
   const isActive = p && (p.status === 'Active' || p.status === 'Complete' || p.status === 'On Hold' || p.status === 'Canceled');
   const endDateField = isActive
-    ? '<input id="fm-end" type="date" class="fm-input" value="' + esc(v('end')) + '" readonly style="background:#F3F1EB;color:var(--text-muted);cursor:not-allowed;">' +
+    ? '<input id="fm-end" type="date" class="fm-input" value="' + esc(v('end')) + '" readonly style="background:var(--surface-2);color:var(--text-muted);cursor:not-allowed;">' +
       '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Locked — set when project was created</div>'
     : '<input id="fm-end" type="date" class="fm-input" value="' + esc(v('end')) + '">';
 
@@ -1666,7 +1666,7 @@ async function suggestAlignment() {
       '<div style="font-size:14px;margin-bottom:4px;">⚠️</div>' +
       '<div style="font-size:12px;color:#991B1B;">' + esc(err.message) + '</div>' +
       '<button onclick="suggestAlignment()" style="margin-top:8px;padding:4px 12px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Try Again</button>' +
-      ' <button onclick="document.getElementById(\'alignment-suggest-panel\').style.display=\'none\'" style="margin-top:8px;padding:4px 12px;background:#E5E7EB;color:#374151;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Dismiss</button></div>';
+      ' <button onclick="document.getElementById(\'alignment-suggest-panel\').style.display=\'none\'" style="margin-top:8px;padding:4px 12px;background:var(--surface-2);color:#374151;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Dismiss</button></div>';
   }
 }
 
@@ -1713,7 +1713,7 @@ function renderAlignmentSuggestions() {
   } else {
     html += '<div style="display:flex;gap:8px;margin-top:10px;">';
     html += '<button onclick="applyAlignmentSuggestions()" style="padding:5px 14px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Apply Selected</button>';
-    html += '<button onclick="document.getElementById(\'alignment-suggest-panel\').style.display=\'none\'" style="padding:5px 14px;background:#E5E7EB;color:#374151;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Dismiss</button>';
+    html += '<button onclick="document.getElementById(\'alignment-suggest-panel\').style.display=\'none\'" style="padding:5px 14px;background:var(--surface-2);color:#374151;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Dismiss</button>';
     html += '<span style="font-size:10px;color:#92400E;opacity:0.7;align-self:center;margin-left:auto;">' + totalCount + ' suggestions · uncheck any to skip</span>';
     html += '</div>';
   }

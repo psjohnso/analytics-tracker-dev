@@ -646,7 +646,7 @@ function getNextTaskNumber(projectNumber) {
 
 function projectNumChip(num) {
   if (!num) return '';
-  return '<span style="font-family:monospace;font-size:10px;font-weight:700;color:var(--navy);background:#EEF2FF;padding:1px 6px;border-radius:4px;margin-right:4px;">' + esc(num) + '</span>';
+  return '<span style="font-family:monospace;font-size:10px;font-weight:700;color:var(--pill-blue-fg);background:var(--pill-blue-bg);padding:1px 6px;border-radius:4px;margin-right:4px;">' + esc(num) + '</span>';
 }
 
 async function backfillProjectTaskNumbers() {
