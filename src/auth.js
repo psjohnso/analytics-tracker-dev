@@ -8,8 +8,8 @@
 //
 // Forward references (resolve at call time): showToast, Editor (state),
 // openFormModal, switchTab, applyPrimaryTabVisibility, currentTab,
-// IDEA_PROMOTE_GROUP_ID. Backward references: ARCGIS_CONFIG and
-// STRATEGIC_ALIGNMENT_EDITORS (loaded earlier).
+// TRACKER_ADMIN/LEAD/MEMBER_GROUP_ID, CAPABILITY_DEFS. Backward references:
+// ARCGIS_CONFIG and STRATEGIC_ALIGNMENT_EDITORS (loaded earlier).
 // ─────────────────────────────────────────────────────────────────────
 
 // ── Auth State ──────────────────────────────────────────────────────
@@ -24,11 +24,49 @@ const Auth = {
   dataLoaded: false,
   previewMode: false, // When true, admin sees the app as a regular team member (kept in sync with actAsRole)
   actAsRole: 'admin', // Admin "act as" lens: 'admin' | 'lead' | 'member'. Lead/member impersonate that role for CURRENT_TEAM.
+  // Three-tier access resolved from AGO groups at login (see fetchAgolUserInfo).
+  tier: 'member',     // 'admin' | 'lead' | 'member'
+  inAdminGroup: false,
+  inLeadGroup: false,
+  inMemberGroup: false,
 };
 
-// Check admin status. A real admin (isTeamLead group) is only treated as admin
-// while acting as themselves ('admin'); impersonating a lead/member de-admins.
+// Check admin status. A real admin (Tracker Admin group) is only treated as
+// admin while acting as themselves ('admin'); impersonating a lead/member de-admins.
 function isAdmin() { return Auth.isTeamLead && Auth.actAsRole === 'admin' && !Auth.previewMode; }
+
+// The effective tier for the CURRENT user right now, honoring an admin's
+// "act as" lens. For a genuine non-admin, lead = in the Tracker Leads group OR
+// has a lead-team assigned (field), so existing per-team/data-program leads keep
+// working; everyone else is a member.
+function effectiveTier() {
+  if (isAdmin()) return 'admin';
+  if (Auth.isTeamLead) { // a real admin impersonating a lower role
+    return Auth.actAsRole === 'lead' ? 'lead' : 'member';
+  }
+  if (Auth.tier === 'lead' || isTeamLeadRole()) return 'lead';
+  return 'member';
+}
+// True for leads (and admins, who are a superset).
+function isLead() { return isAdmin() || effectiveTier() === 'lead'; }
+
+// Which tiers a capability is granted to — runtime config (Phase 2) overrides
+// the seed defaults in CAPABILITY_DEFS.
+function capabilityTiers(cap) {
+  if (typeof PERMISSIONS_CONFIG !== 'undefined' && PERMISSIONS_CONFIG && PERMISSIONS_CONFIG[cap]) return PERMISSIONS_CONFIG[cap];
+  var def = (typeof CAPABILITY_DEFS !== 'undefined') ? CAPABILITY_DEFS[cap] : null;
+  return def ? (def.tiers || []) : null;
+}
+// Central permission check. Admin can do everything; meta capabilities are
+// admin-only; otherwise the user's effective tier must be in the allowed list.
+function can(cap) {
+  if (isAdmin()) return true;
+  var def = (typeof CAPABILITY_DEFS !== 'undefined') ? CAPABILITY_DEFS[cap] : null;
+  if (!def) return false;       // unknown capability → admin-only (safe default)
+  if (def.meta) return false;   // meta capabilities are never granted to non-admins
+  var allowed = capabilityTiers(cap) || [];
+  return allowed.indexOf(effectiveTier()) >= 0;
+}
 
 // ── Team Lead helpers ────────────────────────────────────────────────
 // A "Team Lead" leads a specific team — their member record's
@@ -53,15 +91,18 @@ function getLeadTeam() {
 }
 function isTeamLeadRole() { return getLeadTeam() !== null; }
 function canCreateProject() {
-  // Admins and team leads always can. Members of a team that opted out of the
-  // Submit Idea flow (Settings → Project intake) also create projects directly.
-  return isAdmin() || isTeamLeadRole() || (typeof teamCreatesDirectly === 'function' && teamCreatesDirectly());
+  // Admins always can. Leads can when the create_project capability allows their
+  // tier. Members of a team that opted out of the Submit Idea flow (Settings →
+  // Project intake) also create projects directly.
+  return isAdmin() || (isTeamLeadRole() && can('create_project')) || (typeof teamCreatesDirectly === 'function' && teamCreatesDirectly());
 }
 function canEditProject(p) {
   if (isAdmin()) return true;
+  // Baseline: you can always edit a project you own (you're its contact).
   if (Auth.fullName && p && p.contact === Auth.fullName) return true;
+  // Leads can edit any project owned by their team, when the capability allows.
   var leadTeam = getLeadTeam();
-  if (leadTeam && p && p.owning_team &&
+  if (leadTeam && p && p.owning_team && can('edit_any_project') &&
       ((typeof sameTeam === 'function') ? sameTeam(p.owning_team, leadTeam) : p.owning_team === leadTeam)) return true;
   return false;
 }
@@ -303,6 +344,10 @@ function toggleAuth() {
     Auth.fullName = null;
     Auth.canPromote = false;
     Auth.isTeamLead = false;
+    Auth.tier = 'member';
+    Auth.inAdminGroup = false;
+    Auth.inLeadGroup = false;
+    Auth.inMemberGroup = false;
     Auth.devMode = false;
     sessionStorage.removeItem('dev_mode');
     const settingsTab = document.getElementById('tab-settings');
@@ -431,21 +476,27 @@ async function fetchAgolUserInfo(token) {
     const myWorkTab = document.getElementById('tab-mywork');
     if (myWorkTab) myWorkTab.style.display = '';
 
-    // Check group membership for Idea promotion access control
-    if (IDEA_PROMOTE_GROUP_ID && username) {
+    // Resolve the three-tier access level (admin / lead / member) from the
+    // user's ArcGIS group memberships. Highest tier wins.
+    if (username) {
       try {
         const groupUrl = ARCGIS_CONFIG.portalUrl + '/sharing/rest/community/users/' +
           encodeURIComponent(username) + '?f=json&token=' + encodeURIComponent(token);
         const gResp = await fetch(groupUrl);
         const gData = await gResp.json();
         if (gData.groups && Array.isArray(gData.groups)) {
-          Auth.canPromote = gData.groups.some(g => g.id === IDEA_PROMOTE_GROUP_ID);
-          Auth.isTeamLead = Auth.canPromote; // same group controls both
-          if (Auth.canPromote) {
+          const ids = gData.groups.map(function(g) { return g.id; });
+          Auth.inAdminGroup  = !!TRACKER_ADMIN_GROUP_ID  && ids.indexOf(TRACKER_ADMIN_GROUP_ID)  >= 0;
+          Auth.inLeadGroup   = !!TRACKER_LEAD_GROUP_ID    && ids.indexOf(TRACKER_LEAD_GROUP_ID)   >= 0;
+          Auth.inMemberGroup = !!TRACKER_MEMBER_GROUP_ID  && ids.indexOf(TRACKER_MEMBER_GROUP_ID) >= 0;
+          Auth.tier = Auth.inAdminGroup ? 'admin' : (Auth.inLeadGroup ? 'lead' : 'member');
+          // Back-compat: existing checks read Auth.isTeamLead as "is admin".
+          // Idea promotion is now a capability — keep the flag for display only.
+          Auth.isTeamLead = Auth.inAdminGroup;
+          Auth.canPromote = Auth.inAdminGroup;
+          if (Auth.inAdminGroup) {
             const badge = document.getElementById('user-role-badge');
             if (badge) badge.style.display = 'inline-block';
-            // The header "act as" role dropdown (renderTeamSwitcher) replaces the
-            // old standalone "Preview as member" button — leave that button hidden.
           }
           // Settings is visible to everyone (admins for full settings, members for Preferences only)
           const settingsTab = document.getElementById('tab-settings');
@@ -453,7 +504,7 @@ async function fetchAgolUserInfo(token) {
           // Achievements visible to all signed-in users.
           const achievementsTab = document.getElementById('tab-achievements');
           if (achievementsTab) achievementsTab.style.display = '';
-          if (!Auth.isTeamLead) {
+          if (!isAdmin()) {
             Auth.devMode = false;
             sessionStorage.removeItem('dev_mode');
           }
@@ -462,7 +513,7 @@ async function fetchAgolUserInfo(token) {
           if (typeof applyOptionalTabVisibility === 'function') applyOptionalTabVisibility();
         }
       } catch (gErr) {
-        console.warn('Could not check group membership:', gErr);
+        console.warn('Could not resolve access tier from groups:', gErr);
       }
     }
     if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();

@@ -10,13 +10,43 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.52.0.0069';
+const APP_VERSION = '1.53.0.0071';
 
-// ArcGIS Online group whose members are authorized to change a project's
-// status from "Idea" to any other status (also gates admin / Team Lead UI
-// across the app). Manage membership via ArcGIS Online. Used by both
-// index.html and dataprogram.html via auth.js's fetchAgolUserInfo.
-const IDEA_PROMOTE_GROUP_ID = '2bd32af20dd745d6bdf3807446761973';
+// ── Three-tier access (admin / lead / member) via ArcGIS groups ──────────
+// Tier is resolved at login from the user's group memberships (highest wins).
+// Dedicated "Project Tracker – …" groups in the cotgis org; manage membership
+// (by invitation only) in ArcGIS Online. Used by index.html and dataprogram.html
+// via auth.js's fetchAgolUserInfo. A person should be in exactly one tier group.
+const TRACKER_ADMIN_GROUP_ID  = 'a7b6bf7681b3471596d25be5f71e5e51'; // Project Tracker – Admins
+const TRACKER_LEAD_GROUP_ID   = '69ad11c24ed341538eb7d8991941b45d'; // Project Tracker – Leads
+const TRACKER_MEMBER_GROUP_ID = '86a6d494c2c24d54bf7421cdc1491c76'; // Project Tracker – Members
+// When true, a signed-in user must be in one of the three groups to use the
+// tracker (Tracker Member acts as the allow-list). Keep false until the Member
+// group is populated, or current users will lose access.
+const REQUIRE_TRACKER_GROUP = false;
+
+// ── Capability registry (seed defaults) ─────────────────────────────────
+// Which non-admin tiers may perform each gated action (admin can always do
+// everything). `meta:true` capabilities are admin-only and NOT user-editable —
+// locking them prevents privilege escalation / self-lockout. These defaults are
+// overridden at runtime by PERMISSIONS_CONFIG (the admin Permissions editor,
+// Phase 2) when present. Baseline actions (view, log own time, submit ideas,
+// edit own items) aren't listed here — they're available to every signed-in user.
+const CAPABILITY_DEFS = {
+  create_project:    { label: 'Create projects directly',          tiers: ['lead'] },
+  edit_any_project:  { label: 'Edit / manage any project & task',  tiers: ['lead'] },
+  promote_idea:      { label: 'Promote ideas → projects',          tiers: ['lead'] },
+  project_review:    { label: 'Project Review workflow',           tiers: ['lead'] },
+  edit_allocations:  { label: 'Edit allocations / capacity',       tiers: ['lead'] },
+  risk_review:       { label: 'Risk review',                       tiers: ['lead'] },
+  // meta — always admin-only, never shown as configurable
+  app_settings:      { label: 'App / org settings',               tiers: [], meta: true },
+  member_management: { label: 'Member management',                 tiers: [], meta: true },
+  edit_permissions:  { label: 'Edit permissions',                  tiers: [], meta: true }
+};
+// Populated at bootstrap from the app config service when a saved matrix exists
+// (Phase 2). null = use CAPABILITY_DEFS defaults. Shape: { capKey: ['lead', …] }.
+var PERMISSIONS_CONFIG = null;
 
 // ══════════════════════════════════════════════════════════════════════
 //  DATA PROGRAM TEAMS — fallback default

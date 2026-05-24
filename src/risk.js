@@ -273,7 +273,7 @@ function _rkChips(factors) {
 
 function buildRiskSection() {
   // Leads/admins only — it's a management lens.
-  if (typeof isAdmin !== 'function' || !isAdmin()) return '';
+  if (typeof can === 'function' ? !can('risk_review') : (typeof isAdmin !== 'function' || !isAdmin())) return '';
   var ctx = _rkBuildContext();
   var inflight = (typeof PROJECTS !== 'undefined' ? PROJECTS : []).filter(_rkActive);
   var scored = inflight.map(function(p) { return { p: p, r: computeProjectRisk(p, ctx) }; })

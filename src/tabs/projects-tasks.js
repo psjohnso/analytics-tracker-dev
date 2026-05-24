@@ -211,7 +211,7 @@ async function boardDrop(e, newStatus) {
     showToast('Only the project lead, the team lead, or an admin can change this project.', 'warn');
     return;
   }
-  if (p.status === 'Idea' && newStatus !== 'Idea' && !(typeof Auth !== 'undefined' && Auth && Auth.canPromote)) {
+  if (p.status === 'Idea' && newStatus !== 'Idea' && !(typeof can === 'function' ? can('promote_idea') : (typeof Auth !== 'undefined' && Auth && Auth.canPromote))) {
     showToast('Only authorized users can promote an Idea. Contact your administrator.', 'warn');
     return;
   }

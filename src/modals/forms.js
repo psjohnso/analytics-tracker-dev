@@ -2091,7 +2091,7 @@ async function handleFormSubmit(andDownload) {
   if (isProject && isEdit) {
     const origProject = PROJECTS.find(p => p.objectId === Editor.editId);
     if (origProject && origProject.status === 'Idea' && fields.status !== 'Idea') {
-      if (!Auth.canPromote) {
+      if (!(typeof can === 'function' ? can('promote_idea') : Auth.canPromote)) {
         showToast('Permission denied: only authorized users can change Idea status. Contact your administrator.', 'error');
         return;
       }

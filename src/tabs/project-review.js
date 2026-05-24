@@ -677,7 +677,7 @@ function renderProjectReview(area) {
 
   // Project cards — build the risk context once for this render (leads/admins
   // only) so each card can show its risk badge without recomputing it.
-  _prRiskCtx = (typeof isAdmin === 'function' && isAdmin() && typeof _rkBuildContext === 'function') ? _rkBuildContext() : null;
+  _prRiskCtx = (typeof can === 'function' && can('risk_review') && typeof _rkBuildContext === 'function') ? _rkBuildContext() : null;
   var projects = prGetProjectsForReview(rt, _reviewFilterStatuses, _reviewAssigneeFilter, _reviewSearchQuery);
   if (!projects.length) {
     var emptyMsg = _reviewSearchQuery ? 'Nothing matches "' + esc(_reviewSearchQuery) + '" with the current filters.' : 'No projects match the current filter.';
