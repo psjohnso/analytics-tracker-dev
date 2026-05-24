@@ -838,6 +838,7 @@ function updateHeaderStats() {
   if (typeof renderTeamSwitcher === 'function') renderTeamSwitcher();
   if (typeof refreshIntakeButton === 'function') refreshIntakeButton();
   if (typeof refreshHeaderTitle === 'function') refreshHeaderTitle();
+  if (typeof renderInbox === 'function') renderInbox();
 }
 
 // Header title/subtitle reflect the signed-in user's team and its department.

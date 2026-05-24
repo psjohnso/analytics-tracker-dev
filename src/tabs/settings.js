@@ -318,7 +318,7 @@ function buildPreferencesPanel() {
 
   // Beta Features section — only show features with flag === 'beta'
   var betaKeys = Object.keys(BETA_FEATURES).filter(function(key) {
-    var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY, aiIntake: FEATURE_AI_INTAKE, projectReview: FEATURE_PROJECT_REVIEW, durationEstimate: FEATURE_DURATION_ESTIMATE };
+    var flags = { dependencies: FEATURE_DEPENDENCIES, taskHistory: FEATURE_TASK_HISTORY, aiIntake: FEATURE_AI_INTAKE, projectReview: FEATURE_PROJECT_REVIEW, durationEstimate: FEATURE_DURATION_ESTIMATE, notifications: FEATURE_NOTIFICATIONS };
     return flags[key] === 'beta';
   });
 
@@ -437,6 +437,10 @@ function updateBetaPref(featureKey, enabled) {
     return;
   }
   render();
+  // The header bell lives outside the gated header refresh — sync it directly,
+  // and load notifications the first time the feature is switched on.
+  if (typeof renderInbox === 'function') renderInbox();
+  if (enabled && featureKey === 'notifications' && typeof loadNotifications === 'function') loadNotifications();
   showToast(BETA_FEATURES[featureKey].label + (enabled ? ' enabled.' : ' disabled.'), 'success');
 }
 

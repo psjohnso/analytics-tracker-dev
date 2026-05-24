@@ -112,10 +112,12 @@ async function loadArcGISData() {
     await ensureReviewTypesSeeded();
     await loadProjectReviews();
     await loadProjectNotes();
+    await loadNotifications();
 
     updateLoadingOverlay('All data loaded.');
     await loadStatusHistory();
     Auth.dataLoaded = true;
+    if (typeof renderInbox === 'function') renderInbox(); // ensure the bell reflects state post-load
     hideLoadingOverlay();
 
     // Apply default tab preference after everything is loaded

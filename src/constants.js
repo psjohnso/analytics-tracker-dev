@@ -10,7 +10,7 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.49.0.0040';
+const APP_VERSION = '1.50.0.0044';
 
 // ArcGIS Online group whose members are authorized to change a project's
 // status from "Idea" to any other status (also gates admin / Team Lead UI
@@ -191,6 +191,7 @@ var BETA_FEATURES = {
   aiIntake:      { flag: 'FEATURE_AI_INTAKE',      label: 'AI-Guided Project Intake', desc: 'Replace the standard idea form with a guided intake that asks starter questions, generates smart follow-up questions based on your responses, and produces an AI-written project summary for reviewers.' },
   projectReview: { flag: 'FEATURE_PROJECT_REVIEW', label: 'Project Review', desc: 'Recurring portfolio review tab — walk through projects with the people assigned, log notes/decisions/action items per cycle. Configurable review types (e.g., Data Intelligence weekly, Data Team biweekly).' },
   durationEstimate: { flag: 'FEATURE_DURATION_ESTIMATE', label: 'Project duration estimate', desc: 'Adds a live duration estimate to the project form. Predicts how long a project will take from the actual durations of similar completed projects (by category and partner department), with a suggested target end date and a confidence level. Self-updating as projects close.' },
+  notifications: { flag: 'FEATURE_NOTIFICATIONS', label: 'Notifications & @mentions', desc: 'Adds a header inbox (🔔) and @mentions in the project journal. Type @ to mention a teammate in a project entry — they get an in-app notification. Notifications are pull-based (seen when you open the app); email/Teams delivery would be a later add.' },
 };
 
 // ── Strategic Alignment Options ──────────────────────────────────────

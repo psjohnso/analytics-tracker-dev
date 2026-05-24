@@ -77,6 +77,14 @@ async function addProjectNote(projectNumber, noteText) {
       created_at: nowEpoch
     });
     showToast('Note added.', 'success');
+    // @mention notifications (beta): write a row per mentioned teammate.
+    if (typeof _notifOn === 'function' && _notifOn() && typeof notifParseMentions === 'function') {
+      var _proj = (typeof PROJECTS !== 'undefined' && PROJECTS) ? PROJECTS.find(function(pp) { return pp.project_number === projectNumber; }) : null;
+      var _title = _proj ? _proj.title : ('Project ' + projectNumber);
+      notifParseMentions(attrs.note_text).forEach(function(nm) {
+        addNotification(nm, 'mention', 'project', projectNumber, _title, attrs.note_text);
+      });
+    }
     // Re-render the detail page so the new entry appears immediately.
     if (typeof render === 'function') render();
   } catch (e) {
@@ -99,8 +107,11 @@ function renderProjectJournalSection(p) {
   // Composer: textarea + Add button. Only shown to signed-in users.
   if (Auth.loggedIn) {
     var taId = 'pj-input-' + p.objectId;
+    var mentionOn = (typeof _notifOn === 'function' && _notifOn());
+    var mentionAttrs = mentionOn ? ' oninput="notifMentionInput(event)" onkeydown="notifMentionKey(event)"' : '';
+    var phExtra = mentionOn ? ' Type @ to mention a teammate.' : '';
     html += '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">';
-    html += '<textarea id="' + taId + '" placeholder="Add a journal entry — observations, blockers, decisions, anything that doesn\'t belong in the description." rows="3" style="width:100%;font-size:14px;padding:10px 12px;border:1.5px solid #E8E6DF;border-radius:8px;font-family:Lato,sans-serif;resize:vertical;box-sizing:border-box;"></textarea>';
+    html += '<textarea id="' + taId + '"' + mentionAttrs + ' placeholder="Add a journal entry — observations, blockers, decisions, anything that doesn\'t belong in the description.' + phExtra + '" rows="3" style="width:100%;font-size:14px;padding:10px 12px;border:1.5px solid #E8E6DF;border-radius:8px;font-family:Lato,sans-serif;resize:vertical;box-sizing:border-box;"></textarea>';
     html += '<div style="display:flex;justify-content:flex-end;">';
     html += '<button onclick="var ta=document.getElementById(\'' + taId + '\');addProjectNote(\'' + pn + '\',ta.value);ta.value=\'\';" class="btn-navy-md">＋ Add Note</button>';
     html += '</div>';
@@ -124,7 +135,9 @@ function renderProjectJournalSection(p) {
     html += '<div style="margin-bottom:14px;position:relative;">';
     html += '<div style="position:absolute;left:-23px;top:4px;width:10px;height:10px;border-radius:50%;background:#0088FF;border:2px solid #fff;"></div>';
     html += '<div style="font-size:12px;color:var(--text-muted);">' + esc(dateLabel) + ' · ' + esc(n.created_by || 'Unknown') + '</div>';
-    html += '<div style="font-size:14px;margin-top:3px;color:var(--text-body);white-space:pre-wrap;">' + esc(n.note_text) + '</div>';
+    var noteHtml = esc(n.note_text);
+    if (typeof notifRenderMentions === 'function') noteHtml = notifRenderMentions(noteHtml);
+    html += '<div style="font-size:14px;margin-top:3px;color:var(--text-body);white-space:pre-wrap;">' + noteHtml + '</div>';
     html += '</div>';
   });
   html += '</div>';
