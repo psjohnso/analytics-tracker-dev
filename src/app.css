@@ -1594,23 +1594,21 @@ body[data-theme="dark"] .sidebar-acc-head .acc-count { color:#0D1117; }
 .res-layout {
   display: grid; grid-template-columns: 240px 1fr;
   gap: 16px; padding: 16px 0 0 0;
-  height: calc(100vh - 220px); /* nav + sub-tab bar + result-count area */
-  min-height: 420px;
-  align-items: stretch;
+  /* Columns size to content and the page itself scrolls — no inner scrollbars
+     on the Summary / allocation panes. The rail is made sticky below. */
+  align-items: start;
 }
 @media (max-width: 900px) {
   .res-layout {
     grid-template-columns: 1fr;
-    height: auto;
   }
-  .res-rail { max-height: 220px; }
+  .res-rail { position: static; }
 }
 .res-rail {
   background:var(--surface-2); border: 1px solid #E8E6DF; border-radius: 10px;
   padding: 10px;
-  overflow-y: auto;
-  /* fills the grid row height */
-  min-height: 0;
+  /* Stays in view as the page scrolls, without its own scrollbar. */
+  position: sticky; top: calc(var(--header-h) + 8px); align-self: start;
 }
 .res-rail-title {
   font-size: 10px; font-weight: 800; color: var(--navy);
@@ -1693,8 +1691,6 @@ body[data-theme="dark"] .sidebar-acc-head .acc-count { color:#0D1117; }
 .res-pane-actions .btn-apply:hover { background: #1a3a7c; }
 .res-pane-body {
   padding: 16px 20px;
-  overflow-y: auto;
-  flex: 1 1 auto; min-height: 0;
 }
 .res-pane-body .person-grid { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:28px; }
 
