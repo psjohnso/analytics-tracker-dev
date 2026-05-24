@@ -109,7 +109,7 @@ function _deriveOrgLists() {
 }
 
 // ObjectIds for the two config records (populated on load from ArcGIS)
-const _configOids = { partner_depts: null, itd_teams: null, owning_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null, display_config: null, data_program: null, team_intro: null, risk_config: null, team_scoping: null, direct_project_teams: null, org_structure: null };
+const _configOids = { partner_depts: null, itd_teams: null, owning_teams: null, proj_categories: null, task_categories: null, task_tools: null, allocation_defaults: null, review_types: null, productivity_ratio: null, display_config: null, data_program: null, team_intro: null, risk_config: null, team_scoping: null, direct_project_teams: null, org_structure: null, permissions: null };
 
 // Slideshow / lobby-display configuration. Team-wide; admin-edited via
 // Settings → System → Slideshow. Loaded by applyAppConfig() from
@@ -366,6 +366,16 @@ function applyAppConfig(features) {
           applyRiskConfig(parsed);
           _configOids.risk_config = oid;
           console.log('[Config] Loaded risk_config');
+        }
+        return;
+      }
+      if (key === 'permissions') {
+        // Capability matrix overriding CAPABILITY_DEFS seed defaults. Shape:
+        // { capKey: ['lead', 'member', …] }. Consumed by can() in auth.js.
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          PERMISSIONS_CONFIG = parsed;
+          _configOids.permissions = oid;
+          console.log('[Config] Loaded permissions matrix');
         }
         return;
       }

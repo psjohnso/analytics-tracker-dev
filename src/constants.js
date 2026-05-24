@@ -10,7 +10,7 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.53.0.0071';
+const APP_VERSION = '1.54.0.0072';
 
 // ── Three-tier access (admin / lead / member) via ArcGIS groups ──────────
 // Tier is resolved at login from the user's group memberships (highest wins).
@@ -33,8 +33,8 @@ const REQUIRE_TRACKER_GROUP = false;
 // Phase 2) when present. Baseline actions (view, log own time, submit ideas,
 // edit own items) aren't listed here — they're available to every signed-in user.
 const CAPABILITY_DEFS = {
-  create_project:    { label: 'Create projects directly',          tiers: ['lead'] },
-  edit_any_project:  { label: 'Edit / manage any project & task',  tiers: ['lead'] },
+  create_project:    { label: 'Create projects directly',          tiers: ['lead'], leadOnly: true },
+  edit_any_project:  { label: 'Edit / manage any project & task',  tiers: ['lead'], leadOnly: true },
   promote_idea:      { label: 'Promote ideas → projects',          tiers: ['lead'] },
   project_review:    { label: 'Project Review workflow',           tiers: ['lead'] },
   edit_allocations:  { label: 'Edit allocations / capacity',       tiers: ['lead'] },

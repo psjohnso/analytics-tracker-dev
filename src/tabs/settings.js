@@ -498,6 +498,7 @@ function renderSettingsPage(area) {
       '<div class="settings-nav-label">People</div>' +
       navItem('team', 'Team members', activeCount) +
       navItem('timetracking', 'Time tracking') +
+      navItem('permissions', 'Access & Permissions') +
     '</div>' +
     '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">Team setup</div>' +
@@ -740,6 +741,10 @@ function renderSettingsPage(area) {
         '</label>' +
         '<span class="text-muted-sm" style="margin-left:28px;">When enabled, the system will suggest lifecycle phase requirements for newly created tasks using AI. Suggestions appear on the task detail page after creation with Accept/Dismiss options.</span>' +
       '</div>';
+  }
+
+  else if (_settingsSection === 'permissions') {
+    panelHtml = buildPermissionsPanel();
   }
 
   else if (_settingsSection === 'slideshow') {

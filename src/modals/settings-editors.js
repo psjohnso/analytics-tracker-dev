@@ -60,6 +60,79 @@ async function saveConfigKey(key, valueArray) {
   }
 }
 
+// ── Access & Permissions editor (admin-only) ──────────────
+// Edits the capability matrix (CAPABILITY_DEFS overridden by PERMISSIONS_CONFIG)
+// and persists it to app_config 'permissions'. WHO is in each tier is managed in
+// ArcGIS groups, not here — this only controls what each tier can do.
+var _permissionsDraft = null;
+function _ensurePermDraft() {
+  if (_permissionsDraft) return;
+  _permissionsDraft = {};
+  Object.keys(CAPABILITY_DEFS).forEach(function(cap) {
+    if (CAPABILITY_DEFS[cap].meta) return;
+    var live = (typeof capabilityTiers === 'function') ? (capabilityTiers(cap) || []) : (CAPABILITY_DEFS[cap].tiers || []);
+    _permissionsDraft[cap] = live.slice();
+  });
+}
+function buildPermissionsPanel() {
+  _ensurePermDraft();
+  function cb(cap, tier, disabled) {
+    if (disabled) return '<span style="color:var(--text-muted);">—</span>';
+    var on = (_permissionsDraft[cap] || []).indexOf(tier) >= 0;
+    return '<input type="checkbox"' + (on ? ' checked' : '') + ' onchange="togglePermission(\'' + cap + '\',\'' + tier + '\',this.checked)" style="width:16px;height:16px;cursor:pointer;">';
+  }
+  var rows = '';
+  Object.keys(CAPABILITY_DEFS).forEach(function(cap) {
+    var def = CAPABILITY_DEFS[cap];
+    if (def.meta) return;
+    rows += '<tr>' +
+      '<td style="font-weight:600;">' + esc(def.label) + '</td>' +
+      '<td style="text-align:center;">' + cb(cap, 'member', def.leadOnly) + '</td>' +
+      '<td style="text-align:center;">' + cb(cap, 'lead', false) + '</td>' +
+      '<td style="text-align:center;opacity:0.45;"><input type="checkbox" checked disabled title="Admins can always do everything" style="width:16px;height:16px;"></td>' +
+    '</tr>';
+  });
+  var metaRows = '';
+  Object.keys(CAPABILITY_DEFS).forEach(function(cap) {
+    var def = CAPABILITY_DEFS[cap];
+    if (!def.meta) return;
+    metaRows += '<tr style="opacity:0.65;"><td style="font-weight:600;">🔒 ' + esc(def.label) + '</td><td colspan="3" style="text-align:center;font-size:11px;color:var(--text-muted);">Admin only — locked</td></tr>';
+  });
+  return '<div class="settings-panel-title">Access &amp; Permissions</div>' +
+    '<div class="settings-panel-desc">Choose what each tier can do. <strong>Who</strong> is in each tier (admin / lead / member) is managed in ArcGIS Online via the <em>Project Tracker – Admins / Leads / Members</em> groups; this page controls their <strong>capabilities</strong>. Admins can always do everything; members can always view and edit items they own. Locked rows can’t be changed (they would allow privilege escalation).</div>' +
+    '<table class="member-table" style="max-width:620px;"><thead><tr>' +
+      '<th>Capability</th><th style="text-align:center;">Member</th><th style="text-align:center;">Lead</th><th style="text-align:center;">Admin</th>' +
+    '</tr></thead><tbody>' + rows + metaRows + '</tbody></table>' +
+    '<div style="margin-top:16px;display:flex;gap:8px;">' +
+      '<button class="settings-btn settings-btn-primary" onclick="savePermissions()">Save changes</button>' +
+      '<button class="settings-btn settings-btn-secondary" onclick="discardPermissions()">Discard</button>' +
+    '</div>' +
+    '<div class="settings-panel-desc" style="margin-top:8px;font-size:11px;">“Create / edit any project” are lead abilities scoped to the lead’s assigned team (set per member under Team members).</div>';
+}
+function togglePermission(cap, tier, on) {
+  _ensurePermDraft();
+  if (!_permissionsDraft[cap]) _permissionsDraft[cap] = [];
+  var arr = _permissionsDraft[cap];
+  var i = arr.indexOf(tier);
+  if (on && i < 0) arr.push(tier);
+  else if (!on && i >= 0) arr.splice(i, 1);
+}
+async function savePermissions() {
+  _ensurePermDraft();
+  var ok = await saveConfigKey('permissions', _permissionsDraft);
+  if (ok) {
+    PERMISSIONS_CONFIG = JSON.parse(JSON.stringify(_permissionsDraft));
+    _permissionsDraft = null;
+    if (typeof showToast === 'function') showToast('Permissions saved.', 'success');
+    if (typeof renderSettingsPage === 'function') renderSettingsPage(document.getElementById('content-area'));
+  }
+}
+function discardPermissions() {
+  _permissionsDraft = null;
+  if (typeof renderSettingsPage === 'function') renderSettingsPage(document.getElementById('content-area'));
+  if (typeof showToast === 'function') showToast('Changes discarded.', 'success');
+}
+
 async function saveCustomLists(listKey) {
   if (listKey === 'dept') {
     await saveConfigKey('partner_depts', _customPartnerDepts);
