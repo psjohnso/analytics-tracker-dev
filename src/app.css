@@ -120,6 +120,9 @@ body[data-theme="dark"] {
   --pill-amber-bg:rgba(245,200,66,0.16);   --pill-amber-fg:#EBCF77;
   --pill-cyan-bg:rgba(125,211,252,0.16);   --pill-cyan-fg:#A7DDF7;
   --surface-2: #2A2F38;
+  /* Re-declare the alias here too: the :root definition resolves var(--surface-2)
+     at the html element (light value), so it never flipped on its own. */
+  --bg-surface: #2A2F38;
   color-scheme: dark;
 }
 /* Keep the top header band dark instead of the lightened primary. */
@@ -171,6 +174,26 @@ body[data-theme="dark"] .mw-role-review .mw-role-hdr { background: var(--pill-pu
 body[data-theme="dark"] .mw-att-red    { background: rgba(248,113,113,0.16); color:#FCA5A5; }
 body[data-theme="dark"] .mw-att-yellow { background: var(--pill-amber-bg);    color: var(--pill-amber-fg); }
 body[data-theme="dark"] .mw-att-gray   { color:#9AA2AC; }
+/* Chips/labels/buttons on flipping surfaces that carry hardcoded slate/gray
+   text — flip the text so it stays legible in dark. */
+body[data-theme="dark"] .suggest-task-chip,
+body[data-theme="dark"] .phase-req-chip,
+body[data-theme="dark"] .issue-priority-chip { color: var(--text-body); }
+body[data-theme="dark"] .mw-role-contrib .mw-role-hdr { background: var(--surface-2); color: var(--text-body); }
+body[data-theme="dark"] .settings-nav-item { color: var(--text-body); }
+body[data-theme="dark"] .settings-nav-count { color: var(--text-muted); }
+body[data-theme="dark"] .md-tb-btn { color: var(--text-body); }
+body[data-theme="dark"] .mf-label { color: var(--text-muted); }
+body[data-theme="dark"] .btn-ae-cancel { color: var(--text-body); }
+/* Project/task list table: header uses lightened navy (too bright) and the
+   row hover is a hardcoded pale blue (washes out text) — give both dark variants. */
+body[data-theme="dark"] .task-table-header { background: var(--white); color: var(--text-muted); border-bottom: 1px solid var(--border); }
+body[data-theme="dark"] .task-row:hover { background: rgba(255,255,255,0.05); }
+/* Resources rail: selected member used a hardcoded pale-blue bg (washes out the
+   light name text). Use a translucent blue tint + lightened-navy border. */
+body[data-theme="dark"] .person-card { border-color: var(--border); }
+body[data-theme="dark"] .person-card:hover { border-color: var(--navy); box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+body[data-theme="dark"] .person-card.active { border-color: var(--navy); background: var(--pill-blue-bg); }
 /* Best-effort dark surfaces for form controls that don't carry an inline bg. */
 body[data-theme="dark"] input,
 body[data-theme="dark"] select,

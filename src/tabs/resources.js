@@ -247,10 +247,18 @@ function renderResources(area) {
   let xLabels = '';
   let yLines = '';
 
+  // Chart colors flip for the Dark theme: navy capacity line lightens, the
+  // light grid/axis strokes become subtle white overlays.
+  const _resDark = (typeof document !== 'undefined' && document.body && document.body.dataset.theme === 'dark');
+  const capLineColor = _resDark ? '#A9C8F0' : '#002669';
+  const gridColor = _resDark ? 'rgba(255,255,255,0.07)' : '#F3F1EB';
+  const axisColor = _resDark ? 'rgba(255,255,255,0.18)' : '#E8E6DF';
+  const cwIndOpacity = _resDark ? '0.10' : '0.05';
+
   // Y gridlines
   for (let h = 0; h <= maxCap; h += Math.ceil(maxCap/4)) {
     const y = chartH - padB - (h/maxCap)*(chartH-padB);
-    yLines += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${chartW}" y2="${y.toFixed(1)}" stroke="#F3F1EB" stroke-width="1"/>`;
+    yLines += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${chartW}" y2="${y.toFixed(1)}" stroke="${gridColor}" stroke-width="1"/>`;
     yLines += `<text x="${padL-6}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="10" fill="#9CA3AF">${h.toFixed(0)}</text>`;
   }
 
@@ -281,11 +289,11 @@ function renderResources(area) {
     const nextCap = p.proj_cap[nextWi] || cap;
     const nextCapY = chartH - padB - (nextCap/maxCap)*(chartH-padB);
     const x2 = padL + (nextWi - wStart) * (barW + gap) + barW/2;
-    bars += `<circle cx="${(x+barW/2).toFixed(1)}" cy="${capY.toFixed(1)}" r="3" fill="#002669"/>`;
+    bars += `<circle cx="${(x+barW/2).toFixed(1)}" cy="${capY.toFixed(1)}" r="3" fill="${capLineColor}"/>`;
 
     // Current week indicator
     if (wi === calWeekIdx) {
-      bars += `<rect x="${x.toFixed(1)}" y="0" width="${barW}" height="${chartH-padB}" fill="#002669" opacity="0.05" rx="2"/>`;
+      bars += `<rect x="${x.toFixed(1)}" y="0" width="${barW}" height="${chartH-padB}" fill="${capLineColor}" opacity="${cwIndOpacity}" rx="2"/>`;
     }
 
     // X label: show month on first week of month
@@ -315,10 +323,10 @@ function renderResources(area) {
 
   const svgChart = `<svg width="${chartW}" height="${chartH}" style="overflow:visible;display:block;">
     ${yLines}
-    <line x1="${padL}" y1="0" x2="${padL}" y2="${chartH-padB}" stroke="#E8E6DF" stroke-width="1"/>
-    <line x1="${padL}" y1="${chartH-padB}" x2="${chartW}" y2="${chartH-padB}" stroke="#E8E6DF" stroke-width="1"/>
+    <line x1="${padL}" y1="0" x2="${padL}" y2="${chartH-padB}" stroke="${axisColor}" stroke-width="1"/>
+    <line x1="${padL}" y1="${chartH-padB}" x2="${chartW}" y2="${chartH-padB}" stroke="${axisColor}" stroke-width="1"/>
     ${bars}
-    <path d="${capPath}" fill="none" stroke="#002669" stroke-width="2" stroke-dasharray="4,3" opacity="0.6"/>
+    <path d="${capPath}" fill="none" stroke="${capLineColor}" stroke-width="2" stroke-dasharray="4,3" opacity="0.6"/>
     ${xLabels}
   </svg>`;
 
@@ -370,7 +378,7 @@ function renderResources(area) {
       <div class="chart-header"><h3>Weekly Project Allocation</h3><div class="chart-nav"><button onclick="shiftChart(-20)">◀ Prev</button><span class="period-label">${periodLabel}</span><button onclick="shiftChart(20)">Next ▶</button></div></div>
       <div style="overflow-x:auto;">${svgChart}</div>
       <div style="margin-top:12px;line-height:2;">${legend}</div>
-      <div style="margin-top:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);"><svg width="20" height="12"><line x1="0" y1="6" x2="20" y2="6" stroke="#002669" stroke-width="2" stroke-dasharray="4,3" opacity="0.6"/></svg>Project capacity (after role ratio &amp; absences)</div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);"><svg width="20" height="12"><line x1="0" y1="6" x2="20" y2="6" stroke="${capLineColor}" stroke-width="2" stroke-dasharray="4,3" opacity="0.6"/></svg>Project capacity (after role ratio &amp; absences)</div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><span style="font-size:13px;font-weight:700;color:var(--navy);">Active Project Allocations</span><span class="text-muted-sm">Showing Active &amp; On Hold only</span></div>
     <div class="proj-alloc-table"><table><thead><tr><th>Project</th><th>Status</th><th>Type</th><th>This Week %</th><th>Recent Trend</th><th>Total Hours</th></tr></thead><tbody>${tableRows || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No allocations found</td></tr>'}</tbody></table></div>

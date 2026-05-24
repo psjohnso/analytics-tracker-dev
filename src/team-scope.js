@@ -218,12 +218,18 @@ function renderTeamSwitcher() {
   var loggedIn = !(typeof Auth !== 'undefined' && Auth) || Auth.loggedIn !== false;
   if (!isRealAdmin || !loggedIn) { wrap.innerHTML = ''; wrap.style.display = 'none'; return; }
   var cur = CURRENT_TEAM || '';
-  var sStyle = 'font-size:11px;font-weight:700;font-family:Lato,sans-serif;color:var(--navy);background:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.5);border-radius:4px;padding:4px 8px;cursor:pointer;';
+  // The header is pinned dark in the Dark theme, and --navy lightens there, so the
+  // light-on-white select styling becomes unreadable. Branch on the dark theme.
+  var _tsDark = (typeof document !== 'undefined' && document.body && document.body.dataset.theme === 'dark');
+  var sStyle = _tsDark
+    ? 'font-size:11px;font-weight:700;font-family:Lato,sans-serif;color:#F2F4F7;background:#2A2F38;border:1px solid #4A5360;border-radius:4px;padding:4px 8px;cursor:pointer;'
+    : 'font-size:11px;font-weight:700;font-family:Lato,sans-serif;color:var(--navy);background:rgba(255,255,255,0.92);border:1px solid rgba(255,255,255,0.5);border-radius:4px;padding:4px 8px;cursor:pointer;';
+  var optStyle = _tsDark ? 'color:#F2F4F7;background:#2A2F38;' : 'color:#111;background:var(--white);';
 
   // Team lens — grouped by department (optgroups) when an org structure is set.
   function _tsOption(t) {
     var sel = cur && ((typeof sameTeam === 'function') ? sameTeam(t, cur) : (t === cur));
-    return '<option value="' + _tsEsc(t) + '" style="color:#111;background:var(--white);"' + (sel ? ' selected' : '') + '>' + _tsEsc(t) + '</option>';
+    return '<option value="' + _tsEsc(t) + '" style="' + optStyle + '"' + (sel ? ' selected' : '') + '>' + _tsEsc(t) + '</option>';
   }
   var opts = '<option value=""' + (cur ? '' : ' selected') + '>All teams</option>';
   var teams = allKnownTeams();
@@ -261,9 +267,10 @@ function renderTeamSwitcher() {
   if (cur) roleItems.push(['lead', 'Lead of ' + cur]);
   roleItems.push(['member', cur ? ('Member of ' + cur) : 'Member (view as)']);
   var ropts = roleItems.map(function (r) {
-    return '<option value="' + r[0] + '"' + (role === r[0] ? ' selected' : '') + ' style="color:#111;background:var(--white);">' + _tsEsc(r[1]) + '</option>';
+    return '<option value="' + r[0] + '"' + (role === r[0] ? ' selected' : '') + ' style="' + optStyle + '">' + _tsEsc(r[1]) + '</option>';
   }).join('');
-  html += ' <select title="Act as role — admin only" onchange="setActAsRole(this.value)" style="' + sStyle + 'max-width:190px;' + (role !== 'admin' ? 'background:#FEF3C7;' : '') + '">' + ropts + '</select>';
+  var roleHighlight = role !== 'admin' ? (_tsDark ? 'background:rgba(245,200,66,0.18);color:#EBCF77;' : 'background:#FEF3C7;') : '';
+  html += ' <select title="Act as role — admin only" onchange="setActAsRole(this.value)" style="' + sStyle + 'max-width:190px;' + roleHighlight + '">' + ropts + '</select>';
 
   wrap.style.display = '';
   wrap.innerHTML = html;

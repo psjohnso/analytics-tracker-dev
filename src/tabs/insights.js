@@ -498,6 +498,10 @@ function buildInsightsPage() {
   var donutSvg = '', teamTable = '';
   if (teamEntries.length > 0 && teamTotal > 0) {
     var donutR = 70, donutHole = 45, donutCx = 100, donutCy = 100;
+    var _insDark = (typeof document !== 'undefined' && document.body && document.body.dataset.theme === 'dark');
+    var donutCenterFill = _insDark ? '#A9C8F0' : '#002669';
+    var donutHoleFill = _insDark ? '#20242C' : '#fff';
+    var legendNameColor = _insDark ? '#E6E9ED' : '#374151';
     var donutColors = ['#002669', '#1E40AF', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#C24200', '#83AC16'];
     var startAngle = -Math.PI / 2;
     donutSvg = '<div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">';
@@ -512,16 +516,16 @@ function buildInsightsPage() {
       var ix1 = donutCx + donutHole * Math.cos(endAngle), iy1 = donutCy + donutHole * Math.sin(endAngle);
       var ix2 = donutCx + donutHole * Math.cos(startAngle), iy2 = donutCy + donutHole * Math.sin(startAngle);
       var col = donutColors[i % donutColors.length];
-      if (pct >= 0.999) { donutSvg += '<circle cx="' + donutCx + '" cy="' + donutCy + '" r="' + donutR + '" fill="' + col + '"/><circle cx="' + donutCx + '" cy="' + donutCy + '" r="' + donutHole + '" fill="#fff"/>'; }
+      if (pct >= 0.999) { donutSvg += '<circle cx="' + donutCx + '" cy="' + donutCy + '" r="' + donutR + '" fill="' + col + '"/><circle cx="' + donutCx + '" cy="' + donutCy + '" r="' + donutHole + '" fill="' + donutHoleFill + '"/>'; }
       else { donutSvg += '<path d="M' + x1 + ',' + y1 + ' A' + donutR + ',' + donutR + ' 0 ' + largeArc + ',1 ' + x2 + ',' + y2 + ' L' + ix1 + ',' + iy1 + ' A' + donutHole + ',' + donutHole + ' 0 ' + largeArc + ',0 ' + ix2 + ',' + iy2 + 'Z" fill="' + col + '"><title>' + esc(t.name) + ': ' + t.hours + 'h (' + Math.round(pct * 100) + '%)</title></path>'; }
       startAngle = endAngle;
     });
-    donutSvg += '<text x="' + donutCx + '" y="' + (donutCy - 4) + '" text-anchor="middle" font-size="18" font-weight="800" fill="#002669" font-family="Lato,sans-serif">' + Math.round(teamTotal) + 'h</text>';
+    donutSvg += '<text x="' + donutCx + '" y="' + (donutCy - 4) + '" text-anchor="middle" font-size="18" font-weight="800" fill="' + donutCenterFill + '" font-family="Lato,sans-serif">' + Math.round(teamTotal) + 'h</text>';
     donutSvg += '<text x="' + donutCx + '" y="' + (donutCy + 12) + '" text-anchor="middle" font-size="9" fill="#9CA3AF" font-family="Lato,sans-serif">total</text></svg>';
     donutSvg += '<div style="flex:1;min-width:160px;">';
     teamEntries.forEach(function(t, i) {
       var col = donutColors[i % donutColors.length];
-      donutSvg += '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px;"><div style="width:10px;height:10px;border-radius:2px;background:' + col + ';flex-shrink:0;"></div><span style="flex:1;color:#374151;font-weight:600;">' + esc(t.name) + '</span><span style="font-weight:700;color:var(--navy);">' + t.hours + 'h</span><span style="font-size:10px;color:#9CA3AF;min-width:30px;text-align:right;">' + Math.round(t.hours / teamTotal * 100) + '%</span></div>';
+      donutSvg += '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px;"><div style="width:10px;height:10px;border-radius:2px;background:' + col + ';flex-shrink:0;"></div><span style="flex:1;color:' + legendNameColor + ';font-weight:600;">' + esc(t.name) + '</span><span style="font-weight:700;color:var(--navy);">' + t.hours + 'h</span><span style="font-size:10px;color:#9CA3AF;min-width:30px;text-align:right;">' + Math.round(t.hours / teamTotal * 100) + '%</span></div>';
     });
     donutSvg += '</div></div>';
     teamTable = '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:10px;background:var(--white);"><table class="member-table" style="margin:0;"><thead><tr><th>Team Member</th><th style="text-align:right;">Hours</th><th style="text-align:right;">% of Total</th></tr></thead><tbody>' +

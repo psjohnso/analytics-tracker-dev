@@ -1666,7 +1666,7 @@ async function suggestAlignment() {
       '<div style="font-size:14px;margin-bottom:4px;">⚠️</div>' +
       '<div style="font-size:12px;color:#991B1B;">' + esc(err.message) + '</div>' +
       '<button onclick="suggestAlignment()" style="margin-top:8px;padding:4px 12px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Try Again</button>' +
-      ' <button onclick="document.getElementById(\'alignment-suggest-panel\').style.display=\'none\'" style="margin-top:8px;padding:4px 12px;background:var(--surface-2);color:#374151;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Dismiss</button></div>';
+      ' <button onclick="document.getElementById(\'alignment-suggest-panel\').style.display=\'none\'" style="margin-top:8px;padding:4px 12px;background:var(--surface-2);color:var(--text-body);border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Dismiss</button></div>';
   }
 }
 
@@ -1713,7 +1713,7 @@ function renderAlignmentSuggestions() {
   } else {
     html += '<div style="display:flex;gap:8px;margin-top:10px;">';
     html += '<button onclick="applyAlignmentSuggestions()" style="padding:5px 14px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Apply Selected</button>';
-    html += '<button onclick="document.getElementById(\'alignment-suggest-panel\').style.display=\'none\'" style="padding:5px 14px;background:var(--surface-2);color:#374151;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Dismiss</button>';
+    html += '<button onclick="document.getElementById(\'alignment-suggest-panel\').style.display=\'none\'" style="padding:5px 14px;background:var(--surface-2);color:var(--text-body);border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Dismiss</button>';
     html += '<span style="font-size:10px;color:#92400E;opacity:0.7;align-self:center;margin-left:auto;">' + totalCount + ' suggestions · uncheck any to skip</span>';
     html += '</div>';
   }

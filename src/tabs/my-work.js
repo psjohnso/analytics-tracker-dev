@@ -314,7 +314,12 @@ function buildGanttBars() {
 
   // Rows
   // Project accent colors for visual distinction
-  var GANTT_ACCENT_COLORS = ['#002669', '#9E0059', '#C24200', '#0088FF', '#83AC16', '#140233', '#E5D086', '#0F6E56'];
+  // Per-project accent (title text + left border). Dark theme uses lightened
+  // variants so the dark navy/magenta/teal titles stay legible on the dark rows.
+  var _ganttDark = (typeof document !== 'undefined' && document.body && document.body.dataset.theme === 'dark');
+  var GANTT_ACCENT_COLORS = _ganttDark
+    ? ['#6E9BD6', '#E66FA8', '#E8845C', '#4DA3FF', '#A8CC4A', '#A899D6', '#E5D086', '#4FB89A']
+    : ['#002669', '#9E0059', '#C24200', '#0088FF', '#83AC16', '#140233', '#E5D086', '#0F6E56'];
   var ganttProjIdx = 0;
 
   roleOrder.forEach(function(role) {
@@ -785,10 +790,12 @@ function buildMyWorkTasksSection(myTasks, todayStr, viewUserTaskHrsFn) {
     return ['Active', 'Pending', 'Waiting for Response'].indexOf(t.status) >= 0 && getTaskAlerts(t, todayStr).some(function(a) { return a.cls === 'mw-att-gray'; });
   }).length;
   if (taskOverdue + taskDueSoon + taskMissing > 0) {
+    var _mwDark1 = (typeof document !== 'undefined' && document.body && document.body.dataset.theme === 'dark');
+    var attTxt1 = _mwDark1 ? { over:'#FCA5A5', due:'#EBCF77', miss:'#9AA2AC' } : { over:'#791F1F', due:'#92400E', miss:'#5F5E5A' };
     html += '<div style="display:flex;gap:10px;font-size:10px;font-weight:700;">';
-    if (taskOverdue > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#E24B4A;display:inline-block;"></span><span style="color:#791F1F;">' + taskOverdue + ' overdue</span></span>';
-    if (taskDueSoon > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#EF9F27;display:inline-block;"></span><span style="color:#92400E;">' + taskDueSoon + ' due soon</span></span>';
-    if (taskMissing > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span><span style="color:#5F5E5A;">' + taskMissing + ' missing</span></span>';
+    if (taskOverdue > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#E24B4A;display:inline-block;"></span><span style="color:' + attTxt1.over + ';">' + taskOverdue + ' overdue</span></span>';
+    if (taskDueSoon > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#EF9F27;display:inline-block;"></span><span style="color:' + attTxt1.due + ';">' + taskDueSoon + ' due soon</span></span>';
+    if (taskMissing > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span><span style="color:' + attTxt1.miss + ';">' + taskMissing + ' missing</span></span>';
     html += '</div>';
   }
   html += '</div>';
@@ -1220,10 +1227,12 @@ function renderMyWork(area) {
   html += '<div class="mywork-section-header" style="justify-content:space-between;flex-wrap:wrap;">';
   html += '<div>📁 My Projects <span class="badge-count">' + myProjects.length + '</span></div>';
   if (projOverdue + projDueSoon + projMissing > 0) {
+    var _mwDark2 = (typeof document !== 'undefined' && document.body && document.body.dataset.theme === 'dark');
+    var attTxt2 = _mwDark2 ? { over:'#FCA5A5', due:'#EBCF77', miss:'#9AA2AC' } : { over:'#791F1F', due:'#92400E', miss:'#5F5E5A' };
     html += '<div style="display:flex;gap:10px;font-size:10px;font-weight:700;">';
-    if (projOverdue > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#E24B4A;display:inline-block;"></span><span style="color:#791F1F;">' + projOverdue + ' overdue</span></span>';
-    if (projDueSoon > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#EF9F27;display:inline-block;"></span><span style="color:#92400E;">' + projDueSoon + ' due soon</span></span>';
-    if (projMissing > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span><span style="color:#5F5E5A;">' + projMissing + ' missing</span></span>';
+    if (projOverdue > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#E24B4A;display:inline-block;"></span><span style="color:' + attTxt2.over + ';">' + projOverdue + ' overdue</span></span>';
+    if (projDueSoon > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#EF9F27;display:inline-block;"></span><span style="color:' + attTxt2.due + ';">' + projDueSoon + ' due soon</span></span>';
+    if (projMissing > 0) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#B4B2A9;display:inline-block;"></span><span style="color:' + attTxt2.miss + ';">' + projMissing + ' missing</span></span>';
     html += '</div>';
   }
   html += '</div>';

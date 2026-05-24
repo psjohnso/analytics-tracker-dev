@@ -467,7 +467,7 @@ function updateFilterIndicator() {
   }
   indicator.style.display = '';
 
-  var chipStyle = 'display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--white);border:1px solid #FED7AA;color:#9A3412;white-space:nowrap;';
+  var chipStyle = 'display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--pill-amber-bg);border:1px solid #FED7AA;color:var(--pill-amber-fg);white-space:nowrap;';
   var xStyle = 'cursor:pointer;font-weight:700;opacity:0.6;margin-left:2px;';
   var chips = '';
 
@@ -497,7 +497,7 @@ function updateFilterIndicator() {
   }
 
   if (count > 1) {
-    chips += '<span style="font-size:10px;font-weight:600;color:#9A3412;cursor:pointer;padding:2px 4px;text-decoration:underline;" onclick="clearAllFilters()">Clear all</span>';
+    chips += '<span style="font-size:10px;font-weight:600;color:var(--pill-amber-fg);cursor:pointer;padding:2px 4px;text-decoration:underline;" onclick="clearAllFilters()">Clear all</span>';
   }
 
   chipsEl.innerHTML = chips;
