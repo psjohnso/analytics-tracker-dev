@@ -1,0 +1,276 @@
+/* ============================================================
+   BASE — typographic + component primitives for the new system
+   Everything here is .oe-* scoped to coexist with the canvas chrome
+   ============================================================ */
+
+.oe {
+  font-family: var(--font-sans);
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  color: var(--ink-7);
+  background: var(--ink-0);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.oe *, .oe *::before, .oe *::after { box-sizing: border-box; }
+
+/* ---------- type utilities ---------- */
+.oe-display-1 { font-family: var(--font-display); font-size: var(--t-display-1); line-height: var(--lh-display); letter-spacing: var(--tracking-display); font-weight: 400; }
+.oe-display-2 { font-family: var(--font-display); font-size: var(--t-display-2); line-height: var(--lh-display); letter-spacing: var(--tracking-display); font-weight: 400; }
+.oe-display-3 { font-family: var(--font-display); font-size: var(--t-display-3); line-height: var(--lh-display); letter-spacing: var(--tracking-display); font-weight: 400; }
+.oe-h1 { font-size: var(--t-h1); line-height: var(--lh-heading); font-weight: 600; letter-spacing: -0.005em; }
+.oe-h2 { font-size: var(--t-h2); line-height: var(--lh-heading); font-weight: 600; letter-spacing: -0.003em; }
+.oe-h3 { font-size: var(--t-h3); line-height: var(--lh-heading); font-weight: 600; }
+.oe-h4 { font-size: var(--t-h4); line-height: var(--lh-heading); font-weight: 600; }
+.oe-body { font-size: var(--t-body); line-height: var(--lh-body); }
+.oe-body-sm { font-size: var(--t-body-sm); line-height: var(--lh-body); color: var(--ink-5); }
+.oe-meta {
+  font-size: var(--t-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--ink-5);
+}
+.oe-mono { font-family: var(--font-mono); font-size: var(--t-mono); font-variant-numeric: tabular-nums; }
+.oe-italic-serif { font-family: var(--font-display); font-style: italic; font-weight: 400; }
+.oe-tnum { font-variant-numeric: tabular-nums; }
+
+/* ---------- buttons ---------- */
+.oe-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-family: var(--font-sans);
+  font-size: var(--t-ui);
+  font-weight: 500;
+  line-height: 1;
+  padding: 9px 14px;
+  border-radius: var(--r-2);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+  white-space: nowrap;
+  letter-spacing: -0.005em;
+}
+.oe-btn--primary {
+  background: var(--navy-500);
+  color: var(--ink-paper);
+}
+.oe-btn--primary:hover { background: var(--navy-700); }
+
+.oe-btn--secondary {
+  background: var(--ink-paper);
+  color: var(--ink-7);
+  border-color: var(--ink-3);
+}
+.oe-btn--secondary:hover { background: var(--ink-1); border-color: var(--ink-4); }
+
+.oe-btn--ghost {
+  background: transparent;
+  color: var(--ink-6);
+}
+.oe-btn--ghost:hover { background: var(--ink-1); }
+
+.oe-btn--sm { padding: 6px 10px; font-size: var(--t-ui-sm); }
+.oe-btn--icon { padding: 7px; }
+
+/* ---------- pills / status indicators ---------- */
+.oe-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 3px 7px;
+  border-radius: var(--r-pill);
+  font-size: var(--t-ui-sm);
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.oe-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+  flex: 0 0 auto;
+}
+.oe-pill--active   { background: var(--status-active-bg);   color: var(--status-active-fg); }
+.oe-pill--future   { background: var(--status-future-bg);   color: var(--status-future-fg); }
+.oe-pill--complete { background: var(--status-complete-bg); color: var(--status-complete-fg); }
+.oe-pill--hold     { background: var(--status-hold-bg);     color: var(--status-hold-fg); }
+.oe-pill--canceled { background: var(--status-canceled-bg); color: var(--status-canceled-fg); }
+.oe-pill--overdue  { background: var(--status-overdue-bg);  color: var(--status-overdue-fg); }
+
+/* priority chips — no dot, tracking-uppercase, smaller */
+.oe-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: var(--r-1);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+.oe-chip--high { background: var(--priority-high-bg); color: var(--priority-high-fg); }
+.oe-chip--med  { background: var(--priority-med-bg);  color: var(--priority-med-fg); }
+.oe-chip--low  { background: var(--priority-low-bg);  color: var(--priority-low-fg); }
+
+/* ---------- inputs ---------- */
+.oe-input {
+  font-family: var(--font-sans);
+  font-size: var(--t-ui);
+  color: var(--ink-7);
+  background: var(--ink-paper);
+  border: 1px solid var(--ink-3);
+  border-radius: var(--r-2);
+  padding: 8px 12px;
+  width: 100%;
+  transition: border-color var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
+}
+.oe-input:focus {
+  outline: none;
+  border-color: var(--navy-500);
+  box-shadow: 0 0 0 3px rgba(31, 59, 107, 0.12);
+}
+.oe-input::placeholder { color: var(--ink-4); }
+
+.oe-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.oe-search input { padding-left: 34px; }
+.oe-search .oe-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--ink-4);
+  pointer-events: none;
+  display: flex;
+}
+
+/* ---------- cards ---------- */
+.oe-card {
+  background: var(--ink-paper);
+  border: 1px solid var(--ink-2);
+  border-radius: var(--r-3);
+}
+.oe-card--flat { box-shadow: none; }
+
+/* ---------- divider ---------- */
+.oe-hr { border: 0; border-top: 1px solid var(--ink-2); margin: 0; }
+
+/* ---------- tab system (replaces rainbow) ---------- */
+.oe-tabs { display: flex; gap: var(--s-5); border-bottom: 1px solid var(--ink-2); }
+.oe-tab {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 2px;
+  font-size: var(--t-ui);
+  font-weight: 500;
+  color: var(--ink-5);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  letter-spacing: -0.005em;
+}
+.oe-tab:hover { color: var(--ink-7); }
+.oe-tab[aria-selected="true"] {
+  color: var(--navy-500);
+}
+.oe-tab[aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 -1px 0;
+  height: 2px;
+  background: var(--navy-500);
+  border-radius: 2px 2px 0 0;
+}
+.oe-tab .oe-tab-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-5);
+  background: var(--ink-1);
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+}
+.oe-tab[aria-selected="true"] .oe-tab-count {
+  background: var(--navy-50);
+  color: var(--navy-500);
+}
+
+/* ---------- table ---------- */
+.oe-table { width: 100%; border-collapse: collapse; font-size: var(--t-body-sm); }
+.oe-table th {
+  text-align: left;
+  font-weight: 600;
+  font-size: var(--t-meta);
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: var(--ink-5);
+  padding: 10px var(--s-3);
+  border-bottom: 1px solid var(--ink-2);
+  background: var(--ink-1);
+  position: sticky;
+  top: 0;
+}
+.oe-table td {
+  padding: 12px var(--s-3);
+  border-bottom: 1px solid var(--ink-2);
+  vertical-align: middle;
+  color: var(--ink-7);
+}
+.oe-table tr:hover td { background: var(--ink-1); }
+.oe-table .oe-row-group td {
+  background: var(--ink-1);
+  font-size: var(--t-meta);
+  font-weight: 600;
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: var(--ink-5);
+  padding: 8px var(--s-3);
+}
+
+/* ---------- avatar ---------- */
+.oe-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--navy-100);
+  color: var(--navy-700);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  flex: 0 0 auto;
+  letter-spacing: 0;
+}
+.oe-avatar--sm { width: 22px; height: 22px; font-size: 10px; }
+.oe-avatar--lg { width: 36px; height: 36px; font-size: 13px; }
+
+/* ---------- accent rule (replaces rainbow stripe) ---------- */
+.oe-accent-rule {
+  height: 1px;
+  background: var(--ink-2);
+}
+.oe-accent-rule--editorial {
+  height: 1px;
+  background: linear-gradient(to right,
+    var(--navy-500) 0,
+    var(--navy-500) 80px,
+    var(--ink-2) 80px,
+    var(--ink-2) 100%);
+}
+
+/* utility classes for layout */
+.oe-row { display: flex; align-items: center; gap: var(--s-3); }
+.oe-col { display: flex; flex-direction: column; gap: var(--s-3); }
+.oe-grow { flex: 1; }
+.oe-spacer { flex: 1; }

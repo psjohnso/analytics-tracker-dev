@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Office of Equity · Design System</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Phosphor icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+
+  <!-- Tokens + base -->
+  <link rel="stylesheet" href="styles/tokens.css" />
+  <link rel="stylesheet" href="styles/base.css" />
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <style>
+    html, body, #root { height: 100%; margin: 0; }
+    body { background: #f0eee9; font-family: 'Hanken Grotesk', system-ui, sans-serif; }
+    /* Phosphor icon vertical-align fix inside flex */
+    .ph { display: inline-flex; align-items: center; }
+    /* Reset disastrous defaults for buttons inside .oe */
+    .oe button { font-family: inherit; }
+    /* Tighten input checkbox accent */
+    .oe input[type="checkbox"] { accent-color: var(--navy-500); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Canvas + components -->
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="components/spec-cover-color.jsx"></script>
+  <script type="text/babel" src="components/spec-type-spacing-icons.jsx"></script>
+  <script type="text/babel" src="components/spec-components.jsx"></script>
+  <script type="text/babel" src="components/spec-forms-menus-states.jsx"></script>
+  <script type="text/babel" src="components/spec-dark-motion-mobile.jsx"></script>
+  <script type="text/babel" src="components/topbar.jsx"></script>
+  <script type="text/babel" src="components/screen-dashboard.jsx"></script>
+  <script type="text/babel" src="components/screen-portfolio.jsx"></script>
+  <script type="text/babel" src="components/screen-capacity.jsx"></script>
+  <script type="text/babel" src="components/screen-project-detail.jsx"></script>
+  <script type="text/babel" src="components/screen-project-detail.jsx"></script>
+
+  <script type="text/babel">
+    const { createRoot } = ReactDOM;
+
+    function App() {
+      return (
+        <DesignCanvas>
+          {/* ============ INTRO ============ */}
+          <DCSection id="intro" title="Office of Equity · Design System" subtitle="A quieter, more confident civic tool. Type before color. Status as the only color rule. Density without noise.">
+            <DCArtboard id="cover" label="00 · Cover" width={900} height={620}>
+              <SpecCover />
+            </DCArtboard>
+          </DCSection>
+
+          {/* ============ TOKENS ============ */}
+          <DCSection id="tokens" title="Foundations" subtitle="Color, type, spacing, iconography — the raw materials.">
+            <DCArtboard id="color" label="02 · Color" width={760} height={1320}>
+              <SpecColor />
+            </DCArtboard>
+            <DCArtboard id="type" label="03 · Typography" width={900} height={920}>
+              <SpecType />
+            </DCArtboard>
+            <DCArtboard id="spacing" label="04 · Spacing &amp; elevation" width={720} height={620}>
+              <SpecSpacing />
+            </DCArtboard>
+            <DCArtboard id="icons" label="05 · Iconography" width={680} height={780}>
+              <SpecIcons />
+            </DCArtboard>
+          </DCSection>
+
+          {/* ============ COMPONENTS ============ */}
+          <DCSection id="components" title="Components" subtitle="One shape language. Three buttons. Three statuses. One table.">
+            <DCArtboard id="primitives" label="06 · Primitives" width={1100} height={780}>
+              <SpecComponents />
+            </DCArtboard>
+            <DCArtboard id="table-viz" label="07 · Tables &amp; viz" width={900} height={720}>
+              <SpecTableViz />
+            </DCArtboard>
+            <DCArtboard id="forms-modals" label="08 · Forms &amp; modals" width={1100} height={920}>
+              <SpecFormsModals />
+            </DCArtboard>
+            <DCArtboard id="menus" label="09 · Menus &amp; popovers" width={960} height={520}>
+              <SpecMenus />
+            </DCArtboard>
+            <DCArtboard id="states" label="10 · States &amp; feedback" width={1000} height={720}>
+              <SpecStates />
+            </DCArtboard>
+          </DCSection>
+
+          {/* ============ SYSTEM EXTENSIONS ============ */}
+          <DCSection id="extensions" title="System extensions" subtitle="Dark mode, motion, accessibility, and the mobile breakpoint.">
+            <DCArtboard id="dark" label="11 · Dark mode" width={900} height={720}>
+              <SpecDarkMode />
+            </DCArtboard>
+            <DCArtboard id="motion-a11y" label="12 · Motion &amp; a11y" width={1100} height={780}>
+              <SpecMotionA11y />
+            </DCArtboard>
+            <DCArtboard id="mobile" label="13 · Mobile · 380px" width={480} height={920}>
+              <ScreenMobile />
+            </DCArtboard>
+          </DCSection>
+
+          {/* ============ HERO SCREENS ============ */}
+          <DCSection id="screens" title="The system in context" subtitle="Three working screens rebuilt with the new system. Same data, same density, much calmer.">
+            <DCArtboard id="dashboard" label="01 · My Work — dashboard" width={1440} height={1180}>
+              <ScreenDashboard />
+            </DCArtboard>
+            <DCArtboard id="portfolio" label="02 · Portfolio" width={1440} height={1200}>
+              <ScreenPortfolio />
+            </DCArtboard>
+            <DCArtboard id="capacity" label="03 · Capacity" width={1440} height={1180}>
+              <ScreenCapacity />
+            </DCArtboard>
+            <DCArtboard id="project-detail" label="04 · Project detail" width={1440} height={1620}>
+              <ScreenProjectDetail />
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
