@@ -397,13 +397,9 @@ function toggleOpenProjectsFilter() {
   if (isActive) {
     activeFilters.status = [];
     btn.classList.remove('weekly-active');
-    btn.style.background = 'transparent';
-    btn.style.color = '#83AC16';
   } else {
     activeFilters.status = [...OPEN_PROJECT_STATUSES];
     btn.classList.add('weekly-active');
-    btn.style.background = '#83AC16';
-    btn.style.color = 'white';
   }
   currentPage = 1;
   buildSidebarFilters();
@@ -419,26 +415,20 @@ function toggleOpenTasksFilter() {
   if (isActive) {
     activeFilters.taskStatus = [];
     btn.classList.remove('weekly-active');
-    btn.style.background = 'transparent';
-    btn.style.color = '#C24200';
   } else {
     activeFilters.taskStatus = [...OPEN_TASK_STATUSES];
     btn.classList.add('weekly-active');
-    btn.style.background = '#C24200';
-    btn.style.color = 'white';
   }
   currentPage = 1;
   buildSidebarFilters();
   render();
 }
 
-function resetQuickFilterBtn(id, defaultColor) {
+function resetQuickFilterBtn(id, _defaultColor) {
+  // Active state is now driven by the .weekly-active class (CSS .btn-accent),
+  // so clearing it is just removing the class. _defaultColor kept for callers.
   const btn = document.getElementById(id);
-  if (btn && btn.classList.contains('weekly-active')) {
-    btn.classList.remove('weekly-active');
-    btn.style.background = 'transparent';
-    btn.style.color = defaultColor;
-  }
+  if (btn) btn.classList.remove('weekly-active');
 }
 
 // ─── FILTER STATE ────────────────────────────────────────────────────

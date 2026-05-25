@@ -210,6 +210,38 @@ body[data-theme="dark"] textarea {
 .icon { width: 1.05em; height: 1.05em; display: inline-block; vertical-align: -0.15em; fill: currentColor; flex-shrink: 0; }
 .icon-lg { width: 1.25em; height: 1.25em; }
 
+/* ── Button system ──────────────────────────────────────────────────────
+   Tokenized buttons with CSS hover/focus — replaces per-button inline style +
+   onmouseover/onmouseout handlers. Brand tokens make them theme-adaptive; the
+   global :focus-visible rule above provides keyboard focus rings. */
+.btn { display:inline-flex; align-items:center; gap:6px; font-family:'Lato',sans-serif;
+  font-size:13px; font-weight:700; letter-spacing:0.03em; line-height:1.1; cursor:pointer;
+  padding:8px 14px; border-radius:6px; border:1.5px solid transparent; background:transparent;
+  color:var(--text-body); transition:background .15s, border-color .15s, color .15s, filter .15s; }
+.btn:disabled, .btn[disabled] { opacity:0.5; cursor:default; pointer-events:none; }
+.btn-sm { padding:6px 11px; font-size:12.5px; }
+.btn-primary   { background:var(--navy); color:#fff; border-color:var(--navy); }
+.btn-primary:hover { filter:brightness(1.1); }
+body[data-theme="dark"] .btn-primary { color:#0D1117; }
+.btn-secondary { border-color:var(--navy); color:var(--navy); background:transparent; }
+.btn-secondary:hover { background:var(--pill-blue-bg); }
+.btn-quiet     { border-color:var(--border); color:var(--text-muted); background:var(--white); }
+.btn-quiet:hover { background:var(--surface-2); color:var(--text-body); }
+.btn-cta       { background:var(--yellow); color:#92400E; border-color:var(--yellow); font-weight:800; }
+.btn-cta:hover { filter:brightness(0.95); }
+/* Accent quick-filter buttons (outline → filled when .weekly-active). */
+.btn-accent.acc-green   { border-color:var(--green);  color:var(--green); }
+.btn-accent.acc-green:hover   { background:rgba(131,172,22,0.12); }
+.btn-accent.acc-green.weekly-active   { background:var(--green); color:#fff; }
+.btn-accent.acc-orange  { border-color:var(--orange); color:var(--orange); }
+.btn-accent.acc-orange:hover  { background:rgba(194,66,0,0.10); }
+.btn-accent.acc-orange.weekly-active  { background:var(--orange); color:#fff; }
+.btn-accent.acc-yellow  { border-color:var(--yellow); color:var(--pill-amber-fg); }
+.btn-accent.acc-yellow:hover  { background:var(--pill-amber-bg); }
+/* On the navy header band: white-outline buttons. */
+.btn-on-header { border-color:rgba(255,255,255,0.5); color:rgba(255,255,255,0.9); }
+.btn-on-header:hover { background:rgba(255,255,255,0.15); border-color:rgba(255,255,255,0.8); }
+
 /* Tabular figures: numeric columns / KPIs / badges use fixed-width digits so
    values don't shift column-to-column (UX rule: number-tabular). Affects digits
    only, so it's safe to apply broadly to data surfaces. */
