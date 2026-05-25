@@ -167,3 +167,52 @@ body[data-theme="oe"] .priority-Low,         body[data-theme="oe-dark"] .priorit
 /* Header: light uses the aliased --navy (deep navy-500, correct). Dark must NOT
    use --navy (it lifts to light blue #7d9bcc) — pin it to the deep navy stack. */
 body[data-theme="oe-dark"] .app-header { background: #060f1e; }
+
+/* ============================================================================
+   PHASE 2 · TYPOGRAPHY
+   ----------------------------------------------------------------------------
+   Hanken Grotesk becomes the UI font app-wide under OE. The app hardcodes
+   font-family:Lato/Cardo inline throughout, so a universal !important rule is
+   required to beat those inline styles. We then re-introduce monospace and the
+   editorial serif on more-specific selectors (which, both being !important, win
+   on specificity). Font-only — no markup/JS changes, can't break behavior.
+
+   Full editorial-serif display + mono on every ID/date/KPI lands with the
+   per-screen rebuild (phase 5), where markup gets the right hooks + sizes.
+   Fonts are loaded via the Google Fonts <link> in index.html.
+   ============================================================================ */
+
+/* 1) UI workhorse — Hanken Grotesk everywhere (beats inline Lato/Cardo). */
+body[data-theme="oe"], body[data-theme="oe"] *,
+body[data-theme="oe-dark"], body[data-theme="oe-dark"] * {
+  font-family: var(--font-sans) !important;
+}
+
+/* 2) Preserve monospace semantics with Laura's data font. */
+body[data-theme="oe"] code, body[data-theme="oe"] pre, body[data-theme="oe"] kbd, body[data-theme="oe"] samp,
+body[data-theme="oe-dark"] code, body[data-theme="oe-dark"] pre, body[data-theme="oe-dark"] kbd, body[data-theme="oe-dark"] samp {
+  font-family: var(--font-mono) !important;
+}
+
+/* 3) Numeric data → JetBrains Mono, tabular figures (header stats, KPIs,
+      achievement counts, count badges, utilization %). */
+body[data-theme="oe"] .hstat-num,        body[data-theme="oe-dark"] .hstat-num,
+body[data-theme="oe"] .mywork-kpi-value, body[data-theme="oe-dark"] .mywork-kpi-value,
+body[data-theme="oe"] .ach-num,          body[data-theme="oe-dark"] .ach-num,
+body[data-theme="oe"] .at-tile-num,      body[data-theme="oe-dark"] .at-tile-num,
+body[data-theme="oe"] .at-breadth-count, body[data-theme="oe-dark"] .at-breadth-count,
+body[data-theme="oe"] .tab-count,        body[data-theme="oe-dark"] .tab-count,
+body[data-theme="oe"] .person-util-badge,body[data-theme="oe-dark"] .person-util-badge {
+  font-family: var(--font-mono) !important;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* 4) Editorial serif on the signature display title (the My Work greeting).
+      Other page titles / empty-state poetry get the serif during phase 5 with
+      proper display sizing. */
+body[data-theme="oe"] .mywork-greeting, body[data-theme="oe-dark"] .mywork-greeting {
+  font-family: var(--font-display) !important;
+  font-weight: 400 !important;
+  letter-spacing: var(--tracking-display);
+}
