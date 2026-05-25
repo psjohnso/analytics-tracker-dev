@@ -125,6 +125,11 @@ async function loadArcGISData() {
       switchTab(UserPrefs.defaultTab);
     }
 
+    // Deep-link / refresh restore (Phase 3): a shared link's query params win,
+    // else the last view from this session's snapshot — both override the
+    // default view/tab applied above. No-op when neither is present.
+    if (typeof initViewStateRouting === 'function') initViewStateRouting();
+
     // Check for auto-saved form state from a previous session
     if (Auth.loggedIn) {
       setTimeout(function() { checkForAutoSavedForm(); }, 1000);

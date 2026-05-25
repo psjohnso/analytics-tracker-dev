@@ -402,6 +402,7 @@ function renderPresetBar() {
     '</span>';
   });
   html += '<button class="preset-chip save" onclick="saveCurrentView()" title="Save the current filters as a reusable view"><svg class="icon" aria-hidden="true"><use href="#ph-floppy-disk"></use></svg> Save view</button>';
+  html += '<button class="preset-chip" onclick="copyViewLink()" title="Copy a shareable link that opens this exact view"><svg class="icon" aria-hidden="true"><use href="#ph-link"></use></svg> Copy link</button>';
 
   // "Unsaved changes" affordance: if a saved view was applied then edited.
   if (svLastAppliedId) {
