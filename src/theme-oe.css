@@ -456,3 +456,52 @@ body[data-theme="oe"] .oe-ach-val, body[data-theme="oe-dark"] .oe-ach-val {
   font-family: var(--font-mono) !important; font-size: 22px; line-height: 1; color: var(--ink-7); font-variant-numeric: tabular-nums;
 }
 body[data-theme="oe"] .oe-ach-lbl, body[data-theme="oe-dark"] .oe-ach-lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-5); margin-top: 5px; }
+
+/* ============================================================================
+   PHASE 6 · PORTFOLIO SCREEN
+   ----------------------------------------------------------------------------
+   Laura's Portfolio layout: an editorial page title (eyebrow + "Portfolio"
+   heading) above the toolbar, the rainbow accent stripe replaced by clean
+   chrome, and toolbar action buttons calmed to neutral secondaries (color is
+   reserved for status + the one navy primary). All additive + OE-gated:
+   #oe-page-head is hidden for every non-OE theme, and .brand-accent-bar / the
+   accent buttons keep their classic look when OE is off.
+   ============================================================================ */
+
+/* Rainbow "Desert Editorial" stripe → removed under OE (Laura replaces it). */
+body[data-theme="oe"] .brand-accent-bar, body[data-theme="oe-dark"] .brand-accent-bar { display: none; }
+
+/* Editorial page title — hidden for every theme by default; OE reveals it when
+   updateOePageHead() adds .show (only on the Portfolio group for now). */
+#oe-page-head { display: none; }
+body[data-theme="oe"] #oe-page-head.show, body[data-theme="oe-dark"] #oe-page-head.show {
+  display: block;
+  padding: 22px 24px 0;
+  background: var(--ink-0);
+}
+body[data-theme="oe"] .oe-page-eyebrow, body[data-theme="oe-dark"] .oe-page-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--navy-300); margin-bottom: 6px;
+}
+body[data-theme="oe"] .oe-page-title, body[data-theme="oe-dark"] .oe-page-title {
+  font-size: var(--t-h1); font-weight: 600; letter-spacing: -0.005em;
+  color: var(--ink-7); margin: 0; line-height: var(--lh-heading);
+}
+
+/* Toolbar action buttons (Review Ideas / Open Projects / Open Tasks) → neutral
+   secondaries; their active (weekly-active) state fills navy instead of the
+   yellow/green/orange accent. */
+body[data-theme="oe"] .toolbar .btn-accent, body[data-theme="oe-dark"] .toolbar .btn-accent {
+  background: var(--ink-paper); color: var(--ink-7); border: 1px solid var(--ink-3); box-shadow: none;
+}
+body[data-theme="oe"] .toolbar .btn-accent:hover, body[data-theme="oe-dark"] .toolbar .btn-accent:hover {
+  background: var(--ink-1); border-color: var(--ink-4);
+}
+body[data-theme="oe"] .toolbar .btn-accent.weekly-active, body[data-theme="oe-dark"] .toolbar .btn-accent.weekly-active {
+  background: var(--navy-500); color: #fff; border-color: var(--navy-500);
+}
+body[data-theme="oe-dark"] .toolbar .btn-accent.weekly-active { color: #0e1c33; }
+/* The Review-Ideas count badge hardcodes Sun-Yellow inline → navy count pill. */
+body[data-theme="oe"] #idea-count-badge, body[data-theme="oe-dark"] #idea-count-badge {
+  background: var(--navy-50) !important; color: var(--navy-500) !important; font-family: var(--font-mono);
+}

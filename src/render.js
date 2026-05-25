@@ -673,6 +673,24 @@ function applyBetaTabVisibility() {
   if (typeof applyPrimaryTabVisibility === 'function') applyPrimaryTabVisibility();
 }
 
+// OE editorial page title: under the OE theme, show an eyebrow + section heading
+// above the toolbar (Laura's Portfolio layout). Populated per primary group;
+// inert (hidden) for every non-OE theme via CSS, and shown only for groups we've
+// given an editorial title. Currently scoped to Portfolio (Projects/Tasks).
+function updateOePageHead() {
+  var el = document.getElementById('oe-page-head');
+  if (!el) return;
+  var groupId = TAB_TO_GROUP[currentTab];
+  if (groupId === 'portfolio') {
+    el.innerHTML = '<div class="oe-page-eyebrow">All teams · City of Tucson</div>' +
+                   '<h1 class="oe-page-title">Portfolio</h1>';
+    el.classList.add('show');
+  } else {
+    el.classList.remove('show');
+    el.innerHTML = '';
+  }
+}
+
 // Click handler for primary tabs: route to the last-visited (or first visible) sub-tab in the group.
 function switchPrimaryGroup(groupId) {
   closeMoreMenu();
@@ -756,6 +774,7 @@ function switchTab(tab, preserveFilters) {
   document.getElementById('sort-select').style.display = (tab === 'projects' || tab === 'tasks') ? '' : 'none';
   // Hide entire toolbar on tabs that don't need it
   document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'achievements' || tab === 'projectReview' || tab === 'teamload' || tab === 'effortshape') ? 'none' : '';
+  if (typeof updateOePageHead === 'function') updateOePageHead();
   const addBtn = document.getElementById('btn-add-new');
   // Projects are created from the persistent header button (Submit Idea / New
   // Project). The toolbar button is only the "＋ New Task" entry on the Tasks tab.
