@@ -155,8 +155,15 @@ function restoreViewStateFromSession() {
 function initViewStateRouting() {
   var applied = null;
   try {
-    if (applyUrlStateFromQuery()) applied = 'url';
-    else if (restoreViewStateFromSession()) applied = 'session';
+    if (applyUrlStateFromQuery()) {
+      applied = 'url';                     // a shared link always wins
+    } else if (typeof getDefaultViewId === 'function' && getDefaultViewId()) {
+      applied = 'default';                 // an explicit default view beats the
+                                           // session snapshot — leave the default
+                                           // (already applied at bootstrap) in place.
+    } else if (restoreViewStateFromSession()) {
+      applied = 'session';                 // no default set → restore last view on refresh
+    }
   } catch (e) {
     console.warn('view-state routing failed:', e);
   }
