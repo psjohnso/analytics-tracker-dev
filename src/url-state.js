@@ -20,6 +20,10 @@
 // ─────────────────────────────────────────────────────────────────────
 
 var URL_STATE_KEY = 'tracker_view_state';
+// True once routing applied a shared link, an explicit default view, or the
+// session snapshot — so the bootstrap's "my open projects" fallback knows to
+// stand down (it's the lowest-precedence default).
+var viewStateWasApplied = false;
 // Persistence is gated off until routing has read the previous snapshot, so the
 // bootstrap renders don't overwrite the snapshot we're about to restore.
 var _viewStateReady = false;
@@ -167,6 +171,7 @@ function initViewStateRouting() {
   } catch (e) {
     console.warn('view-state routing failed:', e);
   }
+  viewStateWasApplied = !!applied;
   _viewStateReady = true; // from now on, render() persists snapshots
   return applied;
 }
