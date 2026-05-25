@@ -330,3 +330,18 @@ body[data-theme="oe"] .pt-due, body[data-theme="oe-dark"] .pt-due {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
+
+/* Empty states → Instrument Serif italic (Laura's "empty-state poetry"). Also
+   undoes phase-2's Hanken !important clobbering the original Cardo italic. */
+body[data-theme="oe"] .empty-state, body[data-theme="oe-dark"] .empty-state {
+  font-family: var(--font-display) !important;
+  font-style: italic;
+}
+
+/* My Work compact-row status pill hardcodes its own bg/fg (no STATUS_COLOR), so
+   colour it per status via data-status. Text is already dark (ink-7) from the
+   .status-pill rule; this supplies Laura's tinted bg. */
+body[data-theme="oe"] .status-pill[data-status="Active"], body[data-theme="oe-dark"] .status-pill[data-status="Active"] { background: var(--status-active-bg) !important; }
+body[data-theme="oe"] .status-pill[data-status="On Hold"], body[data-theme="oe-dark"] .status-pill[data-status="On Hold"] { background: var(--status-hold-bg) !important; }
+body[data-theme="oe"] .status-pill[data-status="Waiting for Response"], body[data-theme="oe-dark"] .status-pill[data-status="Waiting for Response"] { background: var(--status-future-bg) !important; }
+body[data-theme="oe"] .status-pill[data-status="Complete"], body[data-theme="oe-dark"] .status-pill[data-status="Complete"] { background: var(--status-complete-bg) !important; }

@@ -447,7 +447,7 @@ function _mwTaskLineHtml(t) {
   if (dueStr) dueInner = (isOverdue ? '<svg class="icon" aria-hidden="true"><use href="#ph-warning"></use></svg> ' : '') + esc(dueStr);
   else dueInner = '<span style="color:#D1D5DB;">—</span>';
   var dueColor = isOverdue ? '#EF4444' : 'var(--text-muted)';
-  var dueHtml = '<span style="display:inline-flex;justify-content:flex-end;min-width:76px;flex-shrink:0;font-size:10px;color:' + dueColor + ';white-space:nowrap;">' + dueInner + '</span>';
+  var dueHtml = '<span class="pt-due" style="display:inline-flex;justify-content:flex-end;min-width:76px;flex-shrink:0;font-size:10px;color:' + dueColor + ';white-space:nowrap;">' + dueInner + '</span>';
 
   // Status pill — reuses Option B styling. Always shown.
   var pillBg = '#F3F4F6', pillColor = '#374151', pillLabel = t.status || '—';
@@ -456,7 +456,7 @@ function _mwTaskLineHtml(t) {
   else if (t.status === 'Waiting for Response') { pillBg = '#DBEAFE'; pillColor = '#1E40AF'; pillLabel = 'Waiting'; }
   else if (t.status === 'Complete')        { pillBg = '#E0F2FE'; pillColor = '#0C4A6E'; pillLabel = '✓ Done'; }
   var pillHtml = '<span style="display:inline-flex;justify-content:flex-end;min-width:72px;flex-shrink:0;">' +
-    '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:' + pillBg + ';color:' + pillColor + ';text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;">' + esc(pillLabel) + '</span>' +
+    '<span class="status-pill" data-status="' + esc(t.status || '') + '" style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:' + pillBg + ';color:' + pillColor + ';text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;">' + esc(pillLabel) + '</span>' +
     '</span>';
 
   // Completed tasks render with reduced opacity (no strikethrough — that
