@@ -920,6 +920,16 @@ body {
   margin: -20px -24px 0;
   border-bottom: 1px solid var(--border);
 }
+/* The primary tab bar's real height is a hair under the 49px assumed by `top`
+   above (and shorter still on mobile), which left a sliver where scrolling
+   content showed between the bar and this header. Extend the header's surface
+   upward to fill it; the primary bar (z-index 50) paints over the overlap. */
+.mywork-sticky-header::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: -20px; height: 20px;
+  background: var(--surface);
+}
 .mywork-sticky-inner {
   max-width: 1100px;
 }
