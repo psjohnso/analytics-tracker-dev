@@ -423,6 +423,8 @@ function setProjListSort(key) {
 
 function renderProjectList(data, showLead) {
   if (!data.length) return '<div class="empty-state">No projects match your filters.</div>';
+  // OE theme: render the Lead cell as Laura's avatar + name (initials chip). Classic stays plain text.
+  var _oe = typeof document !== 'undefined' && document.body && /^oe/.test(document.body.dataset.theme || '');
   const arrow = (key) => projListSortKey === key ? (projListSortDir === 'asc' ? ' ↑' : ' ↓') : ' ↕';
   const th = (label, key) => `<div class="th-sortable" onclick="setProjListSort('${key}')" style="cursor:pointer;user-select:none;">${label}<span style="opacity:${projListSortKey===key?'1':'0.35'};font-size:10px;">${arrow(key)}</span></div>`;
   const _bulkOn = (typeof bulkEnabledFor === 'function') && bulkEnabledFor(data);
@@ -438,7 +440,14 @@ function renderProjectList(data, showLead) {
       <div class="task-cell"><span class="status-pill" style="background:${statusColor}22;color:${statusColor};"><span style="width:6px;height:6px;border-radius:50%;background:${statusColor};display:inline-block;"></span>${p.status||'—'}</span></div>
       <div class="task-cell"><span class="priority-badge priority-${p.priority||'null'}">${p.priority||'—'}</span></div>
       <div class="task-cell">${esc(p.category || '—')}</div>`;
-    if (showLead) row += `<div class="task-cell">${esc(p.contact || '—')}</div>`;
+    if (showLead) {
+      if (_oe && p.contact) {
+        var _ldInit = p.contact.split(' ').map(function(w){ return w[0]; }).join('').slice(0,2).toUpperCase();
+        row += `<div class="task-cell"><span class="oe-lead"><span class="oe-avatar-sm">${esc(_ldInit)}</span><span class="oe-lead-name">${esc(p.contact)}</span></span></div>`;
+      } else {
+        row += `<div class="task-cell">${esc(p.contact || '—')}</div>`;
+      }
+    }
     row += `<div class="task-cell pt-due">${p.working_due||p.end||'—'}</div>
       <div class="task-cell" style="text-align:center;">${taskCount}</div>
     </div>`;

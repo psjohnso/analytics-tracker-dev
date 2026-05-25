@@ -505,3 +505,18 @@ body[data-theme="oe-dark"] .toolbar .btn-accent.weekly-active { color: #0e1c33; 
 body[data-theme="oe"] #idea-count-badge, body[data-theme="oe-dark"] #idea-count-badge {
   background: var(--navy-50) !important; color: var(--navy-500) !important; font-family: var(--font-mono);
 }
+
+/* Project list Lead cell → Laura's avatar (initials) + name (rendered in
+   renderProjectList only under OE). */
+body[data-theme="oe"] .oe-lead, body[data-theme="oe-dark"] .oe-lead {
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%;
+}
+body[data-theme="oe"] .oe-avatar-sm, body[data-theme="oe-dark"] .oe-avatar-sm {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--navy-100); color: var(--navy-700);
+  font-size: 10px; font-weight: 600; letter-spacing: 0;
+}
+body[data-theme="oe"] .oe-lead-name, body[data-theme="oe-dark"] .oe-lead-name {
+  font-size: 13px; color: var(--ink-6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
