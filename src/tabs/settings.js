@@ -105,7 +105,9 @@ function buildPreferencesPanel() {
       { id: 'twilight',  label: 'Desert Twilight',p: '#3D2660', s: '#C2185B', bg: '#F5EFFA' },
       { id: 'pueblo',    label: 'Pueblo',         p: '#7A3520', s: '#D77845', bg: '#FAEED9' },
       { id: 'saguaro',   label: 'Saguaro',        p: '#2D4F1E', s: '#C04020', bg: '#EDF1E2' },
-      { id: 'dark',      label: 'Dark (beta)',    p: '#0D1117', s: '#6E9BD6', bg: '#20242C' }
+      { id: 'dark',      label: 'Dark (beta)',    p: '#0D1117', s: '#6E9BD6', bg: '#20242C' },
+      { id: 'oe',        label: 'OE Redesign (preview)',      p: '#1F3B6B', s: '#B85630', bg: '#FAF8F3' },
+      { id: 'oe-dark',   label: 'OE Redesign · Dark (preview)', p: '#060F1E', s: '#7D9BCC', bg: '#0E1C33' }
     ];
     var cards = themes.map(function(t) {
       var sel = t.id === current;
