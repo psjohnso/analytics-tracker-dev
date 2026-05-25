@@ -205,6 +205,11 @@ body[data-theme="dark"] textarea {
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Inline SVG icons (Phosphor sprite, see src/icons.js). Inherit text color via
+   currentColor so they theme automatically; sized relative to surrounding text. */
+.icon { width: 1.05em; height: 1.05em; display: inline-block; vertical-align: -0.15em; fill: currentColor; flex-shrink: 0; }
+.icon-lg { width: 1.25em; height: 1.25em; }
+
 /* Tabular figures: numeric columns / KPIs / badges use fixed-width digits so
    values don't shift column-to-column (UX rule: number-tabular). Affects digits
    only, so it's safe to apply broadly to data surfaces. */
