@@ -545,3 +545,35 @@ body[data-theme="oe"] .result-count, body[data-theme="oe-dark"] .result-count {
 body[data-theme="oe"] .result-count .rc-num, body[data-theme="oe-dark"] .result-count .rc-num {
   font-family: var(--font-mono) !important; color: var(--ink-7); font-variant-numeric: tabular-nums; font-feature-settings: "tnum";
 }
+
+/* ============================================================================
+   PHASE 8 · PORTFOLIO VIEWS CARD
+   ----------------------------------------------------------------------------
+   The existing preset bar already renders Laura's built-in views (All / My work
+   / Open / Overdue / High priority + Save view), so this is pure restyle: turn
+   the full-bleed bar into her bordered "Views" card, chips → ghost pills with a
+   navy-50 active state, Save/Copy pushed right, kebab revealed on hover. OE only.
+   ============================================================================ */
+body[data-theme="oe"] .preset-bar, body[data-theme="oe-dark"] .preset-bar {
+  margin: 14px 22px 0; padding: 10px 14px;
+  background: var(--ink-paper); border: 1px solid var(--ink-2); border-radius: var(--r-2);
+}
+body[data-theme="oe"] .preset-group-label, body[data-theme="oe-dark"] .preset-group-label { color: var(--ink-5); }
+body[data-theme="oe"] .preset-chip, body[data-theme="oe-dark"] .preset-chip {
+  background: transparent; border: 1px solid transparent; color: var(--ink-6);
+  border-radius: var(--r-2); font-weight: 500; font-size: 13px; padding: 6px 12px;
+}
+body[data-theme="oe"] .preset-chip:hover, body[data-theme="oe-dark"] .preset-chip:hover { background: var(--ink-1); border-color: transparent; }
+body[data-theme="oe"] .preset-chip.on, body[data-theme="oe-dark"] .preset-chip.on {
+  background: var(--navy-50); color: var(--navy-500); border-color: transparent; font-weight: 600;
+}
+body[data-theme="oe"] .preset-chip.save, body[data-theme="oe-dark"] .preset-chip.save {
+  margin-left: auto; color: var(--ink-6); border-color: transparent; background: transparent;
+}
+body[data-theme="oe"] .preset-chip.save:hover, body[data-theme="oe-dark"] .preset-chip.save:hover { background: var(--ink-1); }
+body[data-theme="oe"] .preset-div, body[data-theme="oe-dark"] .preset-div { background: var(--ink-2); }
+body[data-theme="oe"] .preset-chip .pc-star, body[data-theme="oe-dark"] .preset-chip .pc-star { color: var(--navy-300); -webkit-text-stroke: 0; }
+/* Resting chips stay clean; reveal the ⋯ menu on hover / active. */
+body[data-theme="oe"] .preset-chip .pc-kebab, body[data-theme="oe-dark"] .preset-chip .pc-kebab { opacity: 0; transition: opacity var(--dur-fast) var(--ease-out); }
+body[data-theme="oe"] .preset-chip:hover .pc-kebab, body[data-theme="oe-dark"] .preset-chip:hover .pc-kebab,
+body[data-theme="oe"] .preset-chip.on .pc-kebab, body[data-theme="oe-dark"] .preset-chip.on .pc-kebab { opacity: 0.55; }
