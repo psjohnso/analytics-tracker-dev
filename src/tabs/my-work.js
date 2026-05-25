@@ -903,6 +903,7 @@ function renderMyWork(area) {
   let myRdoDay = null;
   let myPayWeek = '';
   let myScheduledHours = 40;
+  let _weekDaily = null;   // function-scoped copy of per-day hours for the OE hero (myDailyHours below is block-scoped)
   if (RESOURCES_DATA && RESOURCES_DATA.people[name]) {
     const p = RESOURCES_DATA.people[name];
     const cwIdx = typeof currentWeekIdx !== 'undefined' ? currentWeekIdx : 0;
@@ -928,6 +929,7 @@ function renderMyWork(area) {
       Thu: p[prefix + 'thu'] || 0,
       Fri: p[prefix + 'fri'] || 0,
     };
+    _weekDaily = myDailyHours;
     const myDailyTimes = {};
     ['Mon','Tue','Wed','Thu','Fri'].forEach(function(day) {
       const d = day.toLowerCase().slice(0, 3);
@@ -1081,12 +1083,12 @@ function renderMyWork(area) {
     // OE Redesign — "This week" navy editorial hero card (per-day strip + hours).
     // Rendered only under the OE themes; Tucson Classic keeps the strip below.
     var _oe = /^oe/.test((typeof document !== 'undefined' && document.body && document.body.dataset.theme) || '');
-    if (_oe && typeof myDailyHours !== 'undefined') {
+    if (_oe && _weekDaily) {
       var _availOe = Math.max(0, weekCapHours - weekAllocHours);
       var _allocR = Math.round(weekAllocHours * 10) / 10, _capR = Math.round(weekCapHours * 10) / 10;
       var _stripHtml = '';
       ['Mon','Tue','Wed','Thu','Fri'].forEach(function(day) {
-        var hrs = myDailyHours[day] || 0, off = hrs === 0;
+        var hrs = _weekDaily[day] || 0, off = hrs === 0;
         _stripHtml += '<div class="oe-week-day' + (off ? ' off' : '') + '"><div class="oe-week-dayname">' + day.toUpperCase() + '</div><div class="oe-week-dayhrs">' + (off ? 'OFF' : hrs + 'h') + '</div></div>';
       });
       html += '<div class="oe-week-hero"><div class="oe-week-hero-row"><div>'
