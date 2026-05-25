@@ -582,7 +582,7 @@ function renderSettingsPage(area) {
         '<td style="text-align:right;white-space:nowrap;">' +
           '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="openAbsenceEditor(\'' + name.replace(/'/g, "\\'") + '\')"><svg class="icon" aria-hidden="true"><use href="#ph-calendar-blank"></use></svg> Absences</button>' +
           '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="openMemberForm(\'edit\',\'' + name.replace(/'/g, "\\'") + '\')"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg> Edit</button>' +
-          '<button class="settings-btn settings-btn-danger" onclick="deleteMember(\'' + name.replace(/'/g, "\\'") + '\')"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>' +
+          '<button class="settings-btn settings-btn-danger" onclick="btnPending(this, () => deleteMember(\'' + name.replace(/'/g, "\\'") + '\'), \'\')"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>' +
         '</td>' +
       '</tr>';
     }).join('');
@@ -613,7 +613,7 @@ function renderSettingsPage(area) {
           '<label for="settings-productivity-ratio" style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">Productivity ratio</label>' +
           '<input type="number" id="settings-productivity-ratio" min="1" max="100" step="1" value="' + prPct + '" style="width:80px;padding:6px 8px;text-align:center;border:1px solid #E8E6DF;border-radius:6px;font-size:14px;font-family:Lato,sans-serif;font-weight:700;color:var(--navy);">' +
           '<span style="font-size:13px;color:var(--text-muted);">%</span>' +
-          '<button class="settings-btn settings-btn-primary" onclick="saveProductivityRatio()" style="margin-left:auto;">Save Ratio</button>' +
+          '<button class="settings-btn settings-btn-primary" onclick="btnPending(this, () => saveProductivityRatio())" style="margin-left:auto;">Save Ratio</button>' +
         '</div>' +
         '<div style="font-size:11px;color:var(--text-muted);margin-top:10px;">Default 75%. Lower = more conservative — accounts for meetings, email, context-switching, breaks. Saved value is shared across all users.</div>' +
         '<div style="margin-top:14px;padding-top:12px;border-top:1px dashed #E8E6DF;">' +

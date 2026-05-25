@@ -435,9 +435,9 @@ body {
       </div>
     </div>
     <div class="lp-modal-foot">
-      <button class="lp-btn-save" onclick="lpSaveProject()">Save</button>
+      <button class="lp-btn-save" onclick="btnPending(this, () => lpSaveProject())">Save</button>
       <button class="lp-btn-cancel" onclick="lpCloseModal()">Cancel</button>
-      <button id="lp-btn-delete" class="lp-btn-delete" onclick="lpDeleteProject()" style="display:none;">Delete</button>
+      <button id="lp-btn-delete" class="lp-btn-delete" onclick="btnPending(this, () => lpDeleteProject(), 'Deleting…')" style="display:none;">Delete</button>
     </div>
   </div>
 </div>
@@ -453,9 +453,9 @@ body {
 
 <!-- Shared libraries — cache-bust ?v= bumped on each deploy (mirrors index.html pattern) -->
 <script src="src/util.js?v=1.16.0.0021"></script>
-<script src="src/constants.js?v=1.34.0.0001"></script>
+<script src="src/constants.js?v=1.59.0.0090"></script>
 <script src="src/agol.js?v=1.34.0.0004"></script>
 <script src="src/auth.js?v=1.25.0.0002"></script>
-<script src="src/dataprogram-lite.js?v=1.32.0.0018"></script>
+<script src="src/dataprogram-lite.js?v=1.59.0.0090"></script>
 </body>
 </html>

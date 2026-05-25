@@ -412,7 +412,7 @@ function renderRiskConfigPanel() {
   html += '</div></div>';
 
   // Save
-  html += '<div style="margin-top:18px;"><button class="settings-btn settings-btn-primary" onclick="rkSaveConfig()">Save risk configuration</button>';
+  html += '<div style="margin-top:18px;"><button class="settings-btn settings-btn-primary" onclick="btnPending(this, () => rkSaveConfig())">Save risk configuration</button>';
   html += '<span style="font-size:11px;color:var(--text-muted);margin-left:10px;">Saves weights, thresholds, bands, and the calibration set to ArcGIS Online (shared).</span></div>';
 
   c.innerHTML = html;

@@ -207,7 +207,7 @@ function buildIssuesPage() {
       });
       html += '</select>';
       html += '<button class="issue-action-btn" onclick="openIssueForm(' + iss.objectId + ')" title="Edit"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg></button>';
-      html += '<button class="issue-action-btn" onclick="deleteIssue(' + iss.objectId + ')" title="Delete" style="color:#EF4444;"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>';
+      html += '<button class="issue-action-btn" onclick="btnPending(this, () => deleteIssue(' + iss.objectId + '), \'\')" title="Delete" style="color:#EF4444;"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>';
       html += '</div>';
 
       html += '</div>';

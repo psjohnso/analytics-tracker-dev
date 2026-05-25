@@ -446,7 +446,7 @@ function buildSlideshowConfigPanel() {
 
   // Action buttons
   html += '<div style="margin-top:14px;display:flex;gap:8px;align-items:center;">';
-  html += '<button onclick="slideshowEditSave()" class="settings-btn settings-btn-primary">Save changes</button>';
+  html += '<button onclick="btnPending(this, () => slideshowEditSave())" class="settings-btn settings-btn-primary">Save changes</button>';
   html += '<button onclick="slideshowEditDiscard()" class="settings-btn" style="background:var(--white);border:1px solid var(--border);color:var(--navy);">Discard</button>';
   html += '<span style="font-size:11px;color:var(--text-muted);margin-left:auto;">Changes apply to everyone next time they open the Slideshow tab.</span>';
   html += '</div>';

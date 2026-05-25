@@ -984,7 +984,7 @@ function renderProjectReviewCard(p, rt) {
       html += '<div class="pr-log-entry' + oldCls + '">';
       html += '<div class="pr-log-actions">';
       if (canEdit(e)) html += '<button class="pr-log-action-btn" onclick="prOpenLogModal(\'' + esc(pn) + '\',\'' + esc(rt.id) + '\',' + e.objectId + ')">Edit</button>';
-      if (canDelete(e)) html += '<button class="pr-log-action-btn pr-danger" onclick="prDeleteLog(' + e.objectId + ')">Delete</button>';
+      if (canDelete(e)) html += '<button class="pr-log-action-btn pr-danger" onclick="btnPending(this, () => prDeleteLog(' + e.objectId + '), \'Deleting…\')">Delete</button>';
       html += '</div>';
       html += '<div class="pr-log-entry-head">';
       html += '<span class="pr-log-date">' + esc(prFmtDate(e.meeting_date)) + '</span>';
@@ -1250,7 +1250,7 @@ function renderReviewTypesTable() {
     html += '<td>' + esc(attendeesPreview) + '</td>';
     html += '<td style="text-align:right;white-space:nowrap;">';
     html += '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="prRtOpenForm(' + i + ')"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg> Edit</button>';
-    html += '<button class="settings-btn settings-btn-danger" onclick="prRtDelete(' + i + ')"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>';
+    html += '<button class="settings-btn settings-btn-danger" onclick="btnPending(this, () => prRtDelete(' + i + '), \'\')"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>';
     html += '</td>';
     html += '</tr>';
   });

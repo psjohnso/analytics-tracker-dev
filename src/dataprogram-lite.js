@@ -647,3 +647,38 @@ function lpToast(msg, kind) {
 
 // Function used by the session-expired modal (auth.js triggers this)
 function showToast(msg, kind) { lpToast(msg, kind); }
+
+// Self-contained pending-button helper for this standalone page (it doesn't load
+// index.html's btnPending or app.css). Mirrors the main app's btnPending and
+// injects its spinner CSS on first use. Usage: onclick="btnPending(this, () => fn(), 'Saving…')"
+function _lpEnsureSpinnerCss() {
+  if (document.getElementById('lp-spinner-css')) return;
+  var s = document.createElement('style');
+  s.id = 'lp-spinner-css';
+  s.textContent = '.btn-spinner{display:inline-block;width:12px;height:12px;margin-right:7px;vertical-align:-2px;' +
+    'border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:btnspin .6s linear infinite;}' +
+    '.btn-spinner-solo{margin-right:0;}@keyframes btnspin{to{transform:rotate(360deg);}}.is-pending{cursor:progress;opacity:.9;}' +
+    '@media (prefers-reduced-motion: reduce){.btn-spinner{animation-duration:0.01ms;animation-iteration-count:1;}}';
+  document.head.appendChild(s);
+}
+async function btnPending(btn, fn, pendingLabel) {
+  if (!btn || btn.disabled) return;
+  _lpEnsureSpinnerCss();
+  var origHtml = btn.innerHTML;
+  var w = btn.offsetWidth;
+  if (w) btn.style.minWidth = w + 'px';
+  btn.disabled = true;
+  btn.setAttribute('aria-busy', 'true');
+  btn.classList.add('is-pending');
+  var label = (pendingLabel != null) ? pendingLabel : 'Saving…';
+  btn.innerHTML = '<span class="btn-spinner' + (label ? '' : ' btn-spinner-solo') + '" aria-hidden="true"></span>' + label;
+  try {
+    return await fn();
+  } finally {
+    btn.disabled = false;
+    btn.removeAttribute('aria-busy');
+    btn.classList.remove('is-pending');
+    btn.innerHTML = origHtml;
+    btn.style.minWidth = '';
+  }
+}

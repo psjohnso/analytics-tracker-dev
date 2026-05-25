@@ -773,7 +773,7 @@ function renderIdeaReview() {
             <div style="padding:0 20px 12px;">
               <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Reviewer Notes</div>
               <textarea id="idea-notes-${p.objectId}" class="idea-textarea" rows="2" style="font-size:11px;margin-bottom:0;" placeholder="Add notes before promoting (saves to description)…"></textarea>
-              <button onclick="saveIdeaReviewNotes(${p.objectId})" style="margin-top:4px;background:var(--navy);color:#fff;border:none;border-radius:5px;padding:4px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:Lato,sans-serif;">Save Notes</button>
+              <button onclick="btnPending(this, () => saveIdeaReviewNotes(${p.objectId}))" style="margin-top:4px;background:var(--navy);color:#fff;border:none;border-radius:5px;padding:4px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:Lato,sans-serif;">Save Notes</button>
             </div>
             <div class="idea-card-actions">
               <span class="idea-card-actions-label">Move to →</span>

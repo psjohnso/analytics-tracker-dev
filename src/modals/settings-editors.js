@@ -180,7 +180,7 @@ function renderAllocDefaultsEditor() {
   });
   html += '</tbody></table>';
   html += '<div style="margin-top:10px;display:flex;justify-content:flex-end;">';
-  html += '<button class="settings-btn settings-btn-primary" onclick="saveAllocDefaults()">Save Defaults</button>';
+  html += '<button class="settings-btn settings-btn-primary" onclick="btnPending(this, () => saveAllocDefaults())">Save Defaults</button>';
   html += '</div>';
   container.innerHTML = html;
 }
@@ -531,7 +531,7 @@ function editDescListItem(listKey, idx) {
     '<input type="text" id="desc-edit-name-' + listKey + '-' + idx + '" class="fm-input" value="' + esc(item.name) + '" style="font-weight:700;margin-bottom:4px;">' +
     '<input type="text" id="desc-edit-desc-' + listKey + '-' + idx + '" class="fm-input" value="' + esc(item.desc || '') + '" placeholder="Description…" style="font-size:12px;">' +
     '<div style="display:flex;gap:6px;margin-top:6px;">' +
-      '<button class="settings-btn settings-btn-primary" style="padding:4px 12px;font-size:11px;" onclick="saveDescListEdit(\'' + listKey + '\',' + idx + ')">Save</button>' +
+      '<button class="settings-btn settings-btn-primary" style="padding:4px 12px;font-size:11px;" onclick="btnPending(this, () => saveDescListEdit(\'' + listKey + '\',' + idx + '))">Save</button>' +
       '<button class="settings-btn settings-btn-secondary" style="padding:4px 12px;font-size:11px;" onclick="renderDescListEditor(\'' + listKey + '\')">Cancel</button>' +
     '</div>' +
   '</div>';
@@ -598,7 +598,7 @@ function renderStatusHistoryEditor() {
       '<span style="flex:1;font-size:12px;font-weight:600;color:var(--text-body);">' + esc(h.status) + '</span>' +
       '<span style="font-size:11px;color:var(--text-muted);min-width:85px;">' + (h.changed_date || '') + '</span>' +
       '<span style="font-size:11px;color:var(--text-muted);min-width:100px;">' + esc(h.changed_by || '') + '</span>' +
-      '<button onclick="deleteStatusHistoryRecord(' + idx + ')" style="background:none;border:none;color:#E1E2DD;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;" title="Remove" onmouseover="this.style.color=\'#EF4444\'" onmouseout="this.style.color=\'#E1E2DD\'"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg></button>' +
+      '<button onclick="btnPending(this, () => deleteStatusHistoryRecord(' + idx + '), \'\')" style="background:none;border:none;color:#E1E2DD;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;" title="Remove" onmouseover="this.style.color=\'#EF4444\'" onmouseout="this.style.color=\'#E1E2DD\'"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg></button>' +
     '</div>';
   }).join('');
 
@@ -818,7 +818,7 @@ async function loadAndRenderTrash() {
       html += '<td style="padding:12px 14px;color:var(--text-muted);font-size:12px;">' + _trashTimeAgo(item.deleted_at) + '</td>';
       html += '<td style="padding:12px 14px;text-align:right;white-space:nowrap;">';
       html += '<button onclick="restoreFromTrash(\'' + item.type + '\',' + item.oid + ')" style="padding:5px 12px;background:var(--green);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;margin-right:6px;">Restore</button>';
-      html += '<button onclick="hardDeleteFromTrash(\'' + item.type + '\',' + item.oid + ',\'' + escapeAttr(item.title) + '\')" style="padding:5px 12px;background:var(--white);color:#EF4444;border:1px solid #FECACA;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Permanent delete</button>';
+      html += '<button onclick="btnPending(this, () => hardDeleteFromTrash(\'' + item.type + '\',' + item.oid + ',\'' + escapeAttr(item.title) + '\'), \'Deleting…\')" style="padding:5px 12px;background:var(--white);color:#EF4444;border:1px solid #FECACA;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Permanent delete</button>';
       html += '</td>';
       html += '</tr>';
     });
@@ -1214,7 +1214,7 @@ function buildTeamIntroConfigPanel() {
 
   // Action buttons
   html += '<div style="margin-top:24px;display:flex;gap:8px;align-items:center;padding-top:18px;border-top:1px solid var(--border);">';
-  html += '<button onclick="tiEditSave()" class="settings-btn settings-btn-primary">Save changes</button>';
+  html += '<button onclick="btnPending(this, () => tiEditSave())" class="settings-btn settings-btn-primary">Save changes</button>';
   html += '<button onclick="tiEditDiscard()" class="settings-btn" style="background:var(--white);border:1px solid var(--border);color:var(--navy);">Discard</button>';
   html += '<span style="font-size:11px;color:var(--text-muted);margin-left:auto;">Visible to everyone after their next page refresh.</span>';
   html += '</div>';

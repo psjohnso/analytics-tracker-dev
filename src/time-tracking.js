@@ -850,7 +850,7 @@ function buildTimeEntryRowHTML(e, opts) {
     html += '<button onclick="startTimer(\'' + e.task_idx + '\')" class="btn-timer-resume" title="Resume this task">▶</button>';
   }
   html += '<button onclick="toggleEditTimeEntry(' + e.oid + ')" class="btn-te-icon"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg></button>';
-  html += '<button onclick="deleteTimeEntry(' + e.oid + ')" class="btn-te-del"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>';
+  html += '<button onclick="btnPending(this, () => deleteTimeEntry(' + e.oid + '), \'\')" class="btn-te-del"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>';
   html += '</div>';
   // Inline edit form
   html += '<div id="te-edit-' + e.oid + '" class="te-edit-form">';
@@ -861,7 +861,7 @@ function buildTimeEntryRowHTML(e, opts) {
   html += '</div>';
   html += '<div class="te-edit-actions">';
   html += '<button onclick="toggleEditTimeEntry(' + e.oid + ')" class="btn-te-cancel">Cancel</button>';
-  html += '<button onclick="saveTimeEntryEdit(' + e.oid + ')" class="btn-te-save">Save</button>';
+  html += '<button onclick="btnPending(this, () => saveTimeEntryEdit(' + e.oid + '))" class="btn-te-save">Save</button>';
   html += '</div></div>';
   return html;
 }
