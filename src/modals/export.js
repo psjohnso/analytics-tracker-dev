@@ -104,7 +104,7 @@ function openExportModal() {
   html += '</div>'; // body
   html += '<div class="export-modal-footer">';
   html += '<button class="export-btn-secondary" onclick="closeExportModal()">Cancel</button>';
-  html += '<button class="export-btn-primary" onclick="runExport()">⬇ Export CSV</button>';
+  html += '<button class="export-btn-primary" onclick="runExport()"><svg class="icon" aria-hidden="true"><use href="#ph-download-simple"></use></svg> Export CSV</button>';
   html += '</div>';
   html += '</div></div>'; // modal, backdrop
 

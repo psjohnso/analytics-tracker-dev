@@ -360,8 +360,8 @@ function buildInsightsPage() {
   kpis += '</div>';
 
   if (completed.length === 0) {
-    return '<div style="padding:28px 32px;"><div style="margin-bottom:24px;"><div style="font-size:22px;font-weight:800;color:var(--navy);margin-bottom:4px;">💡 Project Insights</div><div style="font-size:13px;color:var(--text-muted);">Retrospective data from completed projects.</div></div>' +
-      '<div style="text-align:center;padding:60px;color:var(--text-muted);font-size:14px;background:var(--white);border:1px solid #E8E6DF;border-radius:12px;"><div style="font-size:48px;margin-bottom:12px;">📊</div><div style="font-weight:700;font-size:16px;margin-bottom:6px;color:var(--navy);">No completed projects yet</div><div>As projects are completed and time is logged, charts and retrospective data will appear here.</div></div></div>';
+    return '<div style="padding:28px 32px;"><div style="margin-bottom:24px;"><div style="font-size:22px;font-weight:800;color:var(--navy);margin-bottom:4px;"><svg class="icon" aria-hidden="true"><use href="#ph-lightbulb"></use></svg> Project Insights</div><div style="font-size:13px;color:var(--text-muted);">Retrospective data from completed projects.</div></div>' +
+      '<div style="text-align:center;padding:60px;color:var(--text-muted);font-size:14px;background:var(--white);border:1px solid #E8E6DF;border-radius:12px;"><div style="font-size:48px;margin-bottom:12px;"><svg class="icon" aria-hidden="true"><use href="#ph-chart-bar"></use></svg></div><div style="font-weight:700;font-size:16px;margin-bottom:6px;color:var(--navy);">No completed projects yet</div><div>As projects are completed and time is logged, charts and retrospective data will appear here.</div></div></div>';
   }
 
   // === DURATION CALIBRATION SECTION ===
@@ -534,7 +534,7 @@ function buildInsightsPage() {
 
   // === ASSEMBLE PAGE ===
   var html = '<div style="padding:28px 32px;">';
-  html += '<div style="margin-bottom:24px;"><div style="font-size:22px;font-weight:800;color:var(--navy);margin-bottom:4px;">💡 Project Insights</div>';
+  html += '<div style="margin-bottom:24px;"><div style="font-size:22px;font-weight:800;color:var(--navy);margin-bottom:4px;"><svg class="icon" aria-hidden="true"><use href="#ph-lightbulb"></use></svg> Project Insights</div>';
   html += '<div style="font-size:13px;color:var(--text-muted);">Retrospective data from completed projects. As you log more time, this becomes your reference library for future estimation.</div></div>';
   html += kpis;
   html += calibSection;
@@ -724,7 +724,7 @@ function buildPlannedActualSection() {
   var html = '<div style="margin-bottom:28px;">';
   html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;">';
   html += '<div style="font-size:18px;font-weight:800;color:var(--navy);">Planned vs Actual — by Employee × Category</div>';
-  html += '<span style="font-size:10px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:8px;">🔒 Admin only</span>';
+  html += '<span style="font-size:10px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:8px;"><svg class="icon" aria-hidden="true"><use href="#ph-lock"></use></svg> Admin only</span>';
   html += '</div>';
   html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">Planned = the weekly allocation estimate captured by the snapshot pipeline when each week was current. Actual = that week\'s value after it was updated to reflect what happened. Variance = actual ÷ planned. <strong>Visible to admins only.</strong></div>';
 

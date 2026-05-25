@@ -118,7 +118,7 @@ function renderPhaseStepper(projectTitle) {
     }
     html += '<div class="phase-step" onclick="togglePhaseDetail(' + i + ')" title="Phase ' + ph.id + ': ' + esc(LIFECYCLE_PHASES[ph.id].name) + ' (' + ph.met + '/' + ph.total + ')">';
     html += '<div class="' + dotClass + '">' + dotContent + '</div>';
-    html += '<span class="' + labelClass + '">' + (ph.isGateCheck && i !== cur ? '⚑ ' : '') + esc(ph.shortName) + '</span>';
+    html += '<span class="' + labelClass + '">' + (ph.isGateCheck && i !== cur ? '<svg class="icon" aria-hidden="true"><use href="#ph-flag"></use></svg> ' : '') + esc(ph.shortName) + '</span>';
     html += '</div>';
   });
   html += '</div>';
@@ -148,7 +148,7 @@ function togglePhaseDetail(phaseIndex) {
   phase.requirements.forEach(function(req) {
     var isMet = metReqs[req.id];
     var linkedTasks = relTasks.filter(function(t) { return parsePhaseReqs(t).indexOf(req.id) !== -1; });
-    var icon = isMet ? '<span style="color:#22C55E;font-weight:700;">✓</span>' : '<span style="color:#E1E2DD;">○</span>';
+    var icon = isMet ? '<span style="color:#22C55E;font-weight:700;"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg></span>' : '<span style="color:#E1E2DD;">○</span>';
     var textStyle = isMet ? 'color:#6B7280;text-decoration:line-through;' : '';
     html += '<div style="display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:13px;">';
     html += '<span style="flex-shrink:0;width:16px;text-align:center;">' + icon + '</span>';
@@ -179,7 +179,7 @@ function renderPhaseGroupedTasks(projectTitle, relTasks) {
     var pillColor = phStatus.complete ? '#166534' : (phase.id === lcs.currentPhase ? 'var(--navy)' : '#6B7280');
     var progressColor = phStatus.complete ? '#22C55E' : (phStatus.met > 0 ? '#F59E0B' : '#9CA3AF');
     html += '<div class="phase-section-header" onclick="togglePhaseSection(' + phase.id + ')">';
-    html += '<span class="phase-section-pill" style="background:' + pillBg + ';color:' + pillColor + ';">' + (phase.isGateCheck ? '⚑ ' : '') + 'Phase ' + phase.id + '</span>';
+    html += '<span class="phase-section-pill" style="background:' + pillBg + ';color:' + pillColor + ';">' + (phase.isGateCheck ? '<svg class="icon" aria-hidden="true"><use href="#ph-flag"></use></svg> ' : '') + 'Phase ' + phase.id + '</span>';
     html += '<span class="phase-section-name">' + esc(phase.name) + '</span>';
     html += '<span class="phase-section-progress" style="color:' + progressColor + ';">' + phStatus.met + '/' + phStatus.total + '</span>';
     html += '<span class="phase-section-chevron" id="phase-chevron-' + phase.id + '">▸</span>';
@@ -300,17 +300,17 @@ async function openSuggestPicker(projectObjectId) {
   }
   panel.style.display = '';
   panel.innerHTML = '<div class="suggest-header"><span class="suggest-title">✨ AI Task Suggestions</span>' +
-    '<button class="suggest-close" onclick="closeSuggestPanel()">✕</button></div>' +
+    '<button class="suggest-close" onclick="closeSuggestPanel()"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg></button></div>' +
     '<div style="padding:8px 0;">' +
       '<div style="font-size:13px;font-weight:700;color:#92400E;margin-bottom:10px;">Choose a detail level:</div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
         '<div onclick="suggestWithDetail(\'low\')" style="flex:1;min-width:140px;cursor:pointer;background:var(--white);border:2px solid ' + (_suggestDetail === 'low' ? 'var(--navy)' : '#E8E6DF') + ';border-radius:10px;padding:14px;text-align:center;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'var(--navy)\'" onmouseout="this.style.borderColor=\'' + (_suggestDetail === 'low' ? 'var(--navy)' : '#E8E6DF') + '\'">' +
-          '<div style="font-size:20px;margin-bottom:4px;">📋</div>' +
+          '<div style="font-size:20px;margin-bottom:4px;"><svg class="icon" aria-hidden="true"><use href="#ph-clipboard-text"></use></svg></div>' +
           '<div style="font-size:13px;font-weight:800;color:var(--navy);">Low</div>' +
           '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Major phases<br>1-3 days each<br>4-8 tasks</div>' +
         '</div>' +
         '<div onclick="suggestWithDetail(\'medium\')" style="flex:1;min-width:140px;cursor:pointer;background:var(--white);border:2px solid ' + (_suggestDetail === 'medium' ? 'var(--navy)' : '#E8E6DF') + ';border-radius:10px;padding:14px;text-align:center;transition:border-color 0.15s;" onmouseover="this.style.borderColor=\'var(--navy)\'" onmouseout="this.style.borderColor=\'' + (_suggestDetail === 'medium' ? 'var(--navy)' : '#E8E6DF') + '\'">' +
-          '<div style="font-size:20px;margin-bottom:4px;">📝</div>' +
+          '<div style="font-size:20px;margin-bottom:4px;"><svg class="icon" aria-hidden="true"><use href="#ph-note-pencil"></use></svg></div>' +
           '<div style="font-size:13px;font-weight:800;color:var(--navy);">Medium</div>' +
           '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Grouped activities<br>4-16 hours each<br>8-15 tasks</div>' +
         '</div>' +
@@ -915,18 +915,18 @@ function renderProjectDetail(id) {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
           <button class="detail-back-btn" onclick="goBackFromDetail()">← ${backLabel}</button>
           <div class="detail-hero-actions">
-            ${canEdit && p.status && p.status !== 'Complete' && p.status !== 'Canceled' ? `<button class="modal-edit-btn" style="background:#EAF3DE;color:#27500A;border-color:#83AC1644;" onclick="markProjectComplete(${p.objectId})">✓ Complete</button>` : ''}
-            ${canEdit ? `<button class="modal-edit-btn" onclick="openFormModal('edit-project',${p.objectId})">✏ Edit</button>` : ''}
-            <button class="modal-edit-btn" style="background:var(--bg-surface,#F3F1EB);color:var(--text-muted);border-color:#E8E6DF;" onclick="copyProjectSummary(${p.objectId})">📋 Copy</button>
-            ${canEdit ? `<button class="modal-del-btn" onclick="confirmDeleteProject(${p.objectId})">🗑 Delete</button>` : ''}
+            ${canEdit && p.status && p.status !== 'Complete' && p.status !== 'Canceled' ? `<button class="modal-edit-btn" style="background:#EAF3DE;color:#27500A;border-color:#83AC1644;" onclick="markProjectComplete(${p.objectId})"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> Complete</button>` : ''}
+            ${canEdit ? `<button class="modal-edit-btn" onclick="openFormModal('edit-project',${p.objectId})"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg> Edit</button>` : ''}
+            <button class="modal-edit-btn" style="background:var(--bg-surface,#F3F1EB);color:var(--text-muted);border-color:#E8E6DF;" onclick="copyProjectSummary(${p.objectId})"><svg class="icon" aria-hidden="true"><use href="#ph-clipboard-text"></use></svg> Copy</button>
+            ${canEdit ? `<button class="modal-del-btn" onclick="confirmDeleteProject(${p.objectId})"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg> Delete</button>` : ''}
           </div>
         </div>
         <div class="detail-hero-title">${esc(p.title)}</div>
         <div class="detail-hero-badges">
           <span class="priority-badge priority-${p.priority||'null'}">${p.priority||'—'}</span>
           ${p.is_data_program ? '<span class="detail-hero-chip" style="background:var(--pill-orange-bg);color:var(--pill-orange-fg);border-color:transparent;">Data Program</span>' : ''}
-          ${projTotalHrs > 0 ? `<span class="detail-hero-chip">⏱ ${hoursLabel(projTotalHrs, projMyHrs)}</span>` : ''}
-          ${p.actual_end ? `<span class="detail-hero-chip">✓ Completed ${p.actual_end}</span>` : ''}
+          ${projTotalHrs > 0 ? `<span class="detail-hero-chip"><svg class="icon" aria-hidden="true"><use href="#ph-clock"></use></svg> ${hoursLabel(projTotalHrs, projMyHrs)}</span>` : ''}
+          ${p.actual_end ? `<span class="detail-hero-chip"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> Completed ${p.actual_end}</span>` : ''}
         </div>
         ${allMembers.length ? `<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;">${memberChips}</div>` : ''}
       </div>
@@ -1143,9 +1143,9 @@ function renderTaskDetail(idx) {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
           <button class="detail-back-btn" onclick="goBackFromDetail()">← ${taskBackLabel}</button>
           <div class="detail-hero-actions">
-            ${isCompletable ? `<button class="modal-edit-btn" style="background:#EAF3DE;color:#27500A;border-color:#83AC1644;" onclick="event.stopPropagation();markTaskComplete(${t.objectId})">✓ Complete</button>` : ''}
-            <button class="modal-edit-btn" onclick="openFormModal('edit-task',${t.objectId})">✏ Edit</button>
-            <button class="modal-del-btn" onclick="confirmDeleteTask(${t.objectId})">🗑 Delete</button>
+            ${isCompletable ? `<button class="modal-edit-btn" style="background:#EAF3DE;color:#27500A;border-color:#83AC1644;" onclick="event.stopPropagation();markTaskComplete(${t.objectId})"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> Complete</button>` : ''}
+            <button class="modal-edit-btn" onclick="openFormModal('edit-task',${t.objectId})"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg> Edit</button>
+            <button class="modal-del-btn" onclick="confirmDeleteTask(${t.objectId})"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg> Delete</button>
           </div>
         </div>
         <div style="font-size:10px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Task</div>
@@ -1153,7 +1153,7 @@ function renderTaskDetail(idx) {
         <div class="detail-hero-badges">
           <span class="priority-badge priority-${t.priority||'null'}">${t.priority||'—'}</span>
           ${t.assignee ? `<span class="detail-hero-chip">${esc(t.assignee)}</span>` : ''}
-          ${getTaskHours(t.idx) > 0 ? `<span class="detail-hero-chip">⏱ ${hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx))}</span>` : ''}
+          ${getTaskHours(t.idx) > 0 ? `<span class="detail-hero-chip"><svg class="icon" aria-hidden="true"><use href="#ph-clock"></use></svg> ${hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx))}</span>` : ''}
         </div>
       </div>
     </div>
@@ -1216,7 +1216,7 @@ function renderTaskDetail(idx) {
             if (!dep) { html += '<div style="font-size:12px;color:var(--text-muted);padding:4px 0;">' + esc(ref) + ' (not found)</div>'; return; }
             var sc = STATUS_COLOR(dep.obj.status);
             var isDone = dep.obj.status === 'Complete' || dep.obj.status === 'Canceled';
-            var typeIcon = dep.type === 'project' ? '📁' : (isDone ? '✅' : '🔒');
+            var typeIcon = dep.type === 'project' ? '<svg class="icon" aria-hidden="true"><use href="#ph-folder"></use></svg>' : (isDone ? '<svg class="icon" aria-hidden="true"><use href="#ph-check-circle"></use></svg>' : '<svg class="icon" aria-hidden="true"><use href="#ph-lock"></use></svg>');
             var typeLabel = dep.type === 'project' ? 'Project' : 'Task';
             var clickAction = dep.type === 'project' ? 'openProject(' + dep.obj.objectId + ')' : 'openTask(' + dep.obj.objectId + ')';
             html += '<div onclick="' + clickAction + '" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:4px;background:var(--white);transition:background 0.15s;" onmouseenter="this.style.background=\'#F0F4FF\'" onmouseleave="this.style.background=\'var(--white)\'">';
@@ -1234,7 +1234,7 @@ function renderTaskDetail(idx) {
           blocking.forEach(function(bt) {
             var sc = STATUS_COLOR(bt.status);
             html += '<div onclick="openTask(' + bt.objectId + ')" style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:4px;background:var(--white);transition:background 0.15s;" onmouseenter="this.style.background=\'#F0F4FF\'" onmouseleave="this.style.background=\'var(--white)\'">';
-            html += '<span style="font-size:12px;">⛓</span>';
+            html += '<span style="font-size:12px;"><svg class="icon" aria-hidden="true"><use href="#ph-link"></use></svg></span>';
             html += '<span style="font-family:monospace;font-size:10px;color:var(--text-muted);">' + esc(bt.task_number || '') + '</span>';
             html += '<span style="flex:1;font-size:13px;font-weight:500;color:var(--text-body);">' + esc(bt.title) + '</span>';
             html += '<span style="font-size:10px;padding:2px 6px;border-radius:3px;background:' + sc + '18;color:' + sc + ';">' + esc(bt.status) + '</span>';

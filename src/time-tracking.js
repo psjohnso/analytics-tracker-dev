@@ -714,13 +714,13 @@ function renderTimerChip() {
     html += '<span class="timer-chip-pulse"></span>';
     html += '<span class="timer-chip-elapsed" id="chip-primary-elapsed">' + formatTimerChip(Date.now() - primary.start_time) + '</span>';
     html += '<span class="timer-chip-task" title="' + titleEsc + '">' + titleEsc + '</span>';
-    html += '<button class="timer-chip-stop" onclick="event.stopPropagation();stopTimer(' + primary.oid + ');" title="Stop timer">⏹</button>';
+    html += '<button class="timer-chip-stop" onclick="event.stopPropagation();stopTimer(' + primary.oid + ');" title="Stop timer"><svg class="icon" aria-hidden="true"><use href="#ph-stop"></use></svg></button>';
   } else if (timers.length <= 3) {
     html += '<span class="timer-chip-pulse"></span>';
     html += '<span class="timer-chip-elapsed" id="chip-primary-elapsed">' + formatTimerChip(Date.now() - primary.start_time) + '</span>';
     html += '<span class="timer-chip-task" title="' + titleEsc + '">' + titleEsc + '</span>';
     html += '<span class="timer-chip-badge" onclick="event.stopPropagation();toggleTimerChipDropdown();">+' + (timers.length - 1) + ' more</span>';
-    html += '<button class="timer-chip-stop" onclick="event.stopPropagation();stopTimer(' + primary.oid + ');" title="Stop most recent timer">⏹</button>';
+    html += '<button class="timer-chip-stop" onclick="event.stopPropagation();stopTimer(' + primary.oid + ');" title="Stop most recent timer"><svg class="icon" aria-hidden="true"><use href="#ph-stop"></use></svg></button>';
   } else {
     var combined = timers.reduce(function(s, e) { return s + (Date.now() - e.start_time); }, 0);
     html += '<span class="timer-chip-pulse"></span>';
@@ -759,7 +759,7 @@ function renderTimerChipDropdown(timers) {
     if (projTitle) html += '<div class="timer-chip-dd-meta">' + (typeof esc === 'function' ? esc(projTitle) : projTitle) + '</div>';
     html += '</div>';
     html += '<span class="timer-chip-dd-elapsed" id="chip-dd-elapsed-' + e.oid + '">' + formatTimerChip(Date.now() - e.start_time) + '</span>';
-    html += '<button class="timer-chip-dd-stop" onclick="event.stopPropagation();stopTimer(' + e.oid + ');" title="Stop this timer">⏹</button>';
+    html += '<button class="timer-chip-dd-stop" onclick="event.stopPropagation();stopTimer(' + e.oid + ');" title="Stop this timer"><svg class="icon" aria-hidden="true"><use href="#ph-stop"></use></svg></button>';
     html += '</div>';
   });
   html += '<div class="timer-chip-dd-footer">';
@@ -849,8 +849,8 @@ function buildTimeEntryRowHTML(e, opts) {
   if (opts.canResume) {
     html += '<button onclick="startTimer(\'' + e.task_idx + '\')" class="btn-timer-resume" title="Resume this task">▶</button>';
   }
-  html += '<button onclick="toggleEditTimeEntry(' + e.oid + ')" class="btn-te-icon">✏️</button>';
-  html += '<button onclick="deleteTimeEntry(' + e.oid + ')" class="btn-te-del">🗑</button>';
+  html += '<button onclick="toggleEditTimeEntry(' + e.oid + ')" class="btn-te-icon"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg></button>';
+  html += '<button onclick="deleteTimeEntry(' + e.oid + ')" class="btn-te-del"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>';
   html += '</div>';
   // Inline edit form
   html += '<div id="te-edit-' + e.oid + '" class="te-edit-form">';
@@ -889,8 +889,8 @@ function buildActiveTimersHTML(activeTimers) {
     html += '<div class="text-muted-sm">Started ' + formatTimeShort(e.start_time) + (cumulHrs > 0 ? ' · Total: ' + cumulHrs + 'h' : '') + '</div>';
     html += '</div>';
     html += '<div class="timer-elapsed" id="timer-elapsed-' + e.oid + '">' + elapsed + '</div>';
-    html += '<button onclick="pauseTimer(' + e.oid + ',\'' + e.task_idx + '\')" class="btn-timer-pause">⏸ Pause</button>';
-    html += '<button onclick="stopTimer(' + e.oid + ')" class="btn-timer-stop">⏹ Stop</button>';
+    html += '<button onclick="pauseTimer(' + e.oid + ',\'' + e.task_idx + '\')" class="btn-timer-pause"><svg class="icon" aria-hidden="true"><use href="#ph-pause"></use></svg> Pause</button>';
+    html += '<button onclick="stopTimer(' + e.oid + ')" class="btn-timer-stop"><svg class="icon" aria-hidden="true"><use href="#ph-stop"></use></svg> Stop</button>';
     html += '</div>';
   });
   html += '</div>';
@@ -906,7 +906,7 @@ function buildTimeTrackingPanel() {
   const weekHours = weekEntries.reduce(function(s, e) { return s + (e.hours || 0); }, 0);
 
   let html = '<div class="mywork-section mywork-full-width" id="mw-time-tracking">';
-  html += '<div class="mywork-section-header">⏱️ Time Tracking</div>';
+  html += '<div class="mywork-section-header"><svg class="icon" aria-hidden="true"><use href="#ph-clock"></use></svg> Time Tracking</div>';
 
   // Active timers
   html += buildActiveTimersHTML(activeTimers);

@@ -96,7 +96,7 @@ function buildPermissionsPanel() {
   Object.keys(CAPABILITY_DEFS).forEach(function(cap) {
     var def = CAPABILITY_DEFS[cap];
     if (!def.meta) return;
-    metaRows += '<tr style="opacity:0.65;"><td style="font-weight:600;">🔒 ' + esc(def.label) + '</td><td colspan="3" style="text-align:center;font-size:11px;color:var(--text-muted);">Admin only — locked</td></tr>';
+    metaRows += '<tr style="opacity:0.65;"><td style="font-weight:600;"><svg class="icon" aria-hidden="true"><use href="#ph-lock"></use></svg> ' + esc(def.label) + '</td><td colspan="3" style="text-align:center;font-size:11px;color:var(--text-muted);">Admin only — locked</td></tr>';
   });
   return '<div class="settings-panel-title">Access &amp; Permissions</div>' +
     '<div class="settings-panel-desc">Choose what each tier can do. <strong>Who</strong> is in each tier (admin / lead / member) is managed in ArcGIS Online via the <em>Project Tracker – Admins / Leads / Members</em> groups; this page controls their <strong>capabilities</strong>. Admins can always do everything; members can always view and edit items they own. Locked rows can’t be changed (they would allow privilege escalation).</div>' +
@@ -324,7 +324,7 @@ function renderListEditor(containerId, title, items, listKey) {
   const itemsHtml = items.map(function(item, idx) {
     return '<div class="list-editor-item">' +
       '<span class="list-editor-item-name">' + esc(item) + '</span>' +
-      '<button class="list-editor-remove" title="Remove" onclick="removeListItem(\'' + listKey + '\',' + idx + ')">✕</button>' +
+      '<button class="list-editor-remove" title="Remove" onclick="removeListItem(\'' + listKey + '\',' + idx + ')"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg></button>' +
     '</div>';
   }).join('');
 
@@ -449,8 +449,8 @@ function renderDescListEditor(listKey) {
         '<span class="desc-editor-item-name">' + esc(item.name) + (isInactive ? ' <span style="font-size:10px;color:#EF4444;font-weight:700;">(retired)</span>' : '') + '</span>' +
         '<div class="desc-editor-item-actions">' +
           toggleHtml +
-          '<button class="desc-editor-edit" title="Edit" onclick="editDescListItem(\'' + listKey + '\',' + idx + ')">✏️</button>' +
-          '<button class="list-editor-remove" title="Remove" onclick="removeDescListItem(\'' + listKey + '\',' + idx + ')">✕</button>' +
+          '<button class="desc-editor-edit" title="Edit" onclick="editDescListItem(\'' + listKey + '\',' + idx + ')"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg></button>' +
+          '<button class="list-editor-remove" title="Remove" onclick="removeDescListItem(\'' + listKey + '\',' + idx + ')"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg></button>' +
         '</div>' +
       '</div>' +
       '<div class="desc-editor-item-desc">' + esc(item.desc || '') + '</div>' +
@@ -598,7 +598,7 @@ function renderStatusHistoryEditor() {
       '<span style="flex:1;font-size:12px;font-weight:600;color:var(--text-body);">' + esc(h.status) + '</span>' +
       '<span style="font-size:11px;color:var(--text-muted);min-width:85px;">' + (h.changed_date || '') + '</span>' +
       '<span style="font-size:11px;color:var(--text-muted);min-width:100px;">' + esc(h.changed_by || '') + '</span>' +
-      '<button onclick="deleteStatusHistoryRecord(' + idx + ')" style="background:none;border:none;color:#E1E2DD;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;" title="Remove" onmouseover="this.style.color=\'#EF4444\'" onmouseout="this.style.color=\'#E1E2DD\'">✕</button>' +
+      '<button onclick="deleteStatusHistoryRecord(' + idx + ')" style="background:none;border:none;color:#E1E2DD;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;" title="Remove" onmouseover="this.style.color=\'#EF4444\'" onmouseout="this.style.color=\'#E1E2DD\'"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg></button>' +
     '</div>';
   }).join('');
 
@@ -785,7 +785,7 @@ async function loadAndRenderTrash() {
 
     if (items.length === 0) {
       container.innerHTML = '<div style="padding:60px 40px;text-align:center;color:var(--text-muted);">' +
-        '<div style="font-size:40px;margin-bottom:12px;">🗑️</div>' +
+        '<div style="font-size:40px;margin-bottom:12px;"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></div>' +
         '<div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">Trash is empty</div>' +
         '<div style="font-size:12px;">Deleted projects, tasks, and issues appear here.</div>' +
         '</div>';
@@ -793,9 +793,9 @@ async function loadAndRenderTrash() {
     }
 
     var typeBadge = {
-      project: '<span style="display:inline-block;background:#EEF2FF;color:#1E40AF;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase;">📁 Project</span>',
-      task:    '<span style="display:inline-block;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase;">✓ Task</span>',
-      issue:   '<span style="display:inline-block;background:#FEE2E2;color:#991B1B;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase;">🐛 Issue</span>',
+      project: '<span style="display:inline-block;background:#EEF2FF;color:#1E40AF;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase;"><svg class="icon" aria-hidden="true"><use href="#ph-folder"></use></svg> Project</span>',
+      task:    '<span style="display:inline-block;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase;"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> Task</span>',
+      issue:   '<span style="display:inline-block;background:#FEE2E2;color:#991B1B;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:0.04em;text-transform:uppercase;"><svg class="icon" aria-hidden="true"><use href="#ph-bug"></use></svg> Issue</span>',
     };
 
     var html = '<div style="background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;">';
@@ -925,7 +925,7 @@ function buildDataProgramConfigPanel() {
     html += '<input type="color" value="' + esc(t.color || '#002669') + '" oninput="dpEditField(\'' + esc(t.id) + '\', \'color\', this.value)" style="width:48px;height:30px;border:1px solid var(--border);border-radius:5px;cursor:pointer;background:var(--white);padding:2px;">';
     html += '<input type="text" value="' + esc(t.name) + '" oninput="dpEditField(\'' + esc(t.id) + '\', \'name\', this.value)" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:Lato,sans-serif;color:var(--text-body);min-width:0;width:100%;">';
     html += '<input type="text" value="' + esc(t.description || '') + '" oninput="dpEditField(\'' + esc(t.id) + '\', \'description\', this.value)" placeholder="Brief description…" style="padding:5px 8px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:Lato,sans-serif;color:var(--text-muted);min-width:0;width:100%;">';
-    html += '<div style="text-align:right;"><button onclick="dpEditDelete(\'' + esc(t.id) + '\')" style="padding:4px 8px;border:1px solid #FECACA;background:#FEF2F2;color:#B91C1C;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;font-family:Lato,sans-serif;">🗑 Remove</button></div>';
+    html += '<div style="text-align:right;"><button onclick="dpEditDelete(\'' + esc(t.id) + '\')" style="padding:4px 8px;border:1px solid #FECACA;background:#FEF2F2;color:#B91C1C;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;font-family:Lato,sans-serif;"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg> Remove</button></div>';
     html += '</div>';
   });
   html += '</div>';
@@ -1110,7 +1110,7 @@ function _tiArrayRowControls(section, idx, total) {
 }
 
 function _tiRemoveBtn(section, idx) {
-  return '<button onclick="tiEditRemove(\'' + section + '\',' + idx + ')" style="padding:4px 8px;border:1px solid #FECACA;background:#FEF2F2;color:#B91C1C;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;font-family:Lato,sans-serif;">🗑</button>';
+  return '<button onclick="tiEditRemove(\'' + section + '\',' + idx + ')" style="padding:4px 8px;border:1px solid #FECACA;background:#FEF2F2;color:#B91C1C;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;font-family:Lato,sans-serif;"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>';
 }
 
 function buildTeamIntroConfigPanel() {
@@ -1142,7 +1142,7 @@ function buildTeamIntroConfigPanel() {
       }).join('') + '</select>';
     html += '<span style="color:var(--text-muted);">' + (_tiIsHomeTeam(_tiEditTeam) ? 'home team' : 'per-team intro') + '</span>';
   } else {
-    html += 'Editing intro for your team: <b>' + esc(_tiEditTeam) + '</b> &nbsp;🔒';
+    html += 'Editing intro for your team: <b>' + esc(_tiEditTeam) + '</b> &nbsp;<svg class="icon" aria-hidden="true"><use href="#ph-lock"></use></svg>';
   }
   html += '</div>';
 
@@ -1369,7 +1369,7 @@ async function toggleDirectProjectTeam(team, enabled) {
 // and Units list editors. Renames are vocab-only (soft) — existing projects/
 // members keep their stored value, so a rename can leave drift behind.
 //
-// Editing is inline: clicking a name (or its ✏️) swaps it for a text field in
+// Editing is inline: clicking a name (or its <svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg>) swaps it for a text field in
 // place; "＋ add" controls expand into inline inputs. Only one node is editable
 // at a time, tracked by _orgEdit / _orgAdd. Enter commits, Esc cancels.
 var _orgDraft = null;
@@ -1419,14 +1419,14 @@ function buildOrgEditorPanel() {
   var dirty = _orgDraftDirty();
 
   function okCancel(commit, cancel) {
-    return '<button class="settings-btn settings-btn-primary" title="Save" onclick="' + commit + '" style="padding:3px 9px;">✓</button>' +
-      '<button class="settings-btn settings-btn-secondary" title="Cancel (Esc)" onclick="' + cancel + '" style="padding:3px 9px;">✕</button>';
+    return '<button class="settings-btn settings-btn-primary" title="Save" onclick="' + commit + '" style="padding:3px 9px;"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg></button>' +
+      '<button class="settings-btn settings-btn-secondary" title="Cancel (Esc)" onclick="' + cancel + '" style="padding:3px 9px;"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg></button>';
   }
 
   function unitChip(u, di, ti, ui) {
     return '<span style="display:inline-flex;align-items:center;gap:5px;background:var(--white);border:1px solid var(--border);border-radius:20px;padding:3px 6px 3px 11px;font-size:12px;font-weight:600;color:var(--navy);">' +
       esc(u) +
-      '<span title="Remove unit" onclick="orgRemoveUnit(' + di + ',' + ti + ',' + ui + ')" style="width:16px;height:16px;border-radius:50%;background:var(--surface-2);color:#9A3412;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;">✕</span>' +
+      '<span title="Remove unit" onclick="orgRemoveUnit(' + di + ',' + ti + ',' + ui + ')" style="width:16px;height:16px;border-radius:50%;background:var(--surface-2);color:#9A3412;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg></span>' +
     '</span>';
   }
 
@@ -1446,8 +1446,8 @@ function buildOrgEditorPanel() {
       '<span style="font-size:11px;color:var(--text-muted);">' + meta + '</span>' +
       '<span style="margin-left:auto;"></span>' +
       _orgArrows('orgMoveTeam(' + di + ',' + ti + ',-1)', 'orgMoveTeam(' + di + ',' + ti + ',1)', ti, teamCount) +
-      '<button class="settings-btn settings-btn-secondary" title="Rename team" onclick="orgStartEdit(\'team\',' + di + ',' + ti + ')" style="padding:3px 8px;">✏️</button>' +
-      '<button class="settings-btn settings-btn-danger" title="Remove team" onclick="orgRemoveTeam(' + di + ',' + ti + ')" style="padding:3px 8px;">🗑</button>' +
+      '<button class="settings-btn settings-btn-secondary" title="Rename team" onclick="orgStartEdit(\'team\',' + di + ',' + ti + ')" style="padding:3px 8px;"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg></button>' +
+      '<button class="settings-btn settings-btn-danger" title="Remove team" onclick="orgRemoveTeam(' + di + ',' + ti + ')" style="padding:3px 8px;"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>' +
     '</div>';
   }
 
@@ -1484,8 +1484,8 @@ function buildOrgEditorPanel() {
       shortBadge +
       '<span style="margin-left:auto;"></span>' +
       _orgArrows('orgMoveDept(' + di + ',-1)', 'orgMoveDept(' + di + ',1)', di, deptCount) +
-      '<button class="settings-btn settings-btn-secondary" title="Edit department name / short code" onclick="orgStartEdit(\'dept\',' + di + ')" style="padding:3px 8px;">✏️</button>' +
-      '<button class="settings-btn settings-btn-danger" title="Remove department" onclick="orgRemoveDept(' + di + ')" style="padding:3px 8px;">🗑</button>' +
+      '<button class="settings-btn settings-btn-secondary" title="Edit department name / short code" onclick="orgStartEdit(\'dept\',' + di + ')" style="padding:3px 8px;"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg></button>' +
+      '<button class="settings-btn settings-btn-danger" title="Remove department" onclick="orgRemoveDept(' + di + ')" style="padding:3px 8px;"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>' +
     '</div>';
   }
 

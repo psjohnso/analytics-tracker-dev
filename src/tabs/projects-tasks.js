@@ -153,7 +153,7 @@ function boardCard(p) {
   var overdue = due && p.status !== 'Complete' && p.status !== 'Canceled' && due < _boardToday();
   var initials = (p.contact || '?').split(' ').map(function(n) { return n[0]; }).join('').slice(0, 2).toUpperCase();
   var emj = (typeof getMemberAvatarEmoji === 'function') ? getMemberAvatarEmoji(p.contact) : '';
-  var taskChip = counts.total > 0 ? '<span title="Tasks">✓ ' + counts.done + '/' + counts.total + '</span>' : '';
+  var taskChip = counts.total > 0 ? '<span title="Tasks"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> ' + counts.done + '/' + counts.total + '</span>' : '';
   var deptStr = p.partner_dept ? (p.partner_dept.length > 24 ? p.partner_dept.slice(0, 24) + '…' : p.partner_dept) : '';
   return '<div class="kanban-card"' + (canEdit ? ' draggable="true"' : '') +
       ' onclick="openProject(' + p.objectId + ')"' +
@@ -171,7 +171,7 @@ function boardCard(p) {
       '<span class="kanban-ava"' + (emj ? ' style="background:transparent;"' : '') + '>' + (emj || initials) + '</span>' +
       '<span>' + esc((p.contact || 'Unassigned').split(' ')[0]) + '</span>' +
       taskChip +
-      (due ? '<span class="' + (overdue ? 'kanban-due--over' : '') + '" style="margin-left:auto;">📅 ' + esc(due) + '</span>' : '<span style="margin-left:auto;"></span>') +
+      (due ? '<span class="' + (overdue ? 'kanban-due--over' : '') + '" style="margin-left:auto;"><svg class="icon" aria-hidden="true"><use href="#ph-calendar-blank"></use></svg> ' + esc(due) + '</span>' : '<span style="margin-left:auto;"></span>') +
     '</div>' +
   '</div>';
 }
@@ -517,7 +517,7 @@ function renderTaskGrid(data) {
           })()}
           ${esc(t.assignee || 'Unassigned')}
         </div>
-        <div class="date-info">${getTaskHours(t.idx) > 0 ? '<span style="font-weight:700;color:var(--navy);margin-right:8px;">⏱ ' + hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx)) + '</span>' : ''}<span style="${dueStyle}">${dueStr || '—'}</span></div>
+        <div class="date-info">${getTaskHours(t.idx) > 0 ? '<span style="font-weight:700;color:var(--navy);margin-right:8px;"><svg class="icon" aria-hidden="true"><use href="#ph-clock"></use></svg> ' + hoursLabel(getTaskHours(t.idx), getMyTaskHours(t.idx)) + '</span>' : ''}<span style="${dueStyle}">${dueStr || '—'}</span></div>
       </div>
     </div>`;
   }).join('')}</div>`;

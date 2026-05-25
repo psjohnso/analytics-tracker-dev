@@ -282,7 +282,7 @@ function buildRiskSection() {
   var html = '<div style="margin-bottom:28px;">';
   html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;">';
   html += '<div style="font-size:18px;font-weight:800;color:var(--navy);">At-Risk Projects</div>';
-  html += '<span style="font-size:10px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:8px;">🔒 Leads &amp; admins</span>';
+  html += '<span style="font-size:10px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:8px;"><svg class="icon" aria-hidden="true"><use href="#ph-lock"></use></svg> Leads &amp; admins</span>';
   html += '</div>';
   html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">In-flight early-warning score from leading indicators (schedule drift, overdue/aging tasks, stalled work, pace, single-thread staffing). Additive and transparent — click a project for the per-factor breakdown. Tune weights and the calibration set in Settings → Project Risk.</div>';
 
@@ -441,7 +441,7 @@ function renderRiskCalibTable() {
       var r = computeProjectRisk(p, ctx);
       scoreCell = _rkBadge(r.score, r.band);
       var ok = (r.band === mode.expect);
-      matchCell = ok ? '<span style="color:#16A34A;font-weight:800;">✓</span>' : '<span style="color:#EF4444;font-weight:800;">✗</span>';
+      matchCell = ok ? '<span style="color:#16A34A;font-weight:800;"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg></span>' : '<span style="color:#EF4444;font-weight:800;"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg></span>';
     }
     html += '<tr>';
     html += '<td style="padding:6px;font-weight:700;color:var(--navy);">' + esc(entry.title || (p && p.title) || '—') + (entry.note ? '<div style="font-size:10px;color:var(--text-muted);font-weight:400;">' + esc(entry.note) + '</div>' : '') + '</td>';
@@ -450,7 +450,7 @@ function renderRiskCalibTable() {
     html += '<td style="padding:6px;text-align:center;"><span style="font-size:10px;font-weight:800;text-transform:uppercase;background:' + expC.bg + ';color:' + expC.fg + ';padding:2px 7px;border-radius:8px;">' + expC.label + '</span></td>';
     html += '<td style="padding:6px;text-align:center;">' + scoreCell + '</td>';
     html += '<td style="padding:6px;text-align:center;">' + matchCell + '</td>';
-    html += '<td style="padding:6px;text-align:right;"><button class="settings-btn settings-btn-danger" onclick="rkRemoveCalib(' + i + ')" style="padding:2px 8px;">🗑</button></td>';
+    html += '<td style="padding:6px;text-align:right;"><button class="settings-btn settings-btn-danger" onclick="rkRemoveCalib(' + i + ')" style="padding:2px 8px;"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button></td>';
     html += '</tr>';
   });
   html += '</tbody></table></div>';

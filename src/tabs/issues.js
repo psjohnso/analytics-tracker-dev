@@ -127,10 +127,10 @@ function buildIssuesPage() {
 
   // Header
   html += '<div class="issues-header">';
-  html += '<div class="issues-title">🐛 Issues & Improvements</div>';
+  html += '<div class="issues-title"><svg class="icon" aria-hidden="true"><use href="#ph-bug"></use></svg> Issues & Improvements</div>';
   html += '<div class="issues-filters">';
   html += '<button class="issues-pill' + (_issuesFilter === 'all' ? ' active' : '') + '" onclick="setIssuesFilter(\'all\')">All (' + openCount + ')</button>';
-  html += '<button class="issues-pill' + (_issuesFilter === 'Bug' ? ' active' : '') + '" onclick="setIssuesFilter(\'Bug\')">🐛 Bugs (' + bugCount + ')</button>';
+  html += '<button class="issues-pill' + (_issuesFilter === 'Bug' ? ' active' : '') + '" onclick="setIssuesFilter(\'Bug\')"><svg class="icon" aria-hidden="true"><use href="#ph-bug"></use></svg> Bugs (' + bugCount + ')</button>';
   html += '<button class="issues-pill' + (_issuesFilter === 'Improvement' ? ' active' : '') + '" onclick="setIssuesFilter(\'Improvement\')">✨ Improvements (' + impCount + ')</button>';
   html += '</div>';
   html += '<div class="issues-filters" style="margin-left:8px;">';
@@ -168,14 +168,14 @@ function buildIssuesPage() {
   // Issue cards
   if (filtered.length === 0) {
     html += '<div class="issue-empty">';
-    html += '<div style="font-size:48px;margin-bottom:12px;">' + (_issuesStatusFilter === 'done' ? '✅' : '🎉') + '</div>';
+    html += '<div style="font-size:48px;margin-bottom:12px;">' + (_issuesStatusFilter === 'done' ? '<svg class="icon" aria-hidden="true"><use href="#ph-check-circle"></use></svg>' : '🎉') + '</div>';
     html += '<div style="font-weight:700;font-size:16px;color:var(--navy);margin-bottom:4px;">' + (_issuesStatusFilter === 'done' ? 'No resolved issues yet' : 'No open issues!') + '</div>';
     html += '<div>' + (_issuesStatusFilter === 'done' ? 'Resolved issues will appear here.' : 'Everything is running smoothly. Report a bug or suggest an improvement if you spot something.') + '</div>';
     html += '</div>';
   } else {
     html += '<div class="issues-list">';
     filtered.forEach(function(iss) {
-      var typeIcon = iss.type === 'Bug' ? '🐛' : '✨';
+      var typeIcon = iss.type === 'Bug' ? '<svg class="icon" aria-hidden="true"><use href="#ph-bug"></use></svg>' : '✨';
       var typeClass = iss.type === 'Bug' ? 'issue-type-bug' : 'issue-type-improvement';
       var statusClass = 'issue-status-' + iss.status.replace(/\s/g, '');
 
@@ -206,8 +206,8 @@ function buildIssuesPage() {
         html += '<option value="' + s + '"' + (iss.status === s ? ' selected' : '') + '>' + s + '</option>';
       });
       html += '</select>';
-      html += '<button class="issue-action-btn" onclick="openIssueForm(' + iss.objectId + ')" title="Edit">✏</button>';
-      html += '<button class="issue-action-btn" onclick="deleteIssue(' + iss.objectId + ')" title="Delete" style="color:#EF4444;">🗑</button>';
+      html += '<button class="issue-action-btn" onclick="openIssueForm(' + iss.objectId + ')" title="Edit"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg></button>';
+      html += '<button class="issue-action-btn" onclick="deleteIssue(' + iss.objectId + ')" title="Delete" style="color:#EF4444;"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>';
       html += '</div>';
 
       html += '</div>';
@@ -230,7 +230,7 @@ function openIssueForm(issueId) {
   var html = '<div class="issue-form-field">';
   html += '<label class="issue-form-label">Type</label>';
   html += '<select id="issue-type" class="fm-input" onchange="toggleIssueSteps()">';
-  html += '<option value="Bug"' + (iss && iss.type === 'Bug' ? ' selected' : (!iss ? ' selected' : '')) + '>🐛 Bug</option>';
+  html += '<option value="Bug"' + (iss && iss.type === 'Bug' ? ' selected' : (!iss ? ' selected' : '')) + '><svg class="icon" aria-hidden="true"><use href="#ph-bug"></use></svg> Bug</option>';
   html += '<option value="Improvement"' + (iss && iss.type === 'Improvement' ? ' selected' : '') + '>✨ Improvement</option>';
   html += '</select></div>';
 

@@ -179,7 +179,7 @@ function updateSaveViewWarning() {
   for (var i = 0; i < views.length; i++) if (views[i].name === name) { dup = views[i]; break; }
   if (dup && name) {
     warning.style.display = '';
-    warning.innerHTML = '⚠ A view named <strong>"' + esc(name) + '"</strong> already exists. Saving will replace it.';
+    warning.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#ph-warning"></use></svg> A view named <strong>"' + esc(name) + '"</strong> already exists. Saving will replace it.';
   } else {
     warning.style.display = 'none';
   }
@@ -351,15 +351,15 @@ if (typeof document !== 'undefined') {
 }
 function builtinMenuItems(p) {
   var isDef = getDefaultViewId() === p.id;
-  return '<div class="pm-item" tabindex="0" role="menuitem" onclick="setDefaultView(\'' + p.id + '\', event)"><span class="pm-ic" aria-hidden="true">★</span>' + (isDef ? 'Default view ✓' : 'Set as default') + '</div>';
+  return '<div class="pm-item" tabindex="0" role="menuitem" onclick="setDefaultView(\'' + p.id + '\', event)"><span class="pm-ic" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#ph-star"></use></svg></span>' + (isDef ? 'Default view <svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg>' : 'Set as default') + '</div>';
 }
 function presetMenuItems(v) {
   var isDef = getDefaultViewId() === v.id;
   return '' +
-    '<div class="pm-item" tabindex="0" role="menuitem" onclick="setDefaultView(\'' + v.id + '\', event)"><span class="pm-ic" aria-hidden="true">★</span>' + (isDef ? 'Default view ✓' : 'Set as default') + '</div>' +
-    '<div class="pm-item" tabindex="0" role="menuitem" onclick="updateSavedView(\'' + v.id + '\', event)"><span class="pm-ic" aria-hidden="true">⤓</span>Update to current filters</div>' +
-    '<div class="pm-item" tabindex="0" role="menuitem" onclick="renameSavedView(\'' + v.id + '\', event)"><span class="pm-ic" aria-hidden="true">✎</span>Rename…</div>' +
-    '<div class="pm-item danger" tabindex="0" role="menuitem" onclick="deleteSavedView(\'' + v.id + '\', event)"><span class="pm-ic" aria-hidden="true">🗑</span>Delete</div>';
+    '<div class="pm-item" tabindex="0" role="menuitem" onclick="setDefaultView(\'' + v.id + '\', event)"><span class="pm-ic" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#ph-star"></use></svg></span>' + (isDef ? 'Default view <svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg>' : 'Set as default') + '</div>' +
+    '<div class="pm-item" tabindex="0" role="menuitem" onclick="updateSavedView(\'' + v.id + '\', event)"><span class="pm-ic" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#ph-download-simple"></use></svg></span>Update to current filters</div>' +
+    '<div class="pm-item" tabindex="0" role="menuitem" onclick="renameSavedView(\'' + v.id + '\', event)"><span class="pm-ic" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg></span>Rename…</div>' +
+    '<div class="pm-item danger" tabindex="0" role="menuitem" onclick="deleteSavedView(\'' + v.id + '\', event)"><span class="pm-ic" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></span>Delete</div>';
 }
 
 // Render the preset bar above the results: built-in presets + the user's saved
@@ -385,7 +385,7 @@ function renderPresetBar() {
   builtins.forEach(function(p) {
     var on = p.id === activeId;
     html += '<span class="preset-chip builtin' + (on ? ' on' : '') + '" tabindex="0" role="button" onclick="applyPreset(\'' + p.id + '\')" title="Apply this preset" aria-label="Apply view: ' + esc(p.name) + '">' +
-      (defId === p.id ? '<span class="pc-star" title="Default view" aria-hidden="true">★</span>' : '') +
+      (defId === p.id ? '<span class="pc-star" title="Default view" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#ph-star"></use></svg></span>' : '') +
       '<span class="pc-name">' + esc(p.name) + '</span>' +
       '<span class="pc-kebab" tabindex="0" role="button" aria-label="Preset options" onclick="togglePresetMenu(\'' + p.id + '\', event)" title="Preset options">⋯</span>' +
       '<div class="preset-menu" id="pmenu-' + p.id + '">' + builtinMenuItems(p) + '</div>' +
@@ -395,13 +395,13 @@ function renderPresetBar() {
   saved.forEach(function(v) {
     var on = v.id === activeId;
     html += '<span class="preset-chip saved' + (on ? ' on' : '') + '" tabindex="0" role="button" onclick="applySavedView(\'' + v.id + '\')" title="Apply this view" aria-label="Apply view: ' + esc(v.name) + '">' +
-      (defId === v.id ? '<span class="pc-star" title="Default view" aria-hidden="true">★</span>' : '') +
+      (defId === v.id ? '<span class="pc-star" title="Default view" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#ph-star"></use></svg></span>' : '') +
       '<span class="pc-name">' + esc(v.name) + '</span>' +
       '<span class="pc-kebab" tabindex="0" role="button" aria-label="Options for view ' + esc(v.name) + '" onclick="togglePresetMenu(\'' + v.id + '\', event)" title="View options">⋯</span>' +
       '<div class="preset-menu" id="pmenu-' + v.id + '">' + presetMenuItems(v) + '</div>' +
     '</span>';
   });
-  html += '<button class="preset-chip save" onclick="saveCurrentView()" title="Save the current filters as a reusable view">💾 Save view</button>';
+  html += '<button class="preset-chip save" onclick="saveCurrentView()" title="Save the current filters as a reusable view"><svg class="icon" aria-hidden="true"><use href="#ph-floppy-disk"></use></svg> Save view</button>';
 
   // "Unsaved changes" affordance: if a saved view was applied then edited.
   if (svLastAppliedId) {

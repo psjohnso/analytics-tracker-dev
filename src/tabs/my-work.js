@@ -270,7 +270,7 @@ function rebuildGanttChart() {
     const headerSpan = document.querySelector('#mywork-gantt') && document.querySelector('#mywork-gantt').closest('.mywork-section') ? document.querySelector('#mywork-gantt').closest('.mywork-section').querySelector('.mywork-section-header span:last-child') : null;
     if (headerSpan) headerSpan.textContent = '(' + vis + ' of ' + total + ' projects)';
     const ddBtn = document.querySelector('#gantt-filter-wrap > button');
-    if (ddBtn) ddBtn.innerHTML = '📁 Projects (' + vis + '/' + total + ') <span style="font-size:9px;">▼</span>';
+    if (ddBtn) ddBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#ph-folder"></use></svg> Projects (' + vis + '/' + total + ') <span style="font-size:9px;">▼</span>';
   }
 }
 
@@ -379,7 +379,7 @@ function buildGanttBars() {
       const isBlocked = isFeatureOn('dependencies') && hasIncompleteBlockers(t);
       const barOpacity = isMine ? '0.85' : '0.3';
       const labelStyle = isMine ? 'color:var(--text-body);font-weight:600;' : 'color:var(--text-muted);font-weight:400;opacity:0.7;';
-      const blockedIcon = isBlocked ? '🔒 ' : '› ';
+      const blockedIcon = isBlocked ? '<svg class="icon" aria-hidden="true"><use href="#ph-lock"></use></svg> ' : '› ';
       const blockedBarStyle = isBlocked ? 'background:repeating-linear-gradient(45deg,' + tsc + ',' + tsc + ' 3px,transparent 3px,transparent 6px);' : 'background:' + tsc + ';';
       const isLastTask = tIdx === sortedTasks.length - 1;
       const taskBorder = isLastTask ? 'border-bottom:0.5px solid #E8E6DF;' : 'border-bottom:0.5px solid #F3F1EB;';
@@ -410,7 +410,7 @@ function buildGanttBars() {
   html += '<div style="display:flex;gap:16px;margin-top:8px;padding-top:8px;border-top:1px solid #E8E6DF;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">';
   html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.85;display:inline-block;"></span> Your tasks</span>';
   html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.3;display:inline-block;"></span> Other members\' tasks</span>';
-  if (isFeatureOn('dependencies')) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:repeating-linear-gradient(45deg,#83AC16,#83AC16 2px,transparent 2px,transparent 4px);display:inline-block;"></span> 🔒 Deps pending</span>';
+  if (isFeatureOn('dependencies')) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:repeating-linear-gradient(45deg,#83AC16,#83AC16 2px,transparent 2px,transparent 4px);display:inline-block;"></span> <svg class="icon" aria-hidden="true"><use href="#ph-lock"></use></svg> Deps pending</span>';
   html += '</div>';
   return html;
 }
@@ -444,7 +444,7 @@ function _mwTaskLineHtml(t) {
 
   // Due slot — reserve width even when empty.
   var dueInner = '';
-  if (dueStr) dueInner = (isOverdue ? '⚠ ' : '') + esc(dueStr);
+  if (dueStr) dueInner = (isOverdue ? '<svg class="icon" aria-hidden="true"><use href="#ph-warning"></use></svg> ' : '') + esc(dueStr);
   else dueInner = '<span style="color:#D1D5DB;">—</span>';
   var dueColor = isOverdue ? '#EF4444' : 'var(--text-muted)';
   var dueHtml = '<span style="display:inline-flex;justify-content:flex-end;min-width:76px;flex-shrink:0;font-size:10px;color:' + dueColor + ';white-space:nowrap;">' + dueInner + '</span>';
@@ -454,7 +454,7 @@ function _mwTaskLineHtml(t) {
   if (t.status === 'Active')               { pillBg = '#DCFCE7'; pillColor = '#166534'; pillLabel = 'Active'; }
   else if (t.status === 'On Hold')         { pillBg = '#FEF3C7'; pillColor = '#92400E'; pillLabel = 'On Hold'; }
   else if (t.status === 'Waiting for Response') { pillBg = '#DBEAFE'; pillColor = '#1E40AF'; pillLabel = 'Waiting'; }
-  else if (t.status === 'Complete')        { pillBg = '#E0F2FE'; pillColor = '#0C4A6E'; pillLabel = '✓ Done'; }
+  else if (t.status === 'Complete')        { pillBg = '#E0F2FE'; pillColor = '#0C4A6E'; pillLabel = '<svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> Done'; }
   var pillHtml = '<span style="display:inline-flex;justify-content:flex-end;min-width:72px;flex-shrink:0;">' +
     '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:' + pillBg + ';color:' + pillColor + ';text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;">' + esc(pillLabel) + '</span>' +
     '</span>';
@@ -529,9 +529,9 @@ function getDependencyIcon(t) {
   var blocking = getBlockingTasks(t.task_number);
   if (!blockedBy.length && !blocking.length) return '';
   var hasIncomplete = hasIncompleteBlockers(t);
-  if (hasIncomplete) return '<span title="Has unresolved dependencies" style="cursor:help;font-size:12px;">🔒</span>';
-  if (blockedBy.length && !hasIncomplete) return '<span title="All dependencies resolved" style="cursor:help;font-size:12px;">🔓</span>';
-  if (blocking.length) return '<span title="Required by ' + blocking.length + ' task(s)" style="cursor:help;font-size:12px;">⛓</span>';
+  if (hasIncomplete) return '<span title="Has unresolved dependencies" style="cursor:help;font-size:12px;"><svg class="icon" aria-hidden="true"><use href="#ph-lock"></use></svg></span>';
+  if (blockedBy.length && !hasIncomplete) return '<span title="All dependencies resolved" style="cursor:help;font-size:12px;"><svg class="icon" aria-hidden="true"><use href="#ph-lock-open"></use></svg></span>';
+  if (blocking.length) return '<span title="Required by ' + blocking.length + ' task(s)" style="cursor:help;font-size:12px;"><svg class="icon" aria-hidden="true"><use href="#ph-link"></use></svg></span>';
   return '';
 }
 
@@ -549,7 +549,7 @@ function refreshBlockerList(projectTitle, currentTaskNumber, currentBlockedBy) {
 
   // Search/filter input
   html += '<div style="position:relative;margin-bottom:8px;">';
-  html += '<span style="position:absolute;left:8px;top:7px;font-size:13px;color:var(--text-muted);pointer-events:none;">🔍</span>';
+  html += '<span style="position:absolute;left:8px;top:7px;font-size:13px;color:var(--text-muted);pointer-events:none;"><svg class="icon" aria-hidden="true"><use href="#ph-magnifying-glass"></use></svg></span>';
   html += '<input type="text" id="dep-search-input" placeholder="Filter by number or name..." oninput="depFilterList()" style="width:100%;box-sizing:border-box;font-size:12px;padding:6px 8px 6px 28px;border:1px solid #E8E6DF;border-radius:6px;font-family:Lato,sans-serif;">';
   html += '</div>';
 
@@ -771,7 +771,7 @@ function buildMyWorkTasksSection(myTasks, todayStr, viewUserTaskHrsFn) {
   const hiddenCount = pendingCount + onHoldCount + completeCount + canceledCount;
 
   html += '<div class="mywork-section-header" style="justify-content:space-between;flex-wrap:wrap;">'+
-    '<div style="display:flex;align-items:center;gap:6px;">✅ My Tasks <span class="badge-count">' + myTasks.length + '</span>' +
+    '<div style="display:flex;align-items:center;gap:6px;"><svg class="icon" aria-hidden="true"><use href="#ph-check-circle"></use></svg> My Tasks <span class="badge-count">' + myTasks.length + '</span>' +
     '<button onclick="mwNewTask()" style="padding:3px 8px;border-radius:4px;border:1px solid #C24200;background:transparent;cursor:pointer;font-family:Lato,sans-serif;font-size:10px;font-weight:700;color:#C24200;line-height:1;">＋ New</button>' +
     '</div>';
 
@@ -986,10 +986,10 @@ function renderMyWork(area) {
 
   // ── Jump links nav bar ───────────────────────────────────────
   const jumpLinks = [];
-  if (isViewingSelf && isTimeTrackingEnabled()) jumpLinks.push({ id: 'mw-time-tracking', label: '⏱️ Time' });
-  jumpLinks.push({ id: 'mw-my-week', label: '📅 Week' });
-  if (ganttItems_preview.length > 0) jumpLinks.push({ id: 'mw-timeline', label: '📊 Timeline' });
-  jumpLinks.push({ id: 'mw-projects', label: '📁 Projects & Tasks' });
+  if (isViewingSelf && isTimeTrackingEnabled()) jumpLinks.push({ id: 'mw-time-tracking', label: '<svg class="icon" aria-hidden="true"><use href="#ph-clock"></use></svg> Time' });
+  jumpLinks.push({ id: 'mw-my-week', label: '<svg class="icon" aria-hidden="true"><use href="#ph-calendar-blank"></use></svg> Week' });
+  if (ganttItems_preview.length > 0) jumpLinks.push({ id: 'mw-timeline', label: '<svg class="icon" aria-hidden="true"><use href="#ph-chart-bar"></use></svg> Timeline' });
+  jumpLinks.push({ id: 'mw-projects', label: '<svg class="icon" aria-hidden="true"><use href="#ph-folder"></use></svg> Projects & Tasks' });
   html += '<div class="mywork-jump-nav">';
   html += '<a href="#" class="mywork-jump-link" onclick="event.preventDefault();window.scrollTo({top:0,behavior:\'smooth\'});">↑ Top</a>';
   jumpLinks.forEach(function(link) {
@@ -1062,7 +1062,7 @@ function renderMyWork(area) {
   }
 
   html += '<div class="mywork-section mywork-full-width" id="mw-my-week">';
-  html += '<div class="mywork-section-header">📅 My Week';
+  html += '<div class="mywork-section-header"><svg class="icon" aria-hidden="true"><use href="#ph-calendar-blank"></use></svg> My Week';
   html +=   '<span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:none;letter-spacing:0.02em;margin-left:8px;">' + esc(_weekLabel) + '</span>';
   html += '</div>';
   if (!RESOURCES_DATA || !RESOURCES_DATA.people[name]) {
@@ -1182,11 +1182,11 @@ function renderMyWork(area) {
       if (isMissingTasks) {
         if (proj) {
           var safeTitle = esc(proj.title).replace(/'/g, "\\'");
-          html += '<div class="mw-missing-tasks-helpline">⚠ No active tasks assigned to you on this project.';
+          html += '<div class="mw-missing-tasks-helpline"><svg class="icon" aria-hidden="true"><use href="#ph-warning"></use></svg> No active tasks assigned to you on this project.';
           html += '<a href="javascript:void(0)" onclick="event.stopPropagation();addTaskToProject(' + proj.objectId + ', \'' + safeTitle + '\')">＋ Add a task</a>';
           html += '</div>';
         } else {
-          html += '<div class="mw-missing-tasks-helpline">⚠ No active tasks assigned to you on this project.</div>';
+          html += '<div class="mw-missing-tasks-helpline"><svg class="icon" aria-hidden="true"><use href="#ph-warning"></use></svg> No active tasks assigned to you on this project.</div>';
         }
       }
 
@@ -1197,7 +1197,7 @@ function renderMyWork(area) {
           // green so the row reads as a win instead of a neutral
           // "here's some history" subhead.
           var doneHdrCls = allDoneThisWeek ? 'mw-done-header all-done' : 'mw-done-header';
-          var doneHdrLabel = allDoneThisWeek ? '✓ All tasks completed this week' : '✓ Completed this Week';
+          var doneHdrLabel = allDoneThisWeek ? '<svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> All tasks completed this week' : '<svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> Completed this Week';
           html += '<div class="' + doneHdrCls + '"><span>' + doneHdrLabel + '</span></div>';
           doneTasks.forEach(function(t) { html += _mwTaskLineHtml(t); });
         }
@@ -1225,7 +1225,7 @@ function renderMyWork(area) {
   }).length;
 
   html += '<div class="mywork-section-header" style="justify-content:space-between;flex-wrap:wrap;">';
-  html += '<div>📁 My Projects <span class="badge-count">' + myProjects.length + '</span></div>';
+  html += '<div><svg class="icon" aria-hidden="true"><use href="#ph-folder"></use></svg> My Projects <span class="badge-count">' + myProjects.length + '</span></div>';
   if (projOverdue + projDueSoon + projMissing > 0) {
     var _mwDark2 = (typeof document !== 'undefined' && document.body && document.body.dataset.theme === 'dark');
     var attTxt2 = _mwDark2 ? { over:'#FCA5A5', due:'#EBCF77', miss:'#9AA2AC' } : { over:'#791F1F', due:'#92400E', miss:'#5F5E5A' };
@@ -1421,14 +1421,14 @@ function renderMyWork(area) {
     const visibleCount = ganttItems.filter(function(g) { return _ganttFilter[g.title]; }).length;
 
     html += '<div class="mywork-section mywork-full-width" id="mw-timeline">';
-    html += '<div class="mywork-section-header" style="cursor:pointer;user-select:none;" onclick="toggleGantt()"><span id="gantt-arrow">▼</span> 📊 Timeline <span style="font-size:11px;font-weight:400;color:var(--text-muted);">(' + visibleCount + ' of ' + ganttItems.length + ' projects)</span></div>';
+    html += '<div class="mywork-section-header" style="cursor:pointer;user-select:none;" onclick="toggleGantt()"><span id="gantt-arrow">▼</span> <svg class="icon" aria-hidden="true"><use href="#ph-chart-bar"></use></svg> Timeline <span style="font-size:11px;font-weight:400;color:var(--text-muted);">(' + visibleCount + ' of ' + ganttItems.length + ' projects)</span></div>';
     html += '<div id="mywork-gantt">';
 
     html += '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:10px;padding:8px 0;border-bottom:1px solid var(--border);">';
 
     html += '<div style="position:relative;display:inline-block;" id="gantt-filter-wrap">';
     html += '<button onclick="toggleGanttDropdown()" style="font-size:11px;padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:var(--white);cursor:pointer;font-weight:600;color:var(--navy);display:flex;align-items:center;gap:6px;">';
-    html += '📁 Projects (' + visibleCount + '/' + ganttItems.length + ') <span style="font-size:9px;">▼</span></button>';
+    html += '<svg class="icon" aria-hidden="true"><use href="#ph-folder"></use></svg> Projects (' + visibleCount + '/' + ganttItems.length + ') <span style="font-size:9px;">▼</span></button>';
     html += '<div id="gantt-filter-dropdown" style="display:none;position:absolute;top:100%;left:0;z-index:100;background:var(--white);border:1px solid var(--border);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:8px 0;min-width:260px;max-height:300px;overflow-y:auto;margin-top:4px;">';
     html += '<div style="display:flex;gap:6px;padding:4px 12px 8px;border-bottom:1px solid var(--border);">';
     html += '<button onclick="ganttSelectAll(true)" style="font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface-2);cursor:pointer;font-weight:700;">All</button>';

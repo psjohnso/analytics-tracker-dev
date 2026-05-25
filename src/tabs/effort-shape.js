@@ -514,7 +514,7 @@ function _esRenderProjects(model) {
     html += '<td>' + _esSparkline(p) + ' <span class="es-shape es-shape-' + p.shape.key.toLowerCase() + '">' + p.shape.label + '</span></td>';
     html += '<td class="ctr"><span class="es-intensity es-intensity-' + p.intensity.key.toLowerCase() + '">' + p.intensity.label + '</span></td>';
     html += '<td class="ctr">' + (p.deathMarch
-      ? '<span class="es-deathmarch">⚠ ' + p.peakRatio.toFixed(1) + '×</span>'
+      ? '<span class="es-deathmarch"><svg class="icon" aria-hidden="true"><use href="#ph-warning"></use></svg> ' + p.peakRatio.toFixed(1) + '×</span>'
       : '<span style="color:var(--text-muted);">—</span>') + '</td>';
     html += '</tr>';
   });
@@ -593,7 +593,7 @@ function _esRenderDeathMarch(model) {
   html += '<span class="tl-desc">Projects where the late weeks had ≥ ' + ES_DEATH_MARCH_RATIO + '× the average — worth retrospecting on.</span></div>';
   if (model.deathMarchers.length === 0) {
     html += '<div class="tl-tbl-wrap" style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">' +
-      '✓ No death-march projects detected. Peaks are within ' + ES_DEATH_MARCH_RATIO + '× of project averages across the board.' +
+      '<svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> No death-march projects detected. Peaks are within ' + ES_DEATH_MARCH_RATIO + '× of project averages across the board.' +
       '</div></div>';
     return html;
   }

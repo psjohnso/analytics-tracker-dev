@@ -86,12 +86,12 @@ function openSimpleIdeaForm() {
     </div>
     <div style="background:#FEF3C7;border:1.5px solid #F59E0B;border-radius:6px;padding:14px 16px;font-size:12px;color:#92400E;line-height:1.7;">
       <div style="font-weight:800;font-size:13px;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-        ⚠️ Before you submit — have you talked to your team lead?
+        <svg class="icon" aria-hidden="true"><use href="#ph-warning"></use></svg> Before you submit — have you talked to your team lead?
       </div>
       Please make sure you've discussed this idea with your respective team lead first:
       <div style="display:flex;gap:10px;margin:10px 0 4px;flex-wrap:wrap;">
         <span style="background:var(--white);border:1.5px solid #F59E0B;border-radius:20px;padding:4px 14px;font-weight:700;">🤖 AI Team Lead</span>
-        <span style="background:var(--white);border:1.5px solid #F59E0B;border-radius:20px;padding:4px 14px;font-weight:700;">📊 Analytics Team Lead</span>
+        <span style="background:var(--white);border:1.5px solid #F59E0B;border-radius:20px;padding:4px 14px;font-weight:700;"><svg class="icon" aria-hidden="true"><use href="#ph-chart-bar"></use></svg> Analytics Team Lead</span>
         <span style="background:var(--white);border:1.5px solid #F59E0B;border-radius:20px;padding:4px 14px;font-weight:700;">🗺️ GIS Team Lead</span>
       </div>
       This ensures your team lead is prepared to speak to the idea at the Monday review meeting.
@@ -101,12 +101,12 @@ function openSimpleIdeaForm() {
       <span>I have discussed this idea with my team lead and they are aware of the submission.</span>
     </label>
     <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:12px 14px;font-size:12px;color:#1E40AF;line-height:1.6;">
-      <strong>📅 What happens next:</strong> Your idea will appear in the project list with an <em>Idea</em> status. Leadership reviews new ideas every Monday and will reach out if they have questions.
+      <strong><svg class="icon" aria-hidden="true"><use href="#ph-calendar-blank"></use></svg> What happens next:</strong> Your idea will appear in the project list with an <em>Idea</em> status. Leadership reviews new ideas every Monday and will reach out if they have questions.
     </div>
   `;
   // Update footer for simple form
   var footer = document.querySelector('#idea-modal .idea-modal-footer');
-  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="closeIdeaFormDirect()">Cancel</button><button class="idea-btn-submit" onclick="submitIdeaForm()">💡 Submit Idea</button>';
+  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="closeIdeaFormDirect()">Cancel</button><button class="idea-btn-submit" onclick="submitIdeaForm()"><svg class="icon" aria-hidden="true"><use href="#ph-lightbulb"></use></svg> Submit Idea</button>';
   document.getElementById('idea-modal-backdrop').classList.add('open');
   setTimeout(() => document.getElementById('idea-title').focus(), 50);
 }
@@ -379,10 +379,10 @@ function renderGuidedStep3() {
   html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:0.04em;margin-bottom:4px;">PROJECT TITLE</div>';
   html += '<div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:8px;">' + esc(sa.title) + '</div>';
   html += '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--text-muted);">';
-  html += '<span>📂 ' + esc(sa.category) + '</span>';
+  html += '<span><svg class="icon" aria-hidden="true"><use href="#ph-folder-open"></use></svg> ' + esc(sa.category) + '</span>';
   if (sa.dept) html += '<span>🏛 ' + esc(sa.dept) + '</span>';
-  if (sa.urgency) html += '<span>⏱ ' + esc(sa.urgency) + '</span>';
-  html += '<span>👤 ' + esc(sa.contact) + '</span>';
+  if (sa.urgency) html += '<span><svg class="icon" aria-hidden="true"><use href="#ph-clock"></use></svg> ' + esc(sa.urgency) + '</span>';
+  html += '<span><svg class="icon" aria-hidden="true"><use href="#ph-user"></use></svg> ' + esc(sa.contact) + '</span>';
   html += '</div>';
   html += '</div>';
 
@@ -394,7 +394,7 @@ function renderGuidedStep3() {
 
   // Team lead check
   html += '<div style="background:#FEF3C7;border:1.5px solid #F59E0B;border-radius:6px;padding:12px 14px;font-size:12px;color:#92400E;line-height:1.6;margin-bottom:8px;">';
-  html += '<strong>⚠️ Before you submit</strong> — have you discussed this idea with your team lead?';
+  html += '<strong><svg class="icon" aria-hidden="true"><use href="#ph-warning"></use></svg> Before you submit</strong> — have you discussed this idea with your team lead?';
   html += '</div>';
   html += '<label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;color:var(--text-body);line-height:1.5;">';
   html += '<input type="checkbox" id="gi-team-check" style="margin-top:3px;accent-color:var(--orange);width:15px;height:15px;flex-shrink:0;">';
@@ -403,7 +403,7 @@ function renderGuidedStep3() {
 
   body.innerHTML = html;
   var footer = document.querySelector('#idea-modal .idea-modal-footer');
-  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="renderGuidedStep2()">← Back</button><button class="idea-btn-submit" onclick="submitGuidedIdeaForm()">💡 Submit Idea</button>';
+  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="renderGuidedStep2()">← Back</button><button class="idea-btn-submit" onclick="submitGuidedIdeaForm()"><svg class="icon" aria-hidden="true"><use href="#ph-lightbulb"></use></svg> Submit Idea</button>';
 }
 
 async function submitGuidedIdeaForm() {
@@ -610,7 +610,7 @@ function renderIdeaReview() {
 
   const cards = ideas.length === 0
     ? `<div class="review-empty">
-        <div class="empty-icon">✅</div>
+        <div class="empty-icon"><svg class="icon" aria-hidden="true"><use href="#ph-check-circle"></use></svg></div>
         <div style="font-weight:700;font-size:17px;color:var(--text-dark);margin-bottom:8px;">All caught up!</div>
         <div>No new ideas to review. New submissions will appear here.</div>
       </div>`
@@ -636,16 +636,16 @@ function renderIdeaReview() {
 
           return `<div class="idea-card" id="idea-card-${p.objectId}">
             <div class="idea-card-top">
-              <div class="idea-lightbulb">💡</div>
+              <div class="idea-lightbulb"><svg class="icon" aria-hidden="true"><use href="#ph-lightbulb"></use></svg></div>
               <div class="flex-1-min0">
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                   <div class="idea-card-title" onclick="openProjectFromReview(${p.objectId})" class="flex-1-min0">${esc(p.title)}</div>
                   ${priBadge}
                 </div>
                 <div class="idea-card-meta">
-                  ${p.contact ? `<span>👤 ${esc(p.contact)}</span>` : ''}
+                  ${p.contact ? `<span><svg class="icon" aria-hidden="true"><use href="#ph-user"></use></svg> ${esc(p.contact)}</span>` : ''}
                   ${p.partner_dept ? `<span>🏢 ${esc(p.partner_dept)}</span>` : ''}
-                  ${submittedLabel ? `<span>📅 ${submittedLabel}</span>` : ''}
+                  ${submittedLabel ? `<span><svg class="icon" aria-hidden="true"><use href="#ph-calendar-blank"></use></svg> ${submittedLabel}</span>` : ''}
                 </div>
               </div>
             </div>
@@ -671,7 +671,7 @@ function renderIdeaReview() {
             <div class="idea-card-actions">
               <span class="idea-card-actions-label">Move to →</span>
               ${btns}
-              <button class="idea-edit-btn" onclick="openFormModal('edit-project', ${p.objectId})">✏ Edit</button>
+              <button class="idea-edit-btn" onclick="openFormModal('edit-project', ${p.objectId})"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg> Edit</button>
             </div>
             <div class="idea-avail-section">
               <div class="idea-avail-toggle" onclick="toggleIdeaAvail(${p.objectId})">
@@ -686,7 +686,7 @@ function renderIdeaReview() {
   return `<div class="review-page">
     <div class="review-hero">
       <button class="review-hero-back" onclick="goBackFromDetail()">← Back to Projects</button>
-      <div class="review-hero-title">📋 Weekly Idea Review</div>
+      <div class="review-hero-title"><svg class="icon" aria-hidden="true"><use href="#ph-clipboard-text"></use></svg> Weekly Idea Review</div>
       <div class="review-hero-sub">${today} · ${ideas.length} idea${ideas.length !== 1 ? 's' : ''} awaiting review</div>
     </div>
     <div class="review-body">

@@ -533,7 +533,7 @@ function buildForecastPage() {
 
   return `<div style="padding:28px 32px;"><div class="fc-panel" style="margin:0;">
     <div class="fc-panel-header">
-      <div class="fc-panel-title">📊 Availability Forecast</div>
+      <div class="fc-panel-title"><svg class="icon" aria-hidden="true"><use href="#ph-chart-bar"></use></svg> Availability Forecast</div>
       <div class="fc-panel-subtitle">Based on current allocations · ${wLen} weeks from today (${wSlice[0]})</div>
       <div class="fc-panel-controls">
         <span style="font-size:10px;opacity:0.6;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Window:</span>

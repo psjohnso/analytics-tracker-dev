@@ -414,7 +414,7 @@ function renderResources(area) {
 
   const paneBody = mode === 'edit' ? editBody : summaryBody;
   const actionsHtml = mode === 'edit'
-    ? '<div class="res-pane-actions"><button class="btn-discard" onclick="setResourceMode(\'summary\')">Discard</button><button class="btn-apply" onclick="applyEditorChanges()">✓ Apply changes</button></div>'
+    ? '<div class="res-pane-actions"><button class="btn-discard" onclick="setResourceMode(\'summary\')">Discard</button><button class="btn-apply" onclick="applyEditorChanges()"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> Apply changes</button></div>'
     : '';
 
   area.innerHTML = `
@@ -425,8 +425,8 @@ function renderResources(area) {
       </aside>
       <div class="res-pane">
         <div class="res-pane-tabs">
-          <button class="res-pane-tab ${mode === 'summary' ? 'active' : ''}" onclick="setResourceMode('summary')">👥 Summary</button>
-          <button class="res-pane-tab ${mode === 'edit' ? 'active' : ''}" onclick="setResourceMode('edit')">✏️ Edit Allocations</button>
+          <button class="res-pane-tab ${mode === 'summary' ? 'active' : ''}" onclick="setResourceMode('summary')"><svg class="icon" aria-hidden="true"><use href="#ph-users-three"></use></svg> Summary</button>
+          <button class="res-pane-tab ${mode === 'edit' ? 'active' : ''}" onclick="setResourceMode('edit')"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg> Edit Allocations</button>
           ${actionsHtml}
         </div>
         <div class="res-pane-body">${paneBody}</div>

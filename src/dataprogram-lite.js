@@ -291,13 +291,13 @@ function lpRender() {
         bodyMsg = 'Click <strong>＋ New project</strong> above to add the first.';
       }
       listEl.innerHTML = '<div class="lp-empty">' +
-        '<div class="lp-empty-icon">📋</div>' +
+        '<div class="lp-empty-icon"><svg class="icon" aria-hidden="true"><use href="#ph-clipboard-text"></use></svg></div>' +
         '<div class="lp-empty-title">No projects yet</div>' +
         '<div class="lp-empty-body">' + bodyMsg + '</div>' +
         '</div>';
     } else {
       listEl.innerHTML = '<div class="lp-empty">' +
-        '<div class="lp-empty-icon">🔍</div>' +
+        '<div class="lp-empty-icon"><svg class="icon" aria-hidden="true"><use href="#ph-magnifying-glass"></use></svg></div>' +
         '<div class="lp-empty-title">No projects match this filter</div>' +
         '<div class="lp-empty-body">Try the <em>All</em> chip above.</div>' +
         '</div>';

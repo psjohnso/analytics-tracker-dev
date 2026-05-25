@@ -640,7 +640,7 @@ function renderAbsenceEditor(name) {
   let html = '<div class="settings-section">' +
     '<div class="settings-section-header">' +
       '<span>Absences — ' + esc(name) + '</span>' +
-      '<button class="settings-btn settings-btn-secondary" onclick="Editor.selectedMember=null;render();">✕ Close</button>' +
+      '<button class="settings-btn settings-btn-secondary" onclick="Editor.selectedMember=null;render();"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg> Close</button>' +
     '</div>' +
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">' +
       '<button class="settings-btn settings-btn-secondary" onclick="absEditorShift(-1)" ' + (Editor.absWindowStart === 0 ? 'disabled' : '') + '>◀ Prev</button>' +

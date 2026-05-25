@@ -161,7 +161,7 @@ function _notifMsg(n) {
 function renderInboxPanel() {
   var p = _notifPanel();
   var rows = NOTIFICATIONS.length ? NOTIFICATIONS.map(function(n) {
-    var av = n.kind === 'status' ? '★' : _notifInitials(n.actor);
+    var av = n.kind === 'status' ? '<svg class="icon" aria-hidden="true"><use href="#ph-star"></use></svg>' : _notifInitials(n.actor);
     var ctx = _notifAgo(n.created_at) + (n.snippet ? ' · “' + esc(n.snippet.slice(0, 60)) + (n.snippet.length > 60 ? '…' : '') + '”' : '');
     return '<div class="ntf' + (n.is_read ? '' : ' unread') + '" onclick="openNotif(' + n.objectId + ')">' +
       '<div class="ntf-av">' + esc(av) + '</div>' +

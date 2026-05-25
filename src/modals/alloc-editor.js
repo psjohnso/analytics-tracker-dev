@@ -216,7 +216,7 @@ function aeRenderFullPage(area) {
         '</div>' +
         '<div class="ae-fp-actions">' +
           '<button class="ae-fp-btn ae-fp-btn-ghost" onclick="aeExitFullPage()">Cancel</button>' +
-          '<button class="ae-fp-btn ae-fp-btn-primary" onclick="applyEditorChanges()">✓ Apply changes</button>' +
+          '<button class="ae-fp-btn ae-fp-btn-primary" onclick="applyEditorChanges()"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> Apply changes</button>' +
         '</div>' +
       '</div>' +
       '<div class="ae-fp-body">' +

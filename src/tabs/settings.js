@@ -119,7 +119,7 @@ function buildPreferencesPanel() {
         '</div>';
       return '<button type="button" onclick="setTheme(\'' + t.id + '\')" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px;border:' + ring + ';background:var(--white);border-radius:10px;cursor:pointer;font-family:Lato,sans-serif;">' +
         preview +
-        '<span style="font-size:11px;font-weight:700;color:var(--text-body);white-space:nowrap;">' + esc(t.label) + (sel ? ' ✓' : '') + '</span>' +
+        '<span style="font-size:11px;font-weight:700;color:var(--text-body);white-space:nowrap;">' + esc(t.label) + (sel ? ' <svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg>' : '') + '</span>' +
       '</button>';
     }).join('');
     return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F3F1EB;gap:20px;">' +
@@ -133,7 +133,7 @@ function buildPreferencesPanel() {
 
   function prefAvatarEmoji(currentEmoji) {
     var current = currentEmoji || '';
-    var presets = ['🎯','🐢','🦊','🐙','🦉','🦄','🌵','🌮','🍕','☕','🎨','🎮','🎸','🚀','💻','📊','✨','🔥','⚡','🌟'];
+    var presets = ['🎯','🐢','🦊','🐙','🦉','🦄','🌵','🌮','🍕','☕','🎨','🎮','🎸','🚀','💻','<svg class="icon" aria-hidden="true"><use href="#ph-chart-bar"></use></svg>','✨','🔥','⚡','🌟'];
     var presetBtns = presets.map(function(e) {
       var sel = e === current;
       return '<button type="button" onclick="setAvatarEmoji(\'' + e + '\')" title="' + e + '" style="font-size:18px;width:32px;height:32px;border:1px solid ' + (sel ? 'var(--navy)' : 'var(--border)') + ';' + (sel ? 'background:#EEF2FF;' : 'background:var(--white);') + 'border-radius:6px;cursor:pointer;padding:0;line-height:1;">' + e + '</button>';
@@ -580,9 +580,9 @@ function renderSettingsPage(area) {
         '<td style="text-align:center;">' + (isLight ? '—' : '<input type="checkbox"' + ttChecked + ' onchange="toggleTimeTracking(\'' + name.replace(/'/g, "\\'") + '\', this.checked)" style="width:16px;height:16px;cursor:pointer;">') + '</td>' +
         '<td style="text-align:center;cursor:pointer;" onclick="toggleMemberActive(\'' + name.replace(/'/g, "\\'") + '\')" title="Click to toggle">' + activeLabel + '</td>' +
         '<td style="text-align:right;white-space:nowrap;">' +
-          '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="openAbsenceEditor(\'' + name.replace(/'/g, "\\'") + '\')">📅 Absences</button>' +
-          '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="openMemberForm(\'edit\',\'' + name.replace(/'/g, "\\'") + '\')">✏️ Edit</button>' +
-          '<button class="settings-btn settings-btn-danger" onclick="deleteMember(\'' + name.replace(/'/g, "\\'") + '\')">🗑</button>' +
+          '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="openAbsenceEditor(\'' + name.replace(/'/g, "\\'") + '\')"><svg class="icon" aria-hidden="true"><use href="#ph-calendar-blank"></use></svg> Absences</button>' +
+          '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="openMemberForm(\'edit\',\'' + name.replace(/'/g, "\\'") + '\')"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg> Edit</button>' +
+          '<button class="settings-btn settings-btn-danger" onclick="deleteMember(\'' + name.replace(/'/g, "\\'") + '\')"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>' +
         '</td>' +
       '</tr>';
     }).join('');
@@ -597,7 +597,7 @@ function renderSettingsPage(area) {
         '<button class="settings-btn settings-btn-primary" onclick="openMemberForm(\'add\')">＋ Add Member</button>' +
       '</div>' +
       '<table class="member-table">' +
-        '<thead><tr><th>Name</th><th>Position</th><th>Role/Unit</th><th>Team</th><th>Tracking</th><th>Project %</th><th>Schedule</th><th style="text-align:center;">⏱️</th><th style="text-align:center;">Status</th><th style="text-align:right;">Actions</th></tr></thead>' +
+        '<thead><tr><th>Name</th><th>Position</th><th>Role/Unit</th><th>Team</th><th>Tracking</th><th>Project %</th><th>Schedule</th><th style="text-align:center;"><svg class="icon" aria-hidden="true"><use href="#ph-clock"></use></svg></th><th style="text-align:center;">Status</th><th style="text-align:right;">Actions</th></tr></thead>' +
         '<tbody>' + memberRows + '</tbody>' +
       '</table>' +
       '<div id="settings-absence-section"></div>';

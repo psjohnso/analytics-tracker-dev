@@ -54,7 +54,7 @@ async function suggestTasksForProject(projectObjectId) {
   }
   panel.style.display = '';
   panel.innerHTML = '<div class="suggest-header"><span class="suggest-title">✨ AI Task Suggestions</span>' +
-    '<button class="suggest-close" onclick="closeSuggestPanel()">✕</button></div>' +
+    '<button class="suggest-close" onclick="closeSuggestPanel()"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg></button></div>' +
     '<div class="suggest-loading"><div style="font-size:24px;margin-bottom:8px;">🤔</div>Generating ' + _suggestDetail + '-detail task breakdown for ' + sizeLabel + ' project…<br><span style="font-size:11px;opacity:0.7;">Expecting ' + range + ' tasks. This may take 10-15 seconds.</span></div>';
 
   // Scroll to the panel
@@ -203,9 +203,9 @@ async function suggestTasksForProject(projectObjectId) {
   } catch (err) {
     console.error('[TaskSuggest] Failed:', err);
     panel.innerHTML = '<div class="suggest-header"><span class="suggest-title">✨ AI Task Suggestions</span>' +
-      '<button class="suggest-close" onclick="closeSuggestPanel()">✕</button></div>' +
+      '<button class="suggest-close" onclick="closeSuggestPanel()"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg></button></div>' +
       '<div style="text-align:center;padding:20px;color:#991B1B;font-size:13px;">' +
-        '<div style="font-size:24px;margin-bottom:8px;">⚠️</div>' +
+        '<div style="font-size:24px;margin-bottom:8px;"><svg class="icon" aria-hidden="true"><use href="#ph-warning"></use></svg></div>' +
         'Failed to generate suggestions. ' + esc(err.message) +
         '<br><button onclick="suggestTasksForProject(' + projectObjectId + ')" style="margin-top:10px;padding:6px 14px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Try Again</button>' +
       '</div>';
@@ -219,7 +219,7 @@ function renderSuggestions(project) {
   var detailLabels = { low: 'Low detail · major phases', medium: 'Medium detail · grouped activities', high: 'High detail · atomic steps' };
   var html = '<div class="suggest-header"><span class="suggest-title">✨ AI Task Suggestions</span>' +
     '<span style="font-size:10px;font-weight:700;color:#92400E;background:#FEF3C7;padding:2px 8px;border-radius:6px;margin-left:8px;">' + (detailLabels[_suggestDetail] || '') + '</span>' +
-    '<button class="suggest-close" onclick="closeSuggestPanel()">✕</button></div>';
+    '<button class="suggest-close" onclick="closeSuggestPanel()"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg></button></div>';
   html += '<div style="font-size:11px;color:#92400E;margin-bottom:12px;">Tasks are ordered by dependency — prerequisites first. Review and adjust assignees, then click "Add" or "Add All."</div>';
 
   _suggestedTasks.forEach(function(task, i) {
@@ -254,7 +254,7 @@ function renderSuggestions(project) {
     if (!task._accepted) {
       html += '<button class="suggest-accept-btn" onclick="acceptSuggestedTask(' + i + ')">Add</button>';
     } else {
-      html += '<span style="font-size:11px;font-weight:700;color:#22C55E;flex-shrink:0;align-self:center;">✓ Added</span>';
+      html += '<span style="font-size:11px;font-weight:700;color:#22C55E;flex-shrink:0;align-self:center;"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> Added</span>';
     }
     html += '</div>';
   });

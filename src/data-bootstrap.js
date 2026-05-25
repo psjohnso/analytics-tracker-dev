@@ -172,7 +172,7 @@ function showAgolError(err) {
   const msg = err.message || String(err);
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,38,105,0.95);color:#fff;font-family:Lato,sans-serif;padding:2rem;';
-  overlay.innerHTML = '<div style="font-size:1.8rem;font-weight:700;margin-bottom:1rem;color:#FFDB22;">⚠ ArcGIS Online Connection Error</div>' +
+  overlay.innerHTML = '<div style="font-size:1.8rem;font-weight:700;margin-bottom:1rem;color:#FFDB22;"><svg class="icon" aria-hidden="true"><use href="#ph-warning"></use></svg> ArcGIS Online Connection Error</div>' +
     '<div style="max-width:600px;text-align:center;line-height:1.5;margin-bottom:1.5rem;font-size:0.95rem;">' + esc(msg) + '</div>' +
     '<button onclick="location.reload()" style="padding:0.6rem 2rem;background:#C24200;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:1rem;">Retry</button>';
   document.body.appendChild(overlay);

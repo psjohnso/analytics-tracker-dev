@@ -139,7 +139,7 @@ function taskCatWizardShowResult(categoryName) {
   const desc = TASK_CATEGORY_DESCRIPTIONS[categoryName] || '';
   let html = '<div class="cat-wizard-panel open">';
   html += '<div class="cat-wizard-result">' +
-    '<div class="cat-wizard-result-label">✓ Recommended Category</div>' +
+    '<div class="cat-wizard-result-label"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> Recommended Category</div>' +
     '<div class="cat-wizard-result-name">' + esc(categoryName) + '</div>' +
     (desc ? '<div class="cat-wizard-result-desc">' + esc(desc) + '</div>' : '') +
     '<button type="button" class="cat-wizard-result-btn" onclick="taskCatWizardApply(\'' + esc(categoryName).replace(/'/g, "\\'") + '\')">Use This Category</button>' +
@@ -322,7 +322,7 @@ function toolWizardShowResult(toolName) {
   const desc = TASK_TOOL_DESCRIPTIONS[toolName] || '';
   let html = '<div class="cat-wizard-panel open">';
   html += '<div class="cat-wizard-result">' +
-    '<div class="cat-wizard-result-label">✓ Recommended Tool</div>' +
+    '<div class="cat-wizard-result-label"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> Recommended Tool</div>' +
     '<div class="cat-wizard-result-name">' + esc(toolName) + '</div>' +
     (desc ? '<div class="cat-wizard-result-desc">' + esc(desc) + '</div>' : '') +
     '<button type="button" class="cat-wizard-result-btn" onclick="toolWizardApply(\'' + esc(toolName).replace(/'/g, "\\'") + '\')">Use This Tool</button>' +
@@ -912,7 +912,7 @@ function catWizardShowResult(categoryName) {
   const desc = CATEGORY_DESCRIPTIONS[categoryName] || '';
   let html = '<div class="cat-wizard-panel open">';
   html += '<div class="cat-wizard-result">' +
-    '<div class="cat-wizard-result-label">✓ Recommended Category</div>' +
+    '<div class="cat-wizard-result-label"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> Recommended Category</div>' +
     '<div class="cat-wizard-result-name">' + esc(categoryName) + '</div>' +
     (desc ? '<div class="cat-wizard-result-desc">' + esc(desc) + '</div>' : '') +
     '<button type="button" class="cat-wizard-result-btn" onclick="catWizardApply(\'' + esc(categoryName).replace(/'/g, "\\'") + '\')">Use This Category</button>' +
@@ -1201,7 +1201,7 @@ function renderPhaseReqDropdown() {
   var selected = current ? current.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
   var html = '';
   LIFECYCLE_PHASES.forEach(function(phase) {
-    html += '<div class="phase-req-group-label">' + (phase.isGateCheck ? '⚑ ' : '') + 'Phase ' + phase.id + ' — ' + esc(phase.name) + '</div>';
+    html += '<div class="phase-req-group-label">' + (phase.isGateCheck ? '<svg class="icon" aria-hidden="true"><use href="#ph-flag"></use></svg> ' : '') + 'Phase ' + phase.id + ' — ' + esc(phase.name) + '</div>';
     phase.requirements.forEach(function(req) {
       var isSelected = selected.indexOf(req.id) !== -1;
       html += '<div class="phase-req-option' + (isSelected ? ' selected' : '') + '" onclick="togglePhaseReq(\'' + req.id + '\')">';
@@ -1663,7 +1663,7 @@ async function suggestAlignment() {
   } catch (err) {
     console.error('[AlignSuggest] Failed:', err);
     panel.innerHTML = '<div style="text-align:center;padding:16px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;">' +
-      '<div style="font-size:14px;margin-bottom:4px;">⚠️</div>' +
+      '<div style="font-size:14px;margin-bottom:4px;"><svg class="icon" aria-hidden="true"><use href="#ph-warning"></use></svg></div>' +
       '<div style="font-size:12px;color:#991B1B;">' + esc(err.message) + '</div>' +
       '<button onclick="suggestAlignment()" style="margin-top:8px;padding:4px 12px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Try Again</button>' +
       ' <button onclick="document.getElementById(\'alignment-suggest-panel\').style.display=\'none\'" style="margin-top:8px;padding:4px 12px;background:var(--surface-2);color:var(--text-body);border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Dismiss</button></div>';
@@ -1687,7 +1687,7 @@ function renderAlignmentSuggestions() {
   var html = '<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:14px;margin-bottom:4px;">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">';
   html += '<span style="font-size:12px;font-weight:700;color:#92400E;">✨ AI Alignment Suggestions</span>';
-  html += '<button onclick="document.getElementById(\'alignment-suggest-panel\').style.display=\'none\'" style="background:none;border:none;cursor:pointer;font-size:14px;color:#92400E;padding:0 4px;">✕</button>';
+  html += '<button onclick="document.getElementById(\'alignment-suggest-panel\').style.display=\'none\'" style="background:none;border:none;cursor:pointer;font-size:14px;color:#92400E;padding:0 4px;"><svg class="icon" aria-hidden="true"><use href="#ph-x"></use></svg></button>';
   html += '</div>';
 
   Object.keys(fieldMeta).forEach(function(key) {

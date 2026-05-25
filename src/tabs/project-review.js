@@ -1249,8 +1249,8 @@ function renderReviewTypesTable() {
     html += '<td title="' + esc(teamsTitle) + '">' + teamsLabel + '</td>';
     html += '<td>' + esc(attendeesPreview) + '</td>';
     html += '<td style="text-align:right;white-space:nowrap;">';
-    html += '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="prRtOpenForm(' + i + ')">✏️ Edit</button>';
-    html += '<button class="settings-btn settings-btn-danger" onclick="prRtDelete(' + i + ')">🗑</button>';
+    html += '<button class="settings-btn settings-btn-secondary" style="margin-right:4px;" onclick="prRtOpenForm(' + i + ')"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg> Edit</button>';
+    html += '<button class="settings-btn settings-btn-danger" onclick="prRtDelete(' + i + ')"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>';
     html += '</td>';
     html += '</tr>';
   });
