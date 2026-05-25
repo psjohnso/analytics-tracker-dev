@@ -321,7 +321,7 @@ function renderResources(area) {
     capPath += (wi === wStart ? `M${x.toFixed(1)},${y.toFixed(1)}` : ` L${x.toFixed(1)},${y.toFixed(1)}`);
   }
 
-  const svgChart = `<svg width="${chartW}" height="${chartH}" style="overflow:visible;display:block;">
+  const svgChart = `<svg width="${chartW}" height="${chartH}" role="img" aria-label="Weekly project allocation for ${esc(selectedPerson)}: stacked hours per project with a project-capacity line." style="overflow:visible;display:block;">
     ${yLines}
     <line x1="${padL}" y1="0" x2="${padL}" y2="${chartH-padB}" stroke="${axisColor}" stroke-width="1"/>
     <line x1="${padL}" y1="${chartH-padB}" x2="${chartW}" y2="${chartH-padB}" stroke="${axisColor}" stroke-width="1"/>

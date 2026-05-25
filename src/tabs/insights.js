@@ -505,7 +505,7 @@ function buildInsightsPage() {
     var donutColors = ['#002669', '#1E40AF', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#C24200', '#83AC16'];
     var startAngle = -Math.PI / 2;
     donutSvg = '<div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">';
-    donutSvg += '<svg viewBox="0 0 200 200" style="width:180px;height:180px;flex-shrink:0;">';
+    donutSvg += '<svg viewBox="0 0 200 200" role="img" aria-label="Team hours donut: ' + Math.round(teamTotal) + ' total hours across ' + teamEntries.length + ' people (see the table beside it for exact values)." style="width:180px;height:180px;flex-shrink:0;">';
     teamEntries.forEach(function(t, i) {
       var pct = t.hours / teamTotal;
       var angle = pct * 2 * Math.PI;
