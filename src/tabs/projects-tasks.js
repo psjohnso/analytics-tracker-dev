@@ -538,6 +538,7 @@ function renderTaskList(data) {
   const arrow = (key) => taskSortKey === key ? (taskSortDir === 'asc' ? ' ↑' : ' ↓') : ' ↕';
   const th = (label, key) => `<div class="th-sortable" onclick="setTaskSort('${key}')" style="cursor:pointer;user-select:none;">${label}<span style="opacity:${taskSortKey===key?'1':'0.35'};font-size:10px;">${arrow(key)}</span></div>`;
   const todayStr = (function() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
+  const _bulkOn = (typeof bulkEnabledFor === 'function') && bulkEnabledFor(data);
   const rows = data.map(t => {
     const statusColor = STATUS_COLOR(t.status) || '#9CA3AF';
     const tHrs = getTaskHours(t.idx);
@@ -546,6 +547,7 @@ function renderTaskList(data) {
     const isOverdue = dueStr && dueStr < todayStr && (t.status === 'Active' || t.status === 'Waiting for Response');
     const dueCellStyle = isOverdue ? 'color:#EF4444;font-weight:700;' : '';
     return `<div class="task-row" onclick="openTask(${t.objectId})">
+      ${_bulkOn ? bulkCheckboxCell(t) : ''}
       <div class="task-cell" title="${esc(resolveProjectTitle(t))}"><strong style="color:var(--text-dark);">${esc(resolveProjectTitle(t)||'—')}</strong></div>
       <div class="task-title-cell">${esc(t.title)}</div>
       <div class="task-cell"><span class="status-pill" style="background:${statusColor}22;color:${statusColor};"><span style="width:5px;height:5px;border-radius:50%;background:${statusColor};display:inline-block;"></span>${t.status||'—'}</span></div>
@@ -555,9 +557,9 @@ function renderTaskList(data) {
       <div class="task-cell" style="font-weight:700;color:var(--navy);">${tHrs > 0 ? hoursLabel(tHrs, mHrs) : '—'}</div>
     </div>`;
   }).join('');
-  return `<div class="task-table task-table--tasks">
+  return `<div class="task-table task-table--tasks${_bulkOn ? ' task-table--bulk' : ''}">
     <div class="task-table-header">
-      ${th('Project','project')}${th('Task','title')}${th('Status','status')}${th('Priority','priority')}${th('Assignee','assignee')}${th('Due','end')}<div style="font-weight:700;">Hours</div>
+      ${_bulkOn ? bulkHeaderCell() : ''}${th('Project','project')}${th('Task','title')}${th('Status','status')}${th('Priority','priority')}${th('Assignee','assignee')}${th('Due','end')}<div style="font-weight:700;">Hours</div>
     </div>
     ${rows}
   </div>`;

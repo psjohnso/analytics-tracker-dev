@@ -106,6 +106,20 @@ function canEditProject(p) {
       ((typeof sameTeam === 'function') ? sameTeam(p.owning_team, leadTeam) : p.owning_team === leadTeam)) return true;
   return false;
 }
+// Task edit permission mirrors canEditProject: admins → any; the assignee →
+// their own task; leads → tasks whose parent project is owned by their team
+// (task ↔ project join is project_number).
+function canEditTask(t) {
+  if (isAdmin()) return true;
+  if (Auth.fullName && t && t.assignee === Auth.fullName) return true;
+  var leadTeam = getLeadTeam();
+  if (leadTeam && t && can('edit_any_project')) {
+    var proj = (typeof getProjectByNumber === 'function') ? getProjectByNumber(t.project_number) : null;
+    if (proj && proj.owning_team &&
+        ((typeof sameTeam === 'function') ? sameTeam(proj.owning_team, leadTeam) : proj.owning_team === leadTeam)) return true;
+  }
+  return false;
+}
 // Back-compat aliases (older "Data Program Lead" names).
 function getDataProgramLeadTeam() { return getLeadTeam(); }
 function isDataProgramLead() { return isTeamLeadRole(); }

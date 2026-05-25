@@ -1,39 +1,71 @@
 // ─────────────────────────────────────────────────────────────────────
-// bulk-actions.js — multi-select + bulk operations on the Projects list.
+// bulk-actions.js — multi-select + bulk operations on the Projects and Tasks
+// lists.
 //
-// Permission model (per item): admins → any project; leads → projects owned by
-// their team; members → projects they own. This is exactly canEditProject(p),
+// Permission model (per item): admins → anything; leads → items owned by their
+// team (a task's team = its parent project's owning_team); members → items they
+// own (project contact / task assignee). This is canEditProject / canEditTask,
 // so a checkbox is only offered on rows the user may edit, and every operation
-// re-checks canEditProject defensively before writing.
+// re-checks before writing.
 //
-// Operations reuse the existing per-record DataStore methods (updateProject /
-// deleteProject) in a sequential loop — that preserves the soft-delete +
-// task-cascade + status-history + optimistic local-state logic rather than
-// re-implementing batch writes. Slower for huge selections, but correct.
+// Operations reuse the existing per-record DataStore methods (update*/delete*)
+// in a sequential loop — preserving soft-delete + cascade + status-history +
+// optimistic local-state rather than re-implementing batch writes.
 //
-// Forward references (resolve at call time): canEditProject, PROJECTS,
-// DataStore, currentTab, render, markDataDirty, showToast, esc, icon,
-// FM_PROJ_STATUSES, FM_PROJ_PRIORITIES, FM_ACTIVE_MEMBERS.
+// Forward references (resolve at call time): currentTab, PROJECTS, TASKS,
+// canEditProject, canEditTask, DataStore, render, markDataDirty, showToast,
+// esc, icon, FM_PROJ_STATUSES/PRIORITIES, FM_TASK_STATUSES/PRIORITIES/ASSIGNEES,
+// FM_ACTIVE_MEMBERS.
 // ─────────────────────────────────────────────────────────────────────
 
-var bulkSelected = new Set();   // selected project objectIds
-var _bulkMenuOpts = [];         // options backing the currently-open menu (index-addressed)
+var bulkSelected = new Set();   // selected objectIds (meaning depends on the active tab)
+var _bulkMenuOpts = [];         // options backing the open menu (index-addressed)
 
-// True when at least one visible project in this dataset is editable by the user.
-function bulkEnabledFor(data) {
-  return Array.isArray(data) && typeof canEditProject === 'function' && data.some(function (p) { return canEditProject(p); });
+// Per-entity config for the active tab; null when bulk doesn't apply.
+function bulkCtx() {
+  var tab = (typeof currentTab !== 'undefined') ? currentTab : null;
+  if (tab === 'projects') return {
+    noun: 'project',
+    items: (typeof PROJECTS !== 'undefined') ? PROJECTS : [],
+    canEdit: (typeof canEditProject === 'function') ? canEditProject : function () { return false; },
+    update: function (id, f) { return DataStore.updateProject(id, f); },
+    del: function (id) { return DataStore.deleteProject(id); },
+    statuses: (typeof FM_PROJ_STATUSES !== 'undefined' && FM_PROJ_STATUSES) ? FM_PROJ_STATUSES : [],
+    priorities: (typeof FM_PROJ_PRIORITIES !== 'undefined' && FM_PROJ_PRIORITIES) ? FM_PROJ_PRIORITIES : [],
+    members: (typeof FM_ACTIVE_MEMBERS !== 'undefined' && FM_ACTIVE_MEMBERS) ? FM_ACTIVE_MEMBERS : [],
+    reassignField: 'contact', reassignLabel: 'owner'
+  };
+  if (tab === 'tasks') return {
+    noun: 'task',
+    items: (typeof TASKS !== 'undefined') ? TASKS : [],
+    canEdit: (typeof canEditTask === 'function') ? canEditTask : function () { return false; },
+    update: function (id, f) { return DataStore.updateTask(id, f); },
+    del: function (id) { return DataStore.deleteTask(id); },
+    statuses: (typeof FM_TASK_STATUSES !== 'undefined' && FM_TASK_STATUSES) ? FM_TASK_STATUSES : [],
+    priorities: (typeof FM_TASK_PRIORITIES !== 'undefined' && FM_TASK_PRIORITIES) ? FM_TASK_PRIORITIES : [],
+    members: (typeof FM_TASK_ASSIGNEES !== 'undefined' && FM_TASK_ASSIGNEES) ? FM_TASK_ASSIGNEES
+           : ((typeof FM_ACTIVE_MEMBERS !== 'undefined' && FM_ACTIVE_MEMBERS) ? FM_ACTIVE_MEMBERS : []),
+    reassignField: 'assignee', reassignLabel: 'assignee'
+  };
+  return null;
 }
 
-// Leading checkbox cell for a row — blank (keeps the grid aligned) when the row
-// isn't editable by the current user.
-function bulkCheckboxCell(p) {
-  if (!(typeof canEditProject === 'function' && canEditProject(p))) return '<div class="task-cell bulk-cell"></div>';
-  var ck = bulkSelected.has(p.objectId) ? ' checked' : '';
-  return '<div class="task-cell bulk-cell"><input type="checkbox" class="bulk-cb" data-id="' + p.objectId + '"' + ck +
-    ' aria-label="Select project ' + esc(p.title) + '" onclick="event.stopPropagation();bulkToggle(' + p.objectId + ',this.checked)"></div>';
+// True when ≥1 visible row in this dataset is editable by the current user.
+function bulkEnabledFor(data) {
+  var ctx = bulkCtx();
+  return !!ctx && Array.isArray(data) && data.some(function (it) { return ctx.canEdit(it); });
+}
+
+// Leading checkbox cell — blank (keeps the grid aligned) when not editable.
+function bulkCheckboxCell(it) {
+  var ctx = bulkCtx();
+  if (!ctx || !ctx.canEdit(it)) return '<div class="task-cell bulk-cell"></div>';
+  var ck = bulkSelected.has(it.objectId) ? ' checked' : '';
+  return '<div class="task-cell bulk-cell"><input type="checkbox" class="bulk-cb" data-id="' + it.objectId + '"' + ck +
+    ' aria-label="Select ' + ctx.noun + ' ' + esc(it.title || '') + '" onclick="event.stopPropagation();bulkToggle(' + it.objectId + ',this.checked)"></div>';
 }
 function bulkHeaderCell() {
-  return '<div class="bulk-cell"><input type="checkbox" class="bulk-cb-all" aria-label="Select all editable projects" title="Select all editable" onclick="bulkToggleAllVisible(this.checked)"></div>';
+  return '<div class="bulk-cell"><input type="checkbox" class="bulk-cb-all" aria-label="Select all editable" title="Select all editable" onclick="bulkToggleAllVisible(this.checked)"></div>';
 }
 
 function bulkToggle(id, checked) {
@@ -55,20 +87,19 @@ function bulkClear() {
   bulkRenderBar();
 }
 
-// Selected projects that still exist and are still editable (defensive).
-function bulkSelectedProjects() {
-  if (typeof PROJECTS === 'undefined') return [];
-  return PROJECTS.filter(function (p) {
-    return bulkSelected.has(p.objectId) && (typeof canEditProject !== 'function' || canEditProject(p));
-  });
+// Selected items that still exist and are still editable (defensive).
+function bulkSelectedItems() {
+  var ctx = bulkCtx();
+  if (!ctx) return [];
+  return ctx.items.filter(function (it) { return bulkSelected.has(it.objectId) && ctx.canEdit(it); });
 }
 
-// Render the floating action bar — only on the Projects tab with a selection.
+// Render the floating action bar — only on Projects/Tasks with a selection.
 function bulkRenderBar() {
   var bar = document.getElementById('bulk-bar');
   if (!bar) return;
-  var onTab = (typeof currentTab !== 'undefined' && currentTab === 'projects');
-  var sel = onTab ? bulkSelectedProjects() : [];
+  var ctx = bulkCtx();
+  var sel = ctx ? bulkSelectedItems() : [];
   if (!sel.length) { bar.classList.remove('open'); bar.innerHTML = ''; return; }
   var ic = (typeof icon === 'function') ? icon('trash') : '';
   bar.innerHTML =
@@ -86,15 +117,14 @@ function bulkRenderBar() {
 function bulkOpenMenu(kind, e) {
   if (e) e.stopPropagation();
   bulkCloseMenus();
+  var ctx = bulkCtx();
+  if (!ctx) return;
   var m = document.getElementById('bulk-menu-' + kind);
   if (!m) return;
-  var opts = [];
-  if (kind === 'status')   opts = (typeof FM_PROJ_STATUSES   !== 'undefined' && FM_PROJ_STATUSES)   ? FM_PROJ_STATUSES   : [];
-  if (kind === 'priority') opts = (typeof FM_PROJ_PRIORITIES !== 'undefined' && FM_PROJ_PRIORITIES) ? FM_PROJ_PRIORITIES : [];
-  if (kind === 'reassign') opts = (typeof FM_ACTIVE_MEMBERS  !== 'undefined' && FM_ACTIVE_MEMBERS)  ? FM_ACTIVE_MEMBERS  : [];
-  _bulkMenuOpts = opts;
-  m.innerHTML = opts.length
-    ? opts.map(function (o, i) { return '<div class="bulk-menu-item" onclick="bulkApply(\'' + kind + '\',' + i + ')">' + esc(o) + '</div>'; }).join('')
+  var opts = kind === 'status' ? ctx.statuses : kind === 'priority' ? ctx.priorities : ctx.members;
+  _bulkMenuOpts = opts || [];
+  m.innerHTML = _bulkMenuOpts.length
+    ? _bulkMenuOpts.map(function (o, i) { return '<div class="bulk-menu-item" onclick="bulkApply(\'' + kind + '\',' + i + ')">' + esc(o) + '</div>'; }).join('')
     : '<div class="bulk-menu-item" style="color:var(--text-muted);cursor:default;">No options</div>';
   m.classList.add('open');
 }
@@ -107,42 +137,47 @@ if (typeof document !== 'undefined') {
   });
 }
 
-// Apply a field update (status / priority / reassign-owner) to the selection.
+// Apply a field update (status / priority / reassign) to the selection.
 function bulkApply(kind, idx) {
   bulkCloseMenus();
+  var ctx = bulkCtx();
+  if (!ctx) return;
   var val = _bulkMenuOpts[idx];
   if (val == null) return;
-  var sel = bulkSelectedProjects();
+  var sel = bulkSelectedItems();
   if (!sel.length) return;
-  var field = kind === 'status' ? 'status' : kind === 'priority' ? 'priority' : 'contact';
-  var label = kind === 'reassign' ? ('Reassign owner to "' + val + '"') : ('Set ' + kind + ' to "' + val + '"');
-  if (!confirm(label + ' for ' + sel.length + ' project' + (sel.length > 1 ? 's' : '') + '?')) return;
-  bulkRun(sel, function (p) { var f = {}; f[field] = val; return DataStore.updateProject(p.objectId, f); }, 'updated');
+  var field = kind === 'status' ? 'status' : kind === 'priority' ? 'priority' : ctx.reassignField;
+  var label = kind === 'reassign' ? ('Reassign ' + ctx.reassignLabel + ' to "' + val + '"') : ('Set ' + kind + ' to "' + val + '"');
+  if (!confirm(label + ' for ' + sel.length + ' ' + ctx.noun + (sel.length > 1 ? 's' : '') + '?')) return;
+  bulkRun(ctx, sel, function (it) { var f = {}; f[field] = val; return ctx.update(it.objectId, f); }, 'updated');
 }
 
 function bulkDelete() {
   bulkCloseMenus();
-  var sel = bulkSelectedProjects();
+  var ctx = bulkCtx();
+  if (!ctx) return;
+  var sel = bulkSelectedItems();
   if (!sel.length) return;
-  if (!confirm('Delete ' + sel.length + ' project' + (sel.length > 1 ? 's' : '') + '? Their tasks will be canceled. This is a soft-delete (recoverable in ArcGIS), but cannot be undone from here.')) return;
-  bulkRun(sel, function (p) { return DataStore.deleteProject(p.objectId); }, 'deleted');
+  var extra = ctx.noun === 'project' ? ' Their tasks will be canceled.' : '';
+  if (!confirm('Delete ' + sel.length + ' ' + ctx.noun + (sel.length > 1 ? 's' : '') + '?' + extra + ' This is a soft-delete (recoverable in ArcGIS), but cannot be undone from here.')) return;
+  bulkRun(ctx, sel, function (it) { return ctx.del(it.objectId); }, 'deleted');
 }
 
-// Run an async op over the selection sequentially, with progress + a summary toast.
-function bulkRun(sel, fn, verb) {
+// Run an async op over the selection sequentially, with progress + summary toast.
+function bulkRun(ctx, sel, fn, verb) {
   var bar = document.getElementById('bulk-bar');
   var ok = 0, fail = 0, i = 0;
   function step() {
     if (i >= sel.length) {
       bulkSelected.clear();
-      if (typeof showToast === 'function') showToast(ok + ' project' + (ok !== 1 ? 's' : '') + ' ' + verb + (fail ? (' · ' + fail + ' failed') : ''), fail ? 'warn' : 'success');
+      if (typeof showToast === 'function') showToast(ok + ' ' + ctx.noun + (ok !== 1 ? 's' : '') + ' ' + verb + (fail ? (' · ' + fail + ' failed') : ''), fail ? 'warn' : 'success');
       if (typeof markDataDirty === 'function') markDataDirty();
       if (typeof render === 'function') render();
       bulkRenderBar();
       return;
     }
     if (bar) { var c = bar.querySelector('.bulk-count'); if (c) c.textContent = 'Working… ' + (i + 1) + '/' + sel.length; }
-    Promise.resolve(fn(sel[i])).then(function () { ok++; }, function (err) { console.error('bulk op failed for project', sel[i].objectId, err); fail++; })
+    Promise.resolve(fn(sel[i])).then(function () { ok++; }, function (err) { console.error('bulk op failed', sel[i].objectId, err); fail++; })
       .then(function () { i++; step(); });
   }
   step();
