@@ -262,6 +262,20 @@ select:focus-visible, textarea:focus-visible,
   border-radius: 3px;
 }
 
+/* Respect the OS "reduce motion" setting across the whole app (a11y:
+   reduced-motion / WCAG AA). Confetti already opts out in JS; this covers the
+   rest — keyframe animations (save-pulse, etc.), CSS transitions, and smooth
+   scrolling. Near-zero (not 0) durations so transitionend/animationend still
+   fire and JS that waits on them doesn't hang. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 body {
   font-family: 'Cardo', Georgia, serif;
   background: var(--surface);
