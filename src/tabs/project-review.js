@@ -1191,7 +1191,7 @@ async function prSaveLog() {
 
 async function prDeleteLog(objectId) {
   if (!objectId) return;
-  if (!confirm('Delete this review entry? This cannot be undone.')) return;
+  if (!await confirmDialog('Delete this review entry?\n\nThis cannot be undone.', { title: 'Delete review entry?', confirmLabel: 'Delete', danger: true })) return;
   try {
     var result = await agolApplyEdits(ARCGIS_CONFIG.projectReviewsUrl, { deletes: [objectId] });
     if (result.deleteResults && result.deleteResults[0] && !result.deleteResults[0].success) {
@@ -1448,7 +1448,7 @@ async function prRtDelete(index) {
   if (existingCount > 0) {
     msg += '\n\n' + existingCount + ' review entr' + (existingCount === 1 ? 'y' : 'ies') + ' use this type. They will remain in the database but will not appear on the Project Review tab.';
   }
-  if (!confirm(msg)) return;
+  if (!await confirmDialog(msg, { title: 'Delete review type?', confirmLabel: 'Delete', danger: true })) return;
   _reviewTypes.splice(index, 1);
   // If the deleted type was selected on the Project Review tab, fall back
   if (_currentReviewTypeId === rt.id) _currentReviewTypeId = null;

@@ -2311,13 +2311,13 @@ async function handleFormDelete() {
     var msg = 'Move this project to trash?';
     if (taskCount > 0) msg += '\n\nIts ' + taskCount + ' task(s) go too, and allocations are removed permanently.';
     msg += '\n\nYou can undo this right after.';
-    if (!confirm(msg)) return;
+    if (!await confirmDialog(msg, { title: 'Move project to trash?', confirmLabel: 'Move to trash', danger: true })) return;
     var pid = Editor.editId;
     var delResult = await DataStore.deleteProject(pid, { silent: true });
     undoSets = { projects: [pid], tasks: (delResult && delResult.taskObjectIds) || [] };
     undoMsg = 'Project moved to trash.';
   } else {
-    if (!confirm('Move this task to trash?\n\nYou can undo this right after.')) return;
+    if (!await confirmDialog('Move this task to trash?\n\nYou can undo this right after.', { title: 'Move task to trash?', confirmLabel: 'Move to trash', danger: true })) return;
     var tid = Editor.editId;
     await DataStore.deleteTask(tid);
     undoSets = { tasks: [tid] };

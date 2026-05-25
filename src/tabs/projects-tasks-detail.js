@@ -615,20 +615,29 @@ async function batchDeleteTasks() {
   if (!Auth.loggedIn) { showToast('You must be signed in.', 'warn'); return; }
   var ids = getSelectedTaskIds();
   if (ids.length === 0) { showToast('No tasks selected.', 'warn'); return; }
-  if (!confirm('Delete ' + ids.length + ' selected task(s)? This cannot be undone.')) return;
+  if (!await confirmDialog('Delete ' + ids.length + ' selected task(s)?\n\nYou can undo this right after.', { title: 'Delete ' + ids.length + ' task' + (ids.length === 1 ? '' : 's') + '?', confirmLabel: 'Delete', danger: true })) return;
 
   var deleted = 0;
+  var deletedIds = [];
   for (var i = 0; i < ids.length; i++) {
     try {
       await DataStore.deleteTask(ids[i]);
-      deleted++;
+      deleted++; deletedIds.push(ids[i]);
     } catch (err) {
       console.error('[Batch] Failed to delete task:', ids[i], err);
     }
   }
-  showToast('Deleted ' + deleted + ' task(s).', 'success');
   markDataDirty();
   render();
+  if (deletedIds.length && typeof showUndoToast === 'function') {
+    showUndoToast('Deleted ' + deleted + ' task' + (deleted === 1 ? '' : 's') + '.', function() {
+      return DataStore.restoreDeleted({ tasks: deletedIds }).then(function() {
+        showToast('Restored ' + deletedIds.length + ' task' + (deletedIds.length === 1 ? '' : 's') + '.', 'success');
+      });
+    });
+  } else {
+    showToast('Deleted ' + deleted + ' task(s).', 'success');
+  }
 }
 
 // ── Detail page builders ───────────────────────────────────

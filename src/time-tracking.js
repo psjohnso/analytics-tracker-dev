@@ -623,7 +623,7 @@ async function pauseTimer(oid, taskIdx) {
 }
 
 async function deleteTimeEntry(oid) {
-  if (!confirm('Delete this time entry?')) return;
+  if (!await confirmDialog('Delete this time entry?', { title: 'Delete time entry?', confirmLabel: 'Delete', danger: true })) return;
   try {
     await agolApplyEdits(ARCGIS_CONFIG.timeEntriesUrl, { deletes: [oid] });
     console.log('[TimeTracking] Deleted entry', oid);

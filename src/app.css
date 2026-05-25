@@ -3269,6 +3269,41 @@ body[data-theme="dark"] .idea-field-err { color: #F87171; }
 .undo-toast-btn:hover { background: rgba(255,255,255,0.28); }
 .undo-toast-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
+/* Branded confirm dialog (UX #5) — replaces window.confirm. */
+.confirm-backdrop {
+  position: fixed; inset: 0; z-index: 10050;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: rgba(17,24,39,0.45); backdrop-filter: blur(2px);
+  opacity: 0; transition: opacity 0.18s ease; }
+.confirm-backdrop.open { opacity: 1; }
+.confirm-dialog {
+  background: var(--white); color: var(--text); border-radius: 14px;
+  width: 100%; max-width: 420px; padding: 22px 24px 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  transform: scale(0.96) translateY(6px); transition: transform 0.18s ease; }
+.confirm-backdrop.open .confirm-dialog { transform: scale(1) translateY(0); }
+.confirm-title {
+  font-family: 'Cardo', Georgia, serif; font-size: 19px; font-weight: 700;
+  color: var(--navy); margin-bottom: 8px; }
+.confirm-dialog.danger .confirm-title { color: #B91C1C; }
+body[data-theme="dark"] .confirm-dialog.danger .confirm-title { color: #F87171; }
+.confirm-msg {
+  font-family: 'Lato', sans-serif; font-size: 13.5px; line-height: 1.55;
+  color: var(--text-body); white-space: pre-line; margin-bottom: 20px; }
+.confirm-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.confirm-btn {
+  font-family: 'Lato', sans-serif; font-size: 13px; font-weight: 700;
+  padding: 9px 18px; border-radius: 8px; cursor: pointer; border: 1.5px solid transparent;
+  transition: background 0.15s, border-color 0.15s; }
+.confirm-btn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.confirm-btn-cancel { background: var(--white); border-color: var(--border); color: var(--text-body); }
+.confirm-btn-cancel:hover { background: var(--surface-2, #F3F1EB); }
+.confirm-btn-primary { background: var(--navy); color: #fff; }
+.confirm-btn-primary:hover { filter: brightness(1.08); }
+.confirm-btn-danger { background: #DC2626; color: #fff; }
+.confirm-btn-danger:hover { background: #B91C1C; }
+.confirm-btn-danger:focus-visible { outline-color: #DC2626; }
+
 .idea-modal-footer {
   padding: 16px 28px 20px;
   border-top: 1px solid var(--border);

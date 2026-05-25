@@ -620,7 +620,7 @@ async function lpSaveProject() {
 
 async function lpDeleteProject() {
   if (!_lpEditingId) return;
-  if (!confirm('Permanently delete this project? This cannot be undone.')) return;
+  if (!await confirmDialog('Permanently delete this project?\n\nThis cannot be undone.', { title: 'Delete project?', confirmLabel: 'Delete permanently', danger: true })) return;
   if (typeof ensureValidSession === 'function' && !ensureValidSession(function() { lpDeleteProject(); })) return;
   try {
     var result = await agolApplyEdits(ARCGIS_CONFIG.projectsUrl, { deletes: [_lpEditingId] });
@@ -681,4 +681,75 @@ async function btnPending(btn, fn, pendingLabel) {
     btn.innerHTML = origHtml;
     btn.style.minWidth = '';
   }
+}
+
+// Self-contained branded confirm dialog for this standalone page (mirrors the
+// main app's confirmDialog; injects its CSS on first use). Returns a Promise.
+function _lpEnsureDialogCss() {
+  if (document.getElementById('lp-dialog-css')) return;
+  var s = document.createElement('style');
+  s.id = 'lp-dialog-css';
+  s.textContent =
+    '.confirm-backdrop{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:20px;' +
+      'background:rgba(17,24,39,0.45);opacity:0;transition:opacity .18s ease;}' +
+    '.confirm-backdrop.open{opacity:1;}' +
+    '.confirm-dialog{background:#fff;color:#1f2937;border-radius:14px;width:100%;max-width:420px;padding:22px 24px 18px;' +
+      'box-shadow:0 20px 60px rgba(0,0,0,.35);transform:scale(.96) translateY(6px);transition:transform .18s ease;font-family:Lato,Arial,sans-serif;}' +
+    '.confirm-backdrop.open .confirm-dialog{transform:scale(1) translateY(0);}' +
+    '.confirm-title{font-size:19px;font-weight:700;color:#002669;margin-bottom:8px;}' +
+    '.confirm-dialog.danger .confirm-title{color:#B91C1C;}' +
+    '.confirm-msg{font-size:13.5px;line-height:1.55;color:#374151;white-space:pre-line;margin-bottom:20px;}' +
+    '.confirm-actions{display:flex;justify-content:flex-end;gap:10px;}' +
+    '.confirm-btn{font-size:13px;font-weight:700;padding:9px 18px;border-radius:8px;cursor:pointer;border:1.5px solid transparent;}' +
+    '.confirm-btn-cancel{background:#fff;border-color:#d1d5db;color:#374151;}' +
+    '.confirm-btn-primary{background:#002669;color:#fff;}' +
+    '.confirm-btn-danger{background:#DC2626;color:#fff;}';
+  document.head.appendChild(s);
+}
+function confirmDialog(message, opts) {
+  opts = opts || {};
+  _lpEnsureDialogCss();
+  return new Promise(function (resolve) {
+    var prevFocus = document.activeElement;
+    var backdrop = document.createElement('div');
+    backdrop.className = 'confirm-backdrop';
+    var dlg = document.createElement('div');
+    dlg.className = 'confirm-dialog' + (opts.danger ? ' danger' : '');
+    dlg.setAttribute('role', 'dialog');
+    dlg.setAttribute('aria-modal', 'true');
+    var h = document.createElement('div'); h.className = 'confirm-title';
+    h.textContent = opts.title || (opts.danger ? 'Are you sure?' : 'Confirm');
+    var m = document.createElement('div'); m.className = 'confirm-msg'; m.textContent = message;
+    var actions = document.createElement('div'); actions.className = 'confirm-actions';
+    var cancelBtn = document.createElement('button'); cancelBtn.type = 'button';
+    cancelBtn.className = 'confirm-btn confirm-btn-cancel'; cancelBtn.textContent = opts.cancelLabel || 'Cancel';
+    var okBtn = document.createElement('button'); okBtn.type = 'button';
+    okBtn.className = 'confirm-btn ' + (opts.danger ? 'confirm-btn-danger' : 'confirm-btn-primary');
+    okBtn.textContent = opts.confirmLabel || 'Confirm';
+    actions.appendChild(cancelBtn); actions.appendChild(okBtn);
+    dlg.appendChild(h); dlg.appendChild(m); dlg.appendChild(actions);
+    backdrop.appendChild(dlg);
+    document.body.appendChild(backdrop);
+    var done = false;
+    function close(result) {
+      if (done) return; done = true;
+      document.removeEventListener('keydown', onKey, true);
+      backdrop.classList.remove('open');
+      setTimeout(function () { if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop); }, 180);
+      if (prevFocus && typeof prevFocus.focus === 'function') { try { prevFocus.focus(); } catch (e) {} }
+      resolve(result);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); close(false); }
+      else if (e.key === 'Tab') {
+        var f = [cancelBtn, okBtn]; var idx = f.indexOf(document.activeElement); e.preventDefault();
+        f[e.shiftKey ? (idx <= 0 ? f.length - 1 : idx - 1) : (idx === f.length - 1 ? 0 : idx + 1)].focus();
+      }
+    }
+    cancelBtn.onclick = function () { close(false); };
+    okBtn.onclick = function () { close(true); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) close(false); };
+    document.addEventListener('keydown', onKey, true);
+    requestAnimationFrame(function () { backdrop.classList.add('open'); (opts.danger ? cancelBtn : okBtn).focus(); });
+  });
 }

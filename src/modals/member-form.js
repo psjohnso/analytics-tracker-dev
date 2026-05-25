@@ -467,7 +467,7 @@ async function saveMemberForm() {
   }
 
   if (isRename) {
-    if (!confirm('Renaming "' + origName + '" to "' + name + '" will update all projects, tasks, time entries, allocations, and absences.\n\nThis may take a moment. Continue?')) return;
+    if (!await confirmDialog('Renaming "' + origName + '" to "' + name + '" will update all projects, tasks, time entries, allocations, and absences.\n\nThis may take a moment.', { title: 'Rename team member?', confirmLabel: 'Rename' })) return;
   }
 
   // Check for duplicate if name is changing or adding new
@@ -583,7 +583,7 @@ async function deleteMember(name) {
     var _ok = (typeof sameTeam === 'function') ? sameTeam(_t, _actorLead) : _t === _actorLead;
     if (!_ok) { showToast('You can only remove your own team\'s members.', 'warn'); return; }
   }
-  if (!confirm('Remove "' + name + '" from the team?\n\nThis will delete their team member record. Their allocation and absence history will remain in the database.')) return;
+  if (!await confirmDialog('Remove "' + name + '" from the team?\n\nThis will delete their team member record. Their allocation and absence history will remain in the database.', { title: 'Remove team member?', confirmLabel: 'Remove', danger: true })) return;
   try {
     const existing = await agolQuery(ARCGIS_CONFIG.teamMembersUrl, "name='" + name.replace(/'/g, "''") + "'");
     if (existing.length === 0) { showToast('Could not find record for ' + name, 'error'); return; }

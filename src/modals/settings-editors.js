@@ -213,7 +213,7 @@ async function migrateAllocationHours() {
     return;
   }
   var ratioPct = Math.round((_productivityRatio || 0.75) * 100);
-  if (!confirm('Recalculate stored hours on every allocation record using the current productivity ratio (' + ratioPct + '%)?\n\nOnly records whose stored hours differ from the new value will be updated. Records for inactive people or out-of-range weeks will be skipped.\n\nThis may take a minute on large datasets.')) return;
+  if (!await confirmDialog('Recalculate stored hours on every allocation record using the current productivity ratio (' + ratioPct + '%)?\n\nOnly records whose stored hours differ from the new value will be updated. Records for inactive people or out-of-range weeks will be skipped.\n\nThis may take a minute on large datasets.', { title: 'Recalculate allocation hours?', confirmLabel: 'Recalculate' })) return;
 
   var btn = document.getElementById('btn-migrate-alloc-hours');
   if (btn) { btn.disabled = true; btn.textContent = 'Loading allocations…'; }
@@ -383,7 +383,7 @@ async function addListItem(listKey) {
 async function removeListItem(listKey, idx) {
   const list = listKey === 'dept' ? _customPartnerDepts : listKey === 'owning_team' ? _customOwningTeams : _customItdTeams;
   const item = list[idx];
-  if (!confirm('Remove "' + item + '" from the list?')) return;
+  if (!await confirmDialog('Remove "' + item + '" from the list?', { title: 'Remove item?', confirmLabel: 'Remove', danger: true })) return;
   list.splice(idx, 1);
 
   // Refresh the enum aliases
@@ -509,7 +509,7 @@ async function addDescListItem(listKey) {
 async function removeDescListItem(listKey, idx) {
   const list = getDescList(listKey);
   const item = list[idx];
-  if (!confirm('Remove "' + item.name + '" from the list?')) return;
+  if (!await confirmDialog('Remove "' + item.name + '" from the list?', { title: 'Remove item?', confirmLabel: 'Remove', danger: true })) return;
   list.splice(idx, 1);
   refreshEnums();
   renderDescListEditor(listKey);
@@ -677,7 +677,7 @@ async function deleteStatusHistoryRecord(histIdx) {
   const history = getProjectStatusHistory(Editor.shProjectId);
   if (histIdx < 0 || histIdx >= history.length) return;
   const record = history[histIdx];
-  if (!confirm('Remove "' + record.status + '" entry from ' + record.changed_date + '?')) return;
+  if (!await confirmDialog('Remove "' + record.status + '" entry from ' + record.changed_date + '?', { title: 'Remove history entry?', confirmLabel: 'Remove', danger: true })) return;
 
   // Remove from local array
   const globalIdx = STATUS_HISTORY.indexOf(record);
@@ -854,7 +854,7 @@ async function restoreFromTrash(type, oid) {
 }
 
 async function hardDeleteFromTrash(type, oid, title) {
-  if (!confirm('Permanently delete "' + title + '"?\n\nThis removes the record from ArcGIS Online entirely and cannot be undone.')) return;
+  if (!await confirmDialog('Permanently delete "' + title + '"?\n\nThis removes the record from ArcGIS Online entirely and cannot be undone.', { title: 'Delete permanently?', confirmLabel: 'Delete permanently', danger: true })) return;
   var url, label;
   if (type === 'project')   { url = ARCGIS_CONFIG.projectsUrl; label = 'Project'; }
   else if (type === 'task') { url = ARCGIS_CONFIG.tasksUrl;    label = 'Task'; }
@@ -961,9 +961,9 @@ function dpEditMove(id, delta) {
   renderSettingsPage(document.getElementById('content-area'));
 }
 
-function dpEditDelete(id) {
+async function dpEditDelete(id) {
   var draft = _dpEnsureDraft();
-  if (!confirm('Remove this team from the Data Program list? Existing projects with this team are not affected.')) return;
+  if (!await confirmDialog('Remove this team from the Data Program list? Existing projects with this team are not affected.', { title: 'Remove team?', confirmLabel: 'Remove', danger: true })) return;
   draft.teams = draft.teams.filter(function(x) { return x.id !== id; });
   renderSettingsPage(document.getElementById('content-area'));
 }
@@ -1244,10 +1244,10 @@ function tiEditMove(section, idx, delta) {
   renderSettingsPage(document.getElementById('content-area'));
 }
 
-function tiEditRemove(section, idx) {
+async function tiEditRemove(section, idx) {
   var draft = _tiEnsureDraft();
   if (!Array.isArray(draft[section])) return;
-  if (!confirm('Remove this row?')) return;
+  if (!await confirmDialog('Remove this row?', { title: 'Remove row?', confirmLabel: 'Remove', danger: true })) return;
   draft[section].splice(idx, 1);
   renderSettingsPage(document.getElementById('content-area'));
 }
@@ -1608,10 +1608,10 @@ function orgCommitAdd() {
 }
 
 // ── Reorder / remove ──
-function orgRemoveDept(di) {
+async function orgRemoveDept(di) {
   var d = _orgDraftEnsure(); var dep = d.departments[di]; if (!dep) return;
   var n = (dep.teams || []).length;
-  if (!confirm('Remove department "' + dep.name + '"' + (n ? ' and its ' + n + ' team' + (n === 1 ? '' : 's') : '') + '? Existing records keep their values.')) return;
+  if (!await confirmDialog('Remove department "' + dep.name + '"' + (n ? ' and its ' + n + ' team' + (n === 1 ? '' : 's') : '') + '? Existing records keep their values.', { title: 'Remove department?', confirmLabel: 'Remove', danger: true })) return;
   _orgEdit = null; _orgAdd = null;
   d.departments.splice(di, 1);
   _orgRerender();
@@ -1622,11 +1622,11 @@ function orgMoveDept(di, dir) {
   var tmp = d.departments[di]; d.departments[di] = d.departments[j]; d.departments[j] = tmp;
   _orgRerender();
 }
-function orgRemoveTeam(di, ti) {
+async function orgRemoveTeam(di, ti) {
   var d = _orgDraftEnsure(); var dep = d.departments[di]; if (!dep || !dep.teams[ti]) return;
   var t = dep.teams[ti];
   var n = (t.units || []).length;
-  if (!confirm('Remove team "' + t.name + '"' + (n ? ' and its ' + n + ' unit' + (n === 1 ? '' : 's') : '') + '? Existing records keep their values.')) return;
+  if (!await confirmDialog('Remove team "' + t.name + '"' + (n ? ' and its ' + n + ' unit' + (n === 1 ? '' : 's') : '') + '? Existing records keep their values.', { title: 'Remove team?', confirmLabel: 'Remove', danger: true })) return;
   _orgEdit = null; _orgAdd = null;
   dep.teams.splice(ti, 1);
   _orgRerender();
@@ -1664,8 +1664,8 @@ async function orgEditorSave() {
     render();
   }
 }
-function orgEditorDiscard() {
-  if (_orgDraftDirty() && !confirm('Discard unsaved changes to the organization?')) return;
+async function orgEditorDiscard() {
+  if (_orgDraftDirty() && !await confirmDialog('Discard unsaved changes to the organization?', { title: 'Discard changes?', confirmLabel: 'Discard', danger: true })) return;
   _orgDraft = null; _orgEdit = null; _orgAdd = null;
   _orgRerender();
 }

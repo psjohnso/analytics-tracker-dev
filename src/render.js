@@ -690,12 +690,15 @@ function switchTab(tab, preserveFilters) {
   // identity and means their token expires mid-display. Force a clean
   // public-mode reload instead.
   if (tab === 'slideshow' && Auth.loggedIn) {
-    if (!confirm('Switch to Slideshow?\n\nThis will sign you out of the application so the display can run as a public lobby view. You can sign back in any time.')) {
-      return;
-    }
-    if (typeof clearAgolToken === 'function') clearAgolToken();
-    var base = window.location.origin + window.location.pathname;
-    window.location.replace(base + '?slideshow=1');
+    // confirmDialog is async; defer the sign-out + navigation to its resolution
+    // so switchTab can stay synchronous for its many callers.
+    confirmDialog('This will sign you out of the application so the display can run as a public lobby view. You can sign back in any time.',
+      { title: 'Switch to Slideshow?', confirmLabel: 'Switch & sign out' }).then(function (ok) {
+        if (!ok) return;
+        if (typeof clearAgolToken === 'function') clearAgolToken();
+        var base = window.location.origin + window.location.pathname;
+        window.location.replace(base + '?slideshow=1');
+      });
     return;
   }
   currentDetail = null;

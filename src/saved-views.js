@@ -271,7 +271,7 @@ function applyDefaultSavedViewOnLoad() {
   svLastAppliedId = (id.indexOf('__') === 0) ? null : id;
 }
 
-function deleteSavedView(id, event) {
+async function deleteSavedView(id, event) {
   if (event) { event.stopPropagation(); event.preventDefault(); }
   if (!UserPrefs || !UserPrefs.savedViews) return;
   var view = null;
@@ -279,7 +279,7 @@ function deleteSavedView(id, event) {
     if (UserPrefs.savedViews[i].id === id) { view = UserPrefs.savedViews[i]; break; }
   }
   if (!view) return;
-  if (!confirm('Delete view "' + view.name + '"?')) return;
+  if (!await confirmDialog('Delete view "' + view.name + '"?', { title: 'Delete saved view?', confirmLabel: 'Delete', danger: true })) return;
   UserPrefs.savedViews = UserPrefs.savedViews.filter(function(v) { return v.id !== id; });
   saveUserPrefs();
   renderPresetBar();

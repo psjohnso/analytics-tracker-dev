@@ -138,7 +138,7 @@ if (typeof document !== 'undefined') {
 }
 
 // Apply a field update (status / priority / reassign) to the selection.
-function bulkApply(kind, idx) {
+async function bulkApply(kind, idx) {
   bulkCloseMenus();
   var ctx = bulkCtx();
   if (!ctx) return;
@@ -148,7 +148,7 @@ function bulkApply(kind, idx) {
   if (!sel.length) return;
   var field = kind === 'status' ? 'status' : kind === 'priority' ? 'priority' : ctx.reassignField;
   var label = kind === 'reassign' ? ('Reassign ' + ctx.reassignLabel + ' to "' + val + '"') : ('Set ' + kind + ' to "' + val + '"');
-  if (!confirm(label + ' for ' + sel.length + ' ' + ctx.noun + (sel.length > 1 ? 's' : '') + '?')) return;
+  if (!await confirmDialog(label + ' for ' + sel.length + ' ' + ctx.noun + (sel.length > 1 ? 's' : '') + '?', { title: 'Apply to ' + sel.length + ' ' + ctx.noun + (sel.length > 1 ? 's' : ''), confirmLabel: 'Apply' })) return;
   // Capture each item's prior value now, before the writes overwrite it, so Undo
   // can restore them one-for-one.
   var prior = sel.map(function (it) { return { id: it.objectId, val: (it[field] != null ? it[field] : null) }; });
@@ -167,14 +167,14 @@ function bulkRestoreField(ctx, field, prior) {
   });
 }
 
-function bulkDelete() {
+async function bulkDelete() {
   bulkCloseMenus();
   var ctx = bulkCtx();
   if (!ctx) return;
   var sel = bulkSelectedItems();
   if (!sel.length) return;
   var extra = ctx.noun === 'project' ? ' Their tasks are moved to trash too.' : '';
-  if (!confirm('Delete ' + sel.length + ' ' + ctx.noun + (sel.length > 1 ? 's' : '') + '?' + extra + ' You can undo this right after.')) return;
+  if (!await confirmDialog('Delete ' + sel.length + ' ' + ctx.noun + (sel.length > 1 ? 's' : '') + '?' + extra + '\n\nYou can undo this right after.', { title: 'Delete ' + sel.length + ' ' + ctx.noun + (sel.length > 1 ? 's' : '') + '?', confirmLabel: 'Delete', danger: true })) return;
   var noun = ctx.noun;
   var ids = sel.map(function (it) { return it.objectId; });
   bulkRun(ctx, sel, function (it) { return ctx.del(it.objectId); }, 'deleted', function (returns) {

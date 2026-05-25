@@ -376,7 +376,7 @@ async function changeIssueStatus(issueId, newStatus) {
 }
 
 async function deleteIssue(issueId) {
-  if (!confirm('Move this issue to trash?\n\nYou can undo this right after.')) return;
+  if (!await confirmDialog('Move this issue to trash?\n\nYou can undo this right after.', { title: 'Move issue to trash?', confirmLabel: 'Move to trash', danger: true })) return;
   try {
     var stamp = { deleted_at: Date.now(), deleted_by: (Auth && Auth.fullName) || 'Unknown' };
     await agolApplyEdits(ARCGIS_CONFIG.issuesUrl, {
