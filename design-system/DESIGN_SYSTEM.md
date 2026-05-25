@@ -25,7 +25,9 @@ Everything below is detail on those two rules.
 | `src/render.js` | The router: `currentTab`, `switchTab`, sidebar filters, and the shared toolbar/count plumbing. |
 | `src/tabs/*.js`, `src/modals/*.js` | Per-screen markup builders (HTML strings). This is where most visible UI is generated. |
 | `src/icons.js` | Vendored Phosphor SVG sprite + the `icon()` helper. |
-| `COT_DESIGN.md` | City of Tucson brand guide — the non-negotiable boundaries. |
+| `COT_DESIGN.md` | City of Tucson brand guide — the official City boundaries (see its redesign note). |
+| `src/theme-oe.css` | **OE Redesign** token layer (themes `oe` / `oe-dark`) — loaded after `app.css`. Alias-bridges Laura's tokens onto ours; see §3. |
+| `design_handoff/` | Laura Sharp's full OE Redesign handoff (source for the above). |
 
 ---
 
@@ -72,7 +74,8 @@ The app ships **five palettes** plus a colorblind mode, all driven by tokens:
 - **Alt themes:** `body[data-theme="sonoran" | "twilight" | "pueblo" | "saguaro"]` — each overrides `--navy` / `--orange` / `--surface` (text tokens stay constant for contrast).
 - **Dark mode:** `body[data-theme="dark"]` — overrides the *structural* tokens (`--surface`, `--white`, `--border`, text, pills) so anything tokenized flips automatically.
 - **Colorblind:** `body.cb-safe` — swaps status/priority colors to a CB-safe set.
-- Applied at runtime by `setTheme(id)` → `applyTheme()` (Settings → Appearance).
+- **OE Redesign** *(in progress)*: `body[data-theme="oe" | "oe-dark"]` — a **second token layer** in `src/theme-oe.css` (loaded after `app.css`). It transcribes Laura Sharp's tokens (`design_handoff/`) and **alias-bridges** them onto the token names above (`--navy → var(--navy-500)`, `--surface → var(--ink-0)`, etc.), so the same screens recolor with no edits. Deviates from `COT_DESIGN.md` (different fonts + subdued palette) — pending brand sign-off. See `README.md` for status/phases.
+- Applied at runtime by `setTheme(id)` → `applyTheme()` (Settings → Appearance). New theme ids must also be added to the `allowed` list in `applyTheme()` (index.html) or they're ignored.
 
 **What this means for you**
 - ✅ New color → `var(--token)`. It themes for free.

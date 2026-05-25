@@ -1,6 +1,16 @@
 # DESIGN.md — City of Tucson Brand Guide
 ## For UI design exploration within official brand requirements
 
+> ## ⚠️ App redesign in progress (2026) — read alongside this guide
+>
+> The **Project & Task Tracker** is prototyping an alternative visual language — the **"OE Redesign"** (design handoff from Laura Sharp, in [`design_handoff/`](design_handoff/README.md)). It **intentionally deviates from this brand guide** in two ways:
+> - **Type:** Instrument Serif + Hanken Grotesk + JetBrains Mono — *not* the mandated **Lato + Cardo**.
+> - **Color:** a subdued (~55%) version of the palette (e.g. primary navy `#1f3b6b` vs. official Innovation Blue `#002669`), with saturation reserved for status + data-viz.
+>
+> **Status:** prototype only — shipped behind a theme toggle ("OE Redesign (preview)", app `v1.62.0.0`) on the **dev** line; desktop-first; dark mode in scope. **Not** the production default.
+>
+> **Authority:** *this document remains the City's official brand standard.* The redesign is an app-specific direction adopted by the Data Intelligence team; the font/color deviation should get **formal brand sign-off** before it becomes the production default. Implementation: [`src/theme-oe.css`](src/theme-oe.css). The app's own design-system kit (which tracks both the current "Tucson Classic" theme and the OE redesign): [`design-system/`](design-system/README.md).
+
 ---
 
 ## Organization
