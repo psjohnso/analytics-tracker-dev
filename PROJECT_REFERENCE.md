@@ -61,7 +61,7 @@ Web application for managing analytics projects, tasks, team resources, and capa
 
 - **No build process** — files are loaded as plain `<script src="...">` tags in `index.html`. No bundler, no npm, no server-side code. GitHub Pages serves them directly.
 - **Modules are global, not ES modules** — every `<script src>` runs in global scope. Function and `var`/`let`/`const` declarations become properties on the global namespace, so files can call into each other via forward/backward references that resolve at call time. **No `import`/`export` statements; no `<script type="module">`.**
-- **Cache busting via query string** — every script/style tag has `?v=X.Y.Z.NNNN`. Bump the cache-buster on a file *only* when that file changes. `APP_VERSION` (in `constants.js`) is the source of truth for the displayed version; per-file query strings track each file independently.
+- **Cache busting via query string** — every local `src/` script/style tag has `?v=X.Y.Z.NNNN`. `scripts/stamp-version.js` rewrites them all to the current `APP_VERSION` in one pass, so a deploy busts every cache at once (no per-file hand-bumping). `APP_VERSION` (in `constants.js`) is the source of truth for both the displayed version and the stamp.
 - **All data in ArcGIS Online** feature services with full CRUD via REST API
 - **Configuration stored in app_config** service (key-value pairs of JSON arrays), editable from Settings tab
 - **Weeks generated dynamically** via `generateWeeks(2026)` — 52 Sunday-start dates (displayed as Monday in UI)
@@ -491,7 +491,7 @@ The standalone `weekly_capacity` service was already unused by the application b
 
 ### Cache busting
 
-Each `?v=X.Y.Z.NNNN` query string is independent. Bump it on a file *only when that file's contents change*; users who already have e.g. `app.css?v=1.9.1.0001` cached will keep using that copy across many releases, which is the intended behavior. `APP_VERSION` (in `constants.js`) is what the header pill and footer display.
+Every local `src/` `?v=X.Y.Z.NNNN` query string in `index.html` is rewritten to the current `APP_VERSION` by `scripts/stamp-version.js` — don't hand-edit them. Bump `APP_VERSION` in `src/constants.js`, run `node scripts/stamp-version.js`, and every asset ref is stamped to that version in one pass (one token busts all caches; impossible to forget one). `APP_VERSION` is also what the header pill and footer display. The minor cost of re-fetching unchanged files is negligible for an internal app. `dataprogram.html` is standalone and **not** stamped by the script — bump its per-file `?v=` for `constants.js` / `dataprogram-lite.js` by hand when they change.
 
 ### Header Structure
 
@@ -1504,8 +1504,8 @@ git push origin main
   1. Check if `guide.html` needs updating
   2. Update this document (`PROJECT_REFERENCE.md`)
   3. Bump `APP_VERSION` in `src/constants.js`
-  4. Bump the cache-buster query string in `index.html` for each file you actually modified
-- **Cache-buster discipline:** Each `<script src="...?v=X.Y.Z.NNNN">` is independent. Bump the query string on a file *only when that file changes*. Don't bump them all globally on every release — that defeats the per-file caching the split was designed to enable.
+  4. Run `node scripts/stamp-version.js` to stamp every `index.html` asset ref to the new `APP_VERSION`
+- **Cache-buster discipline:** Don't hand-edit individual `?v=` strings in `index.html` — `scripts/stamp-version.js` rewrites them all to `APP_VERSION` in one pass. Just bump `APP_VERSION` and run the script; if you forget the script, the old version strings linger and the change won't appear. (`dataprogram.html` is standalone — bump its `?v=` refs by hand.)
 - **Module boundaries:** When adding a new feature, prefer adding it to an existing `src/` file when it fits the file's theme. Only create a new file if the new feature is its own coherent surface (a new tab, a new modal, a new external integration). One file per feature; no orphan helpers.
 - **Persistent data:** When features involve persistent data, discuss storing in ArcGIS Online before implementing
 - **Code style:** Use `var` (not `let/const` in loops), `function` declarations, explicit `forEach` over arrow functions — keeps compatibility simple
