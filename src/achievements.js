@@ -454,6 +454,31 @@ function renderAchievementsPanel(name) {
   return html;
 }
 
+// Compact "Your achievements" card for the OE Redesign My Work hero row.
+// Same metrics as renderAchievementsPanel, Laura's 2x2 layout + Phosphor icons.
+// Shows even at all-zero (the hero grid always has both cards).
+function renderMyWeekAchievementsOE(name) {
+  if (typeof UserPrefs !== 'undefined' && UserPrefs && UserPrefs.showAchievements === false) return '';
+  if (!name) return '';
+  var streak = computeTimeLoggingStreak(name);
+  var tMon = tasksCompletedThisMonth(name);
+  var proj = projectsShipped(name);
+  var wkHrs = hoursThisWeek(name);
+  function tile(icon, val, label) {
+    return '<div class="oe-ach-item"><span class="oe-ach-ic"><svg class="icon" aria-hidden="true"><use href="#' + icon + '"></use></svg></span>' +
+      '<div><div class="oe-ach-val">' + esc(val) + '</div><div class="oe-ach-lbl">' + esc(label) + '</div></div></div>';
+  }
+  return '<div class="oe-ach-card"><div class="oe-ach-head">' +
+    '<span class="oe-ach-title">Your achievements</span>' +
+    '<a class="oe-ach-link" href="javascript:void(0)" onclick="switchTab(\'achievements\')">View all →</a></div>' +
+    '<div class="oe-ach-grid">' +
+      tile('ph-flag', streak, 'day streak') +
+      tile('ph-check-circle', tMon, 'tasks · month') +
+      tile('ph-clock', wkHrs + 'h', 'this week') +
+      tile('ph-trophy', proj, proj === 1 ? 'project shipped' : 'projects shipped') +
+    '</div></div>';
+}
+
 // ── Full Achievements tab ─────────────────────────────────────────────
 
 function _atTile(icon, num, label, sub, featured) {

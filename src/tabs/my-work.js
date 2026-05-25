@@ -1007,8 +1007,39 @@ function renderMyWork(area) {
   html += '<div class="mywork-page">';
   html += '<div class="mywork-columns">';
 
-  // ── Achievements panel — celebratory layer above operational KPIs ──
-  if (typeof renderAchievementsPanel === 'function') {
+  // ── OE Redesign — "This week" hero + achievements at the top (above the
+  //    time-tracking section). Replaces the full-width achievements panel and
+  //    the in-place My Week strip under OE. Self-contained week-date math so it
+  //    doesn't depend on vars computed lower in the function. ──
+  var _oe = /^oe/.test((typeof document !== 'undefined' && document.body && document.body.dataset.theme) || '');
+  if (_oe && isViewingSelf && _weekDaily) {
+    var _hToday = new Date(), _hDow = _hToday.getDay() || 7;
+    var _hMon = new Date(_hToday); _hMon.setDate(_hToday.getDate() - (_hDow - 1));
+    var _hSun = new Date(_hMon); _hSun.setDate(_hMon.getDate() + 6);
+    var _hM = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var _hLabel = (_hMon.getMonth() === _hSun.getMonth())
+      ? _hM[_hMon.getMonth()] + ' ' + _hMon.getDate() + ' – ' + _hSun.getDate()
+      : _hM[_hMon.getMonth()] + ' ' + _hMon.getDate() + ' – ' + _hM[_hSun.getMonth()] + ' ' + _hSun.getDate();
+    var _hAvail = Math.max(0, weekCapHours - weekAllocHours);
+    var _hAlloc = Math.round(weekAllocHours * 10) / 10, _hCap = Math.round(weekCapHours * 10) / 10;
+    var _hKeys = ['Mon','Tue','Wed','Thu','Fri'], _hLbls = ['MON','TUE','WED','THU','FRI'], _hStrip = '';
+    for (var _hi = 0; _hi < 5; _hi++) {
+      var _hd = new Date(_hMon); _hd.setDate(_hMon.getDate() + _hi);
+      var _hh = (_weekDaily && _weekDaily[_hKeys[_hi]]) || 0, _hoff = _hh === 0;
+      _hStrip += '<div class="oe-week-day' + (_hoff ? ' off' : '') + '"><div class="oe-week-dayname">' + _hLbls[_hi] + ' ' + _hd.getDate() + '</div><div class="oe-week-bar"></div><div class="oe-week-dayhrs">' + (_hoff ? 'OFF' : _hh + 'h') + '</div></div>';
+    }
+    var _hHero = '<div class="oe-week-hero"><div class="oe-week-hero-row"><div>'
+      + '<div class="oe-week-eyebrow">This week · ' + esc(_hLabel) + '</div>'
+      + '<div class="oe-week-head">' + (weekAllocations.length === 0 ? 'No allocations <em>yet</em>.' : esc(_hAlloc) + 'h <span>allocated · ' + esc(Math.round(_hAvail * 10) / 10) + 'h available</span>') + '</div>'
+      + '</div><div class="oe-week-hoursbox"><div class="oe-week-hoursnum">' + esc(_hAlloc) + '<span>/' + esc(_hCap) + 'h</span></div>'
+      + '<div class="oe-week-eyebrow">' + esc(myScheduleType) + ' schedule' + (myPayWeek ? ' · Week ' + esc(myPayWeek) : '') + '</div></div></div>'
+      + '<div class="oe-week-strip">' + _hStrip + '</div></div>';
+    var _hAch = (typeof renderMyWeekAchievementsOE === 'function') ? renderMyWeekAchievementsOE(name) : '';
+    html += '<div class="mywork-full-width oe-hero-grid">' + _hHero + _hAch + '</div>';
+  }
+
+  // ── Achievements panel — celebratory layer above operational KPIs (Classic) ──
+  if (!_oe && typeof renderAchievementsPanel === 'function') {
     var ach = renderAchievementsPanel(name);
     if (ach) html += '<div class="mywork-full-width">' + ach + '</div>';
   }
@@ -1080,25 +1111,8 @@ function renderMyWork(area) {
     }
     html += '</div>';
 
-    // OE Redesign — "This week" navy editorial hero card (per-day strip + hours).
-    // Rendered only under the OE themes; Tucson Classic keeps the strip below.
-    var _oe = /^oe/.test((typeof document !== 'undefined' && document.body && document.body.dataset.theme) || '');
-    if (_oe && _weekDaily) {
-      var _availOe = Math.max(0, weekCapHours - weekAllocHours);
-      var _allocR = Math.round(weekAllocHours * 10) / 10, _capR = Math.round(weekCapHours * 10) / 10;
-      var _stripHtml = '';
-      ['Mon','Tue','Wed','Thu','Fri'].forEach(function(day) {
-        var hrs = _weekDaily[day] || 0, off = hrs === 0;
-        _stripHtml += '<div class="oe-week-day' + (off ? ' off' : '') + '"><div class="oe-week-dayname">' + day.toUpperCase() + '</div><div class="oe-week-dayhrs">' + (off ? 'OFF' : hrs + 'h') + '</div></div>';
-      });
-      html += '<div class="oe-week-hero"><div class="oe-week-hero-row"><div>'
-        + '<div class="oe-week-eyebrow">This week · ' + esc(_weekLabel) + '</div>'
-        + '<div class="oe-week-head">' + (weekAllocations.length === 0 ? 'No allocations <em>yet</em>.' : esc(_allocR) + 'h <span>allocated · ' + esc(Math.round(_availOe * 10) / 10) + 'h available</span>') + '</div>'
-        + '</div><div class="oe-week-hoursbox"><div class="oe-week-hoursnum">' + esc(_allocR) + '<span>/' + esc(_capR) + 'h</span></div>'
-        + '<div class="oe-week-eyebrow">' + esc(myScheduleType) + ' schedule' + (myPayWeek ? ' · Week ' + esc(myPayWeek) : '') + '</div></div></div>'
-        + '<div class="oe-week-strip">' + _stripHtml + '</div></div>';
-    }
-    // Daily hours bar (Tucson Classic)
+    // Daily hours bar (Tucson Classic — under OE the "This week" hero at the top
+    // of the page shows the strip instead; _oe is set near the top of render).
     if (!_oe && typeof myDailyHours !== 'undefined') {
       function formatTimeCompact(t) {
         if (!t) return '';

@@ -429,3 +429,30 @@ body[data-theme="oe-dark"] .fm-input::placeholder, body[data-theme="oe-dark"] .f
 body[data-theme="oe"] .meta-tag, body[data-theme="oe-dark"] .meta-tag {
   background: var(--ink-1) !important; color: var(--ink-6) !important; border: 1px solid var(--ink-2) !important;
 }
+
+/* ── My Work top hero row: "This week" card (1.4fr) + achievements card (1fr) ── */
+body[data-theme="oe"] .oe-hero-grid, body[data-theme="oe-dark"] .oe-hero-grid {
+  display: grid; grid-template-columns: 1.4fr 1fr; grid-column-gap: 16px; margin-bottom: 16px; align-items: stretch;
+}
+@media (max-width: 860px) {
+  body[data-theme="oe"] .oe-hero-grid, body[data-theme="oe-dark"] .oe-hero-grid { grid-template-columns: 1fr; grid-row-gap: 16px; }
+}
+body[data-theme="oe"] .oe-hero-grid .oe-week-hero, body[data-theme="oe-dark"] .oe-hero-grid .oe-week-hero { margin-bottom: 0; }
+/* per-day strip bar (empty track; fills later if we wire logged/allocated hours) */
+body[data-theme="oe"] .oe-week-bar, body[data-theme="oe-dark"] .oe-week-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.10); margin: 8px 0; }
+/* achievements card */
+body[data-theme="oe"] .oe-ach-card, body[data-theme="oe-dark"] .oe-ach-card {
+  background: var(--ink-paper); border: 1px solid var(--ink-2); border-radius: var(--r-3); padding: 22px 24px;
+}
+body[data-theme="oe"] .oe-ach-head, body[data-theme="oe-dark"] .oe-ach-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+body[data-theme="oe"] .oe-ach-title, body[data-theme="oe-dark"] .oe-ach-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-5); }
+body[data-theme="oe"] .oe-ach-link, body[data-theme="oe-dark"] .oe-ach-link { font-size: 13px; color: var(--navy-500); text-decoration: none; }
+body[data-theme="oe"] .oe-ach-grid, body[data-theme="oe-dark"] .oe-ach-grid { display: grid; grid-template-columns: repeat(2, 1fr); grid-column-gap: 18px; grid-row-gap: 18px; }
+body[data-theme="oe"] .oe-ach-item, body[data-theme="oe-dark"] .oe-ach-item { display: flex; align-items: flex-start; gap: 11px; }
+body[data-theme="oe"] .oe-ach-ic, body[data-theme="oe-dark"] .oe-ach-ic {
+  width: 30px; height: 30px; border-radius: 7px; background: var(--ink-1); display: flex; align-items: center; justify-content: center; color: var(--navy-500); flex-shrink: 0;
+}
+body[data-theme="oe"] .oe-ach-val, body[data-theme="oe-dark"] .oe-ach-val {
+  font-family: var(--font-mono) !important; font-size: 22px; line-height: 1; color: var(--ink-7); font-variant-numeric: tabular-nums;
+}
+body[data-theme="oe"] .oe-ach-lbl, body[data-theme="oe-dark"] .oe-ach-lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-5); margin-top: 5px; }
