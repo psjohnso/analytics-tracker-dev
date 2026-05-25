@@ -565,14 +565,14 @@ function updateFilterIndicator() {
 // existing visibility / read-only / beta gating CSS and JS continue to work.
 const TAB_GROUPS = {
   overview:  { label: 'Overview',   subs: ['overview'] },                                  // single-destination
-  mywork:    { label: '<svg class="icon" aria-hidden="true"><use href="#ph-user"></use></svg> My Work', subs: ['mywork'] },                                    // single-destination, auth-only
+  mywork:    { label: 'My Work',    subs: ['mywork'] },                                    // single-destination, auth-only
   portfolio: { label: 'Portfolio',  subs: ['projects', 'tasks', 'projectReview'] },
   capacity:  { label: 'Capacity',   subs: ['resources', 'forecast', 'insights'] },
-  analytics: { label: '<svg class="icon" aria-hidden="true"><use href="#ph-chart-line-up"></use></svg> Analytics', subs: ['teamload', 'effortshape'] },                    // retrospective analytics over allocation data
-  slideshow: { label: '<svg class="icon" aria-hidden="true"><use href="#ph-monitor"></use></svg> Slideshow', subs: ['slideshow'] },                                // single-destination, opt-in
-  issues:    { label: '<svg class="icon" aria-hidden="true"><use href="#ph-bug"></use></svg> Issues',  subs: ['issues'] },                                    // single-destination
-  achievements: { label: '🏆 Achievements', subs: ['achievements'] },                       // single-destination, auth-only
-  settings:  { label: '<svg class="icon" aria-hidden="true"><use href="#ph-gear"></use></svg> Settings', subs: ['settings'] }                                  // single-destination, auth-only
+  analytics: { label: 'Analytics',  subs: ['teamload', 'effortshape'] },                    // retrospective analytics over allocation data
+  slideshow: { label: 'Slideshow',  subs: ['slideshow'] },                                // single-destination, opt-in
+  issues:    { label: 'Issues',     subs: ['issues'] },                                    // single-destination
+  achievements: { label: 'Achievements', subs: ['achievements'] },                       // single-destination, auth-only
+  settings:  { label: 'Settings',   subs: ['settings'] }                                  // single-destination, auth-only
 };
 const TAB_TO_GROUP = {};
 Object.keys(TAB_GROUPS).forEach(function(g) { TAB_GROUPS[g].subs.forEach(function(t) { TAB_TO_GROUP[t] = g; }); });

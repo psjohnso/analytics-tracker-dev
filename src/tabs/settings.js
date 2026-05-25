@@ -133,7 +133,7 @@ function buildPreferencesPanel() {
 
   function prefAvatarEmoji(currentEmoji) {
     var current = currentEmoji || '';
-    var presets = ['🎯','🐢','🦊','🐙','🦉','🦄','🌵','🌮','🍕','☕','🎨','🎮','🎸','🚀','💻','<svg class="icon" aria-hidden="true"><use href="#ph-chart-bar"></use></svg>','✨','🔥','⚡','🌟'];
+    var presets = ['🎯','🐢','🦊','🐙','🦉','🦄','🌵','🌮','🍕','☕','🎨','🎮','🎸','🚀','💻','📊','✨','🔥','⚡','🌟'];
     var presetBtns = presets.map(function(e) {
       var sel = e === current;
       return '<button type="button" onclick="setAvatarEmoji(\'' + e + '\')" title="' + e + '" style="font-size:18px;width:32px;height:32px;border:1px solid ' + (sel ? 'var(--navy)' : 'var(--border)') + ';' + (sel ? 'background:#EEF2FF;' : 'background:var(--white);') + 'border-radius:6px;cursor:pointer;padding:0;line-height:1;">' + e + '</button>';

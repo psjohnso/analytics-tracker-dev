@@ -454,7 +454,7 @@ function _mwTaskLineHtml(t) {
   if (t.status === 'Active')               { pillBg = '#DCFCE7'; pillColor = '#166534'; pillLabel = 'Active'; }
   else if (t.status === 'On Hold')         { pillBg = '#FEF3C7'; pillColor = '#92400E'; pillLabel = 'On Hold'; }
   else if (t.status === 'Waiting for Response') { pillBg = '#DBEAFE'; pillColor = '#1E40AF'; pillLabel = 'Waiting'; }
-  else if (t.status === 'Complete')        { pillBg = '#E0F2FE'; pillColor = '#0C4A6E'; pillLabel = '<svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg> Done'; }
+  else if (t.status === 'Complete')        { pillBg = '#E0F2FE'; pillColor = '#0C4A6E'; pillLabel = '✓ Done'; }
   var pillHtml = '<span style="display:inline-flex;justify-content:flex-end;min-width:72px;flex-shrink:0;">' +
     '<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;background:' + pillBg + ';color:' + pillColor + ';text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;">' + esc(pillLabel) + '</span>' +
     '</span>';
