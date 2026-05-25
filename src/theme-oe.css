@@ -475,7 +475,7 @@ body[data-theme="oe"] .brand-accent-bar, body[data-theme="oe-dark"] .brand-accen
    updateOePageHead() adds .show (only on the Portfolio group for now). */
 #oe-page-head { display: none; }
 body[data-theme="oe"] #oe-page-head.show, body[data-theme="oe-dark"] #oe-page-head.show {
-  display: block;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   padding: 22px 24px 0;
   background: var(--ink-0);
 }
@@ -486,6 +486,30 @@ body[data-theme="oe"] .oe-page-eyebrow, body[data-theme="oe-dark"] .oe-page-eyeb
 body[data-theme="oe"] .oe-page-title, body[data-theme="oe-dark"] .oe-page-title {
   font-size: var(--t-h1); font-weight: 600; letter-spacing: -0.005em;
   color: var(--ink-7); margin: 0; line-height: var(--lh-heading);
+}
+
+/* Projects/Tasks tabs relocated into the title band (right side), Laura's layout.
+   The real sticky sub-bar is hidden under OE+Portfolio via [data-active-group]
+   below — a body hook so it reverts cleanly when the theme is toggled off. */
+body[data-theme="oe"][data-active-group="portfolio"] #sub-bar,
+body[data-theme="oe-dark"][data-active-group="portfolio"] #sub-bar { display: none !important; }
+
+body[data-theme="oe"] .oe-pagetabs, body[data-theme="oe-dark"] .oe-pagetabs { display: flex; gap: var(--s-5); }
+body[data-theme="oe"] .oe-pagetab, body[data-theme="oe-dark"] .oe-pagetab {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: transparent; border: 0; cursor: pointer; padding: 12px 2px;
+  font-size: var(--t-ui); font-weight: 500; color: var(--ink-5); position: relative; letter-spacing: -0.005em;
+}
+body[data-theme="oe"] .oe-pagetab:hover, body[data-theme="oe-dark"] .oe-pagetab:hover { color: var(--ink-7); }
+body[data-theme="oe"] .oe-pagetab.active, body[data-theme="oe-dark"] .oe-pagetab.active {
+  color: var(--navy-500); box-shadow: inset 0 -2px 0 var(--navy-500);
+}
+body[data-theme="oe"] .oe-pagetab-count, body[data-theme="oe-dark"] .oe-pagetab-count {
+  font-family: var(--font-mono) !important; font-size: 11px; color: var(--ink-5);
+  background: var(--ink-1); padding: 1px 6px; border-radius: var(--r-pill); font-variant-numeric: tabular-nums;
+}
+body[data-theme="oe"] .oe-pagetab.active .oe-pagetab-count, body[data-theme="oe-dark"] .oe-pagetab.active .oe-pagetab-count {
+  background: var(--navy-50); color: var(--navy-500);
 }
 
 /* Toolbar action buttons (Review Ideas / Open Projects / Open Tasks) → neutral

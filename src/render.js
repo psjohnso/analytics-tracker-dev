@@ -682,8 +682,27 @@ function updateOePageHead() {
   if (!el) return;
   var groupId = TAB_TO_GROUP[currentTab];
   if (groupId === 'portfolio') {
-    el.innerHTML = '<div class="oe-page-eyebrow">All teams · City of Tucson</div>' +
-                   '<h1 class="oe-page-title">Portfolio</h1>';
+    // Right side: Projects / Tasks (+ Project Review when visible) tabs, mirroring
+    // the real sub-bar (which CSS hides under OE+portfolio). Counts are read from
+    // the live sub-tab badges so they stay in sync with updateTabCounts().
+    function _cnt(id) { var s = document.getElementById(id); return s ? s.textContent : ''; }
+    function _ptab(tab, label, count) {
+      var active = currentTab === tab;
+      return '<button class="oe-pagetab' + (active ? ' active' : '') + '" onclick="switchTab(\'' + tab + '\')">' +
+        label + (count !== '' && count != null ? ' <span class="oe-pagetab-count">' + esc(count) + '</span>' : '') + '</button>';
+    }
+    var prEl = document.getElementById('tab-projectreview');
+    var prVisible = prEl && prEl.style.display !== 'none';
+    var tabs = '<div class="oe-pagetabs">' +
+      _ptab('projects', 'Projects', _cnt('proj-tab-count')) +
+      _ptab('tasks', 'Tasks', _cnt('task-tab-count')) +
+      (prVisible ? _ptab('projectReview', 'Project Review', '') : '') +
+    '</div>';
+    el.innerHTML =
+      '<div class="oe-page-head-left">' +
+        '<div class="oe-page-eyebrow">All teams · City of Tucson</div>' +
+        '<h1 class="oe-page-title">Portfolio</h1>' +
+      '</div>' + tabs;
     el.classList.add('show');
   } else {
     el.classList.remove('show');
@@ -745,6 +764,9 @@ function switchTab(tab, preserveFilters) {
   });
   // Highlight the primary tab whose group contains this sub-tab; show that group's sub-bar, hide others.
   var groupId = TAB_TO_GROUP[tab];
+  // Expose the active group on <body> so theme CSS can adapt (OE hides the real
+  // sub-bar on Portfolio, where the Projects/Tasks tabs move into the title band).
+  document.body.dataset.activeGroup = groupId || '';
   document.querySelectorAll('.primary-tab').forEach(function(b) {
     b.classList.toggle('active', b.dataset.group === groupId);
   });
@@ -1003,6 +1025,8 @@ function refreshIntakeButton() {
 function updateTabCounts() {
   document.getElementById('proj-tab-count').textContent = filterProjects().length;
   document.getElementById('task-tab-count').textContent = filterTasks().length;
+  // Keep the OE title-band tabs (which mirror these counts) in sync.
+  if (typeof updateOePageHead === 'function') updateOePageHead();
 }
 
 // ─── DEEP LINK ────────────────────────────────────────────────────────
