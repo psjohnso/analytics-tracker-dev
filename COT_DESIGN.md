@@ -9,7 +9,7 @@
 >
 > **So for the tracker:** new and changed UI should follow the **OE system** ([`design_handoff/`](design_handoff/README.md) + [`src/theme-oe.css`](src/theme-oe.css)), not the palette/fonts below.
 >
-> **Status:** migration in progress. ✅ tokens (`v1.62.0.0`) → ✅ typography (`v1.62.0.1`) → ◐ components (`v1.62.0.2`; status-pill color/dot deferred to screens) → ⬜ top bar → ⬜ screens. Until the migration completes, OE is selectable via a theme toggle ("OE Redesign") while the old "Tucson Classic" theme remains the default; OE becomes the default once the migration lands. Desktop-first; dark mode in scope.
+> **Status:** migration in progress. ✅ tokens (`v1.62.0.0`) → ✅ typography (`v1.62.0.1`) → ◐ components (`v1.62.0.2`; status-pill color/dot deferred to screens) → ✅ top bar (`v1.62.0.3`) → ⬜ screens. Until the migration completes, OE is selectable via a theme toggle ("OE Redesign") while the old "Tucson Classic" theme remains the default; OE becomes the default once the migration lands. Desktop-first; dark mode in scope.
 >
 > **Scope:** this document remains the City of Tucson brand reference for **other** City properties; it is the *legacy* standard for this app. The app's design-system kit tracks both: [`design-system/`](design-system/README.md).
 

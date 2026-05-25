@@ -164,9 +164,7 @@ body[data-theme="oe"] .priority-Medium,      body[data-theme="oe-dark"] .priorit
 body[data-theme="oe"] .priority-Low,         body[data-theme="oe-dark"] .priority-Low {
   background: var(--priority-low-bg);    color: var(--priority-low-fg); }
 
-/* Header: light uses the aliased --navy (deep navy-500, correct). Dark must NOT
-   use --navy (it lifts to light blue #7d9bcc) — pin it to the deep navy stack. */
-body[data-theme="oe-dark"] .app-header { background: #060f1e; }
+/* (Header treatment — Laura's light "paper" top bar — is handled in PHASE 4 below.) */
 
 /* ============================================================================
    PHASE 2 · TYPOGRAPHY
@@ -254,4 +252,58 @@ body[data-theme="oe"] .btn-cta:hover,     body[data-theme="oe-dark"] .btn-cta:ho
 body[data-theme="oe-dark"] .btn-primary, body[data-theme="oe-dark"] .btn-cta,
 body[data-theme="oe-dark"] .btn-primary:hover, body[data-theme="oe-dark"] .btn-cta:hover {
   color: #0e1c33;
+}
+
+/* ============================================================================
+   PHASE 4 · TOP BAR
+   ----------------------------------------------------------------------------
+   Laura's top bar is a light "paper" bar with dark text + mono stats (replaces
+   our navy bar with yellow numbers), and tabs use a navy underline (not the
+   yellow fill). CSS-only, theme-scoped; tokens make one rule serve light+dark.
+   ============================================================================ */
+
+/* ── Brand / stats / account bar → light paper ── */
+body[data-theme="oe"] .app-header, body[data-theme="oe-dark"] .app-header {
+  background: var(--ink-paper);
+  border-bottom: 1px solid var(--ink-2);
+  box-shadow: none;
+  color: var(--ink-6);                 /* safety net for inherited/currentColor text */
+}
+/* The logo PNG is a white/reverse mark — darken it for the light bar (oe only;
+   oe-dark keeps the white mark on its dark bar). */
+body[data-theme="oe"] .header-logo img { filter: brightness(0); opacity: 0.85; }
+body[data-theme="oe"] .header-logo span, body[data-theme="oe-dark"] .header-logo span { background: var(--ink-2) !important; }
+body[data-theme="oe"] .header-title h1, body[data-theme="oe-dark"] .header-title h1 { color: var(--ink-7); }
+body[data-theme="oe"] .header-title p,  body[data-theme="oe-dark"] .header-title p  { color: var(--ink-5); }
+body[data-theme="oe"] #app-version, body[data-theme="oe-dark"] #app-version { background: var(--ink-1) !important; color: var(--ink-5) !important; }
+body[data-theme="oe"] .hstat-num,   body[data-theme="oe-dark"] .hstat-num   { color: var(--ink-7); }   /* mono set in phase 2 */
+body[data-theme="oe"] .hstat-label, body[data-theme="oe-dark"] .hstat-label { color: var(--ink-5); }
+body[data-theme="oe"] #user-info, body[data-theme="oe-dark"] #user-info { color: var(--ink-6) !important; }
+body[data-theme="oe"] .notif-bell, body[data-theme="oe-dark"] .notif-bell { color: var(--ink-6); }
+body[data-theme="oe"] #user-avatar, body[data-theme="oe-dark"] #user-avatar { background: var(--steel-100) !important; color: var(--steel-700) !important; }
+body[data-theme="oe"] .btn-on-header, body[data-theme="oe-dark"] .btn-on-header { color: var(--ink-6) !important; border-color: var(--ink-3) !important; }
+body[data-theme="oe"] .btn-on-header:hover, body[data-theme="oe-dark"] .btn-on-header:hover { background: var(--ink-1) !important; border-color: var(--ink-4) !important; }
+
+/* ── Primary tabs → navy underline (replaces the Sun-Yellow fill) ── */
+body[data-theme="oe"] .primary-tab, body[data-theme="oe-dark"] .primary-tab { color: var(--ink-5); }
+body[data-theme="oe"] .primary-tab:hover, body[data-theme="oe-dark"] .primary-tab:hover { color: var(--navy); background: var(--ink-1); }
+body[data-theme="oe"] .primary-tab.active, body[data-theme="oe-dark"] .primary-tab.active {
+  color: var(--navy);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: inset 0 -2px 0 var(--navy);   /* 2px underline, no layout shift */
+  font-weight: 600;
+}
+body[data-theme="oe"] .primary-tab.active:hover, body[data-theme="oe-dark"] .primary-tab.active:hover { background: transparent; }
+/* Count badges: mono; active = navy-50 bg + navy text (Laura). */
+body[data-theme="oe"] .primary-tab .tab-count, body[data-theme="oe-dark"] .primary-tab .tab-count {
+  background: var(--ink-1); color: var(--ink-5); border-radius: var(--r-1); font-family: var(--font-mono); font-size: 11px;
+}
+body[data-theme="oe"] .primary-tab.active .tab-count, body[data-theme="oe-dark"] .primary-tab.active .tab-count {
+  background: var(--navy-50); color: var(--navy-500);
+}
+/* Drop the leftover Sun-Yellow on the navy sub-tab / more-menu count badges. */
+body[data-theme="oe"] .sub-tab.active .tab-count, body[data-theme="oe-dark"] .sub-tab.active .tab-count,
+body[data-theme="oe"] .more-menu-item.active .tab-count, body[data-theme="oe-dark"] .more-menu-item.active .tab-count {
+  color: #fff;
 }
