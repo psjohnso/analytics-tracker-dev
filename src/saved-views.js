@@ -336,18 +336,30 @@ if (typeof document !== 'undefined') {
   document.addEventListener('click', function(e) {
     if (!e.target.closest || !e.target.closest('.preset-chip')) closePresetMenus();
   });
+  // Keyboard activation for the role="button"/menuitem chips, kebabs, and menu
+  // items (a11y: keyboard-nav). Enter/Space triggers their click handler. Esc
+  // closes an open preset menu.
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && svOpenMenuId) { closePresetMenus(); return; }
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    var t = e.target;
+    if (t && t.matches && t.matches('.preset-chip[role="button"], .pc-kebab, .pm-item')) {
+      e.preventDefault();
+      t.click();
+    }
+  });
 }
 function builtinMenuItems(p) {
   var isDef = getDefaultViewId() === p.id;
-  return '<div class="pm-item" onclick="setDefaultView(\'' + p.id + '\', event)"><span class="pm-ic">★</span>' + (isDef ? 'Default view ✓' : 'Set as default') + '</div>';
+  return '<div class="pm-item" tabindex="0" role="menuitem" onclick="setDefaultView(\'' + p.id + '\', event)"><span class="pm-ic" aria-hidden="true">★</span>' + (isDef ? 'Default view ✓' : 'Set as default') + '</div>';
 }
 function presetMenuItems(v) {
   var isDef = getDefaultViewId() === v.id;
   return '' +
-    '<div class="pm-item" onclick="setDefaultView(\'' + v.id + '\', event)"><span class="pm-ic">★</span>' + (isDef ? 'Default view ✓' : 'Set as default') + '</div>' +
-    '<div class="pm-item" onclick="updateSavedView(\'' + v.id + '\', event)"><span class="pm-ic">⤓</span>Update to current filters</div>' +
-    '<div class="pm-item" onclick="renameSavedView(\'' + v.id + '\', event)"><span class="pm-ic">✎</span>Rename…</div>' +
-    '<div class="pm-item danger" onclick="deleteSavedView(\'' + v.id + '\', event)"><span class="pm-ic">🗑</span>Delete</div>';
+    '<div class="pm-item" tabindex="0" role="menuitem" onclick="setDefaultView(\'' + v.id + '\', event)"><span class="pm-ic" aria-hidden="true">★</span>' + (isDef ? 'Default view ✓' : 'Set as default') + '</div>' +
+    '<div class="pm-item" tabindex="0" role="menuitem" onclick="updateSavedView(\'' + v.id + '\', event)"><span class="pm-ic" aria-hidden="true">⤓</span>Update to current filters</div>' +
+    '<div class="pm-item" tabindex="0" role="menuitem" onclick="renameSavedView(\'' + v.id + '\', event)"><span class="pm-ic" aria-hidden="true">✎</span>Rename…</div>' +
+    '<div class="pm-item danger" tabindex="0" role="menuitem" onclick="deleteSavedView(\'' + v.id + '\', event)"><span class="pm-ic" aria-hidden="true">🗑</span>Delete</div>';
 }
 
 // Render the preset bar above the results: built-in presets + the user's saved
@@ -372,20 +384,20 @@ function renderPresetBar() {
   var html = '<span class="preset-group-label">Views</span>';
   builtins.forEach(function(p) {
     var on = p.id === activeId;
-    html += '<span class="preset-chip builtin' + (on ? ' on' : '') + '" onclick="applyPreset(\'' + p.id + '\')" title="Apply this preset">' +
-      (defId === p.id ? '<span class="pc-star" title="Default view">★</span>' : '') +
+    html += '<span class="preset-chip builtin' + (on ? ' on' : '') + '" tabindex="0" role="button" onclick="applyPreset(\'' + p.id + '\')" title="Apply this preset" aria-label="Apply view: ' + esc(p.name) + '">' +
+      (defId === p.id ? '<span class="pc-star" title="Default view" aria-hidden="true">★</span>' : '') +
       '<span class="pc-name">' + esc(p.name) + '</span>' +
-      '<span class="pc-kebab" onclick="togglePresetMenu(\'' + p.id + '\', event)" title="Preset options">⋯</span>' +
+      '<span class="pc-kebab" tabindex="0" role="button" aria-label="Preset options" onclick="togglePresetMenu(\'' + p.id + '\', event)" title="Preset options">⋯</span>' +
       '<div class="preset-menu" id="pmenu-' + p.id + '">' + builtinMenuItems(p) + '</div>' +
     '</span>';
   });
   if (saved.length) html += '<span class="preset-div"></span>';
   saved.forEach(function(v) {
     var on = v.id === activeId;
-    html += '<span class="preset-chip saved' + (on ? ' on' : '') + '" onclick="applySavedView(\'' + v.id + '\')" title="Apply this view">' +
-      (defId === v.id ? '<span class="pc-star" title="Default view">★</span>' : '') +
+    html += '<span class="preset-chip saved' + (on ? ' on' : '') + '" tabindex="0" role="button" onclick="applySavedView(\'' + v.id + '\')" title="Apply this view" aria-label="Apply view: ' + esc(v.name) + '">' +
+      (defId === v.id ? '<span class="pc-star" title="Default view" aria-hidden="true">★</span>' : '') +
       '<span class="pc-name">' + esc(v.name) + '</span>' +
-      '<span class="pc-kebab" onclick="togglePresetMenu(\'' + v.id + '\', event)" title="View options">⋯</span>' +
+      '<span class="pc-kebab" tabindex="0" role="button" aria-label="Options for view ' + esc(v.name) + '" onclick="togglePresetMenu(\'' + v.id + '\', event)" title="View options">⋯</span>' +
       '<div class="preset-menu" id="pmenu-' + v.id + '">' + presetMenuItems(v) + '</div>' +
     '</span>';
   });

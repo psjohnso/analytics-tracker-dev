@@ -205,6 +205,26 @@ body[data-theme="dark"] textarea {
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Tabular figures: numeric columns / KPIs / badges use fixed-width digits so
+   values don't shift column-to-column (UX rule: number-tabular). Affects digits
+   only, so it's safe to apply broadly to data surfaces. */
+.hstat-num, .ach-num, .res-kpi .kpi-value,
+.task-cell, .detail-task-cell, table td,
+.mywork-hrs-badge {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Visible keyboard focus on interactive elements (a11y: focus-states). Uses
+   :focus-visible so it only shows for keyboard users, not mouse clicks. --navy
+   is lightened in dark mode, so the ring stays visible in both themes. */
+a:focus-visible, button:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible,
+[tabindex]:focus-visible, [role="button"]:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
 body {
   font-family: 'Cardo', Georgia, serif;
   background: var(--surface);
