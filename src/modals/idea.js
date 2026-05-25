@@ -46,6 +46,128 @@ function openIdeaForm() {
   }
 }
 
+// ── Idea form accessibility & inline validation (UX #2) ──────────────────
+// Mirrors the Project/Task form treatment (forms.js) for the Idea modal's own
+// markup (.idea-field / .idea-input / .idea-field-err): label↔control pairing,
+// aria-required, inline blur validation, and focus-first-invalid on submit.
+function ideaWireA11y() {
+  var body = document.getElementById('idea-modal-body');
+  if (!body) return;
+  body.querySelectorAll('.idea-field').forEach(function(field) {
+    var label   = field.querySelector('label');
+    var control = field.querySelector('input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, textarea');
+    if (!control) return;
+    if (label && control.id && !label.htmlFor) label.htmlFor = control.id;
+    if (!(label && label.querySelector('.req'))) return;
+    control.setAttribute('aria-required', 'true');
+    control.addEventListener('blur', function(e) {
+      if (e.relatedTarget && field.contains(e.relatedTarget)) return;
+      ideaValidateField(control, field);
+    });
+    var clear = function() { if (control.classList.contains('err')) ideaClearFieldError(control, field); };
+    control.addEventListener('input', clear);
+    control.addEventListener('change', clear);
+  });
+  // Team-lead confirmation checkbox: clear its error the moment it's ticked.
+  body.querySelectorAll('#idea-team-check, #gi-team-check').forEach(function(cb) {
+    cb.addEventListener('change', function() { if (cb.checked) ideaClearCheckError(cb); });
+  });
+}
+
+function ideaFieldLabelText(field) {
+  var label = field && field.querySelector('label');
+  if (!label) return 'This field';
+  var clone = label.cloneNode(true);
+  clone.querySelectorAll('.req, a').forEach(function(n) { n.remove(); });
+  return (clone.textContent || '').replace(/\s+/g, ' ').trim() || 'This field';
+}
+
+function ideaValidateField(control, field) {
+  if (!control.value || !String(control.value).trim()) {
+    ideaShowFieldError(control, field, ideaFieldLabelText(field) + ' is required.');
+    return false;
+  }
+  ideaClearFieldError(control, field);
+  return true;
+}
+
+function ideaShowFieldError(control, field, msg) {
+  if (!control) return;
+  if (!field) field = control.closest('.idea-field');
+  control.classList.add('err');
+  control.setAttribute('aria-invalid', 'true');
+  if (!field) return;
+  var err = field.querySelector('.idea-field-err');
+  if (!err) {
+    err = document.createElement('div');
+    err.className = 'idea-field-err';
+    err.setAttribute('role', 'alert');
+    err.id = (control.id || 'idea-field') + '-err';
+    field.appendChild(err);
+  }
+  err.textContent = msg;
+  control.setAttribute('aria-describedby', err.id);
+}
+
+function ideaClearFieldError(control, field) {
+  if (control) {
+    control.classList.remove('err');
+    control.setAttribute('aria-invalid', 'false');
+    control.removeAttribute('aria-describedby');
+    if (!field) field = control.closest('.idea-field');
+  }
+  if (field) { var err = field.querySelector('.idea-field-err'); if (err) err.remove(); }
+}
+
+// Standalone team-lead confirmation checkbox (not inside an .idea-field): show
+// an inline error directly below its label.
+function ideaShowCheckError(checkbox, msg) {
+  if (!checkbox) return;
+  var label = checkbox.closest('label');
+  if (label) label.style.color = '#EF4444';
+  checkbox.style.outline = '2px solid #EF4444';
+  checkbox.setAttribute('aria-invalid', 'true');
+  var errId = checkbox.id + '-err';
+  var err = document.getElementById(errId);
+  if (!err) {
+    err = document.createElement('div');
+    err.id = errId;
+    err.className = 'idea-field-err';
+    err.setAttribute('role', 'alert');
+    if (label && label.parentNode) label.parentNode.insertBefore(err, label.nextSibling);
+  }
+  err.textContent = msg;
+}
+
+function ideaClearCheckError(checkbox) {
+  if (!checkbox) return;
+  var label = checkbox.closest('label');
+  if (label) label.style.color = '';
+  checkbox.style.outline = '';
+  checkbox.setAttribute('aria-invalid', 'false');
+  var err = document.getElementById(checkbox.id + '-err');
+  if (err) err.remove();
+}
+
+function ideaClearAllErrors() {
+  var body = document.getElementById('idea-modal-body');
+  if (!body) return;
+  body.querySelectorAll('.idea-field-err').forEach(function(e) { e.remove(); });
+  body.querySelectorAll('.err').forEach(function(el) {
+    el.classList.remove('err'); el.setAttribute('aria-invalid', 'false'); el.removeAttribute('aria-describedby');
+  });
+  body.querySelectorAll('#idea-team-check, #gi-team-check').forEach(ideaClearCheckError);
+}
+
+function ideaFocusFirstError() {
+  var body = document.getElementById('idea-modal-body');
+  if (!body) return;
+  var first = body.querySelector('.err, [aria-invalid="true"]');
+  if (!first) return;
+  try { first.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+  if (typeof first.focus === 'function') { try { first.focus({ preventScroll: true }); } catch (e2) { first.focus(); } }
+}
+
 function openSimpleIdeaForm() {
   const body = document.getElementById('idea-modal-body');
   body.innerHTML = `
@@ -108,6 +230,7 @@ function openSimpleIdeaForm() {
   var footer = document.querySelector('#idea-modal .idea-modal-footer');
   if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="closeIdeaFormDirect()">Cancel</button><button class="idea-btn-submit" onclick="submitIdeaForm()"><svg class="icon" aria-hidden="true"><use href="#ph-lightbulb"></use></svg> Submit Idea</button>';
   document.getElementById('idea-modal-backdrop').classList.add('open');
+  ideaWireA11y(); // label↔control pairing, aria-required, inline blur validation
   setTimeout(() => document.getElementById('idea-title').focus(), 50);
 }
 
@@ -180,6 +303,7 @@ function renderGuidedStep1() {
   `;
   var footer = document.querySelector('#idea-modal .idea-modal-footer');
   if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="closeIdeaFormDirect()">Cancel</button><button class="idea-btn-submit" onclick="guidedStep1Next()">Continue →</button>';
+  ideaWireA11y(); // label↔control pairing, aria-required, inline blur validation
   setTimeout(() => document.getElementById('gi-title').focus(), 50);
 }
 
@@ -189,16 +313,13 @@ async function guidedStep1Next() {
   var contact = document.getElementById('gi-contact').value;
   var category = document.getElementById('gi-category').value;
   var problem = (document.getElementById('gi-problem').value || '').trim();
+  ideaClearAllErrors();
   var valid = true;
-  if (!title) { document.getElementById('gi-title').classList.add('err'); valid = false; }
-  else document.getElementById('gi-title').classList.remove('err');
-  if (!contact) { document.getElementById('gi-contact').style.borderColor = '#EF4444'; valid = false; }
-  else document.getElementById('gi-contact').style.borderColor = '';
-  if (!category) { document.getElementById('gi-category').style.borderColor = '#EF4444'; valid = false; }
-  else document.getElementById('gi-category').style.borderColor = '';
-  if (!problem) { document.getElementById('gi-problem').classList.add('err'); valid = false; }
-  else document.getElementById('gi-problem').classList.remove('err');
-  if (!valid) { showToast('Please fill in all required fields.', 'warn'); return; }
+  if (!title)    { ideaShowFieldError(document.getElementById('gi-title'),    null, 'Idea Title is required.'); valid = false; }
+  if (!contact)  { ideaShowFieldError(document.getElementById('gi-contact'),  null, 'Submitted By is required.'); valid = false; }
+  if (!category) { ideaShowFieldError(document.getElementById('gi-category'), null, 'Category is required.'); valid = false; }
+  if (!problem)  { ideaShowFieldError(document.getElementById('gi-problem'),  null, 'A problem description is required.'); valid = false; }
+  if (!valid) { showToast('Please fill in all required fields.', 'warn'); ideaFocusFirstError(); return; }
 
   // Save starter answers
   _guidedIntakeState.starterAnswers = {
@@ -404,14 +525,15 @@ function renderGuidedStep3() {
   body.innerHTML = html;
   var footer = document.querySelector('#idea-modal .idea-modal-footer');
   if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="renderGuidedStep2()">← Back</button><button class="idea-btn-submit" onclick="submitGuidedIdeaForm()"><svg class="icon" aria-hidden="true"><use href="#ph-lightbulb"></use></svg> Submit Idea</button>';
+  ideaWireA11y(); // pair the summary label + wire the team-check error-clear listener
 }
 
 async function submitGuidedIdeaForm() {
   var teamCheck = document.getElementById('gi-team-check');
   if (teamCheck && !teamCheck.checked) {
-    teamCheck.closest('label').style.color = '#EF4444';
-    teamCheck.style.outline = '2px solid #EF4444';
+    ideaShowCheckError(teamCheck, 'Please confirm you\'ve discussed this idea with your team lead.');
     showToast('Please confirm you\'ve discussed this with your team lead.', 'warn');
+    ideaFocusFirstError();
     return;
   }
 
@@ -484,39 +606,22 @@ async function submitIdeaForm() {
   const problem = (document.getElementById('idea-problem').value || '').trim();
 
   const teamCheck = document.getElementById('idea-team-check');
-  // Validate required fields
+  // Validate required fields — inline, screen-reader-announced errors below
+  // each field; focus jumps to the first problem.
+  ideaClearAllErrors();
   let valid = true;
+  if (!title)   { ideaShowFieldError(document.getElementById('idea-title'),   null, 'Idea Title is required.'); valid = false; }
+  if (!contact) { ideaShowFieldError(document.getElementById('idea-contact'), null, 'Submitted By is required.'); valid = false; }
+  if (!problem) { ideaShowFieldError(document.getElementById('idea-problem'), null, 'Problem Statement is required.'); valid = false; }
   if (teamCheck && !teamCheck.checked) {
-    teamCheck.closest('label').style.color = '#EF4444';
-    teamCheck.style.outline = '2px solid #EF4444';
-    if (valid) teamCheck.focus();
+    ideaShowCheckError(teamCheck, 'Please confirm you\'ve discussed this idea with your team lead.');
     valid = false;
-  } else if (teamCheck) {
-    teamCheck.closest('label').style.color = '';
-    teamCheck.style.outline = '';
   }
-  if (!title) {
-    document.getElementById('idea-title').classList.add('err');
-    document.getElementById('idea-title').focus();
-    valid = false;
-  } else {
-    document.getElementById('idea-title').classList.remove('err');
+  if (!valid) {
+    showToast('Please complete the required fields before submitting.', 'warn');
+    ideaFocusFirstError();
+    return;
   }
-  if (!contact) {
-    document.getElementById('idea-contact').style.borderColor = '#EF4444';
-    if (valid) document.getElementById('idea-contact').focus();
-    valid = false;
-  } else {
-    document.getElementById('idea-contact').style.borderColor = '';
-  }
-  if (!problem) {
-    document.getElementById('idea-problem').classList.add('err');
-    if (valid) document.getElementById('idea-problem').focus();
-    valid = false;
-  } else {
-    document.getElementById('idea-problem').classList.remove('err');
-  }
-  if (!valid) return;
 
   // Business rule: project names must be unique
   const duplicate = PROJECTS.find(function(p) {
@@ -524,6 +629,8 @@ async function submitIdeaForm() {
   });
   if (duplicate) {
     showToast('A project named "' + title + '" already exists.', 'warn');
+    ideaShowFieldError(document.getElementById('idea-title'), null, 'A project named “' + title + '” already exists — choose a unique title.');
+    ideaFocusFirstError();
     return;
   }
 
