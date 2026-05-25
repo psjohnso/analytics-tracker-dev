@@ -425,12 +425,14 @@ function renderProjectList(data, showLead) {
   if (!data.length) return '<div class="empty-state">No projects match your filters.</div>';
   const arrow = (key) => projListSortKey === key ? (projListSortDir === 'asc' ? ' ↑' : ' ↓') : ' ↕';
   const th = (label, key) => `<div class="th-sortable" onclick="setProjListSort('${key}')" style="cursor:pointer;user-select:none;">${label}<span style="opacity:${projListSortKey===key?'1':'0.35'};font-size:10px;">${arrow(key)}</span></div>`;
-  const tableClass = showLead ? 'task-table task-table--projects-contrib' : 'task-table task-table--projects';
+  const _bulkOn = (typeof bulkEnabledFor === 'function') && bulkEnabledFor(data);
+  const tableClass = (showLead ? 'task-table task-table--projects-contrib' : 'task-table task-table--projects') + (_bulkOn ? ' task-table--bulk' : '');
 
   function buildRow(p) {
     const statusColor = STATUS_COLOR(p.status) || '#9CA3AF';
     var taskCount = getTaskCountsForProject(p).total;
     var row = `<div class="task-row" onclick="openProject(${p.objectId})">
+      ${_bulkOn ? bulkCheckboxCell(p) : ''}
       <div class="task-cell" style="font-family:monospace;">${esc(p.project_number || '—')}</div>
       <div class="task-title-cell">${esc(p.title)}</div>
       <div class="task-cell"><span class="status-pill" style="background:${statusColor}22;color:${statusColor};"><span style="width:6px;height:6px;border-radius:50%;background:${statusColor};display:inline-block;"></span>${p.status||'—'}</span></div>
@@ -452,7 +454,7 @@ function renderProjectList(data, showLead) {
   var pipelineProjs = data.filter(function(p) { return pipelineStatuses.indexOf(p.status) >= 0; });
   var doneProjs = data.filter(function(p) { return doneStatuses.indexOf(p.status) >= 0; });
 
-  var headerCols = th('ID','project_number') + th('Project','title') + th('Status','status') + th('Priority','priority') + th('Category','category');
+  var headerCols = (_bulkOn ? bulkHeaderCell() : '') + th('ID','project_number') + th('Project','title') + th('Status','status') + th('Priority','priority') + th('Category','category');
   if (showLead) headerCols += th('Lead','contact');
   headerCols += th('Due','end') + th('Tasks','tasks');
 

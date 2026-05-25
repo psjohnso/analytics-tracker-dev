@@ -1439,6 +1439,43 @@ body[data-theme="dark"] .sidebar-acc-head .acc-count { color:#0D1117; }
 .task-table--projects-contrib .task-row {
   grid-template-columns: 70px 2.5fr 110px 0.8fr 1.2fr 1fr 100px 60px;
 }
+/* Bulk-select variants prepend a 34px checkbox column. */
+.task-table--projects.task-table--bulk .task-table-header,
+.task-table--projects.task-table--bulk .task-row {
+  grid-template-columns: 34px 70px 2.5fr 110px 0.8fr 1.5fr 100px 60px;
+}
+.task-table--projects-contrib.task-table--bulk .task-table-header,
+.task-table--projects-contrib.task-table--bulk .task-row {
+  grid-template-columns: 34px 70px 2.5fr 110px 0.8fr 1.2fr 1fr 100px 60px;
+}
+.bulk-cell { display:flex; align-items:center; justify-content:center; }
+.bulk-cb, .bulk-cb-all { width:15px; height:15px; cursor:pointer; accent-color:var(--navy); }
+
+/* ── Bulk action bar (Projects list) ──────────────────────────────────── */
+#bulk-bar {
+  position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(16px);
+  z-index:1100; display:none; align-items:center; gap:14px;
+  background:var(--navy); color:#fff; padding:10px 16px; border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.3); opacity:0;
+  transition:opacity .15s ease, transform .15s ease; font-family:'Lato',sans-serif;
+}
+body[data-theme="dark"] #bulk-bar { background:#20242C; border:1px solid var(--border); }
+#bulk-bar.open { display:flex; opacity:1; transform:translateX(-50%) translateY(0); }
+#bulk-bar .bulk-count { font-weight:800; font-size:13px; white-space:nowrap; }
+#bulk-bar .bulk-actions { display:flex; gap:8px; flex-wrap:wrap; }
+#bulk-bar .btn { background:rgba(255,255,255,0.12); color:#fff; border-color:rgba(255,255,255,0.28); }
+#bulk-bar .btn:hover { background:rgba(255,255,255,0.22); }
+#bulk-bar .btn.bulk-delete { background:rgba(220,38,38,0.92); border-color:transparent; }
+#bulk-bar .btn.bulk-delete:hover { background:#DC2626; }
+.bulk-menu-wrap { position:relative; }
+.bulk-menu {
+  position:absolute; bottom:calc(100% + 6px); left:0; min-width:170px; max-height:260px;
+  overflow-y:auto; background:var(--white); color:var(--text-body); border:1px solid var(--border);
+  border-radius:8px; box-shadow:var(--shadow); padding:5px; display:none;
+}
+.bulk-menu.open { display:block; }
+.bulk-menu-item { padding:7px 10px; font-size:13px; border-radius:6px; cursor:pointer; white-space:nowrap; }
+.bulk-menu-item:hover { background:var(--surface-2); }
 
 .task-row:hover { background: #F0F4FF; }
 .task-row:last-child { border-bottom: none; }

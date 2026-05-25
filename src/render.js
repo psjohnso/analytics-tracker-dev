@@ -701,6 +701,7 @@ function switchTab(tab, preserveFilters) {
   currentDetail = null;
   currentTab = tab;
   currentPage = 1;
+  if (typeof bulkClear === 'function') bulkClear(); // selection is per-(Projects)-tab
   // Highlight active sub-tab (ID-based — robust to DOM reordering).
   document.querySelectorAll('.sub-tab').forEach(function(b) {
     b.classList.toggle('active', b.id === tabIdToElementId(tab));
