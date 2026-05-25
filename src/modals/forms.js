@@ -1824,6 +1824,110 @@ function buildTaskForm(t) {
       '</div>' : '');
 }
 
+// ── Form accessibility & inline validation (UX #2) ──────────────────────
+// After the form HTML is injected, wire each field for accessibility:
+//   • associate the <label> with its control (for/id) so clicking the label
+//     focuses the field and screen readers announce the pairing,
+//   • mark required controls (aria-required),
+//   • validate required fields on blur — showing an inline, screen-reader-
+//     announced error below the field that clears the moment a value is entered.
+function fmWireA11y() {
+  var body = document.getElementById('fm-body');
+  if (!body) return;
+  body.querySelectorAll('.fm-field').forEach(function(field) {
+    var label   = field.querySelector('label');
+    var control = field.querySelector('input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, textarea');
+    if (!control) return;
+    if (label && control.id && !label.htmlFor) label.htmlFor = control.id;
+    var required = !!(label && label.querySelector('.req'));
+    if (!required) return;
+    control.setAttribute('aria-required', 'true');
+    control.addEventListener('blur', function(e) {
+      // Ignore focus moving within the same field (e.g. the markdown toolbar
+      // buttons next to the Description textarea) — that's not "leaving" it.
+      if (e.relatedTarget && field.contains(e.relatedTarget)) return;
+      fmValidateField(control, field);
+    });
+    var clear = function() { if (control.classList.contains('err')) fmClearFieldError(control, field); };
+    control.addEventListener('input', clear);
+    control.addEventListener('change', clear);
+  });
+}
+
+// Human-readable field name from its label — strips the required asterisk, the
+// inline "i" info icon, and any helper links ("Help me choose…").
+function fmFieldLabelText(field) {
+  var label = field && field.querySelector('label');
+  if (!label) return 'This field';
+  var clone = label.cloneNode(true);
+  clone.querySelectorAll('.req, .calc-info, a, .cat-wizard-link, .size-wizard-link').forEach(function(n) { n.remove(); });
+  return (clone.textContent || '').replace(/\s+/g, ' ').trim() || 'This field';
+}
+
+// Presence-validate one required control; show or clear its inline error.
+function fmValidateField(control, field) {
+  if (!control.value || !String(control.value).trim()) {
+    fmShowFieldError(control, field, fmFieldLabelText(field) + ' is required.');
+    return false;
+  }
+  fmClearFieldError(control, field);
+  return true;
+}
+
+// Show an inline, screen-reader-announced (role="alert") error below a field.
+function fmShowFieldError(control, field, msg) {
+  if (!control) return;
+  if (!field) field = control.closest('.fm-field');
+  control.classList.add('err');
+  control.setAttribute('aria-invalid', 'true');
+  if (!field) return;
+  var err = field.querySelector('.fm-field-err');
+  if (!err) {
+    err = document.createElement('div');
+    err.className = 'fm-field-err';
+    err.setAttribute('role', 'alert');
+    err.id = (control.id || 'fm-field') + '-err';
+    field.appendChild(err);
+  }
+  err.textContent = msg;
+  control.setAttribute('aria-describedby', err.id);
+}
+
+// Clear one field's inline error state.
+function fmClearFieldError(control, field) {
+  if (control) {
+    control.classList.remove('err');
+    control.setAttribute('aria-invalid', 'false');
+    control.removeAttribute('aria-describedby');
+    if (!field) field = control.closest('.fm-field');
+  }
+  if (field) { var err = field.querySelector('.fm-field-err'); if (err) err.remove(); }
+}
+
+// Reset all error state in the form — called at the start of each submit so a
+// fresh validation pass doesn't stack stale messages.
+function fmClearAllErrors() {
+  var body = document.getElementById('fm-body');
+  if (!body) return;
+  body.querySelectorAll('.fm-field-err').forEach(function(e) { e.remove(); });
+  body.querySelectorAll('.err').forEach(function(el) {
+    el.classList.remove('err');
+    el.setAttribute('aria-invalid', 'false');
+    el.removeAttribute('aria-describedby');
+  });
+}
+
+// After a failed submit, move keyboard focus (and scroll) to the first invalid
+// field so the user lands exactly on the problem.
+function fmFocusFirstError() {
+  var body = document.getElementById('fm-body');
+  if (!body) return;
+  var first = body.querySelector('.err, [aria-invalid="true"]');
+  if (!first) return;
+  try { first.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+  if (typeof first.focus === 'function') { try { first.focus({ preventScroll: true }); } catch (e2) { first.focus(); } }
+}
+
 function openFormModal(mode, id) {
   if (!ensureValidSession(function() { openFormModal(mode, id); })) return;
   refreshEnums(); // Rebuild enum lists from live data so new values are always present
@@ -1931,6 +2035,7 @@ function openFormModal(mode, id) {
       }
     });
   }
+  fmWireA11y(); // associate labels, mark required, enable inline blur validation
 }
 
 function closeFormModal() {
@@ -1949,8 +2054,8 @@ function getVal(id) {
 function collectProjectFields() {
   const title = getVal('fm-title-val');
   if (!title) {
-    const el = document.getElementById('fm-title-val');
-    if (el) el.classList.add('err');
+    fmShowFieldError(document.getElementById('fm-title-val'), null, 'Title is required.');
+    showToast('Title is required.', 'warn');
     return null;
   }
   // Collect checked team members from the checkbox grid
@@ -1998,26 +2103,23 @@ function collectProjectFields() {
 
 function collectTaskFields() {
   var valid = true;
-  function requireField(id) {
+  function requireField(id, label) {
     var val = getVal(id);
+    var el = document.getElementById(id);
     if (!val) {
-      var el = document.getElementById(id);
-      if (el) el.classList.add('err');
+      fmShowFieldError(el, null, (label || 'This field') + ' is required.');
       valid = false;
     }
     return val || null;
   }
-  // Clear previous error highlights
-  document.querySelectorAll('#fm-body .err').forEach(function(el) { el.classList.remove('err'); });
 
-  var title = requireField('fm-title-val');
-  var status = requireField('fm-status');
-  var assignee = requireField('fm-assignee');
-  var project = requireField('fm-project');
+  var title = requireField('fm-title-val', 'Title');
+  var status = requireField('fm-status', 'Status');
+  var assignee = requireField('fm-assignee', 'Assignee');
+  var project = requireField('fm-project', 'Project');
   var description = getVal('fm-description') || null;
   if (!description) {
-    var descEl = document.getElementById('fm-description');
-    if (descEl) descEl.classList.add('err');
+    fmShowFieldError(document.getElementById('fm-description'), null, 'Description is required.');
     valid = false;
   }
 
@@ -2051,8 +2153,9 @@ function collectTaskFields() {
 async function handleFormSubmit(andDownload) {
   const isProject = Editor.mode.indexOf('project') >= 0;
   const isEdit    = Editor.mode.indexOf('edit')    >= 0;
+  fmClearAllErrors(); // fresh validation pass — clear any prior inline errors
   const fields    = isProject ? collectProjectFields() : collectTaskFields();
-  if (!fields) return;
+  if (!fields) { fmFocusFirstError(); return; }
 
   // ── Business rule: project names must be unique ─────────────
   if (isProject && fields.title) {
@@ -2062,6 +2165,8 @@ async function handleFormSubmit(andDownload) {
     });
     if (duplicate) {
       showToast('A project named "' + fields.title + '" already exists.', 'warn');
+      fmShowFieldError(document.getElementById('fm-title-val'), null, 'A project named “' + fields.title + '” already exists — choose a unique title.');
+      fmFocusFirstError();
       return;
     }
   }
@@ -2069,16 +2174,16 @@ async function handleFormSubmit(andDownload) {
   // ── Business rule: projects require a size (except Ideas / Canceled) ──
   if (isProject && fields.status !== 'Idea' && fields.status !== 'Canceled' && !fields.project_size) {
     showToast('Project Size (S/M/L/XL) is required. Use “Help me choose a size” if you\'re not sure.', 'warn');
-    var sizeEl = document.getElementById('fm-project-size');
-    if (sizeEl) { sizeEl.style.borderColor = '#EF4444'; sizeEl.focus(); }
+    fmShowFieldError(document.getElementById('fm-project-size'), null, 'Project Size is required — use “Help me choose a size” if unsure.');
+    fmFocusFirstError();
     return;
   }
 
   // ── Business rule: completing a project requires a completion date ───
   if (isProject && fields.status === 'Complete' && !fields.actual_end) {
     showToast('A Completion Date is required to mark a project Complete.', 'warn');
-    var aeEl = document.getElementById('fm-actual-end');
-    if (aeEl) { aeEl.style.borderColor = '#EF4444'; aeEl.focus(); }
+    fmShowFieldError(document.getElementById('fm-actual-end'), null, 'A Completion Date is required to mark a project Complete.');
+    fmFocusFirstError();
     return;
   }
 
@@ -2109,14 +2214,14 @@ async function handleFormSubmit(andDownload) {
   if (!isProject && fields.status === 'Active') {
     if (!fields.start) {
       showToast('A start date is required for Active tasks. Please add a start date.', 'warn');
-      var startEl = document.getElementById('fm-start');
-      if (startEl) { startEl.style.borderColor = '#EF4444'; startEl.focus(); }
+      fmShowFieldError(document.getElementById('fm-start'), null, 'A start date is required for Active tasks.');
+      fmFocusFirstError();
       return;
     }
     if (!fields.due && !fields.working_due) {
       showToast('A due date is required for Active tasks. Please add a due date.', 'warn');
-      var dueEl = document.getElementById('fm-due');
-      if (dueEl) { dueEl.style.borderColor = '#EF4444'; dueEl.focus(); }
+      fmShowFieldError(document.getElementById('fm-due'), null, 'A due date (or working due date) is required for Active tasks.');
+      fmFocusFirstError();
       return;
     }
   }
