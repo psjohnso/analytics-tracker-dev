@@ -1071,8 +1071,8 @@ function renderProjectDetail(id) {
               '<div class="fm-search-dropdown" id="batch-project-dropdown">' + bpOpts + '</div>' +
             '</div>';
           })()}
-          <button onclick="applyBatchUpdate()" style="padding:5px 14px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Apply</button>
-          <button onclick="batchDeleteTasks()" style="padding:5px 14px;background:#FEE2E2;color:#991B1B;border:1px solid #FECACA;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Delete Selected</button>
+          <button onclick="btnPending(this, () => applyBatchUpdate(), 'Applying…')" style="padding:5px 14px;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Apply</button>
+          <button onclick="btnPending(this, () => batchDeleteTasks(), 'Deleting…')" style="padding:5px 14px;background:#FEE2E2;color:#991B1B;border:1px solid #FECACA;border-radius:6px;font-size:11px;font-weight:700;font-family:Lato,sans-serif;cursor:pointer;">Delete Selected</button>
         </div>
         <div class="detail-tasks-table">
           ${(() => {

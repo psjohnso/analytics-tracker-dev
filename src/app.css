@@ -3240,6 +3240,16 @@ body[data-theme="dark"] .fm-field-err { color:#F87171; }
 .idea-field-err::before { content: '⚠'; font-size: 11px; line-height: 1.35; flex-shrink: 0; }
 body[data-theme="dark"] .idea-field-err { color: #F87171; }
 
+/* Pending button state for async submit/save (UX #3, btnPending). The spinner
+   inherits the button's text color, so it works on any button background. The
+   global prefers-reduced-motion rule neutralizes the spin for those users. */
+.btn-spinner {
+  display: inline-block; width: 12px; height: 12px; margin-right: 7px; vertical-align: -2px;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+  animation: btnspin 0.6s linear infinite; }
+@keyframes btnspin { to { transform: rotate(360deg); } }
+.is-pending { cursor: progress; opacity: 0.9; }
+
 .idea-modal-footer {
   padding: 16px 28px 20px;
   border-top: 1px solid var(--border);

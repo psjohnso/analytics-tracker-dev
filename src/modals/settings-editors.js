@@ -104,7 +104,7 @@ function buildPermissionsPanel() {
       '<th>Capability</th><th style="text-align:center;">Member</th><th style="text-align:center;">Lead</th><th style="text-align:center;">Admin</th>' +
     '</tr></thead><tbody>' + rows + metaRows + '</tbody></table>' +
     '<div style="margin-top:16px;display:flex;gap:8px;">' +
-      '<button class="settings-btn settings-btn-primary" onclick="savePermissions()">Save changes</button>' +
+      '<button class="settings-btn settings-btn-primary" onclick="btnPending(this, () => savePermissions())">Save changes</button>' +
       '<button class="settings-btn settings-btn-secondary" onclick="discardPermissions()">Discard</button>' +
     '</div>' +
     '<div class="settings-panel-desc" style="margin-top:8px;font-size:11px;">“Create / edit any project” are lead abilities scoped to the lead’s assigned team (set per member under Team members).</div>';
@@ -932,7 +932,7 @@ function buildDataProgramConfigPanel() {
 
   html += '<div style="margin-top:14px;display:flex;gap:8px;align-items:center;">';
   html += '<button onclick="dpEditAdd()" class="settings-btn" style="background:var(--white);border:1px solid var(--border);color:var(--navy);">+ Add team</button>';
-  html += '<button onclick="dpEditSave()" class="settings-btn settings-btn-primary" style="margin-left:auto;">Save changes</button>';
+  html += '<button onclick="btnPending(this, () => dpEditSave())" class="settings-btn settings-btn-primary" style="margin-left:auto;">Save changes</button>';
   html += '<button onclick="dpEditDiscard()" class="settings-btn" style="background:var(--white);border:1px solid var(--border);color:var(--navy);">Discard</button>';
   html += '</div>';
 
@@ -1524,7 +1524,7 @@ function buildOrgEditorPanel() {
   }
 
   html += '<div style="display:flex;gap:10px;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">' +
-    '<button class="settings-btn settings-btn-primary" onclick="orgEditorSave()"' + (dirty ? '' : ' disabled style="opacity:0.5;cursor:default;"') + '>Save organization</button>' +
+    '<button class="settings-btn settings-btn-primary" onclick="btnPending(this, () => orgEditorSave(), \'Saving…\')"' + (dirty ? '' : ' disabled style="opacity:0.5;cursor:default;"') + '>Save organization</button>' +
     '<button class="settings-btn settings-btn-secondary" onclick="orgEditorDiscard()"' + (dirty ? '' : ' disabled style="opacity:0.5;cursor:default;"') + '>Discard</button>' +
     (dirty ? '<span style="font-size:11px;font-weight:700;color:#9A3412;">Unsaved changes</span>' : '') +
   '</div>';

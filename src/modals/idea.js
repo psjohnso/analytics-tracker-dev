@@ -228,7 +228,7 @@ function openSimpleIdeaForm() {
   `;
   // Update footer for simple form
   var footer = document.querySelector('#idea-modal .idea-modal-footer');
-  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="closeIdeaFormDirect()">Cancel</button><button class="idea-btn-submit" onclick="submitIdeaForm()"><svg class="icon" aria-hidden="true"><use href="#ph-lightbulb"></use></svg> Submit Idea</button>';
+  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="closeIdeaFormDirect()">Cancel</button><button class="idea-btn-submit" onclick="btnPending(this, () => submitIdeaForm(), \'Submitting…\')"><svg class="icon" aria-hidden="true"><use href="#ph-lightbulb"></use></svg> Submit Idea</button>';
   document.getElementById('idea-modal-backdrop').classList.add('open');
   ideaWireA11y(); // label↔control pairing, aria-required, inline blur validation
   setTimeout(() => document.getElementById('idea-title').focus(), 50);
@@ -524,7 +524,7 @@ function renderGuidedStep3() {
 
   body.innerHTML = html;
   var footer = document.querySelector('#idea-modal .idea-modal-footer');
-  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="renderGuidedStep2()">← Back</button><button class="idea-btn-submit" onclick="submitGuidedIdeaForm()"><svg class="icon" aria-hidden="true"><use href="#ph-lightbulb"></use></svg> Submit Idea</button>';
+  if (footer) footer.innerHTML = '<button class="idea-btn-cancel" onclick="renderGuidedStep2()">← Back</button><button class="idea-btn-submit" onclick="btnPending(this, () => submitGuidedIdeaForm(), \'Submitting…\')"><svg class="icon" aria-hidden="true"><use href="#ph-lightbulb"></use></svg> Submit Idea</button>';
   ideaWireA11y(); // pair the summary label + wire the team-check error-clear listener
 }
 
