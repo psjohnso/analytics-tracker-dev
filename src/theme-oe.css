@@ -365,3 +365,40 @@ body[data-theme="oe"] .mywork-kpi-label, body[data-theme="oe-dark"] .mywork-kpi-
 body[data-theme="oe"] .mywork-kpi-value.alert, body[data-theme="oe-dark"] .mywork-kpi-value.alert { color: var(--status-overdue-fg); }
 body[data-theme="oe"] .mywork-kpi-value.warn,  body[data-theme="oe-dark"] .mywork-kpi-value.warn  { color: var(--status-hold-fg); }
 body[data-theme="oe"] .mywork-kpi-value.good,  body[data-theme="oe-dark"] .mywork-kpi-value.good  { color: var(--sage-700); }
+
+/* My Work "This week" navy editorial hero card + per-day strip (rendered only
+   under OE, see my-work.js). Scoped so the font rules beat the universal Hanken. */
+body[data-theme="oe"] .oe-week-hero, body[data-theme="oe-dark"] .oe-week-hero {
+  background: var(--navy-700); color: var(--ink-paper);
+  border-radius: var(--r-3); padding: 24px; margin-bottom: 16px;
+}
+body[data-theme="oe"] .oe-week-hero-row, body[data-theme="oe-dark"] .oe-week-hero-row {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;
+}
+body[data-theme="oe"] .oe-week-eyebrow, body[data-theme="oe-dark"] .oe-week-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.6);
+}
+body[data-theme="oe"] .oe-week-head, body[data-theme="oe-dark"] .oe-week-head {
+  font-family: var(--font-display) !important; font-size: 26px; line-height: 1.1; margin-top: 6px; color: var(--ink-paper);
+}
+body[data-theme="oe"] .oe-week-head em, body[data-theme="oe-dark"] .oe-week-head em { font-style: italic; color: rgba(255,255,255,0.72); }
+body[data-theme="oe"] .oe-week-head span, body[data-theme="oe-dark"] .oe-week-head span {
+  display: block; margin-top: 4px; font-size: 13px; color: rgba(255,255,255,0.65);
+}
+body[data-theme="oe"] .oe-week-hoursbox, body[data-theme="oe-dark"] .oe-week-hoursbox { text-align: right; }
+body[data-theme="oe"] .oe-week-hoursnum, body[data-theme="oe-dark"] .oe-week-hoursnum {
+  font-family: var(--font-mono) !important; font-size: 32px; line-height: 1; font-variant-numeric: tabular-nums;
+}
+body[data-theme="oe"] .oe-week-hoursnum span, body[data-theme="oe-dark"] .oe-week-hoursnum span { color: rgba(255,255,255,0.55); }
+body[data-theme="oe"] .oe-week-strip, body[data-theme="oe-dark"] .oe-week-strip {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; margin-top: 16px;
+  background: rgba(255,255,255,0.10); border-radius: 4px; overflow: hidden;
+}
+body[data-theme="oe"] .oe-week-day, body[data-theme="oe-dark"] .oe-week-day { background: var(--navy-700); padding: 8px 4px; text-align: center; }
+body[data-theme="oe"] .oe-week-day.off, body[data-theme="oe-dark"] .oe-week-day.off { opacity: 0.5; }
+body[data-theme="oe"] .oe-week-dayname, body[data-theme="oe-dark"] .oe-week-dayname {
+  font-family: var(--font-mono) !important; font-size: 10px; color: rgba(255,255,255,0.7);
+}
+body[data-theme="oe"] .oe-week-dayhrs, body[data-theme="oe-dark"] .oe-week-dayhrs {
+  font-family: var(--font-mono) !important; font-size: 11px; margin-top: 2px; color: var(--ink-paper);
+}

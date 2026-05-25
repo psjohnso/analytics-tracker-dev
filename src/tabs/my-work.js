@@ -1078,8 +1078,26 @@ function renderMyWork(area) {
     }
     html += '</div>';
 
-    // Daily hours bar
-    if (typeof myDailyHours !== 'undefined') {
+    // OE Redesign — "This week" navy editorial hero card (per-day strip + hours).
+    // Rendered only under the OE themes; Tucson Classic keeps the strip below.
+    var _oe = /^oe/.test((typeof document !== 'undefined' && document.body && document.body.dataset.theme) || '');
+    if (_oe && typeof myDailyHours !== 'undefined') {
+      var _availOe = Math.max(0, weekCapHours - weekAllocHours);
+      var _allocR = Math.round(weekAllocHours * 10) / 10, _capR = Math.round(weekCapHours * 10) / 10;
+      var _stripHtml = '';
+      ['Mon','Tue','Wed','Thu','Fri'].forEach(function(day) {
+        var hrs = myDailyHours[day] || 0, off = hrs === 0;
+        _stripHtml += '<div class="oe-week-day' + (off ? ' off' : '') + '"><div class="oe-week-dayname">' + day.toUpperCase() + '</div><div class="oe-week-dayhrs">' + (off ? 'OFF' : hrs + 'h') + '</div></div>';
+      });
+      html += '<div class="oe-week-hero"><div class="oe-week-hero-row"><div>'
+        + '<div class="oe-week-eyebrow">This week · ' + esc(_weekLabel) + '</div>'
+        + '<div class="oe-week-head">' + (weekAllocations.length === 0 ? 'No allocations <em>yet</em>.' : esc(_allocR) + 'h <span>allocated · ' + esc(Math.round(_availOe * 10) / 10) + 'h available</span>') + '</div>'
+        + '</div><div class="oe-week-hoursbox"><div class="oe-week-hoursnum">' + esc(_allocR) + '<span>/' + esc(_capR) + 'h</span></div>'
+        + '<div class="oe-week-eyebrow">' + esc(myScheduleType) + ' schedule' + (myPayWeek ? ' · Week ' + esc(myPayWeek) : '') + '</div></div></div>'
+        + '<div class="oe-week-strip">' + _stripHtml + '</div></div>';
+    }
+    // Daily hours bar (Tucson Classic)
+    if (!_oe && typeof myDailyHours !== 'undefined') {
       function formatTimeCompact(t) {
         if (!t) return '';
         const parts = t.split(':');
@@ -1114,10 +1132,12 @@ function renderMyWork(area) {
       html += '<div class="mywork-empty">No allocations recorded for this week.</div>';
     } else {
       const availableHours = Math.max(0, weekCapHours - weekAllocHours);
-      html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">';
-      html += '<strong>' + Math.round(weekAllocHours * 10) / 10 + 'h</strong> allocated of <strong>' + Math.round(weekCapHours * 10) / 10 + 'h</strong> capacity' + calcInfoIcon('projCapacity');
-      html += ' · <strong style="color:' + (availableHours > 0 ? '#22C55E' : '#EF4444') + ';">' + Math.round(availableHours * 10) / 10 + 'h</strong> available' + calcInfoIcon('availableHours');
-      html += '</div>';
+      if (!_oe) {  // OE shows allocated/capacity/available in the hero card above
+        html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">';
+        html += '<strong>' + Math.round(weekAllocHours * 10) / 10 + 'h</strong> allocated of <strong>' + Math.round(weekCapHours * 10) / 10 + 'h</strong> capacity' + calcInfoIcon('projCapacity');
+        html += ' · <strong style="color:' + (availableHours > 0 ? '#22C55E' : '#EF4444') + ';">' + Math.round(availableHours * 10) / 10 + 'h</strong> available' + calcInfoIcon('availableHours');
+        html += '</div>';
+      }
 
       // weekStartYmd / weekEndYmd are computed once at the top of the
       // section (header label needs them too) and used here to narrow
