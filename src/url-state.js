@@ -86,12 +86,33 @@ function applyOpenRecord(type, num) {
   }
 }
 
-// Apply state from the current URL query (a shared link). Returns true if any
-// of our params were present (and thus applied).
-function applyUrlStateFromQuery() {
+var SHARE_KEYS = ['tab','view','sort','dp','overdue','q','open'].concat(SV_QUERY_ARRAY_KEYS);
+
+// Return the shared-view params from the URL — or, when an ArcGIS OAuth sign-in
+// round trip stripped the query (redirect_uri is origin+pathname, no query),
+// from the pre-redirect stash saved at load. Clears the stash once consumed.
+function getShareQuery() {
   var p = new URLSearchParams(window.location.search);
-  var keys = ['tab','view','sort','dp','overdue','q','open'].concat(SV_QUERY_ARRAY_KEYS);
-  if (!keys.some(function (k) { return p.has(k); })) return false;
+  if (SHARE_KEYS.some(function (k) { return p.has(k); })) {
+    try { sessionStorage.removeItem('tracker_pending_query'); } catch (e) {}
+    return p;
+  }
+  try {
+    var pending = sessionStorage.getItem('tracker_pending_query');
+    if (pending) {
+      sessionStorage.removeItem('tracker_pending_query');
+      var pp = new URLSearchParams(pending);
+      if (SHARE_KEYS.some(function (k) { return pp.has(k); })) return pp;
+    }
+  } catch (e) {}
+  return null;
+}
+
+// Apply state from a shared link's query (URL or post-sign-in stash). Returns
+// true if applied.
+function applyUrlStateFromQuery() {
+  var p = getShareQuery();
+  if (!p) return false;
 
   if (typeof activeFilters !== 'undefined') {
     SV_QUERY_ARRAY_KEYS.forEach(function (k) { activeFilters[k] = p.has(k) ? p.get(k).split('~') : []; });
@@ -142,3 +163,15 @@ function initViewStateRouting() {
   _viewStateReady = true; // from now on, render() persists snapshots
   return applied;
 }
+
+// Runs at script load (before init() triggers any OAuth redirect): if this page
+// was opened from a shared link, stash the query so it survives the sign-in
+// round trip — the redirect_uri is origin+pathname and drops the query string.
+(function captureSharedQueryBeforeAuth() {
+  try {
+    var p = new URLSearchParams(window.location.search);
+    if (SHARE_KEYS.some(function (k) { return p.has(k); })) {
+      sessionStorage.setItem('tracker_pending_query', window.location.search);
+    }
+  } catch (e) {}
+})();
