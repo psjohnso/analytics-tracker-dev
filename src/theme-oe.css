@@ -345,3 +345,23 @@ body[data-theme="oe"] .status-pill[data-status="Active"], body[data-theme="oe-da
 body[data-theme="oe"] .status-pill[data-status="On Hold"], body[data-theme="oe-dark"] .status-pill[data-status="On Hold"] { background: var(--status-hold-bg) !important; }
 body[data-theme="oe"] .status-pill[data-status="Waiting for Response"], body[data-theme="oe-dark"] .status-pill[data-status="Waiting for Response"] { background: var(--status-future-bg) !important; }
 body[data-theme="oe"] .status-pill[data-status="Complete"], body[data-theme="oe-dark"] .status-pill[data-status="Complete"] { background: var(--status-complete-bg) !important; }
+
+/* My Work KPI row → Laura's KPI card: meta label on top, large mono value below,
+   left-aligned on the card surface. The 5 cards + metrics already exist (Active
+   Projects / Open Tasks / Overdue / Due This Week / Utilization) — this restyles
+   them. column-reverse flips our value-then-label DOM to label-then-value. */
+body[data-theme="oe"] .mywork-kpi, body[data-theme="oe-dark"] .mywork-kpi {
+  display: flex; flex-direction: column-reverse; align-items: flex-start;
+  gap: var(--s-2); text-align: left;
+  border-color: var(--ink-2); border-radius: var(--r-3); padding: 18px;
+}
+body[data-theme="oe"] .mywork-kpi-value, body[data-theme="oe-dark"] .mywork-kpi-value {
+  color: var(--ink-7); font-weight: 400; font-size: 28px; margin: 0;   /* mono from phase 2 */
+}
+body[data-theme="oe"] .mywork-kpi-label, body[data-theme="oe-dark"] .mywork-kpi-label {
+  font-size: 11px; letter-spacing: 0.08em; color: var(--ink-5); margin: 0;
+}
+/* keep the semantic value colors, in OE's subdued palette */
+body[data-theme="oe"] .mywork-kpi-value.alert, body[data-theme="oe-dark"] .mywork-kpi-value.alert { color: var(--status-overdue-fg); }
+body[data-theme="oe"] .mywork-kpi-value.warn,  body[data-theme="oe-dark"] .mywork-kpi-value.warn  { color: var(--status-hold-fg); }
+body[data-theme="oe"] .mywork-kpi-value.good,  body[data-theme="oe-dark"] .mywork-kpi-value.good  { color: var(--sage-700); }
