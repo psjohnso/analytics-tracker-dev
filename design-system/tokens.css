@@ -1,0 +1,103 @@
+/* ============================================================================
+   Design Tokens — Project Tracker
+   ----------------------------------------------------------------------------
+   READABLE MIRROR of the live tokens in `src/app.css` `:root` (+ theme blocks).
+   The running app reads tokens from src/app.css — THAT is the source of truth.
+   Keep this file in sync when you change tokens there (or ask Claude to).
+
+   Rule for all UI: reference these via var(--token). Never hardcode a hex value
+   in new styles, or it won't flip in dark mode / alt themes / colorblind mode.
+   ========================================================================== */
+
+:root {
+  /* ── Brand colors (City of Tucson) ───────────────────────────── */
+  --navy:       #002669;  /* Innovation Blue — primary anchor (also re-colored per theme) */
+  --orange:     #C24200;  /* Sunset Orange — action / energy */
+  --yellow:     #FFDB22;  /* Sun Yellow — HIGHLIGHT ONLY, use sparingly */
+  --green:      #83AC16;  /* Saguaro Green — positive */
+  --sky:        #0088FF;  /* Sky Blue — links / interactive */
+  --cactus:     #9E0059;  /* Cactus Fruit — bold accent */
+  --sand:       #E5D086;  /* Sonoran Sand — warm accent */
+  --night:      #140233;  /* Night Sky — deep background accent */
+
+  /* ── Surfaces & text ─────────────────────────────────────────── */
+  --surface:     #F7F5EF;  /* page background */
+  --surface-2:   #F3F1EB;  /* recessed insets: table headers, hovers, panels */
+  --bg-surface:  var(--surface-2); /* alias used pervasively as var(--bg-surface, …) */
+  --white:       #FFFFFF;  /* card / control background (→ dark grey in dark mode) */
+  --border:      #E1E2DD;  /* borders / dividers */
+  --gray-light:  #E1E2DD;  /* neutral fills */
+  --text-dark:   #002855;  /* headings (Brand Black — a deep navy) */
+  --text-body:   #002855;  /* body text */
+  --text-muted:  #6B7280;  /* secondary text */
+
+  /* ── Layout & shape ──────────────────────────────────────────── */
+  --header-h:     64px;    /* top header height (sticky offsets depend on this) */
+  --sidebar-w:    280px;   /* filter sidebar width */
+  --radius:       16px;    /* cards / large surfaces */
+  --radius-btn:   6px;     /* buttons / inputs */
+  --card-padding: 28px;
+
+  /* ── Pill pairs (bg + matching fg) — use a PAIR so chips stay legible ── */
+  --pill-blue-bg:#EEF2FF;   --pill-blue-fg:#002669;
+  --pill-orange-bg:#FFF7ED; --pill-orange-fg:#9A3412;
+  --pill-green-bg:#F0FDF4;  --pill-green-fg:#166534;
+  --pill-purple-bg:#FDF4FF; --pill-purple-fg:#86198F;
+  --pill-amber-bg:#FFFBEB;  --pill-amber-fg:#92400E;
+  --pill-cyan-bg:#F0F9FF;   --pill-cyan-fg:#0C4A6E;
+}
+
+/* ============================================================================
+   ALTERNATE THEMES — applied via body[data-theme="…"] (Settings → Appearance).
+   Each overrides only --navy / --orange / --surface; text tokens stay constant
+   so contrast is preserved everywhere.
+   ========================================================================== */
+body[data-theme="sonoran"]  { --navy:#8B3A1A; --orange:#F77F00; --surface:#FFF4DC; } /* burnt orange + cream */
+body[data-theme="twilight"] { --navy:#3D2660; --orange:#C2185B; --surface:#F5EFFA; } /* twilight purple + lilac */
+body[data-theme="pueblo"]   { --navy:#7A3520; --orange:#D77845; --surface:#FAEED9; } /* terracotta + sand */
+body[data-theme="saguaro"]  { --navy:#2D4F1E; --orange:#C04020; --surface:#EDF1E2; } /* cactus green + celadon */
+
+/* ============================================================================
+   DARK MODE — body[data-theme="dark"] overrides the structural tokens, so any
+   UI styled through these variables flips automatically. (Hardcoded-hex spots in
+   JS-built markup are migrated per-surface in src/app.css — don't add new ones.)
+   ========================================================================== */
+body[data-theme="dark"] {
+  --navy:      #6E9BD6;  /* lightened so it stays readable as text/accents on dark */
+  --orange:    #E8633A;
+  --green:     #9BC53D;
+  --sky:       #4DA3FF;
+  --surface:   #14171D;
+  --surface-2: #2A2F38;
+  --bg-surface:#2A2F38;
+  --white:     #20242C;  /* card surface */
+  --border:    #343B45;
+  --gray-light:#343B45;
+  --sand:      #B89A4A;
+  --text-dark: #E6E9ED;
+  --text-body: #E6E9ED;
+  --text-muted:#9AA2AC;
+  --pill-blue-bg:rgba(110,155,214,0.18);   --pill-blue-fg:#A9C8F0;
+  --pill-orange-bg:rgba(232,99,58,0.20);   --pill-orange-fg:#F2A98C;
+  --pill-green-bg:rgba(155,197,61,0.18);   --pill-green-fg:#C2E08C;
+  --pill-purple-bg:rgba(216,180,254,0.18); --pill-purple-fg:#DCC1FB;
+  --pill-amber-bg:rgba(245,200,66,0.16);   --pill-amber-fg:#EBCF77;
+  --pill-cyan-bg:rgba(125,211,252,0.16);   --pill-cyan-fg:#A7DDF7;
+  color-scheme: dark;
+}
+/* The top header band stays dark instead of the lightened primary: */
+body[data-theme="dark"] .app-header { background:#0D1117; }
+
+/* ============================================================================
+   COLORBLIND-SAFE — body.cb-safe swaps the status-carrying brand colors to an
+   Okabe-Ito-style palette. Stacks on top of any theme. (Status/priority chip
+   classes get parallel overrides in src/app.css — see DESIGN_SYSTEM.md.)
+   ========================================================================== */
+body.cb-safe {
+  --green:  #009E73;
+  --orange: #E69F00;
+  --yellow: #F0E442;
+  --sky:    #56B4E9;
+  --cactus: #CC79A7;
+  --sand:   #999999;
+}

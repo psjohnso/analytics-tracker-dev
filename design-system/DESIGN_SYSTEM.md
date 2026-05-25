@@ -3,6 +3,7 @@
 > **Purpose:** let a designer (or an AI assistant) change how this app *looks* without breaking how it *works*.
 > **Scope:** editing this app's live styles/markup (`src/app.css`, `index.html`, `src/**`). For brand boundaries (palette, fonts, logo, contrast) see **`COT_DESIGN.md`**. For deep architecture see **`PROJECT_REFERENCE.md`**.
 > **Stack:** vanilla HTML/CSS/JS — no framework, no build step. Classic scripts share one global scope; most UI is built as HTML strings inside JS and injected into the page.
+> **Paths** in this doc are relative to the **repo root** (this file lives in `design-system/`; `COT_DESIGN.md` and `PROJECT_REFERENCE.md` are at the root, `../`).
 
 ---
 
