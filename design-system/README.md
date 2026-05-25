@@ -27,7 +27,9 @@ The **OE Redesign is the app's design standard going forward**, replacing the ol
 
 **OE status & how it's wired:** selectable via **Settings → Appearance → "OE Redesign" / "… · Dark"** (app `v1.62.0.0`, dev line). Token-layer migration so far (`../src/theme-oe.css`): Laura's tokens transcribed, alias-bridged onto the tokens our screens already consume, plus `.status-*`/`.priority-*` overrides — **no screens rebuilt yet,** which is why Tucson Classic stays the default for now. `components.html` here includes the OE themes in its switcher so you can preview them in the gallery.
 
-**Migration phases** (Laura's order): ✅ 1 tokens (`v1.62.0.0`) → ✅ 2 typography (`v1.62.0.1` — Hanken UI font app-wide, JetBrains Mono on numeric hooks, Instrument Serif on the My Work greeting) → ⬜ 3 buttons/pills/chips (add status dots) → ⬜ 4 top bar → ⬜ 5 screen-by-screen → **then flip OE to the default.** Desktop-first, dark in scope.
+**Migration phases** (Laura's order): ✅ 1 tokens (`v1.62.0.0`) → ✅ 2 typography (`v1.62.0.1`) → ◐ 3 components (`v1.62.0.2` — priority chips + button refinements + pill shape; status-pill **color/dot** deferred to phase 5, see below) → ⬜ 4 top bar → ⬜ 5 screen-by-screen → **then flip OE to the default.** Desktop-first, dark in scope.
+
+> **Status-pill caveat:** the project/task list pills are drawn with inline `STATUS_COLOR` styles (not the `.status-*` classes), so their bg/fg/dot can't be re-themed by CSS at AA contrast. Re-rendering them to Laura's tinted-bg + dark-fg + saturated-dot model happens during the phase-5 per-screen rebuild.
 
 ## How to use it
 

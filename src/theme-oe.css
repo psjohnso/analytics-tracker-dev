@@ -216,3 +216,42 @@ body[data-theme="oe"] .mywork-greeting, body[data-theme="oe-dark"] .mywork-greet
   font-weight: 400 !important;
   letter-spacing: var(--tracking-display);
 }
+
+/* ============================================================================
+   PHASE 3 · COMPONENTS — buttons, priority chips, status-pill shape
+   ----------------------------------------------------------------------------
+   Class/token-based components restyled under OE. Status-pill COLOR (Laura's
+   tinted-bg + dark-fg + saturated-dot model) is deferred to phase 5: the list
+   pills are rendered with INLINE STATUS_COLOR styles + ad-hoc dots (not the
+   .status-* classes), so a faithful, AA-contrast pill needs the render-level
+   change the per-screen rebuild brings. Here we only round the pill shape.
+   ============================================================================ */
+
+/* Priority chips → Laura's sharp, uppercase, dot-less chip. (bg/fg set in phase 1.) */
+body[data-theme="oe"] .priority-badge, body[data-theme="oe-dark"] .priority-badge {
+  border-radius: var(--r-1);     /* 3px — sharp corners */
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+/* Status pills → true pill shape now; color/dot model lands in phase 5. */
+body[data-theme="oe"] .status-pill, body[data-theme="oe-dark"] .status-pill {
+  border-radius: var(--r-pill);
+}
+
+/* Buttons — OE has no yellow button (one navy primary per view), so neutralize
+   the Sun-Yellow CTA; darken primary on hover per spec (not brighten). */
+body[data-theme="oe"] .btn-cta, body[data-theme="oe-dark"] .btn-cta {
+  background: var(--navy-500); color: #fff; border-color: var(--navy-500); font-weight: 600;
+}
+body[data-theme="oe"] .btn-primary:hover, body[data-theme="oe-dark"] .btn-primary:hover,
+body[data-theme="oe"] .btn-cta:hover,     body[data-theme="oe-dark"] .btn-cta:hover {
+  background: var(--navy-700); filter: none;
+}
+/* Dark: the lifted "lit" navy (#7d9bcc) needs dark text on primary/CTA, not white. */
+body[data-theme="oe-dark"] .btn-primary, body[data-theme="oe-dark"] .btn-cta,
+body[data-theme="oe-dark"] .btn-primary:hover, body[data-theme="oe-dark"] .btn-cta:hover {
+  color: #0e1c33;
+}
