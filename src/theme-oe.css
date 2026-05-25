@@ -520,3 +520,28 @@ body[data-theme="oe"] .oe-avatar-sm, body[data-theme="oe-dark"] .oe-avatar-sm {
 body[data-theme="oe"] .oe-lead-name, body[data-theme="oe-dark"] .oe-lead-name {
   font-size: 13px; color: var(--ink-6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* ============================================================================
+   PHASE 7 · PORTFOLIO TOOLBAR
+   ----------------------------------------------------------------------------
+   View switch → Laura's icon-only segmented control (labels hidden, subtle
+   active, divider rules). Result count → "X of Y shown" with mono numerals
+   (the .rc-num spans come from setResultCount()). All OE-gated.
+   ============================================================================ */
+body[data-theme="oe"] .view-toggle, body[data-theme="oe-dark"] .view-toggle {
+  border: 1px solid var(--ink-3); border-radius: var(--r-2); background: var(--ink-paper);
+}
+body[data-theme="oe"] .view-btn, body[data-theme="oe-dark"] .view-btn {
+  background: transparent; color: var(--ink-5); padding: 6px 10px; border-left: 1px solid var(--ink-3);
+}
+body[data-theme="oe"] .view-toggle .view-btn:first-child, body[data-theme="oe-dark"] .view-toggle .view-btn:first-child { border-left: 0; }
+body[data-theme="oe"] .view-btn .vb-label, body[data-theme="oe-dark"] .view-btn .vb-label { display: none; }
+body[data-theme="oe"] .view-btn:hover, body[data-theme="oe-dark"] .view-btn:hover { background: var(--ink-1); color: var(--ink-7); }
+body[data-theme="oe"] .view-btn.active, body[data-theme="oe-dark"] .view-btn.active { background: var(--ink-1); color: var(--ink-7); }
+
+body[data-theme="oe"] .result-count, body[data-theme="oe-dark"] .result-count {
+  font-style: normal; color: var(--ink-5); font-size: 13px;
+}
+body[data-theme="oe"] .result-count .rc-num, body[data-theme="oe-dark"] .result-count .rc-num {
+  font-family: var(--font-mono) !important; color: var(--ink-7); font-variant-numeric: tabular-nums; font-feature-settings: "tnum";
+}

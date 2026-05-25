@@ -13,6 +13,23 @@
 // ─────────────────────────────────────────────────────────────────────
 
 // ── Project / task list views ──────────────────────────
+// Result-count label. Classic keeps "405 projects"; OE shows Laura's
+// "11 of 405 shown" with mono numerals (shown = filtered count, total = all
+// loaded items). Theme-gated so Classic is unchanged.
+function setResultCount(shown, noun) {
+  var el = document.getElementById('result-count');
+  if (!el) return;
+  var oe = typeof document !== 'undefined' && document.body && /^oe/.test(document.body.dataset.theme || '');
+  if (oe) {
+    var total = noun === 'project'
+      ? (typeof PROJECTS !== 'undefined' && PROJECTS ? PROJECTS.length : shown)
+      : (typeof TASKS !== 'undefined' && TASKS ? TASKS.length : shown);
+    el.innerHTML = '<span class="rc-num">' + shown + '</span> of <span class="rc-num">' + total + '</span> shown';
+  } else {
+    el.textContent = shown + ' ' + noun + (shown !== 1 ? 's' : '');
+  }
+}
+
 // ─── PROJECT GRID ─────────────────────────────────────────────────────
 function renderProjectGrid(data) {
   if (!data.length) return '<div class="empty-state">No projects match your filters.</div>';
