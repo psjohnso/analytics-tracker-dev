@@ -29,7 +29,7 @@ function bulkCtx() {
     items: (typeof PROJECTS !== 'undefined') ? PROJECTS : [],
     canEdit: (typeof canEditProject === 'function') ? canEditProject : function () { return false; },
     update: function (id, f) { return DataStore.updateProject(id, f); },
-    del: function (id) { return DataStore.deleteProject(id); },
+    del: function (id) { return DataStore.deleteProject(id, { silent: true }); },
     statuses: (typeof FM_PROJ_STATUSES !== 'undefined' && FM_PROJ_STATUSES) ? FM_PROJ_STATUSES : [],
     priorities: (typeof FM_PROJ_PRIORITIES !== 'undefined' && FM_PROJ_PRIORITIES) ? FM_PROJ_PRIORITIES : [],
     members: (typeof FM_ACTIVE_MEMBERS !== 'undefined' && FM_ACTIVE_MEMBERS) ? FM_ACTIVE_MEMBERS : [],
@@ -149,7 +149,22 @@ function bulkApply(kind, idx) {
   var field = kind === 'status' ? 'status' : kind === 'priority' ? 'priority' : ctx.reassignField;
   var label = kind === 'reassign' ? ('Reassign ' + ctx.reassignLabel + ' to "' + val + '"') : ('Set ' + kind + ' to "' + val + '"');
   if (!confirm(label + ' for ' + sel.length + ' ' + ctx.noun + (sel.length > 1 ? 's' : '') + '?')) return;
-  bulkRun(ctx, sel, function (it) { var f = {}; f[field] = val; return ctx.update(it.objectId, f); }, 'updated');
+  // Capture each item's prior value now, before the writes overwrite it, so Undo
+  // can restore them one-for-one.
+  var prior = sel.map(function (it) { return { id: it.objectId, val: (it[field] != null ? it[field] : null) }; });
+  bulkRun(ctx, sel, function (it) { var f = {}; f[field] = val; return ctx.update(it.objectId, f); }, 'updated',
+    function () { return function () { return bulkRestoreField(ctx, field, prior); }; });
+}
+
+// Undo a bulk field change: re-apply each captured prior value.
+function bulkRestoreField(ctx, field, prior) {
+  return prior.reduce(function (pr, rec) {
+    return pr.then(function () { var f = {}; f[field] = rec.val; return ctx.update(rec.id, f); });
+  }, Promise.resolve()).then(function () {
+    if (typeof markDataDirty === 'function') markDataDirty();
+    if (typeof render === 'function') render();
+    if (typeof showToast === 'function') showToast('Reverted ' + prior.length + ' ' + ctx.noun + (prior.length !== 1 ? 's' : '') + '.', 'success');
+  });
 }
 
 function bulkDelete() {
@@ -158,26 +173,47 @@ function bulkDelete() {
   if (!ctx) return;
   var sel = bulkSelectedItems();
   if (!sel.length) return;
-  var extra = ctx.noun === 'project' ? ' Their tasks will be canceled.' : '';
-  if (!confirm('Delete ' + sel.length + ' ' + ctx.noun + (sel.length > 1 ? 's' : '') + '?' + extra + ' This is a soft-delete (recoverable in ArcGIS), but cannot be undone from here.')) return;
-  bulkRun(ctx, sel, function (it) { return ctx.del(it.objectId); }, 'deleted');
+  var extra = ctx.noun === 'project' ? ' Their tasks are moved to trash too.' : '';
+  if (!confirm('Delete ' + sel.length + ' ' + ctx.noun + (sel.length > 1 ? 's' : '') + '?' + extra + ' You can undo this right after.')) return;
+  var noun = ctx.noun;
+  var ids = sel.map(function (it) { return it.objectId; });
+  bulkRun(ctx, sel, function (it) { return ctx.del(it.objectId); }, 'deleted', function (returns) {
+    // Projects cascade-delete their tasks; collect those ids so Undo restores them too.
+    var taskIds = [];
+    returns.forEach(function (r) { if (r && r.taskObjectIds && r.taskObjectIds.length) taskIds = taskIds.concat(r.taskObjectIds); });
+    return function () { return bulkRestoreDeleted(noun, ids, taskIds); };
+  });
 }
 
-// Run an async op over the selection sequentially, with progress + summary toast.
-function bulkRun(ctx, sel, fn, verb) {
+// Undo a bulk delete: clear deleted_at on the deleted records (+ cascaded tasks).
+function bulkRestoreDeleted(noun, ids, cascadeTaskIds) {
+  var sets = (noun === 'project') ? { projects: ids, tasks: cascadeTaskIds } : { tasks: ids };
+  return DataStore.restoreDeleted(sets).then(function () {
+    if (typeof showToast === 'function') showToast('Restored ' + ids.length + ' ' + noun + (ids.length !== 1 ? 's' : '') + '.', 'success');
+  });
+}
+
+// Run an async op over the selection sequentially, with progress + summary.
+// makeUndo (optional): called with the array of per-item return values after a
+// successful run; returns the undo function. When present, the summary is shown
+// as an Undo toast instead of a plain toast.
+function bulkRun(ctx, sel, fn, verb, makeUndo) {
   var bar = document.getElementById('bulk-bar');
-  var ok = 0, fail = 0, i = 0;
+  var ok = 0, fail = 0, i = 0, returns = [];
   function step() {
     if (i >= sel.length) {
       bulkSelected.clear();
-      if (typeof showToast === 'function') showToast(ok + ' ' + ctx.noun + (ok !== 1 ? 's' : '') + ' ' + verb + (fail ? (' · ' + fail + ' failed') : ''), fail ? 'warn' : 'success');
       if (typeof markDataDirty === 'function') markDataDirty();
       if (typeof render === 'function') render();
       bulkRenderBar();
+      var summary = ok + ' ' + ctx.noun + (ok !== 1 ? 's' : '') + ' ' + verb + (fail ? (' · ' + fail + ' failed') : '');
+      var undoFn = (makeUndo && ok > 0) ? makeUndo(returns) : null;
+      if (undoFn && typeof showUndoToast === 'function') showUndoToast(summary, undoFn);
+      else if (typeof showToast === 'function') showToast(summary, fail ? 'warn' : 'success');
       return;
     }
     if (bar) { var c = bar.querySelector('.bulk-count'); if (c) c.textContent = 'Working… ' + (i + 1) + '/' + sel.length; }
-    Promise.resolve(fn(sel[i])).then(function () { ok++; }, function (err) { console.error('bulk op failed', sel[i].objectId, err); fail++; })
+    Promise.resolve(fn(sel[i])).then(function (r) { ok++; returns.push(r); }, function (err) { console.error('bulk op failed', sel[i].objectId, err); fail++; })
       .then(function () { i++; step(); });
   }
   step();

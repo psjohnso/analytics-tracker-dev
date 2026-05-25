@@ -190,7 +190,8 @@ const DataStore = {
     return PROJECTS[i];
   },
 
-  async deleteProject(id) {
+  async deleteProject(id, opts) {
+    opts = opts || {};
     const i = PROJECTS.findIndex(function(p) { return p.objectId == id; });
     if (i < 0) return false;
     const project = PROJECTS[i];
@@ -206,6 +207,8 @@ const DataStore = {
         taskUpdates.push({ attributes: { ObjectId: t.objectId, deleted_at: stamp.deleted_at, deleted_by: stamp.deleted_by } });
       }
     });
+    // Cascaded task objectIds — returned so an "Undo" can restore them too.
+    var cascadedTaskIds = taskUpdates.map(function(u) { return u.attributes.ObjectId; });
     // Remove from local TASKS array
     TASKS = TASKS.filter(function(t) {
       if (projectNumber == null) return true;
@@ -249,7 +252,7 @@ const DataStore = {
           updates: [{ attributes: { ObjectId: objectId, deleted_at: stamp.deleted_at, deleted_by: stamp.deleted_by } }]
         });
         markSynced('Project moved to trash');
-        showToast('Moved project "' + projectTitle + '" and ' + taskUpdates.length + ' task(s) to trash. Restore from Settings → Trash.', 'success');
+        if (!opts.silent) showToast('Moved project "' + projectTitle + '" and ' + taskUpdates.length + ' task(s) to trash. Restore from Settings → Trash.', 'success');
       } catch (err) {
         console.error('ArcGIS soft-deleteProject failed:', err);
         markDirty();
@@ -266,7 +269,7 @@ const DataStore = {
       }, 'project-delete');
     } catch(e) {}
 
-    return true;
+    return { ok: true, objectId: objectId, taskObjectIds: cascadedTaskIds };
   },
 
   // ── Tasks ──────────────────────────────────────────────────────────
@@ -381,6 +384,33 @@ const DataStore = {
         markDirty();
       }
     }
+    return { ok: true, objectId: objectId };
+  },
+
+  // Undo a soft-delete: clear deleted_at/deleted_by on the given objectIds, then
+  // reload local state so the records reappear. Mirrors restoreFromTrash but for
+  // a known id set (an "Undo" right after deleting). Note: project allocations
+  // are hard-deleted on delete and are NOT restored here — same as Trash restore.
+  async restoreDeleted(sets) {
+    sets = sets || {};
+    async function clearDeleted(url, ids) {
+      if (!url || !ids || !ids.length) return;
+      for (var k = 0; k < ids.length; k += 100) {
+        var updates = ids.slice(k, k + 100).map(function(id) {
+          return { attributes: { ObjectId: id, deleted_at: null, deleted_by: null } };
+        });
+        await agolApplyEdits(url, { updates: updates });
+      }
+    }
+    await clearDeleted(ARCGIS_CONFIG.projectsUrl, sets.projects);
+    await clearDeleted(ARCGIS_CONFIG.tasksUrl, sets.tasks);
+    await clearDeleted(ARCGIS_CONFIG.issuesUrl, sets.issues);
+    // Reload so restored records repopulate the local arrays.
+    var touchedPT = (sets.projects && sets.projects.length) || (sets.tasks && sets.tasks.length);
+    if (touchedPT && typeof loadArcGISData === 'function') await loadArcGISData();
+    if (sets.issues && sets.issues.length && typeof loadIssues === 'function') await loadIssues();
+    if (typeof markDataDirty === 'function') markDataDirty();
+    if (typeof render === 'function') render();
     return true;
   },
 };

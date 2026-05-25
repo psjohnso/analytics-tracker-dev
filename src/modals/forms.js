@@ -2302,23 +2302,40 @@ async function handleFormSubmit(andDownload) {
 async function handleFormDelete() {
   if (!ensureValidSession(function() { handleFormDelete(); })) return;
   const isProject = Editor.mode.indexOf('project') >= 0;
+  var undoSets = null;
+  var undoMsg = '';
   if (isProject) {
     var proj = PROJECTS.find(function(p) { return p.objectId == Editor.editId; });
     var projNum = proj && proj.project_number != null ? String(proj.project_number) : null;
     var taskCount = projNum ? TASKS.filter(function(t) { return t.project_number != null && String(t.project_number) === projNum; }).length : 0;
-    var msg = 'Delete this project?';
-    if (taskCount > 0) msg += '\n\nThis will also delete ' + taskCount + ' associated task(s) and all allocation records.';
-    msg += '\n\nThis cannot be undone.';
+    var msg = 'Move this project to trash?';
+    if (taskCount > 0) msg += '\n\nIts ' + taskCount + ' task(s) go too, and allocations are removed permanently.';
+    msg += '\n\nYou can undo this right after.';
     if (!confirm(msg)) return;
-    await DataStore.deleteProject(Editor.editId);
+    var pid = Editor.editId;
+    var delResult = await DataStore.deleteProject(pid, { silent: true });
+    undoSets = { projects: [pid], tasks: (delResult && delResult.taskObjectIds) || [] };
+    undoMsg = 'Project moved to trash.';
   } else {
-    if (!confirm('Delete this task? This cannot be undone.')) return;
-    await DataStore.deleteTask(Editor.editId);
+    if (!confirm('Move this task to trash?\n\nYou can undo this right after.')) return;
+    var tid = Editor.editId;
+    await DataStore.deleteTask(tid);
+    undoSets = { tasks: [tid] };
+    undoMsg = 'Task moved to trash.';
   }
   closeFormModal();
   closeModalDirect();
   markDataDirty();
   render();
+  if (undoSets && typeof showUndoToast === 'function') {
+    showUndoToast(undoMsg, function() {
+      return DataStore.restoreDeleted(undoSets).then(function() {
+        showToast((isProject ? 'Project' : 'Task') + ' restored.', 'success');
+      });
+    });
+  } else {
+    showToast(undoMsg, 'success');
+  }
 }
 
 // ── Size Wizard constants ─────────────────────────────────

@@ -376,18 +376,31 @@ async function changeIssueStatus(issueId, newStatus) {
 }
 
 async function deleteIssue(issueId) {
-  if (!confirm('Move this issue to trash? Restore from Settings → Trash if needed.')) return;
+  if (!confirm('Move this issue to trash?\n\nYou can undo this right after.')) return;
   try {
     var stamp = { deleted_at: Date.now(), deleted_by: (Auth && Auth.fullName) || 'Unknown' };
     await agolApplyEdits(ARCGIS_CONFIG.issuesUrl, {
       updates: [{ attributes: { ObjectId: issueId, deleted_at: stamp.deleted_at, deleted_by: stamp.deleted_by } }]
     });
-    showToast('Issue moved to trash.', 'success');
     // Optimistic local removal — loadIssues filters deleted_at IS NULL, so just drop it locally.
     ISSUES = ISSUES.filter(function(i) { return i.objectId != issueId; });
     updateIssuesTabCount();
     if (currentTab === 'issues') {
       document.getElementById('content-area').innerHTML = buildIssuesPage();
+    }
+    var refreshIssues = function() {
+      updateIssuesTabCount();
+      if (currentTab === 'issues') document.getElementById('content-area').innerHTML = buildIssuesPage();
+    };
+    if (typeof showUndoToast === 'function') {
+      showUndoToast('Issue moved to trash.', function() {
+        return DataStore.restoreDeleted({ issues: [issueId] }).then(function() {
+          refreshIssues();
+          showToast('Issue restored.', 'success');
+        });
+      });
+    } else {
+      showToast('Issue moved to trash.', 'success');
     }
   } catch (err) {
     showToast('Failed to delete: ' + err.message, 'error');
