@@ -314,3 +314,19 @@ body[data-theme="oe"] .sub-tab.active .tab-count, body[data-theme="oe-dark"] .su
 body[data-theme="oe"] .more-menu-item.active .tab-count, body[data-theme="oe-dark"] .more-menu-item.active .tab-count {
   color: #fff;
 }
+
+/* ============================================================================
+   PHASE 5 · PER-SCREEN (incremental) — numeric data in JetBrains Mono
+   ----------------------------------------------------------------------------
+   The phase-2 universal Hanken rule overrode inline `font-family:monospace`, so
+   re-assert mono on anything that opted into it (project/task IDs are rendered
+   that way) — this both fixes that regression and upgrades them to JetBrains
+   Mono. Plus the list due-date cells (.pt-due, an additive class). Tabular
+   figures so columns align. [Laura: IDs + dates in mono]
+   ============================================================================ */
+body[data-theme="oe"] [style*="monospace"], body[data-theme="oe-dark"] [style*="monospace"],
+body[data-theme="oe"] .pt-due, body[data-theme="oe-dark"] .pt-due {
+  font-family: var(--font-mono) !important;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}

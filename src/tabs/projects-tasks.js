@@ -439,7 +439,7 @@ function renderProjectList(data, showLead) {
       <div class="task-cell"><span class="priority-badge priority-${p.priority||'null'}">${p.priority||'—'}</span></div>
       <div class="task-cell">${esc(p.category || '—')}</div>`;
     if (showLead) row += `<div class="task-cell">${esc(p.contact || '—')}</div>`;
-    row += `<div class="task-cell">${p.working_due||p.end||'—'}</div>
+    row += `<div class="task-cell pt-due">${p.working_due||p.end||'—'}</div>
       <div class="task-cell" style="text-align:center;">${taskCount}</div>
     </div>`;
     return row;
@@ -553,7 +553,7 @@ function renderTaskList(data) {
       <div class="task-cell"><span class="status-pill" style="background:${statusColor}22;color:${statusColor};"><span style="width:5px;height:5px;border-radius:50%;background:${statusColor};display:inline-block;"></span>${t.status||'—'}</span></div>
       <div class="task-cell"><span class="priority-badge priority-${t.priority||'null'}">${t.priority||'—'}</span></div>
       <div class="task-cell">${esc(t.assignee||'—')}</div>
-      <div class="task-cell" style="${dueCellStyle}">${dueStr||'—'}</div>
+      <div class="task-cell pt-due" style="${dueCellStyle}">${dueStr||'—'}</div>
       <div class="task-cell" style="font-weight:700;color:var(--navy);">${tHrs > 0 ? hoursLabel(tHrs, mHrs) : '—'}</div>
     </div>`;
   }).join('');
