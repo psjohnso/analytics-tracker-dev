@@ -29,7 +29,9 @@ The **OE Redesign is the app's design standard going forward**, replacing the ol
 
 **Migration phases** (Laura's order): ✅ 1 tokens (`v1.62.0.0`) → ✅ 2 typography (`v1.62.0.1`) → ◐ 3 components (`v1.62.0.2` — priority chips + button refinements + pill shape; status-pill **color/dot** deferred to phase 5, see below) → ✅ 4 top bar (`v1.62.0.3` — light "paper" header with dark text + mono stats; primary tabs use a navy underline instead of the yellow fill) → ◐ 5 screen-by-screen (`v1.62.0.4` started: `STATUS_COLOR` is now theme-aware → subdued status hues app-wide [gantt bars, dots, pills], status pills get Laura's tinted-bg + dark-fg + saturated-dot model, My Work greeting at editorial display size) → **then flip OE to the default.** Desktop-first, dark in scope.
 
-> **Resolved the status-pill caveat** by making the shared `STATUS_COLOR` helper theme-aware (`render.js`, `STATUS_COLOR_MAP_OE`) + a dark-text `.status-pill` rule — so the inline pills/bars/dots subdue app-wide without per-screen render edits. Remaining phase-5 work is per-screen layout polish (KPI cards, mono on every ID/date, serif on more titles, the My Work compact-row pill).
+> **Resolved the status-pill caveat** by making the shared `STATUS_COLOR` helper theme-aware (`render.js`, `STATUS_COLOR_MAP_OE`) + a dark-text `.status-pill` rule — so the inline pills/bars/dots subdue app-wide without per-screen render edits.
+
+> **Theme-level OE pass is substantially complete** (`v1.62.1.10`): tokens, the 3 fonts, buttons/pills/chips, the light top bar + navy-underline tabs, subdued status colors, mono IDs/dates, empty-state serif, My Work KPI cards + "This week" hero, **form controls** (ink-3 border + navy focus) and **meta-tag chips** (neutralized — color reserved for status). What remains is **full per-screen *layout* restructures** (Portfolio **detail**, Capacity, Analytics) — deliberately **out of scope for the theme approach** (they edit screen render functions and need visual iteration). The OE theme is a comprehensive recolor/retype/recomponent; those restructures would be a separate effort.
 
 ## How to use it
 

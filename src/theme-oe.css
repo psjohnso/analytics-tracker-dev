@@ -402,3 +402,30 @@ body[data-theme="oe"] .oe-week-dayname, body[data-theme="oe-dark"] .oe-week-dayn
 body[data-theme="oe"] .oe-week-dayhrs, body[data-theme="oe-dark"] .oe-week-dayhrs {
   font-family: var(--font-mono) !important; font-size: 11px; margin-top: 2px; color: var(--ink-paper);
 }
+
+/* ── Form controls → Laura's input treatment (ink-3 border, navy focus + halo).
+   The form/idea inputs hardcode their border (and dark theme only covers the
+   "dark" theme, not "oe-dark"), so theme them explicitly here. ── */
+body[data-theme="oe"] .fm-input, body[data-theme="oe"] .fm-select, body[data-theme="oe"] .fm-textarea,
+body[data-theme="oe"] .idea-input, body[data-theme="oe"] .idea-select, body[data-theme="oe"] .idea-textarea,
+body[data-theme="oe-dark"] .fm-input, body[data-theme="oe-dark"] .fm-select, body[data-theme="oe-dark"] .fm-textarea,
+body[data-theme="oe-dark"] .idea-input, body[data-theme="oe-dark"] .idea-select, body[data-theme="oe-dark"] .idea-textarea {
+  background: var(--ink-paper); color: var(--ink-7);
+  border: 1px solid var(--ink-3); border-radius: var(--r-2);
+}
+body[data-theme="oe"] .fm-input:focus, body[data-theme="oe"] .fm-select:focus, body[data-theme="oe"] .fm-textarea:focus,
+body[data-theme="oe"] .idea-input:focus, body[data-theme="oe"] .idea-select:focus, body[data-theme="oe"] .idea-textarea:focus,
+body[data-theme="oe-dark"] .fm-input:focus, body[data-theme="oe-dark"] .fm-select:focus, body[data-theme="oe-dark"] .fm-textarea:focus,
+body[data-theme="oe-dark"] .idea-input:focus, body[data-theme="oe-dark"] .idea-select:focus, body[data-theme="oe-dark"] .idea-textarea:focus {
+  outline: none; border-color: var(--navy); box-shadow: 0 0 0 3px rgba(31,59,107,0.18);
+}
+body[data-theme="oe"] .fm-input::placeholder, body[data-theme="oe"] .fm-textarea::placeholder,
+body[data-theme="oe-dark"] .fm-input::placeholder, body[data-theme="oe-dark"] .fm-textarea::placeholder { color: var(--ink-4); }
+
+/* ── Meta-tag chips → neutral (Laura: color is reserved for status + one action).
+   Category/size/DP/city chips and the grid-card status tag carry hardcoded
+   pastel inline colors; neutralize them. The status tag's colored dot (a child
+   span using STATUS_COLOR) keeps its subdued hue. ── */
+body[data-theme="oe"] .meta-tag, body[data-theme="oe-dark"] .meta-tag {
+  background: var(--ink-1) !important; color: var(--ink-6) !important; border: 1px solid var(--ink-2) !important;
+}
