@@ -847,6 +847,17 @@ body {
   top: calc(var(--header-h) + 48px);
   z-index: 49;
 }
+/* Same fix as .mywork-sticky-header: the 48px offset is a hair more than the
+   real primary-bar height (more so on mobile), leaving a sliver where content
+   scrolled through between the primary bar and this sub-bar. Fill upward; the
+   primary bar (z-index 50) paints over the overlap. Covers Portfolio/Capacity/
+   Analytics, which are the tabs that show a sub-bar. */
+.sub-bar::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: -20px; height: 20px;
+  background: var(--surface, #F3F1EB);
+}
 .sub-bar-group { display: flex; gap: 6px; align-items: center; }
 .sub-tab {
   padding: 6px 14px;
