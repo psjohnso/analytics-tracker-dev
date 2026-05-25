@@ -25,7 +25,7 @@ Everything below is detail on those two rules.
 | `src/render.js` | The router: `currentTab`, `switchTab`, sidebar filters, and the shared toolbar/count plumbing. |
 | `src/tabs/*.js`, `src/modals/*.js` | Per-screen markup builders (HTML strings). This is where most visible UI is generated. |
 | `src/icons.js` | Vendored Phosphor SVG sprite + the `icon()` helper. |
-| `COT_DESIGN.md` | City of Tucson brand guide — the official City boundaries (see its redesign note). |
+| `COT_DESIGN.md` | City of Tucson brand guide — **legacy** standard for this app (superseded by the OE Redesign; still the City-wide brand reference). |
 | `src/theme-oe.css` | **OE Redesign** token layer (themes `oe` / `oe-dark`) — loaded after `app.css`. Alias-bridges Laura's tokens onto ours; see §3. |
 | `design_handoff/` | Laura Sharp's full OE Redesign handoff (source for the above). |
 
@@ -74,7 +74,7 @@ The app ships **five palettes** plus a colorblind mode, all driven by tokens:
 - **Alt themes:** `body[data-theme="sonoran" | "twilight" | "pueblo" | "saguaro"]` — each overrides `--navy` / `--orange` / `--surface` (text tokens stay constant for contrast).
 - **Dark mode:** `body[data-theme="dark"]` — overrides the *structural* tokens (`--surface`, `--white`, `--border`, text, pills) so anything tokenized flips automatically.
 - **Colorblind:** `body.cb-safe` — swaps status/priority colors to a CB-safe set.
-- **OE Redesign** *(in progress)*: `body[data-theme="oe" | "oe-dark"]` — a **second token layer** in `src/theme-oe.css` (loaded after `app.css`). It transcribes Laura Sharp's tokens (`design_handoff/`) and **alias-bridges** them onto the token names above (`--navy → var(--navy-500)`, `--surface → var(--ink-0)`, etc.), so the same screens recolor with no edits. Deviates from `COT_DESIGN.md` (different fonts + subdued palette) — pending brand sign-off. See `README.md` for status/phases.
+- **OE Redesign** — **the app's adopted design standard** (migration in progress), replacing Tucson Classic: `body[data-theme="oe" | "oe-dark"]`, a **second token layer** in `src/theme-oe.css` (loaded after `app.css`). It transcribes Laura Sharp's tokens (`design_handoff/`) and **alias-bridges** them onto the token names above (`--navy → var(--navy-500)`, `--surface → var(--ink-0)`, etc.), so the same screens recolor with no edits. Supersedes `COT_DESIGN.md` for this app (different fonts + subdued palette). Tucson Classic stays the default only until the migration lands. See `README.md` for status/phases.
 - Applied at runtime by `setTheme(id)` → `applyTheme()` (Settings → Appearance). New theme ids must also be added to the `allowed` list in `applyTheme()` (index.html) or they're ignored.
 
 **What this means for you**
@@ -157,6 +157,5 @@ e.g. `grep -rn "result-count" src/ index.html`. No matches outside CSS → cosme
 - No emoji as functional icons — use the `.icon` Phosphor sprite.
 - Don't remove `:focus-visible` focus rings.
 - Don't go below **13px** body text or **4.5:1** contrast (1.5× / 3:1 for large text).
-- **Sun Yellow** is a highlight, never a text color on white and never a background fill.
-- Innovation Blue (`--navy`) is the anchor — keep it dominant.
+- **Color is for status + a single primary action** (OE standard). Don't introduce a new color without a semantic reason; keep chrome/structure neutral. *(Legacy Tucson Classic rule, still true while it's the default: Sun Yellow is a highlight only; Innovation Blue is the anchor.)*
 - Don't add motion that ignores `prefers-reduced-motion`.

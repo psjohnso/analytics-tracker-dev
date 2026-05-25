@@ -12,7 +12,7 @@ Everything needed to understand, preview, and safely evolve the visual design of
 | **[tokens.css](tokens.css)** | The design tokens (colors, surfaces, text, spacing, pill pairs) for all themes, documented in one readable place. | 🔁 mirror of `src/app.css` `:root` |
 | **[tokens.json](tokens.json)** | The same tokens, machine-readable — for tooling, theming experiments, or AI. | 🔁 mirror |
 | **[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)** | The **safe-edit contract**: the two rules, the component class inventory, and the load-bearing JS hooks you must not rename. Read this before editing. | — |
-| `../COT_DESIGN.md` | The City of Tucson **brand guide** — palette, fonts, logo, accessibility. The official City boundaries. | ✅ brand source |
+| `../COT_DESIGN.md` | The City of Tucson **brand guide** — **legacy** standard for this app (superseded by the OE Redesign; still the City-wide reference). | 🗄️ legacy |
 | `../src/theme-oe.css` | The **OE Redesign** tokens, integrated as two selectable themes (`oe`, `oe-dark`). See the section below. | ✅ OE impl |
 | `../design_handoff/` | Laura Sharp's full **OE Redesign handoff** — its own README, tokens, and 5 hero screens. The source for the redesign. | ✅ OE source |
 
@@ -20,14 +20,14 @@ Related (outside this folder): `../PROJECT_REFERENCE.md` (deep architecture), `.
 
 ## Two visual languages, one app (read this)
 
-The app currently carries **both**:
+The **OE Redesign is the app's design standard going forward**, replacing the old City-brand look. During the migration the app carries both:
 
-1. **Tucson Classic** — the shipped default, grounded in the official City brand (`../COT_DESIGN.md`): Lato + Cardo, saturated Innovation Blue. This is what `tokens.css` / `tokens.json` in this folder document.
-2. **OE Redesign** *(in progress)* — Laura Sharp's alternative visual language (`../design_handoff/`): Hanken Grotesk + Instrument Serif + JetBrains Mono, a **subdued** palette, status-driven color. **Intentionally deviates** from `COT_DESIGN.md` (see the note at the top of that file) and needs formal brand sign-off before becoming the production default.
+1. **OE Redesign** — **the adopted standard** (Laura Sharp's system, `../design_handoff/`): Hanken Grotesk + Instrument Serif + JetBrains Mono, a **subdued** palette, status-driven color. New/changed UI should target this. It supersedes `COT_DESIGN.md` for this app (see the note at the top of that file).
+2. **Tucson Classic** — the **legacy** theme being replaced, grounded in the official City brand: Lato + Cardo, saturated Innovation Blue. Still the *default* only until the OE migration lands; `tokens.css` / `tokens.json` here document it.
 
-**OE status & how it's wired:** shipped behind a theme toggle — **Settings → Appearance → "OE Redesign (preview)" / "… · Dark"** (app `v1.62.0.0`, dev line). It's a *token-layer* migration so far (`../src/theme-oe.css`): Laura's tokens transcribed, alias-bridged onto the tokens our screens already consume, plus `.status-*`/`.priority-*` overrides — **no screens rebuilt yet.** `components.html` here includes the OE themes in its switcher so you can preview them in the gallery.
+**OE status & how it's wired:** selectable via **Settings → Appearance → "OE Redesign" / "… · Dark"** (app `v1.62.0.0`, dev line). Token-layer migration so far (`../src/theme-oe.css`): Laura's tokens transcribed, alias-bridged onto the tokens our screens already consume, plus `.status-*`/`.priority-*` overrides — **no screens rebuilt yet,** which is why Tucson Classic stays the default for now. `components.html` here includes the OE themes in its switcher so you can preview them in the gallery.
 
-**Migration phases** (Laura's order): ✅ 1 tokens → ⬜ 2 typography (load + apply the 3 fonts) → ⬜ 3 buttons/pills/chips (add status dots) → ⬜ 4 top bar → ⬜ 5 screen-by-screen → desktop-first, dark in scope, behind the toggle.
+**Migration phases** (Laura's order): ✅ 1 tokens → ⬜ 2 typography (load + apply the 3 fonts) → ⬜ 3 buttons/pills/chips (add status dots) → ⬜ 4 top bar → ⬜ 5 screen-by-screen → **then flip OE to the default.** Desktop-first, dark in scope.
 
 ## How to use it
 

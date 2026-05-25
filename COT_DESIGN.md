@@ -1,15 +1,17 @@
 # DESIGN.md — City of Tucson Brand Guide
 ## For UI design exploration within official brand requirements
 
-> ## ⚠️ App redesign in progress (2026) — read alongside this guide
+> ## ⚠️ Superseded for the Project Tracker by the OE Redesign (2026)
 >
-> The **Project & Task Tracker** is prototyping an alternative visual language — the **"OE Redesign"** (design handoff from Laura Sharp, in [`design_handoff/`](design_handoff/README.md)). It **intentionally deviates from this brand guide** in two ways:
-> - **Type:** Instrument Serif + Hanken Grotesk + JetBrains Mono — *not* the mandated **Lato + Cardo**.
-> - **Color:** a subdued (~55%) version of the palette (e.g. primary navy `#1f3b6b` vs. official Innovation Blue `#002669`), with saturation reserved for status + data-viz.
+> The **Project & Task Tracker** has **adopted the "OE Redesign" as its design standard** (design handoff from Laura Sharp, in [`design_handoff/`](design_handoff/README.md)), **replacing the palette and typefaces in this guide for that application.** The OE system differs deliberately:
+> - **Type:** Instrument Serif + Hanken Grotesk + JetBrains Mono (replaces Lato + Cardo).
+> - **Color:** a subdued (~55%) version of the palette (e.g. primary navy `#1f3b6b` vs. Innovation Blue `#002669`), with saturation reserved for status + data-viz.
 >
-> **Status:** prototype only — shipped behind a theme toggle ("OE Redesign (preview)", app `v1.62.0.0`) on the **dev** line; desktop-first; dark mode in scope. **Not** the production default.
+> **So for the tracker:** new and changed UI should follow the **OE system** ([`design_handoff/`](design_handoff/README.md) + [`src/theme-oe.css`](src/theme-oe.css)), not the palette/fonts below.
 >
-> **Authority:** *this document remains the City's official brand standard.* The redesign is an app-specific direction adopted by the Data Intelligence team; the font/color deviation should get **formal brand sign-off** before it becomes the production default. Implementation: [`src/theme-oe.css`](src/theme-oe.css). The app's own design-system kit (which tracks both the current "Tucson Classic" theme and the OE redesign): [`design-system/`](design-system/README.md).
+> **Status:** migration in progress. ✅ tokens done (`v1.62.0.0`, dev) → ⬜ typography → ⬜ components → ⬜ top bar → ⬜ screens. Until the migration completes, OE is selectable via a theme toggle ("OE Redesign") while the old "Tucson Classic" theme remains the default; OE becomes the default once the migration lands. Desktop-first; dark mode in scope.
+>
+> **Scope:** this document remains the City of Tucson brand reference for **other** City properties; it is the *legacy* standard for this app. The app's design-system kit tracks both: [`design-system/`](design-system/README.md).
 
 ---
 
