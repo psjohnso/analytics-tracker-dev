@@ -213,6 +213,9 @@ body[data-theme="oe"] .mywork-greeting, body[data-theme="oe-dark"] .mywork-greet
   font-family: var(--font-display) !important;
   font-weight: 400 !important;
   letter-spacing: var(--tracking-display);
+  font-size: var(--t-display-3) !important;   /* 32px editorial display [phase 5] */
+  line-height: var(--lh-display);
+  color: var(--ink-7);
 }
 
 /* ============================================================================
@@ -234,9 +237,13 @@ body[data-theme="oe"] .priority-badge, body[data-theme="oe-dark"] .priority-badg
   letter-spacing: 0.06em;
 }
 
-/* Status pills → true pill shape now; color/dot model lands in phase 5. */
+/* Status pills → true pill shape + Laura's tinted-bg / dark-fg / saturated-dot
+   model. The bg tint and dot come from STATUS_COLOR (theme-aware → subdued OE
+   hues, see render.js); we force a dark foreground here for AA contrast on the
+   pale tint (beats the inline color the pill renders with). [phase 5] */
 body[data-theme="oe"] .status-pill, body[data-theme="oe-dark"] .status-pill {
   border-radius: var(--r-pill);
+  color: var(--ink-7) !important;
 }
 
 /* Buttons — OE has no yellow button (one navy primary per view), so neutralize
