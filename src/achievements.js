@@ -464,12 +464,14 @@ function renderMyWeekAchievementsOE(name) {
   var tMon = tasksCompletedThisMonth(name);
   var proj = projectsShipped(name);
   var wkHrs = hoursThisWeek(name);
+  var _isSelf = (typeof Auth !== 'undefined' && Auth.fullName === name);
+  var _achTitle = _isSelf ? 'Your achievements' : (esc(name.split(' ')[0]) + '’s achievements');
   function tile(icon, val, label) {
     return '<div class="oe-ach-item"><span class="oe-ach-ic"><svg class="icon" aria-hidden="true"><use href="#' + icon + '"></use></svg></span>' +
       '<div><div class="oe-ach-val">' + esc(val) + '</div><div class="oe-ach-lbl">' + esc(label) + '</div></div></div>';
   }
   return '<div class="oe-ach-card"><div class="oe-ach-head">' +
-    '<span class="oe-ach-title">Your achievements</span>' +
+    '<span class="oe-ach-title">' + _achTitle + '</span>' +
     '<a class="oe-ach-link" href="javascript:void(0)" onclick="switchTab(\'achievements\')">View all →</a></div>' +
     '<div class="oe-ach-grid">' +
       tile('ph-flag', streak, 'day streak') +

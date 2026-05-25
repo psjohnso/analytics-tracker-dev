@@ -1012,7 +1012,7 @@ function renderMyWork(area) {
   //    the in-place My Week strip under OE. Self-contained week-date math so it
   //    doesn't depend on vars computed lower in the function. ──
   var _oe = /^oe/.test((typeof document !== 'undefined' && document.body && document.body.dataset.theme) || '');
-  if (_oe && isViewingSelf && _weekDaily) {
+  if (_oe && _weekDaily) {   // shows for the viewed user too (admin view-as), like the rest of My Work
     var _hToday = new Date(), _hDow = _hToday.getDay() || 7;
     var _hMon = new Date(_hToday); _hMon.setDate(_hToday.getDate() - (_hDow - 1));
     var _hSun = new Date(_hMon); _hSun.setDate(_hMon.getDate() + 6);
