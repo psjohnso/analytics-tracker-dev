@@ -369,6 +369,13 @@ body {
 .app-body.detail-mode .sidebar { display: none; }
 .app-body.detail-mode .main-content { flex: 1; }
 .app-body.detail-mode .app-body-inner { display: block; }
+/* List-view chrome (Filters/Sort toolbar, saved-Views card, OE editorial page
+   title + sub-tabs row) has no business on a project/task detail page — the
+   detail has its own breadcrumb + header. Override the inline display values
+   that switchTab/renderPresetBar/updateOePageHead set on the list views. */
+.app-body.detail-mode .toolbar { display: none !important; }
+.app-body.detail-mode .preset-bar { display: none !important; }
+.app-body.detail-mode #oe-page-head { display: none !important; }
 
 .detail-page {
   padding: 0;
