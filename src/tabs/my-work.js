@@ -1054,16 +1054,29 @@ function renderMyWork(area) {
       return p && p.title ? p.title : 'Project ' + pk;
     }
 
+    // Compute the bar's denominator as "average daily project hours" —
+    // weekAllocHours spread evenly across this week's working days. Using the
+    // scheduled workday (8h) would make the bar permanently empty for anyone
+    // whose role is mostly meetings/admin (e.g. a manager with 10% project
+    // time). This makes the fill reflect plan-vs-actual on project work.
+    var _hWorkDays = 0;
+    for (var _hwi = 0; _hwi < 5; _hwi++) {
+      if ((_weekDaily && _weekDaily[_hKeys[_hwi]] || 0) > 0) _hWorkDays++;
+    }
+    var _hDailyTarget = _hWorkDays > 0 ? weekAllocHours / _hWorkDays : 0;
+
     for (var _hi = 0; _hi < 5; _hi++) {
       var _hd = new Date(_hMon); _hd.setDate(_hMon.getDate() + _hi);
       var _hh = (_weekDaily && _weekDaily[_hKeys[_hi]]) || 0, _hoff = _hh === 0;
 
-      // Build the bar fill: track is full-width, fill is dayLogged / scheduled,
+      // Build the bar fill: track is full-width, fill is dayLogged / dailyTarget,
       // segments inside the fill are sized by each project's share of the day.
       var _dayMap = _hTracked[_hKeys[_hi]] || {};
       var _dayLogged = Object.values(_dayMap).reduce(function(s, v) { return s + v; }, 0);
-      var _scheduled = _hh || 0;
-      var _barFillPct = _scheduled > 0 ? Math.min(100, (_dayLogged / _scheduled) * 100) : 0;
+      var _barTarget = _hoff ? 0 : _hDailyTarget;
+      var _barFillPct = _barTarget > 0
+        ? Math.min(100, (_dayLogged / _barTarget) * 100)
+        : (_dayLogged > 0 ? 100 : 0); // saturate when there's logged time but no plan
       var _segs = '';
       if (_dayLogged > 0) {
         Object.keys(_dayMap).forEach(function(pk) {
@@ -1074,10 +1087,18 @@ function renderMyWork(area) {
           _segs += '<div class="oe-week-bar-seg" style="width:' + segShare.toFixed(2) + '%;background:' + color + ';" title="' + esc(_hProjTitle(pk)) + ': ' + hrs.toFixed(1) + 'h"></div>';
         });
       }
-      var _trackHtml = '<div class="oe-week-bar"' + (_dayLogged > 0 ? ' title="' + _dayLogged.toFixed(1) + 'h logged of ' + _scheduled + 'h scheduled"' : '') + '><div class="oe-week-bar-fill" style="width:' + _barFillPct.toFixed(1) + '%;">' + _segs + '</div></div>';
-      var _hrsLabel = _hoff
-        ? 'OFF'
-        : (_dayLogged > 0 ? _dayLogged.toFixed(_dayLogged >= 10 ? 0 : 1) + 'h / ' + _hh + 'h' : _hh + 'h');
+      var _barTip = _dayLogged > 0
+        ? _dayLogged.toFixed(1) + 'h logged · ' + (_barTarget > 0 ? '~' + _barTarget.toFixed(1) + 'h/day project target' : 'no project allocation this week')
+        : (_barTarget > 0 ? '~' + _barTarget.toFixed(1) + 'h/day project target' : '');
+      var _trackHtml = '<div class="oe-week-bar"' + (_barTip ? ' title="' + _barTip + '"' : '') + '><div class="oe-week-bar-fill" style="width:' + _barFillPct.toFixed(1) + '%;">' + _segs + '</div></div>';
+      var _hrsLabel;
+      if (_hoff) {
+        _hrsLabel = 'OFF';
+      } else if (_dayLogged > 0) {
+        _hrsLabel = _dayLogged.toFixed(_dayLogged >= 10 ? 0 : 1) + 'h' + (_barTarget > 0 ? ' / ' + _barTarget.toFixed(1) + 'h' : '');
+      } else {
+        _hrsLabel = _barTarget > 0 ? _barTarget.toFixed(1) + 'h' : _hh + 'h';
+      }
 
       _hStrip += '<div class="oe-week-day' + (_hoff ? ' off' : '') + '"><div class="oe-week-dayname">' + _hLbls[_hi] + ' ' + _hd.getDate() + '</div>' + _trackHtml + '<div class="oe-week-dayhrs">' + _hrsLabel + '</div></div>';
     }
