@@ -1018,6 +1018,7 @@ function markSaved() {
 
 function markSynced(msg) {
   markSaved();
+  if (typeof window !== 'undefined') window._lastDataRefresh = Date.now(); // account-menu "refreshed Xm ago"
   // Brief green flash on sync button
   const btn = document.getElementById('btn-save-file');
   if (btn) {

@@ -399,14 +399,21 @@ function applyAuthState() {
 
   var exportBtn = document.getElementById('btn-export');
   if (Auth.loggedIn) {
-    // Signed in — show user info, enable editing
-    btn.textContent = 'Sign Out';
+    // Signed in — Sign out + About/Help now live in the account menu (header avatar).
+    btn.style.display = 'none';
+    var helpInLink = document.getElementById('btn-help');
+    if (helpInLink) helpInLink.style.display = 'none';
+    if (typeof renderAccountMenuMeta === 'function') renderAccountMenuMeta();
     document.body.classList.remove('read-only-mode');
     if (banner) banner.style.display = 'none';
     if (exportBtn) exportBtn.style.display = '';
   } else {
-    // Signed out — hide user info, disable editing, show banner
+    // Signed out — no account menu; keep the Sign In + About/Help affordances.
+    btn.style.display = '';
     btn.textContent = 'Sign In';
+    var helpOutLink = document.getElementById('btn-help');
+    if (helpOutLink) helpOutLink.style.display = '';
+    if (typeof closeAccountMenu === 'function') closeAccountMenu();
     if (userDisplay) userDisplay.style.display = 'none';
     if (roleBadge) roleBadge.style.display = 'none';
     document.body.classList.add('read-only-mode');
@@ -461,6 +468,7 @@ async function fetchAgolUserInfo(token) {
     Auth.username = username;  // Store for permission checks
     const displayName = fullName || username;
     Auth.fullName = displayName; // Store for My Work tab matching
+    Auth.email = data.email || ''; // Shown in the account-menu header
     if (!displayName) return;
 
     // Build initials from full name
@@ -486,6 +494,7 @@ async function fetchAgolUserInfo(token) {
     if (userNameEl) userNameEl.textContent = displayName;
     const userDisplayEl = document.getElementById('user-display');
     if (userDisplayEl) userDisplayEl.style.display = 'flex';
+    if (typeof renderAccountMenuMeta === 'function') renderAccountMenuMeta();
     // Show My Work tab for all logged-in users
     const myWorkTab = document.getElementById('tab-mywork');
     if (myWorkTab) myWorkTab.style.display = '';

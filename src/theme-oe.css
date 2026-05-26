@@ -656,3 +656,19 @@ body[data-theme="oe"] .afc-chip, body[data-theme="oe-dark"] .afc-chip {
   background: var(--navy-50) !important; border-color: var(--navy-100) !important; color: var(--navy-700) !important;
 }
 body[data-theme="oe"] .afc-clear, body[data-theme="oe-dark"] .afc-clear { color: var(--navy-500) !important; }
+
+/* ============================================================================
+   PHASE 10 · ACCOUNT MENU (header)
+   ----------------------------------------------------------------------------
+   The account dropdown is all-theme (styled with app tokens the alias bridge
+   remaps), so it adopts OE values automatically. Two OE-specific touches: the
+   paper top bar needs an ink-1 hover tint (not the white overlay used on the
+   navy Classic bar), and mono numerals must survive the universal Hanken rule.
+   ============================================================================ */
+body[data-theme="oe"] .account-trigger:hover, body[data-theme="oe-dark"] .account-trigger:hover,
+body[data-theme="oe"] .account-trigger[aria-expanded="true"], body[data-theme="oe-dark"] .account-trigger[aria-expanded="true"] { background: var(--ink-1); }
+body[data-theme="oe"] .account-menu-shortcut, body[data-theme="oe-dark"] .account-menu-shortcut,
+body[data-theme="oe"] .account-menu-hint, body[data-theme="oe-dark"] .account-menu-hint,
+body[data-theme="oe"] .account-menu-footer, body[data-theme="oe-dark"] .account-menu-footer {
+  font-family: var(--font-mono) !important;
+}
