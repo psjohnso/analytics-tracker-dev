@@ -259,6 +259,406 @@ function _calibRenderSizeTable(data) {
   return html;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  OE CAPACITY · INSIDES — extrapolated from Laura's capacity patterns
+//  (mock-first approved). Same projStats / calibration pipeline as Classic;
+//  OE re-shells with editorial header + KPI strip + calibration tables with
+//  colored mini-bars for multipliers + single-color navy bar charts (color
+//  reserved for status, not metric) + data-1..8 donut for hours by person.
+// ═══════════════════════════════════════════════════════════════════════════
+function _oeInsMultColor(m) {
+  if (m == null) return { fg: 'var(--ink-5)', bar: 'var(--ink-3)' };
+  if (m >= 1.40) return { fg: 'var(--status-overdue-fg)', bar: 'var(--status-overdue-dot)' };
+  if (m >= 1.10) return { fg: 'var(--status-hold-fg)',    bar: 'var(--status-hold-dot)' };
+  if (m >= 0.90) return { fg: 'var(--sage-700)',          bar: 'var(--status-active-dot)' };
+  return { fg: 'var(--sage-700)', bar: 'var(--status-active-dot)' };
+}
+function _oeInsCalibRow(group) {
+  var dim = group.nMult < 3 ? ' style="opacity:0.55;"' : '';
+  var multStr = group.mult != null ? group.mult.toFixed(2) + '×' : '—';
+  var col = _oeInsMultColor(group.mult);
+  var barW = group.mult != null ? Math.min(100, Math.round(Math.min(group.mult, 2.5) / 2.5 * 100)) : 0;
+  return '<tr' + dim + '>' +
+    '<td style="font-weight:500;">' + esc(group.key) + '</td>' +
+    '<td style="text-align:right;"><span class="oe-mono">' + group.n + '</span></td>' +
+    '<td style="text-align:right;"><span class="oe-mono">' + (group.medianPlanned != null ? group.medianPlanned.toFixed(1) : '—') + '</span></td>' +
+    '<td style="text-align:right;"><span class="oe-mono">' + (group.medianActual != null ? group.medianActual.toFixed(1) : '—') + '</span></td>' +
+    '<td><span class="oe-ins-mult" style="color:' + col.fg + ';">' + multStr + '</span>' +
+      (group.mult != null ? '<span class="oe-ins-mult-bar"><span class="oe-ins-mult-bar-fill" style="width:' + barW + '%;background:' + col.bar + ';"></span></span>' : '') +
+    '</td>' +
+  '</tr>';
+}
+
+function buildInsightsPageOE() {
+  // ── Same data computation as Classic ──
+  var completed = (typeof teamProjects === 'function' ? teamProjects() : PROJECTS).filter(function(p) { return p.status === 'Complete'; });
+  function _weeksBetween(s, e) {
+    if (!s || !e) return null;
+    var sD = new Date(s + 'T12:00:00'), eD = new Date(e + 'T12:00:00');
+    var w = (eD - sD) / (7 * 86400000);
+    return w > 0 ? w : null;
+  }
+  var projStats = completed.map(function(p) {
+    var hrs = getProjectHours(p.title);
+    var personData = getProjectHoursByPerson(p.title);
+    var durWeeks = null;
+    if (p.start && (p.actual_end || p.end)) {
+      durWeeks = Math.max(1, Math.round((new Date((p.actual_end || p.end) + 'T12:00:00') - new Date(p.start + 'T12:00:00')) / (7 * 86400000)));
+    }
+    var onTime = (p.end && p.actual_end) ? (p.actual_end <= p.end) : null;
+    return {
+      title: p.title, objectId: p.objectId, category: p.category || 'Uncategorized',
+      size: p.project_size || '—', partner: p.partner_dept || 'Internal',
+      hours: hrs, teamSize: personData.length, durWeeks: durWeeks,
+      start: p.start || '', end: p.actual_end || p.end || '',
+      actualEndStr: p.actual_end || '', onTime: onTime, personData: personData,
+      plannedEndWeeks: _weeksBetween(p.start, p.end),
+      plannedWdWeeks: _weeksBetween(p.start, p.working_due),
+      actualWeeks: _weeksBetween(p.start, p.actual_end)
+    };
+  });
+  projStats.sort(function(a, b) { return b.end > a.end ? 1 : b.end < a.end ? -1 : 0; });
+
+  var nowMs = Date.now();
+  var twelveMoAgoMs = nowMs - 365 * 86400000;
+  var calibProjects = projStats.filter(function(p) {
+    return p.actualEndStr && new Date(p.actualEndStr + 'T12:00:00').getTime() >= twelveMoAgoMs;
+  });
+  var calibByCategory = _calibAggregate(calibProjects, function(p) { return p.category; }).sort(function(a, b) { return b.n - a.n; });
+  var calibBySize = _calibAggregate(calibProjects, function(p) { return p.size; });
+  // Order sizes consistently
+  var sizeOrder = { 'S': 0, 'M': 1, 'L': 2, 'XL': 3, '—': 4 };
+  calibBySize.sort(function(a, b) { return (sizeOrder[a.key] || 5) - (sizeOrder[b.key] || 5); });
+  var partnerRaw = _calibAggregate(calibProjects, function(p) { return p.partner; });
+  var partnerKept = partnerRaw.filter(function(g) { return g.n >= 5; }).sort(function(a, b) { return b.n - a.n; });
+  var smallPartnerKeys = partnerRaw.filter(function(g) { return g.n < 5; }).map(function(g) { return g.key; });
+  var smallPartnerProjects = calibProjects.filter(function(p) { return smallPartnerKeys.indexOf(p.partner) >= 0; });
+  var calibByPartner = partnerKept.slice();
+  if (smallPartnerProjects.length > 0) {
+    var otherLabel = 'Other (' + smallPartnerKeys.length + ' dept' + (smallPartnerKeys.length !== 1 ? 's' : '') + ' with n<5)';
+    calibByPartner = calibByPartner.concat(_calibAggregate(smallPartnerProjects, function() { return otherLabel; }));
+  }
+  var plannedField = _durCalibMode === 'end_date' ? 'plannedEndWeeks' : 'plannedWdWeeks';
+  var allMults = [];
+  calibProjects.forEach(function(p) {
+    var pl = p[plannedField];
+    if (pl != null && pl > 0 && p.actualWeeks != null) allMults.push(p.actualWeeks / pl);
+  });
+  var teamMult = _calibMedian(allMults);
+  var earlyCount = allMults.filter(function(m) { return m < 1.0; }).length;
+  var lateCount = allMults.filter(function(m) { return m > 1.0; }).length;
+  var mostDivergent = calibByCategory.filter(function(g) { return g.mult != null && g.nMult >= 3; })
+    .sort(function(a, b) { return Math.abs(b.mult - 1) - Math.abs(a.mult - 1); })[0];
+
+  var totalHrs = projStats.reduce(function(s, p) { return s + p.hours; }, 0);
+  var avgHrs = completed.length > 0 ? totalHrs / completed.length : 0;
+  var withHours = projStats.filter(function(p) { return p.hours > 0; });
+  var onTimeCount = projStats.filter(function(p) { return p.onTime === true; }).length;
+  var lateCountAll = projStats.filter(function(p) { return p.onTime === false; }).length;
+  var trackedCount = onTimeCount + lateCountAll;
+
+  // ── Editorial header ──
+  var header = '<div class="oe-ins-head">' +
+    '<div class="oe-ins-eyebrow">Last 12 months · ' + completed.length + ' completed projects · ' + Math.round(totalHrs) + 'h logged</div>' +
+    '<h1 class="oe-ins-title">Project <span class="oe-italic-serif">insights</span>.</h1>' +
+    '<p class="oe-ins-sub">Retrospective view of completed work. As more time is logged, this becomes a reference library for estimating future projects.</p>' +
+  '</div>';
+
+  // Empty state
+  if (completed.length === 0) {
+    return '<div class="oe-ins-page">' + header +
+      '<div class="oe-card" style="padding:60px 24px;text-align:center;">' +
+        '<div style="font-family:var(--font-display);font-size:32px;font-style:italic;color:var(--ink-7);margin-bottom:8px;">No completed projects <em>yet</em>.</div>' +
+        '<div style="font-size:14px;color:var(--ink-5);">As projects are completed and time is logged, charts and retrospective data will appear here.</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // ── KPI strip (6 cells) ──
+  var kpis = '<div class="oe-ins-kpis">' +
+    '<div class="oe-ins-kpi"><div class="oe-ins-kpi-label">Completed projects</div><div class="oe-ins-kpi-value">' + completed.length + '</div><div class="oe-ins-kpi-sub">over 12 months</div></div>' +
+    '<div class="oe-ins-kpi"><div class="oe-ins-kpi-label">Total hours logged</div><div class="oe-ins-kpi-value">' + Math.round(totalHrs) + 'h</div><div class="oe-ins-kpi-sub">across the team</div></div>' +
+    '<div class="oe-ins-kpi"><div class="oe-ins-kpi-label">Avg hours / project' + (typeof calcInfoIcon === 'function' ? calcInfoIcon('ytdHours') : '') + '</div><div class="oe-ins-kpi-value">' + Math.round(avgHrs) + 'h</div><div class="oe-ins-kpi-sub">' + withHours.length + ' with time data</div></div>' +
+    (trackedCount > 0
+      ? '<div class="oe-ins-kpi"><div class="oe-ins-kpi-label">On-time delivery</div><div class="oe-ins-kpi-value ' + (onTimeCount / trackedCount >= 0.7 ? 'good' : '') + '">' + Math.round(onTimeCount / trackedCount * 100) + '%</div><div class="oe-ins-kpi-sub">of ' + trackedCount + ' tracked</div></div>'
+      : '') +
+    (teamMult != null
+      ? '<div class="oe-ins-kpi"><div class="oe-ins-kpi-label">Schedule multiplier</div><div class="oe-ins-kpi-value ' + (teamMult >= 1.30 ? 'overdue' : teamMult >= 1.10 ? 'warn' : 'good') + '">' + teamMult.toFixed(2) + '×</div><div class="oe-ins-kpi-sub">actual ÷ planned weeks</div></div>'
+      : '') +
+    (mostDivergent
+      ? '<div class="oe-ins-kpi"><div class="oe-ins-kpi-label">Most divergent category</div><div class="oe-ins-kpi-value med">' + esc(mostDivergent.key) + '<br><span style="font-family:var(--font-mono);font-size:12px;color:var(--status-overdue-fg);">' + mostDivergent.mult.toFixed(2) + '× (n=' + mostDivergent.nMult + ')</span></div></div>'
+      : '') +
+  '</div>';
+
+  // ── Duration calibration section ──
+  var calibToggle = '<div class="oe-segment">' +
+    '<button class="' + (_durCalibMode === 'end_date' ? 'on' : '') + '" onclick="durCalibToggle(\'end_date\')">vs end_date</button>' +
+    '<button class="' + (_durCalibMode === 'working_due' ? 'on' : '') + '" onclick="durCalibToggle(\'working_due\')">vs working_due</button>' +
+  '</div>';
+  var calibModeHint = _durCalibMode === 'end_date'
+    ? 'Original commitment, locked at project creation.'
+    : 'Latest team forecast (working_due).';
+
+  var trendTile = '<div class="oe-card oe-ins-trend-card">' +
+    '<div>' +
+      '<div class="oe-meta">Team median</div>' +
+      '<div class="oe-ins-trend-num" style="color:' + (teamMult != null ? _oeInsMultColor(teamMult).fg : 'var(--ink-7)') + ';">' + (teamMult != null ? teamMult.toFixed(2) + '×' : '—') + '</div>' +
+    '</div>' +
+    '<div class="oe-ins-trend-sep"></div>' +
+    '<div>' +
+      '<div class="oe-meta">Finished early</div>' +
+      '<div class="oe-ins-trend-num">' + earlyCount + '<span class="oe-body-sm" style="font-family:var(--font-sans);margin-left:6px;">of ' + (earlyCount + lateCount) + '</span></div>' +
+    '</div>' +
+    '<div class="oe-ins-trend-sep"></div>' +
+    '<div>' +
+      '<div class="oe-meta">Finished late</div>' +
+      '<div class="oe-ins-trend-num">' + lateCount + '<span class="oe-body-sm" style="font-family:var(--font-sans);margin-left:6px;">of ' + (earlyCount + lateCount) + '</span></div>' +
+    '</div>' +
+    '<div class="oe-spacer"></div>' +
+    '<div class="oe-body-sm" style="text-align:right;max-width:240px;">A multiplier above <strong>1.0×</strong> means projects took longer than planned.</div>' +
+  '</div>';
+
+  function calibTable(title, items, keyHeader) {
+    var rows = items.map(_oeInsCalibRow).join('');
+    return '<div class="oe-card oe-ins-chart-card">' +
+      '<div class="oe-ins-chart-head"><span class="oe-meta">' + title + '</span></div>' +
+      '<table class="oe-ins-tbl oe-ins-tbl-tight">' +
+        '<thead><tr><th>' + keyHeader + '</th><th style="text-align:right;">N</th><th style="text-align:right;">Median planned</th><th style="text-align:right;">Median actual</th><th>Multiplier</th></tr></thead>' +
+        '<tbody>' + (rows || '<tr><td colspan="5" style="text-align:center;color:var(--ink-5);padding:16px;">No data</td></tr>') + '</tbody>' +
+      '</table>' +
+    '</div>';
+  }
+  var calibSection = '<div class="oe-ins-section">' +
+    '<div class="oe-ins-section-head">' +
+      '<h2 class="oe-ins-section-title">Duration <span class="oe-italic-serif">calibration</span></h2>' +
+      '<div class="oe-ins-toolbar">' +
+        '<span class="oe-ins-toolbar-label">Planned =</span>' + calibToggle +
+        '<span class="oe-body-sm" style="font-size:11px;">' + esc(calibModeHint) + '</span>' +
+      '</div>' +
+    '</div>' +
+    '<p class="oe-ins-section-sub" style="margin-top:-4px;margin-bottom:14px;">Median actual ÷ median planned weeks, sliced by category, size, and partner department. ' + calibProjects.length + ' projects usable in the window.</p>' +
+    trendTile +
+    '<div class="oe-ins-2col" style="margin-top:18px;">' +
+      calibTable('A · By category',     calibByCategory, 'Category') +
+      calibTable('B · By project size', calibBySize,     'Size') +
+    '</div>' +
+    calibTable('C · By partner department', calibByPartner, 'Department').replace('oe-ins-chart-card', 'oe-ins-chart-card oe-ins-chart-card-wide') +
+  '</div>';
+
+  // ── Effort by size (single-color navy bars) ──
+  var sizes = ['S', 'M', 'L', 'XL'];
+  var sizeData = sizes.map(function(sz) {
+    var items = projStats.filter(function(p) { return p.size === sz; });
+    var withH = items.filter(function(p) { return p.hours > 0; });
+    var totalH = items.reduce(function(s, p) { return s + p.hours; }, 0);
+    var avgH = withH.length > 0 ? totalH / withH.length : 0;
+    return { size: sz, count: items.length, avgH: Math.round(avgH) };
+  });
+  var sizeMaxH = Math.max.apply(null, sizeData.map(function(d) { return d.avgH; }).concat([10]));
+  var sizeChartW = 500, sizeChartH = 220, sPadL = 45, sPadR = 20, sPadT = 15, sPadB = 50;
+  var sInnerW = sizeChartW - sPadL - sPadR, sInnerH = sizeChartH - sPadT - sPadB;
+  var sBarGroup = sInnerW / 4, sBarW = sBarGroup * 0.5;
+  var sizeSvg = '<svg viewBox="0 0 ' + sizeChartW + ' ' + sizeChartH + '" style="width:100%;display:block;">';
+  for (var sg = 0; sg <= 4; sg++) {
+    var sgy = sPadT + sInnerH - (sg / 4 * sInnerH);
+    sizeSvg += '<line x1="' + sPadL + '" y1="' + sgy + '" x2="' + (sizeChartW - sPadR) + '" y2="' + sgy + '" stroke="var(--ink-2)" stroke-width="0.5"/>';
+    sizeSvg += '<text x="' + (sPadL - 6) + '" y="' + (sgy + 3) + '" text-anchor="end" font-size="9" font-family="JetBrains Mono, monospace" fill="var(--ink-4)">' + Math.round(sizeMaxH * sg / 4) + 'h</text>';
+  }
+  sizeData.forEach(function(d, i) {
+    var cx = sPadL + i * sBarGroup + sBarGroup / 2;
+    var bh = sizeMaxH > 0 ? d.avgH / sizeMaxH * sInnerH : 0;
+    var by = sPadT + sInnerH - bh;
+    if (d.avgH > 0) {
+      sizeSvg += '<rect x="' + (cx - sBarW / 2) + '" y="' + by + '" width="' + sBarW + '" height="' + bh + '" fill="var(--navy-500)" rx="3"/>';
+      sizeSvg += '<text x="' + cx + '" y="' + (by - 5) + '" text-anchor="middle" font-size="10" font-weight="600" font-family="JetBrains Mono, monospace" fill="var(--ink-7)">' + d.avgH + 'h</text>';
+    }
+    sizeSvg += '<text x="' + cx + '" y="' + (sizeChartH - sPadB + 18) + '" text-anchor="middle" font-size="11" font-weight="600" font-family="Hanken Grotesk, sans-serif" fill="var(--ink-7)">' + d.size + '</text>';
+    sizeSvg += '<text x="' + cx + '" y="' + (sizeChartH - sPadB + 32) + '" text-anchor="middle" font-size="9" font-family="JetBrains Mono, monospace" fill="var(--ink-5)">' + d.count + ' proj' + (d.count !== 1 ? 's' : '') + '</text>';
+  });
+  sizeSvg += '</svg>';
+
+  // ── Effort by category (horizontal bars, single-color navy) ──
+  var catMap = {};
+  projStats.forEach(function(p) {
+    if (!catMap[p.category]) catMap[p.category] = { count: 0, hours: 0 };
+    catMap[p.category].count++;
+    catMap[p.category].hours += p.hours;
+  });
+  var catEntries = Object.keys(catMap).map(function(cat) {
+    return { category: cat, count: catMap[cat].count, hours: Math.round(catMap[cat].hours) };
+  }).sort(function(a, b) { return b.hours - a.hours; });
+  var catMaxH = catEntries.length > 0 ? catEntries[0].hours : 1;
+  var catBarH = 22, catGap = 8;
+  var catSvgH = Math.max(120, catEntries.length * (catBarH + catGap) + 16);
+  var catLabelW = 150, catChartW = 220, catValueW = 50;
+  var catSvgW = catLabelW + catChartW + catValueW + 20;
+  var catSvg = '<svg viewBox="0 0 ' + catSvgW + ' ' + catSvgH + '" style="width:100%;display:block;">';
+  catEntries.forEach(function(c, i) {
+    var y = 10 + i * (catBarH + catGap);
+    var bw = catMaxH > 0 ? c.hours / catMaxH * catChartW : 0;
+    var label = c.category.length > 24 ? c.category.slice(0, 22) + '…' : c.category;
+    catSvg += '<text x="' + (catLabelW - 4) + '" y="' + (y + catBarH / 2 + 4) + '" text-anchor="end" font-size="11" font-family="Hanken Grotesk, sans-serif" fill="var(--ink-7)">' + esc(label) + '</text>';
+    catSvg += '<rect x="' + catLabelW + '" y="' + y + '" width="' + Math.max(2, bw) + '" height="' + catBarH + '" fill="var(--navy-500)" rx="3"/>';
+    catSvg += '<text x="' + (catLabelW + bw + 6) + '" y="' + (y + catBarH / 2 + 4) + '" font-size="10" font-weight="600" font-family="JetBrains Mono, monospace" fill="var(--ink-7)">' + c.hours + 'h</text>';
+  });
+  catSvg += '</svg>';
+
+  // ── Completion timeline scatter (data palette per size) ──
+  var withDates = projStats.filter(function(p) { return p.end; });
+  var tlSvg = '';
+  if (withDates.length > 0) {
+    var tlW = 600, tlH = 220, tlPadL = 45, tlPadR = 20, tlPadT = 20, tlPadB = 35;
+    var dates = withDates.map(function(p) { return new Date(p.end + 'T12:00:00').getTime(); });
+    var minDate = Math.min.apply(null, dates), maxDate = Math.max.apply(null, dates);
+    if (minDate === maxDate) { minDate -= 86400000 * 30; maxDate += 86400000 * 30; }
+    var hrsArr = withDates.map(function(p) { return p.hours; });
+    var maxHrs2 = Math.max.apply(null, hrsArr.concat([10]));
+    var tlCW = tlW - tlPadL - tlPadR, tlCH = tlH - tlPadT - tlPadB;
+    var sizeDataCol = { S: 'var(--data-2)', M: 'var(--data-1)', L: 'var(--data-8)', XL: 'var(--data-3)', '—': 'var(--data-other)' };
+    tlSvg = '<svg viewBox="0 0 ' + tlW + ' ' + tlH + '" style="width:100%;display:block;">';
+    for (var tg = 0; tg <= 4; tg++) {
+      var tgy = tlPadT + tlCH - (tg / 4 * tlCH);
+      tlSvg += '<line x1="' + tlPadL + '" y1="' + tgy + '" x2="' + (tlW - tlPadR) + '" y2="' + tgy + '" stroke="var(--ink-2)" stroke-width="0.5"/>';
+      tlSvg += '<text x="' + (tlPadL - 6) + '" y="' + (tgy + 3) + '" text-anchor="end" font-size="9" font-family="JetBrains Mono, monospace" fill="var(--ink-4)">' + Math.round(maxHrs2 * tg / 4) + 'h</text>';
+    }
+    withDates.forEach(function(p) {
+      var dt = new Date(p.end + 'T12:00:00').getTime();
+      var x = tlPadL + (dt - minDate) / (maxDate - minDate) * tlCW;
+      var y = tlPadT + tlCH - (p.hours / maxHrs2 * tlCH);
+      var r = Math.max(4, Math.min(12, p.teamSize * 3));
+      var col = sizeDataCol[p.size] || 'var(--data-other)';
+      tlSvg += '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="' + col + '" opacity="0.85" stroke="var(--ink-paper)" stroke-width="1.5"><title>' + esc(p.title) + ' · ' + p.hours + 'h · ' + p.end + '</title></circle>';
+    });
+    var tlMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    for (var tmi = 0; tmi <= 4; tmi++) {
+      var tmDate = new Date(minDate + (maxDate - minDate) * tmi / 4);
+      var tmX = tlPadL + tmi / 4 * tlCW;
+      tlSvg += '<text x="' + tmX + '" y="' + (tlH - 6) + '" text-anchor="middle" font-size="9" font-family="JetBrains Mono, monospace" fill="var(--ink-5)">' + tlMonths[tmDate.getMonth()] + " '" + String(tmDate.getFullYear()).slice(-2) + '</text>';
+    }
+    tlSvg += '</svg>';
+  } else {
+    tlSvg = '<div style="text-align:center;padding:40px;color:var(--ink-5);font-size:12px;">Not enough date data yet</div>';
+  }
+
+  // ── Hours by team member donut (data-1..8 + Other) ──
+  var teamMap = {};
+  projStats.forEach(function(p) { p.personData.forEach(function(pd) { teamMap[pd.name] = (teamMap[pd.name] || 0) + pd.hours; }); });
+  var teamEntries = Object.keys(teamMap).map(function(n) { return { name: n, hours: Math.round(teamMap[n] * 10) / 10 }; }).sort(function(a, b) { return b.hours - a.hours; });
+  var teamTotal = teamEntries.reduce(function(s, t) { return s + t.hours; }, 0);
+  var donutHtml = '';
+  if (teamEntries.length > 0 && teamTotal > 0) {
+    // Collapse 9+ into Other
+    var donutEntries = teamEntries.slice(0, 8);
+    if (teamEntries.length > 8) {
+      var otherHrs = teamEntries.slice(8).reduce(function(s, t) { return s + t.hours; }, 0);
+      donutEntries.push({ name: 'Other (' + (teamEntries.length - 8) + ' people)', hours: Math.round(otherHrs * 10) / 10, isOther: true });
+    }
+    var R = 70, CIRC = 2 * Math.PI * R; // 439.823...
+    var offset = 0;
+    var donutSegs = '';
+    var legendRows = '';
+    donutEntries.forEach(function(t, i) {
+      var pct = teamTotal > 0 ? t.hours / teamTotal : 0;
+      var len = pct * CIRC;
+      var col = t.isOther ? 'var(--data-other)' : 'var(--data-' + (i + 1) + ')';
+      donutSegs += '<circle cx="100" cy="100" r="' + R + '" fill="none" stroke="' + col + '" stroke-width="30" stroke-dasharray="' + len.toFixed(2) + ',' + (CIRC - len).toFixed(2) + '" stroke-dashoffset="' + (-offset).toFixed(2) + '" transform="rotate(-90 100 100)"/>';
+      offset += len;
+      legendRows += '<div class="oe-ins-donut-row">' +
+        '<span style="width:10px;height:10px;border-radius:2px;background:' + col + ';flex-shrink:0;"></span>' +
+        '<span class="name">' + esc(t.name) + '</span>' +
+        '<span class="hrs">' + t.hours + 'h</span>' +
+        '<span class="pct">' + Math.round(pct * 100) + '%</span>' +
+      '</div>';
+    });
+    donutHtml = '<div class="oe-ins-donut-wrap">' +
+      '<svg width="180" height="180" viewBox="0 0 200 200" style="flex-shrink:0;">' +
+        donutSegs +
+        '<text x="100" y="96" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="22" fill="var(--ink-7)" font-weight="500">' + Math.round(teamTotal) + 'h</text>' +
+        '<text x="100" y="114" text-anchor="middle" font-family="Hanken Grotesk, sans-serif" font-size="10" fill="var(--ink-5)" letter-spacing="0.08em">TOTAL</text>' +
+      '</svg>' +
+      '<div class="oe-ins-donut-legend">' + legendRows + '</div>' +
+    '</div>';
+  } else {
+    donutHtml = '<div style="text-align:center;padding:40px;color:var(--ink-5);font-size:12px;">No time entries recorded yet</div>';
+  }
+
+  // ── All completed projects table (top 30) ──
+  var projRows = projStats.slice(0, 30).map(function(p) {
+    var sizeChip = p.size !== '—' ? '<span class="oe-chip" style="background:var(--ink-1);color:var(--ink-6);">' + esc(p.size) + '</span>' : '<span style="color:var(--ink-4);">—</span>';
+    var delivery = '';
+    if (p.onTime === true)  delivery = '<span class="oe-chip" style="background:var(--status-future-bg);color:var(--status-future-fg);">On time</span>';
+    if (p.onTime === false) delivery = '<span class="oe-chip" style="background:var(--status-overdue-bg);color:var(--status-overdue-fg);">Late</span>';
+    return '<tr onclick="openProject(' + p.objectId + ')" style="cursor:pointer;">' +
+      '<td style="font-weight:500;color:var(--ink-7);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(p.title) + '">' + esc(p.title) + '</td>' +
+      '<td>' + sizeChip + '</td>' +
+      '<td class="oe-body-sm" style="color:var(--ink-5);">' + esc(p.category) + '</td>' +
+      '<td style="text-align:right;"><span class="oe-mono">' + (p.hours > 0 ? p.hours + 'h' : '—') + '</span></td>' +
+      '<td style="text-align:right;"><span class="oe-mono">' + (p.teamSize > 0 ? p.teamSize : '—') + '</span></td>' +
+      '<td style="text-align:right;"><span class="oe-mono">' + (p.durWeeks ? p.durWeeks + ' wks' : '—') + '</span></td>' +
+      '<td>' + delivery + '</td>' +
+    '</tr>';
+  }).join('');
+  var projTable = '<div class="oe-card oe-ins-chart-card"><table class="oe-ins-tbl"><thead><tr>' +
+    '<th>Project</th><th>Size</th><th>Category</th><th style="text-align:right;">Hours</th><th style="text-align:right;">Team</th><th style="text-align:right;">Duration</th><th>Delivery</th>' +
+  '</tr></thead><tbody>' + projRows +
+    (projStats.length > 30 ? '<tr><td colspan="7" style="text-align:center;color:var(--ink-5);font-style:italic;padding:14px;">+ ' + (projStats.length - 30) + ' more</td></tr>' : '') +
+  '</tbody></table></div>';
+
+  // Optional admin extras (Planned-vs-Actual) — preserved via existing builder.
+  // They emit Classic markup but inherit OE tokens via the alias bridge, so
+  // they look reasonable while we work on dedicated OE versions later.
+  var extras = '';
+  if (typeof buildPlannedActualSection === 'function') {
+    extras = '<div class="oe-ins-section"><div class="oe-card" style="padding:18px 22px;">' + buildPlannedActualSection() + '</div></div>';
+  }
+
+  return '<div class="oe-ins-page">' +
+    header +
+    kpis +
+    calibSection +
+    // Effort by size + category 2-col
+    '<div class="oe-ins-section">' +
+      '<div class="oe-ins-2col">' +
+        '<div class="oe-card oe-ins-chart-card">' +
+          '<div class="oe-ins-chart-head"><span class="oe-meta">Effort by project size</span></div>' +
+          '<div class="oe-ins-chart-body">' + sizeSvg + '</div>' +
+        '</div>' +
+        '<div class="oe-card oe-ins-chart-card">' +
+          '<div class="oe-ins-chart-head"><span class="oe-meta">Effort by category</span></div>' +
+          '<div class="oe-ins-chart-body">' + catSvg + '</div>' +
+        '</div>' +
+      '</div>' +
+      // Timeline + donut 2-col
+      '<div class="oe-ins-2col">' +
+        '<div class="oe-card oe-ins-chart-card">' +
+          '<div class="oe-ins-chart-head"><span class="oe-meta">Completion timeline</span><div class="oe-spacer"></div>' +
+            '<span class="oe-ins-tl-key">' +
+              '<span><span class="oe-ins-tl-dot" style="background:var(--data-2);"></span>S</span>' +
+              '<span><span class="oe-ins-tl-dot" style="background:var(--data-1);"></span>M</span>' +
+              '<span><span class="oe-ins-tl-dot" style="background:var(--data-8);"></span>L</span>' +
+              '<span><span class="oe-ins-tl-dot" style="background:var(--data-3);"></span>XL</span>' +
+            '</span>' +
+          '</div>' +
+          '<div class="oe-ins-chart-body">' + tlSvg + '</div>' +
+        '</div>' +
+        '<div class="oe-card oe-ins-chart-card">' +
+          '<div class="oe-ins-chart-head"><span class="oe-meta">Hours by team member</span></div>' +
+          '<div class="oe-ins-chart-body">' + donutHtml + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    // All completed projects
+    '<div class="oe-ins-section">' +
+      '<div class="oe-ins-section-head">' +
+        '<h2 class="oe-ins-section-title">All <span class="oe-italic-serif">completed</span> projects</h2>' +
+        '<div class="oe-ins-section-sub">' + projStats.length + ' projects, sorted by most recent. Click a row to open the project.</div>' +
+      '</div>' +
+      projTable +
+    '</div>' +
+    extras +
+  '</div>';
+}
+
 function buildInsightsPage() {
   // Scope to the current team's projects (no-op when team scoping is off).
   var completed = (typeof teamProjects === 'function' ? teamProjects() : PROJECTS).filter(function(p) { return p.status === 'Complete'; });
