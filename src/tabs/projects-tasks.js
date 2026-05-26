@@ -565,7 +565,8 @@ function renderTaskList(data) {
   const th = (label, key) => `<div class="th-sortable" onclick="setTaskSort('${key}')" style="cursor:pointer;user-select:none;">${label}<span style="opacity:${taskSortKey===key?'1':'0.35'};font-size:10px;">${arrow(key)}</span></div>`;
   const todayStr = (function() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
   const _bulkOn = (typeof bulkEnabledFor === 'function') && bulkEnabledFor(data);
-  const rows = data.map(t => {
+
+  function buildRow(t) {
     const statusColor = STATUS_COLOR(t.status) || '#9CA3AF';
     const tHrs = getTaskHours(t.idx);
     const mHrs = getMyTaskHours(t.idx);
@@ -582,13 +583,42 @@ function renderTaskList(data) {
       <div class="task-cell pt-due" style="${dueCellStyle}">${dueStr||'—'}</div>
       <div class="task-cell" style="font-weight:700;color:var(--navy);">${tHrs > 0 ? hoursLabel(tHrs, mHrs) : '—'}</div>
     </div>`;
-  }).join('');
-  return `<div class="task-table task-table--tasks${_bulkOn ? ' task-table--bulk' : ''}">
-    <div class="task-table-header">
-      ${_bulkOn ? bulkHeaderCell() : ''}${th('Project','project')}${th('Task','title')}${th('Status','status')}${th('Priority','priority')}${th('Assignee','assignee')}${th('Due','end')}<div style="font-weight:700;">Hours</div>
-    </div>
-    ${rows}
-  </div>`;
+  }
+
+  // Status groups — mirrors the project list pattern. "Open" = still in-flight
+  // (Active / On Hold / Pending / Waiting for Response); "Done" = Complete /
+  // Canceled. Any status outside these named buckets falls into "Other" so
+  // nothing is silently dropped from view.
+  var openStatuses = ['Active', 'On Hold', 'Pending', 'Waiting for Response'];
+  var doneStatuses = ['Complete', 'Canceled'];
+  var openTasks = data.filter(function(t) { return openStatuses.indexOf(t.status) >= 0; });
+  var doneTasks = data.filter(function(t) { return doneStatuses.indexOf(t.status) >= 0; });
+  var otherTasks = data.filter(function(t) { return openStatuses.indexOf(t.status) < 0 && doneStatuses.indexOf(t.status) < 0; });
+
+  function groupHeader(label, count) {
+    return '<div class="task-row" style="cursor:default;background:var(--bg-surface,#F3F1EB);border-bottom:0.5px solid var(--border);padding:6px 16px;"><div style="grid-column:1/-1;font-size:13px;font-weight:700;letter-spacing:0.03em;color:var(--text-muted);">' + label + ' (' + count + ')</div></div>';
+  }
+
+  var headerCols = (_bulkOn ? bulkHeaderCell() : '') + th('Project','project') + th('Task','title') + th('Status','status') + th('Priority','priority') + th('Assignee','assignee') + th('Due','end') + '<div style="font-weight:700;">Hours</div>';
+
+  var html = '<div class="task-table task-table--tasks' + (_bulkOn ? ' task-table--bulk' : '') + '">';
+  html += '<div class="task-table-header">' + headerCols + '</div>';
+
+  if (openTasks.length > 0) {
+    html += groupHeader('Active / On hold / Pending / Waiting for response', openTasks.length);
+    html += openTasks.map(buildRow).join('');
+  }
+  if (otherTasks.length > 0) {
+    html += groupHeader('Other', otherTasks.length);
+    html += otherTasks.map(buildRow).join('');
+  }
+  if (doneTasks.length > 0) {
+    html += groupHeader('Complete / Canceled', doneTasks.length);
+    html += doneTasks.map(function(t) { return buildRow(t).replace('class="task-row"', 'class="task-row" style="opacity:0.6;"'); }).join('');
+  }
+
+  html += '</div>';
+  return html;
 }
 
 function renderPagination(total, prefix) {
