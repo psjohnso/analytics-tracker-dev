@@ -1016,7 +1016,7 @@ function renderMyWork(area) {
   var _oe = /^oe/.test((typeof document !== 'undefined' && document.body && document.body.dataset.theme) || '');
   if (_oe && _weekDaily) {   // shows for the viewed user too (admin view-as), like the rest of My Work
     var _hToday = new Date(), _hDow = _hToday.getDay() || 7;
-    var _hMon = new Date(_hToday); _hMon.setDate(_hToday.getDate() - (_hDow - 1));
+    var _hMon = new Date(_hToday); _hMon.setDate(_hToday.getDate() - (_hDow - 1)); _hMon.setHours(0,0,0,0);
     var _hSun = new Date(_hMon); _hSun.setDate(_hMon.getDate() + 6);
     var _hM = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var _hLabel = (_hMon.getMonth() === _hSun.getMonth())
@@ -1025,17 +1025,83 @@ function renderMyWork(area) {
     var _hAvail = Math.max(0, weekCapHours - weekAllocHours);
     var _hAlloc = Math.round(weekAllocHours * 10) / 10, _hCap = Math.round(weekCapHours * 10) / 10;
     var _hKeys = ['Mon','Tue','Wed','Thu','Fri'], _hLbls = ['MON','TUE','WED','THU','FRI'], _hStrip = '';
+
+    // ── Aggregate logged time for this week, per day, per project. Used to
+    //    fill the empty .oe-week-bar tracks with stacked colored segments —
+    //    one segment per project the user logged time on that day. ──
+    function _hYmd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    var _hDateByKey = {};
+    for (var _hzi = 0; _hzi < 5; _hzi++) {
+      var _hzd = new Date(_hMon); _hzd.setDate(_hMon.getDate() + _hzi);
+      _hDateByKey[_hYmd(_hzd)] = _hKeys[_hzi];
+    }
+    var _hTracked = { Mon: {}, Tue: {}, Wed: {}, Thu: {}, Fri: {} };
+    var _hProjOrder = [];
+    if (typeof TIME_ENTRIES !== 'undefined' && Array.isArray(TIME_ENTRIES)) {
+      TIME_ENTRIES.forEach(function(e) {
+        if (!e || !e.work_date || !e.hours) return;
+        if (e.name && e.name !== name) return; // viewed user's entries only
+        var k = _hDateByKey[e.work_date];
+        if (!k) return;
+        var pk = e.project_id != null ? String(e.project_id) : 'unknown';
+        if (_hProjOrder.indexOf(pk) < 0) _hProjOrder.push(pk);
+        _hTracked[k][pk] = (_hTracked[k][pk] || 0) + Number(e.hours || 0);
+      });
+    }
+    function _hProjTitle(pk) {
+      if (pk === 'unknown') return 'Untracked project';
+      var p = (typeof PROJECTS !== 'undefined' && PROJECTS) ? PROJECTS.find(function(pr) { return String(pr.project_number) === pk; }) : null;
+      return p && p.title ? p.title : 'Project ' + pk;
+    }
+
     for (var _hi = 0; _hi < 5; _hi++) {
       var _hd = new Date(_hMon); _hd.setDate(_hMon.getDate() + _hi);
       var _hh = (_weekDaily && _weekDaily[_hKeys[_hi]]) || 0, _hoff = _hh === 0;
-      _hStrip += '<div class="oe-week-day' + (_hoff ? ' off' : '') + '"><div class="oe-week-dayname">' + _hLbls[_hi] + ' ' + _hd.getDate() + '</div><div class="oe-week-bar"></div><div class="oe-week-dayhrs">' + (_hoff ? 'OFF' : _hh + 'h') + '</div></div>';
+
+      // Build the bar fill: track is full-width, fill is dayLogged / scheduled,
+      // segments inside the fill are sized by each project's share of the day.
+      var _dayMap = _hTracked[_hKeys[_hi]] || {};
+      var _dayLogged = Object.values(_dayMap).reduce(function(s, v) { return s + v; }, 0);
+      var _scheduled = _hh || 0;
+      var _barFillPct = _scheduled > 0 ? Math.min(100, (_dayLogged / _scheduled) * 100) : 0;
+      var _segs = '';
+      if (_dayLogged > 0) {
+        Object.keys(_dayMap).forEach(function(pk) {
+          var hrs = _dayMap[pk];
+          var pIdx = _hProjOrder.indexOf(pk);
+          var color = pk === 'unknown' ? 'var(--data-other)' : 'var(--data-' + ((pIdx % 8) + 1) + ')';
+          var segShare = (hrs / _dayLogged) * 100;
+          _segs += '<div class="oe-week-bar-seg" style="width:' + segShare.toFixed(2) + '%;background:' + color + ';" title="' + esc(_hProjTitle(pk)) + ': ' + hrs.toFixed(1) + 'h"></div>';
+        });
+      }
+      var _trackHtml = '<div class="oe-week-bar"' + (_dayLogged > 0 ? ' title="' + _dayLogged.toFixed(1) + 'h logged of ' + _scheduled + 'h scheduled"' : '') + '><div class="oe-week-bar-fill" style="width:' + _barFillPct.toFixed(1) + '%;">' + _segs + '</div></div>';
+      var _hrsLabel = _hoff
+        ? 'OFF'
+        : (_dayLogged > 0 ? _dayLogged.toFixed(_dayLogged >= 10 ? 0 : 1) + 'h / ' + _hh + 'h' : _hh + 'h');
+
+      _hStrip += '<div class="oe-week-day' + (_hoff ? ' off' : '') + '"><div class="oe-week-dayname">' + _hLbls[_hi] + ' ' + _hd.getDate() + '</div>' + _trackHtml + '<div class="oe-week-dayhrs">' + _hrsLabel + '</div></div>';
+    }
+
+    // Build a small project legend so users can see which color = which project.
+    // Only shows when there's logged time to explain; skipped for empty weeks.
+    var _hLegend = '';
+    if (_hProjOrder.length > 0) {
+      _hLegend = '<div class="oe-week-legend">' +
+        _hProjOrder.slice(0, 6).map(function(pk, i) {
+          var color = pk === 'unknown' ? 'var(--data-other)' : 'var(--data-' + ((i % 8) + 1) + ')';
+          var title = _hProjTitle(pk);
+          var label = title.length > 28 ? title.slice(0, 26) + '…' : title;
+          return '<span class="oe-week-legend-item"><span class="oe-week-legend-dot" style="background:' + color + ';"></span>' + esc(label) + '</span>';
+        }).join('') +
+        (_hProjOrder.length > 6 ? '<span class="oe-week-legend-item" style="opacity:0.7;">+ ' + (_hProjOrder.length - 6) + ' more</span>' : '') +
+      '</div>';
     }
     var _hHero = '<div class="oe-week-hero"><div class="oe-week-hero-row"><div>'
       + '<div class="oe-week-eyebrow">This week · ' + esc(_hLabel) + '</div>'
       + '<div class="oe-week-head">' + (weekAllocations.length === 0 ? 'No allocations <em>yet</em>.' : esc(_hAlloc) + 'h <span>allocated · ' + esc(Math.round(_hAvail * 10) / 10) + 'h available</span>') + '</div>'
       + '</div><div class="oe-week-hoursbox"><div class="oe-week-hoursnum">' + esc(_hAlloc) + '<span>/' + esc(_hCap) + 'h</span></div>'
       + '<div class="oe-week-eyebrow">' + esc(myScheduleType) + ' schedule' + (myPayWeek ? ' · Week ' + esc(myPayWeek) : '') + '</div></div></div>'
-      + '<div class="oe-week-strip">' + _hStrip + '</div></div>';
+      + '<div class="oe-week-strip">' + _hStrip + '</div>' + _hLegend + '</div>';
     var _hAch = (typeof renderMyWeekAchievementsOE === 'function') ? renderMyWeekAchievementsOE(name) : '';
     html += '<div class="mywork-full-width oe-hero-grid">' + _hHero + _hAch + '</div>';
   }

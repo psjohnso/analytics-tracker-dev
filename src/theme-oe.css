@@ -438,8 +438,16 @@ body[data-theme="oe"] .oe-hero-grid, body[data-theme="oe-dark"] .oe-hero-grid {
   body[data-theme="oe"] .oe-hero-grid, body[data-theme="oe-dark"] .oe-hero-grid { grid-template-columns: 1fr; grid-row-gap: 16px; }
 }
 body[data-theme="oe"] .oe-hero-grid .oe-week-hero, body[data-theme="oe-dark"] .oe-hero-grid .oe-week-hero { margin-bottom: 0; }
-/* per-day strip bar (empty track; fills later if we wire logged/allocated hours) */
-body[data-theme="oe"] .oe-week-bar, body[data-theme="oe-dark"] .oe-week-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.10); margin: 8px 0; }
+/* per-day strip bar — track is the unfilled background; .oe-week-bar-fill is
+   the proportion of the day that has logged time, divided into one segment per
+   project (color-coded via --data-1..8 / --data-other). */
+body[data-theme="oe"] .oe-week-bar, body[data-theme="oe-dark"] .oe-week-bar { position: relative; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.10); margin: 8px 0; overflow: hidden; }
+body[data-theme="oe"] .oe-week-bar-fill, body[data-theme="oe-dark"] .oe-week-bar-fill { display: flex; height: 100%; border-radius: 3px; overflow: hidden; }
+body[data-theme="oe"] .oe-week-bar-seg, body[data-theme="oe-dark"] .oe-week-bar-seg { height: 100%; }
+/* legend strip under the week-day strip — one chip per project that contributed time this week */
+body[data-theme="oe"] .oe-week-legend, body[data-theme="oe-dark"] .oe-week-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 14px; font-size: 11px; color: rgba(255,255,255,0.78); }
+body[data-theme="oe"] .oe-week-legend-item, body[data-theme="oe-dark"] .oe-week-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+body[data-theme="oe"] .oe-week-legend-dot, body[data-theme="oe-dark"] .oe-week-legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
 /* achievements card */
 body[data-theme="oe"] .oe-ach-card, body[data-theme="oe-dark"] .oe-ach-card {
   background: var(--ink-paper); border: 1px solid var(--ink-2); border-radius: var(--r-3); padding: 22px 24px;
