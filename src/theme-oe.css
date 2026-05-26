@@ -682,3 +682,62 @@ body[data-theme="oe"] .task-table-header, body[data-theme="oe-dark"] .task-table
   font-size: 11px;
   font-weight: 600;
 }
+
+/* ============================================================================
+   PHASE 4.1 · TOP-BAR ACTION BUTTONS
+   ----------------------------------------------------------------------------
+   Header right cluster (bell, Submit Idea, Refresh, About/Help, unsaved dot).
+   Submit Idea (.btn-cta) was already neutralized to navy in PHASE 3. The rest
+   keep their saturated Classic colors (green Refresh, blue About/Help, yellow
+   unsaved dot, navy-ringed bell badge) — recolor them to fit Laura's "one navy
+   primary, color reserved for status" rule. The Refresh "dirty" pulse uses a
+   navy halo instead of the green one.
+   ============================================================================ */
+
+/* Refresh: was Tucson green inline → neutral secondary that pairs with Submit Idea's navy. */
+body[data-theme="oe"] #btn-save-file, body[data-theme="oe-dark"] #btn-save-file {
+  background: var(--ink-paper) !important;
+  color: var(--ink-7) !important;
+  border: 1px solid var(--ink-3) !important;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+body[data-theme="oe"] #btn-save-file:hover, body[data-theme="oe-dark"] #btn-save-file:hover {
+  background: var(--ink-1) !important; border-color: var(--ink-4) !important;
+}
+body[data-theme="oe"] #btn-save-file.dirty, body[data-theme="oe-dark"] #btn-save-file.dirty {
+  animation: oeSavePulse 2s ease-in-out infinite;
+}
+@keyframes oeSavePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(31,59,107,0.40); }
+  50%      { box-shadow: 0 0 0 6px rgba(31,59,107,0); }
+}
+
+/* About / Help link (shown only to signed-out users) — was Tucson sky → ghost. */
+body[data-theme="oe"] #btn-help, body[data-theme="oe-dark"] #btn-help {
+  background: transparent !important; color: var(--ink-6) !important;
+  border: 1px solid transparent !important; padding: 6px 10px;
+}
+body[data-theme="oe"] #btn-help:hover, body[data-theme="oe-dark"] #btn-help:hover {
+  background: var(--ink-1) !important;
+}
+
+/* Unsaved-changes dot: Sun-yellow → subdued Tucson Sun (status-hold tone). */
+body[data-theme="oe"] #unsaved-dot, body[data-theme="oe-dark"] #unsaved-dot {
+  background: var(--tucson-sun);
+  box-shadow: 0 0 0 2px rgba(200,149,0,0.22);
+}
+
+/* Notification bell: hover tint readable on paper; badge ring uses paper, not navy. */
+body[data-theme="oe"] .notif-bell:hover, body[data-theme="oe-dark"] .notif-bell:hover {
+  background: var(--ink-1);
+}
+body[data-theme="oe"] .notif-bell .badge, body[data-theme="oe-dark"] .notif-bell .badge {
+  border-color: var(--ink-paper);
+}
+
+/* Submit Idea (.btn-cta — already navy from PHASE 3): match Laura's primary
+   button weight + tracking so it sits next to the secondary Refresh cleanly. */
+body[data-theme="oe"] #btn-submit-idea, body[data-theme="oe-dark"] #btn-submit-idea {
+  font-weight: 500; letter-spacing: -0.005em;
+}
