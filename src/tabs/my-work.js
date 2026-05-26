@@ -1130,10 +1130,13 @@ function renderMyWork(area) {
         (_hProjOrder.length > 8 ? '<span class="oe-week-legend-item" style="opacity:0.7;">+ ' + (_hProjOrder.length - 8) + ' more</span>' : '') +
       '</div>';
     }
+    // Numbers go in raw — esc() treats 0 as falsy and returns '', so without
+    // this _hAvail/_hRecorded show as blank when the user has logged nothing
+    // or used their full capacity. esc() stays on strings (schedule type/label).
     var _hHero = '<div class="oe-week-hero"><div class="oe-week-hero-row"><div>'
       + '<div class="oe-week-eyebrow">This week · ' + esc(_hLabel) + '</div>'
-      + '<div class="oe-week-head">' + (weekAllocations.length === 0 ? 'No allocations <em>yet</em>.' : esc(_hAlloc) + 'h <span>allocated · ' + esc(Math.round(_hAvail * 10) / 10) + 'h available</span>') + '</div>'
-      + '</div><div class="oe-week-hoursbox" title="' + esc(_hRecorded) + 'h recorded this week of ' + esc(_hCap) + 'h available (' + esc(myScheduleType) + ' schedule × role)"><div class="oe-week-hoursnum">' + esc(_hRecorded) + '<span>/' + esc(_hCap) + 'h</span></div>'
+      + '<div class="oe-week-head">' + (weekAllocations.length === 0 ? 'No allocations <em>yet</em>.' : _hAlloc + 'h <span>allocated · ' + (Math.round(_hAvail * 10) / 10) + 'h available</span>') + '</div>'
+      + '</div><div class="oe-week-hoursbox" title="' + _hRecorded + 'h recorded this week of ' + _hCap + 'h available (' + esc(myScheduleType) + ' schedule × role)"><div class="oe-week-hoursnum">' + _hRecorded + '<span>/' + _hCap + 'h</span></div>'
       + '<div class="oe-week-eyebrow">' + esc(myScheduleType) + ' schedule' + (myPayWeek ? ' · Week ' + esc(myPayWeek) : '') + '</div></div></div>'
       + '<div class="oe-week-strip">' + _hStrip + '</div>' + _hLegend + '</div>';
     var _hAch = (typeof renderMyWeekAchievementsOE === 'function') ? renderMyWeekAchievementsOE(name) : '';
