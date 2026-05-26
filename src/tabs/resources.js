@@ -729,7 +729,8 @@ function renderResourcesOE(area) {
   var sidebar = '<div class="oe-card oe-cap-sidecard">' +
     '<div class="oe-cap-team-head">' +
       '<span class="oe-meta">Team</span>' +
-      '<span class="oe-mono" style="margin-left:8px;font-size:11px;color:var(--ink-5);">' + teamCount + '</span>' +
+      '<span class="oe-meta" style="margin-left:6px;color:var(--ink-5);">·</span>' +
+      '<span class="oe-mono" style="margin-left:6px;font-size:11px;color:var(--ink-5);">' + teamCount + ' member' + (teamCount === 1 ? '' : 's') + '</span>' +
     '</div>' +
     '<div class="oe-cap-team-rows">' + teamRows + '</div>' +
   '</div>';
