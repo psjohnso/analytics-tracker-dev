@@ -798,8 +798,9 @@ function switchTab(tab, preserveFilters) {
   var _vcal = document.getElementById('view-calendar');
   if (_vcal) _vcal.classList.toggle('active', currentView === 'calendar');
   document.getElementById('sort-select').style.display = (tab === 'projects' || tab === 'tasks') ? '' : 'none';
-  // Hide entire toolbar on tabs that don't need it
-  document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'achievements' || tab === 'projectReview' || tab === 'teamload' || tab === 'effortshape') ? 'none' : '';
+  // Hide entire toolbar on tabs that don't need it (sort/view toggle/result
+  // count are list-view chrome — Resources, Forecast, etc. own their own UI).
+  document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'achievements' || tab === 'projectReview' || tab === 'teamload' || tab === 'effortshape' || tab === 'resources' || tab === 'forecast') ? 'none' : '';
   if (typeof updateOePageHead === 'function') updateOePageHead();
   const addBtn = document.getElementById('btn-add-new');
   // Projects are created from the persistent header button (Submit Idea / New
