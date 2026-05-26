@@ -1082,9 +1082,9 @@ function renderMyWork(area) {
         Object.keys(_dayMap).forEach(function(pk) {
           var hrs = _dayMap[pk];
           var pIdx = _hProjOrder.indexOf(pk);
-          var color = pk === 'unknown' ? 'var(--data-other)' : 'var(--data-' + ((pIdx % 8) + 1) + ')';
+          var color = pk === 'unknown' ? 'var(--bar-c-other)' : 'var(--bar-c-' + ((pIdx % 8) + 1) + ')';
           var segShare = (hrs / _dayLogged) * 100;
-          _segs += '<div class="oe-week-bar-seg" style="width:' + segShare.toFixed(2) + '%;background:' + color + ';" title="' + esc(_hProjTitle(pk)) + ': ' + hrs.toFixed(1) + 'h"></div>';
+          _segs += '<div class="oe-week-bar-seg" style="width:' + segShare.toFixed(2) + '%;background:' + color + ';" title="#' + esc(pk) + ' ' + esc(_hProjTitle(pk)) + ': ' + hrs.toFixed(1) + 'h"></div>';
         });
       }
       var _barTip = _dayLogged > 0
@@ -1105,16 +1105,16 @@ function renderMyWork(area) {
 
     // Build a small project legend so users can see which color = which project.
     // Only shows when there's logged time to explain; skipped for empty weeks.
+    // Label is the project number (short, stable); full title shown on hover.
     var _hLegend = '';
     if (_hProjOrder.length > 0) {
       _hLegend = '<div class="oe-week-legend">' +
-        _hProjOrder.slice(0, 6).map(function(pk, i) {
-          var color = pk === 'unknown' ? 'var(--data-other)' : 'var(--data-' + ((i % 8) + 1) + ')';
-          var title = _hProjTitle(pk);
-          var label = title.length > 28 ? title.slice(0, 26) + '…' : title;
-          return '<span class="oe-week-legend-item"><span class="oe-week-legend-dot" style="background:' + color + ';"></span>' + esc(label) + '</span>';
+        _hProjOrder.slice(0, 8).map(function(pk, i) {
+          var color = pk === 'unknown' ? 'var(--bar-c-other)' : 'var(--bar-c-' + ((i % 8) + 1) + ')';
+          var label = pk === 'unknown' ? '—' : '#' + pk;
+          return '<span class="oe-week-legend-item" title="' + esc(_hProjTitle(pk)) + '"><span class="oe-week-legend-dot" style="background:' + color + ';"></span>' + esc(label) + '</span>';
         }).join('') +
-        (_hProjOrder.length > 6 ? '<span class="oe-week-legend-item" style="opacity:0.7;">+ ' + (_hProjOrder.length - 6) + ' more</span>' : '') +
+        (_hProjOrder.length > 8 ? '<span class="oe-week-legend-item" style="opacity:0.7;">+ ' + (_hProjOrder.length - 8) + ' more</span>' : '') +
       '</div>';
     }
     var _hHero = '<div class="oe-week-hero"><div class="oe-week-hero-row"><div>'
