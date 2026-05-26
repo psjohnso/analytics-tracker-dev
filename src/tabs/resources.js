@@ -67,6 +67,21 @@ function _positionChartOnCurrentWeek() {
 function _resEnsureSelected() {
   if (!RESOURCES_DATA || !RESOURCES_DATA.people) return;
   var people = RESOURCES_DATA.people;
+
+  // First-init: prefer the logged-in user as the default selection so the
+  // Capacity page opens on "my own allocations" instead of the hardcoded
+  // module default. Guarded so admins later clicking another person aren't
+  // yanked back to themselves on the next render.
+  if (!window._selectedPersonInitialized) {
+    window._selectedPersonInitialized = true;
+    var loginName = (typeof Auth !== 'undefined' && Auth && Auth.fullName) ? Auth.fullName : null;
+    if (loginName && people[loginName] && people[loginName].active !== false &&
+        (typeof inCurrentTeamPerson !== 'function' || inCurrentTeamPerson(loginName))) {
+      selectedPerson = loginName;
+      return;
+    }
+  }
+
   var cur = people[selectedPerson];
   var ok = cur && cur.active !== false &&
     (typeof inCurrentTeamPerson !== 'function' || inCurrentTeamPerson(selectedPerson));
