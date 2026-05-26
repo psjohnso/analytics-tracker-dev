@@ -672,3 +672,13 @@ body[data-theme="oe"] .account-menu-hint, body[data-theme="oe-dark"] .account-me
 body[data-theme="oe"] .account-menu-footer, body[data-theme="oe-dark"] .account-menu-footer {
   font-family: var(--font-mono) !important;
 }
+
+/* Project/task list table HEAD → Laura's meta type on ink-1 (was the Classic
+   navy fill with white text). PHASE 6 follow-up — missed by the table pass. */
+body[data-theme="oe"] .task-table-header, body[data-theme="oe-dark"] .task-table-header {
+  background: var(--ink-1);
+  color: var(--ink-5);
+  border-bottom: 1px solid var(--ink-2);
+  font-size: 11px;
+  font-weight: 600;
+}
