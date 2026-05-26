@@ -601,3 +601,58 @@ body[data-theme="oe"] .preset-chip .pc-star, body[data-theme="oe-dark"] .preset-
 body[data-theme="oe"] .preset-chip .pc-kebab, body[data-theme="oe-dark"] .preset-chip .pc-kebab { opacity: 0; transition: opacity var(--dur-fast) var(--ease-out); }
 body[data-theme="oe"] .preset-chip:hover .pc-kebab, body[data-theme="oe-dark"] .preset-chip:hover .pc-kebab,
 body[data-theme="oe"] .preset-chip.on .pc-kebab, body[data-theme="oe-dark"] .preset-chip.on .pc-kebab { opacity: 0.55; }
+
+/* ============================================================================
+   PHASE 9 · PORTFOLIO FILTER SIDEBAR
+   ----------------------------------------------------------------------------
+   Laura's sidebar: count badges per group (navy fill, mono), member rows with
+   colored dots (added in renderFilterGroup), navy active-filter chips, neutral
+   group titles (color reserved for status). Structure is unchanged — this is a
+   recolor/retype of the existing accordion + chip refactor. OE only.
+   ============================================================================ */
+/* Group titles → neutral meta (was Tucson orange). */
+body[data-theme="oe"] .sidebar-label, body[data-theme="oe-dark"] .sidebar-label { color: var(--ink-5); }
+/* The navy "Task Filters" / "Project Filters" section bars → subtle neutral strip. */
+body[data-theme="oe"] .sidebar-group-header, body[data-theme="oe-dark"] .sidebar-group-header {
+  background: var(--ink-1); color: var(--ink-5); border-bottom: 1px solid var(--ink-2);
+}
+/* Accordion count badge → Laura's navy mono pill, pushed to the right by the caret. */
+body[data-theme="oe"] .sidebar-acc-head .acc-count, body[data-theme="oe-dark"] .sidebar-acc-head .acc-count {
+  background: var(--navy-500); color: var(--ink-paper);
+  font-family: var(--font-mono) !important; font-weight: 500; margin-left: auto;
+}
+body[data-theme="oe"] .sidebar-acc-head .acc-caret, body[data-theme="oe-dark"] .sidebar-acc-head .acc-caret { margin-left: 8px; }
+
+/* Filter rows → subtle active (navy-50 + navy text, not full navy), mono counts. */
+body[data-theme="oe"] .filter-btn.active, body[data-theme="oe-dark"] .filter-btn.active {
+  background: var(--navy-50); color: var(--navy-500); font-weight: 600;
+}
+body[data-theme="oe"] .filter-btn:hover, body[data-theme="oe-dark"] .filter-btn:hover { background: var(--ink-1); }
+body[data-theme="oe"] .filter-btn .badge, body[data-theme="oe-dark"] .filter-btn .badge {
+  background: var(--ink-1); color: var(--ink-5); font-family: var(--font-mono) !important; font-weight: 500;
+}
+body[data-theme="oe"] .filter-btn.active .badge, body[data-theme="oe-dark"] .filter-btn.active .badge {
+  background: var(--navy-100); color: var(--navy-700);
+}
+
+/* Search box → Laura's input treatment. */
+body[data-theme="oe"] .search-box input, body[data-theme="oe-dark"] .search-box input {
+  background: var(--ink-paper); border: 1px solid var(--ink-3); color: var(--ink-7);
+}
+body[data-theme="oe"] .search-box input:focus, body[data-theme="oe-dark"] .search-box input:focus {
+  border-color: var(--navy-500); box-shadow: 0 0 0 3px rgba(31,59,107,0.12);
+}
+body[data-theme="oe"] .search-icon, body[data-theme="oe-dark"] .search-icon { color: var(--ink-4); }
+body[data-theme="oe"] .facet-search, body[data-theme="oe-dark"] .facet-search {
+  background: var(--ink-paper); border: 1px solid var(--ink-3); color: var(--ink-7);
+}
+
+/* Active-filter summary → drop the amber box; chips become navy-50 pills. The
+   inline amber styles carry, so override with !important via the added classes. */
+body[data-theme="oe"] #sidebar-active-indicator, body[data-theme="oe-dark"] #sidebar-active-indicator {
+  background: transparent !important; border: 0 !important; padding: 0 !important;
+}
+body[data-theme="oe"] .afc-chip, body[data-theme="oe-dark"] .afc-chip {
+  background: var(--navy-50) !important; border-color: var(--navy-100) !important; color: var(--navy-700) !important;
+}
+body[data-theme="oe"] .afc-clear, body[data-theme="oe-dark"] .afc-clear { color: var(--navy-500) !important; }

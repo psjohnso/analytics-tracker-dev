@@ -355,9 +355,13 @@ function renderFilterGroup(id, items, filterType) {
     <span>All</span><span class="badge">${total}</span>
   </button>`;
   const entries = Object.entries(items).filter(([k]) => !q || k.toLowerCase().includes(q));
-  const btns = entries.map(([k,v]) => {
+  var _oeOn = typeof document !== 'undefined' && document.body && /^oe/.test(document.body.dataset.theme || '');
+  const btns = entries.map(([k,v], i) => {
     const isActive = arr.includes(k);
-    const dot = STATUS_COLOR(k) ? `<span class="status-dot" style="background:${STATUS_COLOR(k)}"></span>` : '';
+    var dotColor = STATUS_COLOR(k);
+    // OE: give member rows a colored dot (Laura's sidebar), cycling the data palette.
+    if (!dotColor && _oeOn && filterType === 'member') dotColor = 'var(--data-' + ((i % 8) + 1) + ')';
+    const dot = dotColor ? `<span class="status-dot" style="background:${dotColor}"></span>` : '';
     return `<button class="filter-btn ${isActive ? 'active' : ''}" onclick="setFilter('${filterType}', '${k.replace(/'/g, "\\'")}')">
       <span style="display:flex;align-items:center;">${dot}${k}</span>
       <span class="badge">${v}</span>
@@ -541,7 +545,7 @@ function updateFilterIndicator() {
   function addChips(label, values, filterKey) {
     if (!values.length) return;
     var display = values.length <= 2 ? values.join(', ') : values.slice(0, 2).join(', ') + ' +' + (values.length - 2);
-    chips += '<span style="' + chipStyle + '">' + label + ': ' + esc(display) +
+    chips += '<span class="afc-chip" style="' + chipStyle + '">' + label + ': ' + esc(display) +
       '<span style="' + xStyle + '" onclick="activeFilters.' + filterKey + '=[];buildSidebarFilters();render();updateFilterIndicator();">&times;</span></span>';
   }
 
@@ -568,7 +572,7 @@ function updateFilterIndicator() {
   }
 
   if (count > 1) {
-    chips += '<span style="font-size:10px;font-weight:600;color:var(--pill-amber-fg);cursor:pointer;padding:2px 4px;text-decoration:underline;" onclick="clearAllFilters()">Clear all</span>';
+    chips += '<span class="afc-clear" style="font-size:10px;font-weight:600;color:var(--pill-amber-fg);cursor:pointer;padding:2px 4px;text-decoration:underline;" onclick="clearAllFilters()">Clear all</span>';
   }
 
   chipsEl.innerHTML = chips;
