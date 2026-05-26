@@ -741,3 +741,194 @@ body[data-theme="oe"] .notif-bell .badge, body[data-theme="oe-dark"] .notif-bell
 body[data-theme="oe"] #btn-submit-idea, body[data-theme="oe-dark"] #btn-submit-idea {
   font-weight: 500; letter-spacing: -0.005em;
 }
+
+/* ============================================================================
+   PHASE 11 · PROJECT + TASK DETAIL (Laura's screen-project-detail.jsx)
+   ----------------------------------------------------------------------------
+   Both detail pages get a fresh OE chrome (breadcrumb → header → optional
+   progress strip → 1fr/320px body). All existing inline editors (status /
+   priority / assignee / due selects, batch action bar, markdown sections,
+   time logged, dependencies) are kept; this CSS just restyles the surrounding
+   layout. The renderers (renderProjectDetailOE / renderTaskDetailOE) live in
+   src/tabs/projects-tasks-detail.js and are dispatched on _oeDetail().
+   ============================================================================ */
+
+/* Detail container */
+body[data-theme="oe"] .oe-detail, body[data-theme="oe-dark"] .oe-detail {
+  padding: 0 28px 64px; max-width: 1440px; margin: 0 auto;
+}
+/* Breadcrumb row */
+body[data-theme="oe"] .oe-detail-crumbs, body[data-theme="oe-dark"] .oe-detail-crumbs {
+  display: flex; align-items: center; gap: 8px; padding: 14px 0 0; color: var(--ink-5); font-size: 12px;
+}
+body[data-theme="oe"] .oe-detail-crumbs a, body[data-theme="oe-dark"] .oe-detail-crumbs a { cursor: pointer; }
+body[data-theme="oe"] .oe-detail-crumbs a:hover, body[data-theme="oe-dark"] .oe-detail-crumbs a:hover { color: var(--ink-7); }
+
+/* Header */
+body[data-theme="oe"] .oe-detail-head, body[data-theme="oe-dark"] .oe-detail-head {
+  display: flex; align-items: flex-start; gap: 32px; padding: 18px 0 22px;
+}
+body[data-theme="oe"] .oe-detail-head-left, body[data-theme="oe-dark"] .oe-detail-head-left { flex: 1; min-width: 0; }
+body[data-theme="oe"] .oe-detail-pills, body[data-theme="oe-dark"] .oe-detail-pills {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;
+}
+body[data-theme="oe"] .oe-detail-title, body[data-theme="oe-dark"] .oe-detail-title {
+  font-family: var(--font-display) !important; font-size: 44px; line-height: 1.05;
+  letter-spacing: -0.01em; font-weight: 400; color: var(--ink-7); margin: 0;
+}
+body[data-theme="oe"] .oe-detail-title--task, body[data-theme="oe-dark"] .oe-detail-title--task { font-size: 32px; }
+body[data-theme="oe"] .oe-detail-blurb, body[data-theme="oe-dark"] .oe-detail-blurb {
+  margin: 14px 0 0; color: var(--ink-6); max-width: 720px; line-height: 1.6; font-size: 14px;
+}
+body[data-theme="oe"] .oe-detail-actions, body[data-theme="oe-dark"] .oe-detail-actions {
+  display: flex; flex-direction: column; gap: 8px; align-items: flex-end; flex-shrink: 0;
+}
+
+/* Progress strip */
+body[data-theme="oe"] .oe-detail-progress, body[data-theme="oe-dark"] .oe-detail-progress {
+  padding: 14px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 18px;
+}
+body[data-theme="oe"] .oe-detail-progress-bar-wrap, body[data-theme="oe-dark"] .oe-detail-progress-bar-wrap { flex: 1; margin-left: 16px; }
+body[data-theme="oe"] .oe-detail-progress-bar, body[data-theme="oe-dark"] .oe-detail-progress-bar {
+  display: flex; gap: 2px; height: 8px; border-radius: 4px; overflow: hidden;
+}
+body[data-theme="oe"] .oe-detail-progress-legend, body[data-theme="oe-dark"] .oe-detail-progress-legend {
+  display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap;
+}
+body[data-theme="oe"] .oe-detail-progress-legend > div, body[data-theme="oe-dark"] .oe-detail-progress-legend > div {
+  display: flex; align-items: center; gap: 6px;
+}
+body[data-theme="oe"] .oe-detail-progress-legend span:first-child, body[data-theme="oe-dark"] .oe-detail-progress-legend span:first-child {
+  display: inline-block;
+}
+
+/* Two-column body */
+body[data-theme="oe"] .oe-detail-body, body[data-theme="oe-dark"] .oe-detail-body {
+  display: grid; grid-template-columns: 1fr 320px; gap: 32px;
+}
+@media (max-width: 1100px) {
+  body[data-theme="oe"] .oe-detail-body, body[data-theme="oe-dark"] .oe-detail-body { grid-template-columns: 1fr; }
+}
+body[data-theme="oe"] .oe-detail-main, body[data-theme="oe-dark"] .oe-detail-main { min-width: 0; }
+body[data-theme="oe"] .oe-detail-side, body[data-theme="oe-dark"] .oe-detail-side {
+  display: flex; flex-direction: column; gap: 18px;
+}
+body[data-theme="oe"] .oe-side-card, body[data-theme="oe-dark"] .oe-side-card { padding: 18px; }
+body[data-theme="oe"] .oe-side-card > .oe-meta, body[data-theme="oe-dark"] .oe-side-card > .oe-meta { margin-bottom: 14px; }
+body[data-theme="oe"] .oe-side-field, body[data-theme="oe-dark"] .oe-side-field {
+  display: flex; align-items: center; gap: 10px; margin-top: 10px;
+}
+body[data-theme="oe"] .oe-side-field:first-of-type, body[data-theme="oe-dark"] .oe-side-field:first-of-type { margin-top: 0; }
+body[data-theme="oe"] .oe-side-label, body[data-theme="oe-dark"] .oe-side-label {
+  width: 100px; font-size: 11px; color: var(--ink-5); flex-shrink: 0;
+}
+
+/* Markdown sections above the tabs */
+body[data-theme="oe"] .oe-detail-mdsec, body[data-theme="oe-dark"] .oe-detail-mdsec { margin-bottom: 22px; }
+body[data-theme="oe"] .oe-detail-prose, body[data-theme="oe-dark"] .oe-detail-prose { color: var(--ink-6); font-size: 14px; line-height: 1.6; }
+body[data-theme="oe"] .oe-detail-prose p, body[data-theme="oe-dark"] .oe-detail-prose p { margin: 0 0 8px; }
+body[data-theme="oe"] .oe-detail-prose a, body[data-theme="oe-dark"] .oe-detail-prose a { color: var(--navy-500); }
+body[data-theme="oe"] .oe-detail-tabs, body[data-theme="oe-dark"] .oe-detail-tabs { margin-bottom: 18px; }
+body[data-theme="oe"] .oe-detail-tabpanel, body[data-theme="oe-dark"] .oe-detail-tabpanel { min-height: 200px; }
+
+/* Project-detail task table (.pd-task-*) — OE shell over the inline editors. */
+body[data-theme="oe"] .pd-tasks-card, body[data-theme="oe-dark"] .pd-tasks-card { padding: 0; overflow: hidden; }
+body[data-theme="oe"] .pd-task-header, body[data-theme="oe-dark"] .pd-task-header {
+  display: grid; grid-template-columns: 32px 70px 1fr 130px 90px 130px 120px 80px; gap: 0;
+  padding: 10px 12px; background: var(--ink-1); border-bottom: 1px solid var(--ink-2);
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-5);
+}
+body[data-theme="oe"] .pd-task-th, body[data-theme="oe-dark"] .pd-task-th { cursor: pointer; user-select: none; padding-right: 8px; }
+body[data-theme="oe"] .pd-task-group, body[data-theme="oe-dark"] .pd-task-group {
+  background: var(--ink-1); font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-5); padding: 8px 12px; border-bottom: 1px solid var(--ink-2);
+}
+body[data-theme="oe"] .pd-task-row, body[data-theme="oe-dark"] .pd-task-row {
+  display: grid; grid-template-columns: 32px 70px 1fr 130px 90px 130px 120px 80px; gap: 0;
+  padding: 10px 12px; border-bottom: 1px solid var(--ink-2); align-items: center; font-size: 13px;
+}
+body[data-theme="oe"] .pd-task-row:hover, body[data-theme="oe-dark"] .pd-task-row:hover { background: var(--ink-1); }
+body[data-theme="oe"] .pd-task-row--done, body[data-theme="oe-dark"] .pd-task-row--done { opacity: 0.55; }
+body[data-theme="oe"] .pd-task-row--done .pd-task-title, body[data-theme="oe-dark"] .pd-task-row--done .pd-task-title { text-decoration: line-through; color: var(--ink-5); }
+body[data-theme="oe"] .pd-task-title, body[data-theme="oe-dark"] .pd-task-title {
+  cursor: pointer; font-weight: 500; color: var(--ink-7); padding-right: 8px; min-width: 0;
+}
+body[data-theme="oe"] .pd-task-row select, body[data-theme="oe-dark"] .pd-task-row select,
+body[data-theme="oe"] .pd-task-row input[type="date"], body[data-theme="oe-dark"] .pd-task-row input[type="date"] {
+  font-size: 11px !important; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--ink-3); background: var(--ink-paper);
+}
+body[data-theme="oe"] .pd-task-hours, body[data-theme="oe-dark"] .pd-task-hours { text-align: right; }
+
+/* Time-logged compact list under the task table */
+body[data-theme="oe"] .pd-logged, body[data-theme="oe-dark"] .pd-logged {
+  background: var(--ink-paper); border: 1px solid var(--ink-2); border-radius: var(--r-3); padding: 14px 18px; margin-top: 18px;
+}
+body[data-theme="oe"] .pd-loggedrow, body[data-theme="oe-dark"] .pd-loggedrow {
+  display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--ink-2);
+}
+body[data-theme="oe"] .pd-loggedrow:last-child, body[data-theme="oe-dark"] .pd-loggedrow:last-child { border-bottom: 0; }
+body[data-theme="oe"] .pd-loggedrow--total, body[data-theme="oe-dark"] .pd-loggedrow--total { border-top: 1px solid var(--ink-2); margin-top: 6px; padding-top: 10px; }
+body[data-theme="oe"] .pd-loggedrow-name, body[data-theme="oe-dark"] .pd-loggedrow-name { flex: 1; min-width: 0; font-size: 13px; color: var(--ink-7); }
+body[data-theme="oe"] .pd-loggedrow-bar, body[data-theme="oe-dark"] .pd-loggedrow-bar { height: 3px; background: var(--ink-1); border-radius: 2px; margin-top: 3px; }
+body[data-theme="oe"] .pd-loggedrow-bar > div, body[data-theme="oe-dark"] .pd-loggedrow-bar > div { height: 100%; background: var(--navy-500); border-radius: 2px; }
+body[data-theme="oe"] .pd-loggedrow-h, body[data-theme="oe-dark"] .pd-loggedrow-h { font-size: 12px; color: var(--ink-7); }
+
+/* Allocations panel */
+body[data-theme="oe"] .pd-alloc-sum, body[data-theme="oe-dark"] .pd-alloc-sum {
+  display: flex; align-items: stretch; padding: 14px 20px; margin-bottom: 18px;
+}
+body[data-theme="oe"] .pd-alloc-stat, body[data-theme="oe-dark"] .pd-alloc-stat { padding: 0 24px; }
+body[data-theme="oe"] .pd-alloc-stat:first-child, body[data-theme="oe-dark"] .pd-alloc-stat:first-child { padding-left: 0; }
+body[data-theme="oe"] .pd-alloc-stat-num, body[data-theme="oe-dark"] .pd-alloc-stat-num { font-size: 22px; color: var(--ink-7); line-height: 1.1; }
+body[data-theme="oe"] .pd-alloc-stat-div, body[data-theme="oe-dark"] .pd-alloc-stat-div { width: 1px; background: var(--ink-2); }
+body[data-theme="oe"] .pd-alloc-chart-card, body[data-theme="oe-dark"] .pd-alloc-chart-card { padding: 18px 20px; margin-bottom: 18px; }
+
+body[data-theme="oe"] .alloc-chart, body[data-theme="oe-dark"] .alloc-chart {
+  display: grid; gap: 3px; align-items: flex-end; height: 96px;
+}
+body[data-theme="oe"] .alloc-col, body[data-theme="oe-dark"] .alloc-col {
+  display: flex; flex-direction: column-reverse; gap: 1px; height: 100%; justify-content: flex-end;
+}
+body[data-theme="oe"] .alloc-seg, body[data-theme="oe-dark"] .alloc-seg { width: 100%; border-radius: 1px; }
+body[data-theme="oe"] .alloc-legend, body[data-theme="oe-dark"] .alloc-legend {
+  display: flex; flex-wrap: wrap; gap: 16px; margin-top: 14px; font-size: 12px; color: var(--ink-6);
+}
+body[data-theme="oe"] .alloc-legend-item, body[data-theme="oe-dark"] .alloc-legend-item {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+body[data-theme="oe"] .alloc-legend-dot, body[data-theme="oe-dark"] .alloc-legend-dot {
+  width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0;
+}
+body[data-theme="oe"] .alloc-share-bar, body[data-theme="oe-dark"] .alloc-share-bar {
+  height: 6px; background: var(--ink-1); border-radius: 3px; overflow: hidden; min-width: 140px;
+}
+body[data-theme="oe"] .alloc-share-fill, body[data-theme="oe-dark"] .alloc-share-fill { height: 100%; border-radius: 3px; }
+body[data-theme="oe"] .alloc-role, body[data-theme="oe-dark"] .alloc-role {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: var(--r-1); background: var(--ink-1); color: var(--ink-6);
+}
+body[data-theme="oe"] .alloc-role--lead, body[data-theme="oe-dark"] .alloc-role--lead {
+  background: var(--navy-50); color: var(--navy-500);
+}
+body[data-theme="oe"] .alloc-role--reviewer, body[data-theme="oe-dark"] .alloc-role--reviewer {
+  background: var(--status-future-bg); color: var(--status-future-fg);
+}
+
+/* Task detail — Parent project link card + dependencies rows */
+body[data-theme="oe"] .td-parent, body[data-theme="oe-dark"] .td-parent {
+  display: flex; align-items: center; gap: 10px; padding: 4px 0; color: var(--ink-7);
+  text-decoration: none; font-size: 13px; cursor: pointer;
+}
+body[data-theme="oe"] .td-dep-row, body[data-theme="oe-dark"] .td-dep-row {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border: 1px solid var(--ink-2); border-radius: 6px; margin-bottom: 6px;
+  background: var(--ink-paper); cursor: pointer;
+}
+body[data-theme="oe"] .td-dep-row:hover, body[data-theme="oe-dark"] .td-dep-row:hover { background: var(--ink-1); }
+body[data-theme="oe"] .td-dep-title, body[data-theme="oe-dark"] .td-dep-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; color: var(--ink-7); }
+
+/* Push out the body container's default detail-mode padding when our OE detail
+   is in play (its own padding + max-width centering handles the layout). */
+body[data-theme="oe"] .app-body.detail-mode .content-area, body[data-theme="oe-dark"] .app-body.detail-mode .content-area {
+  padding: 0;
+}

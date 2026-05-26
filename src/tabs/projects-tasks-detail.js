@@ -1331,6 +1331,569 @@ function toggleDetailTaskSort(col) {
   render();
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+//  OE DETAIL RENDERERS — Laura's project + task detail layouts (mock-first
+//  approved). Dispatched alongside the Classic renderers in render.js / my-work
+//  via _oeDetail(). Classic versions stay completely untouched.
+// ═════════════════════════════════════════════════════════════════════════
+function _oeDetail() { return typeof document !== 'undefined' && document.body && /^oe/.test(document.body.dataset.theme || ''); }
+
+// Aggregate allocation data for a project: per-person totals + per-week hours
+// (the stacked-bar chart input). Returns null if no contributors.
+function _projAllocData(p) {
+  var pNum = p && p.project_number != null ? String(p.project_number) : '';
+  if (!pNum || typeof RESOURCES_DATA === 'undefined' || !RESOURCES_DATA || !RESOURCES_DATA.people) return null;
+  var contributors = [];
+  Object.keys(RESOURCES_DATA.people).forEach(function(name) {
+    var person = RESOURCES_DATA.people[name];
+    if (!person || !Array.isArray(person.allocations)) return;
+    var alloc = person.allocations.find(function(a) { return a.analytics_id != null && String(a.analytics_id) === pNum; });
+    if (!alloc || !Array.isArray(alloc.hours)) return;
+    var totalHrs = alloc.hours.reduce(function(s, h) { return s + (h || 0); }, 0);
+    if (totalHrs <= 0) return;
+    contributors.push({ name: name, role: alloc.role || 'Contributor', hours: totalHrs, weeklyHours: alloc.hours.slice() });
+  });
+  if (!contributors.length) return null;
+  contributors.sort(function(a, b) { return b.hours - a.hours; });
+  contributors.forEach(function(c, i) { c.dataIdx = (i < 8) ? (i + 1) : 'other'; });
+  var total = contributors.reduce(function(s, c) { return s + c.hours; }, 0);
+  var N = contributors[0].weeklyHours.length;
+  var firstWk = -1, lastWk = -1;
+  for (var i = 0; i < N; i++) {
+    var anyHrs = contributors.some(function(c) { return (c.weeklyHours[i] || 0) > 0; });
+    if (anyHrs) { if (firstWk < 0) firstWk = i; lastWk = i; }
+  }
+  return { contributors: contributors, total: total, firstWk: firstWk, lastWk: lastWk };
+}
+
+// Task-status segments for the OE progress strip (% complete + segmented bar).
+function _projProgressSegments(relTasks) {
+  var counts = { complete: 0, active: 0, hold: 0, future: 0, canceled: 0 };
+  relTasks.forEach(function(t) {
+    var s = t.status || '';
+    if (s === 'Complete') counts.complete++;
+    else if (s === 'Active') counts.active++;
+    else if (s === 'On Hold' || s === 'Waiting for Response' || s === 'Pending') counts.hold++;
+    else if (s === 'Canceled') counts.canceled++;
+    else counts.future++;
+  });
+  var total = relTasks.length;
+  var doneOrActive = counts.complete + counts.active;
+  var pct = total > 0 ? Math.round((doneOrActive / total) * 100) : 0;
+  return { counts: counts, total: total, pct: pct, doneOrActive: doneOrActive };
+}
+
+// Build an OE-styled inline task row for the project detail Tasks tab. Mirrors
+// buildDetailTaskRow's inline edits (status / priority / assignee / due date) so
+// every editor users rely on still works.
+function _oeDetailTaskRow(t) {
+  var sc = STATUS_COLOR(t.status) || '#9CA3AF';
+  var taskHrs = getTaskHours(t.idx);
+  var myHrs = getMyTaskHours(t.idx);
+  var hrsDisplay = taskHrs > 0 ? hoursLabel(taskHrs, myHrs) : '—';
+  var due = t.working_due || t.due || '';
+  var isDone = t.status === 'Complete' || t.status === 'Canceled';
+  return '<div class="pd-task-row' + (isDone ? ' pd-task-row--done' : '') + '">' +
+    '<div style="text-align:center;" onclick="event.stopPropagation()"><input type="checkbox" class="batch-task-cb" data-task-id="' + t.objectId + '" onchange="updateBatchBar()"></div>' +
+    '<div><span class="oe-mono" style="font-size:11px;color:var(--ink-5);">' + esc(t.task_number || '—') + '</span></div>' +
+    '<div class="pd-task-title" onclick="openTaskFromProject(' + t.objectId + ')">' + (typeof getDependencyIcon === 'function' ? getDependencyIcon(t) : '') + esc(t.title) + '</div>' +
+    '<div onclick="event.stopPropagation()"><select class="mw-status-select" data-type="task" data-id="' + t.objectId + '" onchange="mwQuickStatus(this)" style="background:' + sc + '18;color:' + sc + ';border-color:' + sc + '44;">' +
+      ['Active','Pending','On Hold','Waiting for Response','Complete','Canceled'].map(function(s) { return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') +
+    '</select></div>' +
+    '<div><span class="priority-badge priority-' + (t.priority || 'null') + '">' + (t.priority || '—') + '</span></div>' +
+    '<div onclick="event.stopPropagation()"><select class="dt-inline-select" data-task-id="' + t.objectId + '" onchange="inlineTaskAssignee(this)">' +
+      '<option value=""' + (!t.assignee ? ' selected' : '') + '>Unassigned</option>' +
+      ((RESOURCES_DATA ? Object.keys(RESOURCES_DATA.people).filter(function(n) { return RESOURCES_DATA.people[n].active !== false; }).sort() : []).map(function(n) { return '<option value="' + esc(n) + '"' + (t.assignee === n ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('')) +
+    '</select></div>' +
+    '<div onclick="event.stopPropagation()"><input type="date" class="dt-inline-date" data-task-id="' + t.objectId + '" data-has-due="' + (t.due ? '1' : '') + '" onchange="inlineTaskDueDate(this)" value="' + (due || '') + '"></div>' +
+    '<div class="pd-task-hours"><span class="oe-mono" style="font-size:11px;color:var(--ink-7);">' + hrsDisplay + '</span></div>' +
+  '</div>';
+}
+
+// ─── OE PROJECT DETAIL ────────────────────────────────────────────────
+function renderProjectDetailOE(id) {
+  var p = PROJECTS.find(function(x) { return x.objectId == id; });
+  if (!p) return '<div class="empty-state">Project not found.</div>';
+  var _pNum = p.project_number != null ? String(p.project_number) : null;
+  var relTasks = !_pNum ? [] : TASKS.filter(function(t) { return t.project_number != null && String(t.project_number) === _pNum; });
+
+  // Status grouping (mirrors Classic): In Progress, Pending, Complete, Canceled.
+  var IN_PROGRESS_STATUSES = ['Active', 'On Hold', 'Waiting for Response'];
+  var inProgressTasks = sortDetailTasks(relTasks.filter(function(t) { return IN_PROGRESS_STATUSES.indexOf(t.status) >= 0; }));
+  var pendingTasks    = sortDetailTasks(relTasks.filter(function(t) { return t.status === 'Pending'; }));
+  var completeTasks   = sortDetailTasks(relTasks.filter(function(t) { return t.status === 'Complete'; }));
+  var canceledTasks   = sortDetailTasks(relTasks.filter(function(t) { return t.status === 'Canceled'; }));
+
+  var canEdit = (typeof canEditProject === 'function') ? canEditProject(p) : (isAdmin() || (Auth.fullName && p.contact === Auth.fullName));
+  var isCompletable = canEdit && p.status && p.status !== 'Complete' && p.status !== 'Canceled';
+
+  // Progress strip
+  var prog = _projProgressSegments(relTasks);
+  var segs = [
+    { count: prog.counts.complete, color: 'var(--status-complete-dot)', label: 'Complete' },
+    { count: prog.counts.active,   color: 'var(--status-active-dot)',   label: 'Active' },
+    { count: prog.counts.hold,     color: 'var(--status-hold-dot)',     label: 'On hold' },
+    { count: prog.counts.future,   color: 'var(--ink-2)',               label: 'Future' },
+    { count: prog.counts.canceled, color: 'var(--status-canceled-dot)', label: 'Canceled' }
+  ].filter(function(s) { return s.count > 0; });
+
+  // Sidebar — People
+  var supporting = (p.other_members || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+  var supAvatars = supporting.slice(0, 3).map(function(name, i) {
+    var init = name.split(' ').map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+    var styles = ['', 'background:var(--sage-100);color:var(--sage-700);', 'background:var(--steel-100);color:var(--steel-700);'];
+    return '<span class="oe-avatar oe-avatar--sm" style="margin-right:-8px;border:2px solid var(--ink-paper);' + (styles[i] || '') + '">' + esc(init) + '</span>';
+  }).join('');
+  if (supporting.length > 3) supAvatars += '<span class="oe-avatar oe-avatar--sm" style="border:2px solid var(--ink-paper);background:var(--ink-1);color:var(--ink-5);">+' + (supporting.length - 3) + '</span>';
+
+  // Sidebar — Schedule
+  var startDate = p.start || '';
+  var dueDate = p.working_due || p.end || '';
+  var timeRemaining = (function() {
+    if (!dueDate || p.status === 'Complete' || p.status === 'Canceled') return null;
+    var due = new Date(dueDate + 'T00:00:00');
+    var today = new Date(); today.setHours(0,0,0,0);
+    var days = Math.round((due - today) / 86400000);
+    return { days: days, overdue: days < 0 };
+  })();
+
+  // Sidebar — Effort
+  var loggedHrs = getProjectHours(p.title);
+  // Estimated hours: sum of task est/working_due — we don't carry per-task estimates, so derive
+  // from project_size convention used elsewhere in the app (S/M/L/XL → rough h band).
+  var sizeHours = { 'S': 40, 'M': 120, 'L': 400, 'XL': 1000 };
+  var estimatedHrs = sizeHours[p.project_size] || 0;
+  var capPct = estimatedHrs > 0 ? Math.min(100, Math.round((loggedHrs / estimatedHrs) * 100)) : 0;
+
+  var allocData = _projAllocData(p);
+
+  // ── HEADER ──
+  var headerCategory = p.category ? '<span class="oe-body-sm" style="display:inline-flex;align-items:center;gap:4px;"><svg class="icon" aria-hidden="true" style="width:12px;height:12px;"><use href="#ph-folder-open"></use></svg>' + esc(p.category) + '</span>' : '';
+  var headerDept = p.partner_dept ? '<span class="oe-body-sm">' + esc(p.partner_dept) + '</span>' : '';
+
+  var html = '<div class="oe-detail oe-detail--project">';
+
+  // Breadcrumb
+  html += '<div class="oe-detail-crumbs">' +
+    '<a onclick="goBackFromDetail()" style="color:var(--ink-5);text-decoration:none;cursor:pointer;">Portfolio</a>' +
+    '<svg class="icon" aria-hidden="true" style="width:10px;height:10px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' +
+    '<span style="color:var(--ink-5);">' + esc(p.status || '—') + '</span>' +
+    '<svg class="icon" aria-hidden="true" style="width:10px;height:10px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' +
+    '<span style="color:var(--ink-7);">' + esc(p.title) + '</span>' +
+  '</div>';
+
+  // Header
+  html += '<div class="oe-detail-head">' +
+    '<div class="oe-detail-head-left">' +
+      '<div class="oe-detail-pills">' +
+        '<span class="oe-mono" style="font-size:12px;color:var(--ink-5);letter-spacing:0.04em;">' + esc(p.project_number || '') + '</span>' +
+        '<span class="status-pill" data-status="' + esc(p.status || '') + '" style="background:' + (STATUS_COLOR(p.status) || '#9CA3AF') + '22;color:var(--ink-7);"><span style="width:6px;height:6px;border-radius:50%;background:' + (STATUS_COLOR(p.status) || '#9CA3AF') + ';display:inline-block;"></span>' + esc(p.status || '—') + '</span>' +
+        '<span class="priority-badge priority-' + (p.priority || 'null') + '">' + (p.priority || '—') + '</span>' +
+        headerCategory +
+        headerDept +
+      '</div>' +
+      '<h1 class="oe-detail-title">' + esc(p.title) + '</h1>' +
+      (p.description ? '<p class="oe-detail-blurb">' + esc(p.description) + '</p>' : '') +
+    '</div>' +
+    '<div class="oe-detail-actions">' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">' +
+        (isCompletable ? '<button class="oe-btn oe-btn--secondary oe-btn--sm" onclick="markProjectComplete(' + p.objectId + ')"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg>Complete</button>' : '') +
+        (canEdit ? '<button class="oe-btn oe-btn--secondary oe-btn--sm" onclick="openFormModal(\'edit-project\',' + p.objectId + ')"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg>Edit</button>' : '') +
+        '<button class="oe-btn oe-btn--primary oe-btn--sm" data-project-id="' + p.objectId + '" data-project-title="' + esc(p.title) + '" onclick="addTaskToProject(this.dataset.projectId, this.dataset.projectTitle)"><svg class="icon" aria-hidden="true"><use href="#ph-plus"></use></svg>Add task</button>' +
+        '<button class="oe-btn oe-btn--ghost oe-btn--sm" onclick="copyProjectSummary(' + p.objectId + ')" title="Copy project summary"><svg class="icon" aria-hidden="true"><use href="#ph-clipboard-text"></use></svg></button>' +
+        (canEdit ? '<button class="oe-btn oe-btn--ghost oe-btn--sm" onclick="confirmDeleteProject(' + p.objectId + ')" title="Delete project" style="color:var(--status-overdue-fg);"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>' : '') +
+      '</div>' +
+      (p.actual_end ? '<div class="oe-mono" style="font-size:10px;color:var(--ink-4);margin-top:8px;">Completed ' + p.actual_end + '</div>' : '') +
+    '</div>' +
+  '</div>';
+
+  // Progress strip
+  if (prog.total > 0) {
+    html += '<div class="oe-card oe-detail-progress">' +
+      '<div class="oe-detail-progress-num"><div class="oe-meta" style="margin-bottom:4px;">Progress</div>' +
+        '<div style="display:flex;align-items:baseline;gap:8px;">' +
+          '<span class="oe-mono" style="font-size:22px;color:var(--ink-7);">' + prog.pct + '%</span>' +
+          '<span class="oe-body-sm">' + prog.doneOrActive + ' of ' + prog.total + ' tasks complete or in progress</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="oe-detail-progress-bar-wrap">' +
+        '<div class="oe-detail-progress-bar">' +
+          segs.map(function(s) { return '<div style="flex:' + s.count + ';background:' + s.color + ';" title="' + s.label + ' · ' + s.count + '"></div>'; }).join('') +
+        '</div>' +
+        '<div class="oe-detail-progress-legend">' +
+          segs.map(function(s) { return '<div><span style="width:8px;height:8px;border-radius:2px;background:' + s.color + ';"></span><span class="oe-body-sm" style="font-size:11px;">' + s.label + ' <span class="oe-mono" style="color:var(--ink-5);">' + s.count + '</span></span></div>'; }).join('') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // Two-column body
+  html += '<div class="oe-detail-body">';
+
+  // ── MAIN ──
+  html += '<div class="oe-detail-main">';
+
+  // Markdown sections above the tabs (description, problem, etc.)
+  function mdSection(label, content, color) {
+    if (!content) return '';
+    var col = color || 'var(--ink-5)';
+    return '<div class="oe-detail-mdsec"><div class="oe-meta" style="color:' + col + ';margin-bottom:8px;">' + label + '</div><div class="oe-detail-prose">' + (typeof renderMd === 'function' ? renderMd(content) : esc(content)) + '</div></div>';
+  }
+  html += mdSection('Problem statement', p.problem_statement);
+  html += mdSection('Definition of done', p.definition_of_done);
+  html += mdSection('Key results', p.key_results);
+  html += mdSection('Data sources', p.data_sources);
+  html += mdSection('Technical requirements', p.technical_requirements);
+  if (p.urgency_notes) html += mdSection('Urgency / timeline notes', p.urgency_notes, 'var(--status-overdue-fg)');
+  html += mdSection('Reviewer notes', p.reviewer_notes);
+  if (typeof renderProjectJournalSection === 'function') html += '<div class="oe-detail-mdsec">' + renderProjectJournalSection(p) + '</div>';
+
+  // Tabs
+  var tabs = [
+    { id: 'tasks', label: 'Tasks', count: relTasks.length },
+    { id: 'alloc', label: 'Allocations', count: allocData ? allocData.contributors.length : 0 }
+  ];
+  html += '<div class="oe-tabs oe-detail-tabs">' +
+    tabs.map(function(t) {
+      return '<button class="oe-tab" id="pd-tab-' + t.id + '" aria-selected="' + (t.id === 'tasks' ? 'true' : 'false') + '" onclick="showPdTab(\'' + t.id + '\')">' + t.label + (t.count ? ' <span class="oe-tab-count">' + t.count + '</span>' : '') + '</button>';
+    }).join('') +
+  '</div>';
+
+  // Tasks panel
+  html += '<div id="pd-panel-tasks" class="oe-detail-tabpanel">';
+  // Batch action bar
+  html += '<div id="batch-action-bar" style="display:none;background:var(--ink-1);border:1px solid var(--ink-2);border-radius:8px;padding:10px 14px;margin-bottom:10px;align-items:center;gap:10px;flex-wrap:nowrap;">' +
+    '<span style="font-size:12px;font-weight:600;color:var(--ink-7);" id="batch-count">0 selected</span>' +
+    '<select id="batch-status" class="fm-input" style="font-size:11px;padding:4px 8px;width:auto;min-width:100px;"><option value="">Set status…</option><option value="Active">Active</option><option value="Pending">Pending</option><option value="On Hold">On Hold</option><option value="Complete">Complete</option><option value="Canceled">Canceled</option><option value="Waiting for Response">Waiting for Response</option></select>' +
+    '<select id="batch-priority" class="fm-input" style="font-size:11px;padding:4px 8px;width:auto;min-width:100px;"><option value="">Set priority…</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>' +
+    '<select id="batch-assignee" class="fm-input" style="font-size:11px;padding:4px 8px;width:auto;min-width:120px;"><option value="">Set assignee…</option>' +
+      (RESOURCES_DATA ? Object.keys(RESOURCES_DATA.people).filter(function(n) { return RESOURCES_DATA.people[n].active !== false; }).sort().map(function(n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('') : '') +
+    '</select>' +
+    '<button onclick="btnPending(this, () => applyBatchUpdate(), \'Applying…\')" class="oe-btn oe-btn--primary oe-btn--sm">Apply</button>' +
+    '<button onclick="btnPending(this, () => batchDeleteTasks(), \'Deleting…\')" class="oe-btn oe-btn--secondary oe-btn--sm" style="color:var(--status-overdue-fg);">Delete</button>' +
+  '</div>';
+
+  // Task table
+  if (relTasks.length) {
+    function sortArrow(col) {
+      var active = _dtSortCol === col;
+      var arrow = active ? (_dtSortDir === 'asc' ? '↑' : '↓') : '↕';
+      return '<span style="opacity:' + (active ? '1' : '0.35') + ';font-size:10px;">' + arrow + '</span>';
+    }
+    function thSortable(label, col) { return '<div class="pd-task-th" onclick="toggleDetailTaskSort(\'' + col + '\')">' + label + ' ' + sortArrow(col) + '</div>'; }
+    html += '<div class="oe-card pd-tasks-card">' +
+      '<div class="pd-task-header">' +
+        '<div style="text-align:center;"><input type="checkbox" id="batch-select-all" onchange="toggleSelectAllTasks(this.checked)"></div>' +
+        thSortable('ID', 'id') +
+        thSortable('Task', 'title') +
+        thSortable('Status', 'status') +
+        thSortable('Priority', 'priority') +
+        thSortable('Assignee', 'assignee') +
+        thSortable('Due', 'due') +
+        thSortable('Hours', 'hours') +
+      '</div>';
+    if (inProgressTasks.length) {
+      html += '<div class="pd-task-group">In progress · ' + inProgressTasks.length + '</div>';
+      html += inProgressTasks.map(_oeDetailTaskRow).join('');
+    }
+    if (pendingTasks.length) {
+      html += '<div class="pd-task-group">Pending · ' + pendingTasks.length + '</div>';
+      html += pendingTasks.map(_oeDetailTaskRow).join('');
+    }
+    if (completeTasks.length) {
+      html += '<div class="pd-task-group">Complete · ' + completeTasks.length + '</div>';
+      html += completeTasks.map(_oeDetailTaskRow).join('');
+    }
+    if (canceledTasks.length) {
+      html += '<div class="pd-task-group">Canceled · ' + canceledTasks.length + '</div>';
+      html += canceledTasks.map(_oeDetailTaskRow).join('');
+    }
+    html += '</div>';
+  } else {
+    html += '<div class="empty-state" style="padding:32px;text-align:center;">No tasks linked to this project yet.</div>';
+  }
+
+  // Time logged below the task table (existing structure, OE-shaped)
+  if (loggedHrs > 0) {
+    var personHrs = getProjectHoursByPerson(p.title);
+    if (personHrs.length) {
+      var maxHrs = personHrs[0].hours;
+      var rows = personHrs.map(function(ph) {
+        var initials = ph.name.split(' ').map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+        var barPct = maxHrs > 0 ? Math.round(ph.hours / maxHrs * 100) : 0;
+        return '<div class="pd-loggedrow"><span class="oe-avatar oe-avatar--sm">' + initials + '</span><div class="pd-loggedrow-name">' + esc(ph.name) + '<div class="pd-loggedrow-bar"><div style="width:' + barPct + '%;"></div></div></div><span class="oe-mono pd-loggedrow-h">' + ph.hours + 'h</span></div>';
+      }).join('');
+      html += '<div class="pd-logged"><div class="oe-meta" style="margin-bottom:10px;">Time logged</div>' + rows + '<div class="pd-loggedrow pd-loggedrow--total"><div></div><div class="pd-loggedrow-name" style="font-weight:600;">Total</div><span class="oe-mono pd-loggedrow-h" style="font-weight:600;">' + loggedHrs + 'h</span></div></div>';
+    }
+  }
+
+  html += '</div>'; // /#pd-panel-tasks
+
+  // Allocations panel
+  html += '<div id="pd-panel-alloc" class="oe-detail-tabpanel" style="display:none;">';
+  if (allocData) {
+    var weeks = allocData.lastWk - allocData.firstWk + 1;
+    var maxStack = 0;
+    for (var wi = allocData.firstWk; wi <= allocData.lastWk; wi++) {
+      var stack = 0;
+      allocData.contributors.forEach(function(c) { stack += (c.weeklyHours[wi] || 0); });
+      if (stack > maxStack) maxStack = stack;
+    }
+    var chartH = 88;
+    var pxPerHr = maxStack > 0 ? chartH / maxStack : 0;
+    var cols = '';
+    for (var ci = allocData.firstWk; ci <= allocData.lastWk; ci++) {
+      var segHtml = '';
+      allocData.contributors.forEach(function(c) {
+        var h = c.weeklyHours[ci] || 0;
+        if (h > 0) segHtml += '<div class="alloc-seg" style="height:' + (h * pxPerHr) + 'px;background:var(--data-' + c.dataIdx + ');"></div>';
+      });
+      cols += '<div class="alloc-col">' + segHtml + '</div>';
+    }
+    var legendItems = allocData.contributors.slice(0, 6).map(function(c) {
+      return '<div class="alloc-legend-item"><span class="alloc-legend-dot" style="background:var(--data-' + c.dataIdx + ');"></span>' + esc(c.name) + '</div>';
+    }).join('');
+    if (allocData.contributors.length > 6) legendItems += '<div class="alloc-legend-item" style="color:var(--ink-5);">+ ' + (allocData.contributors.length - 6) + ' more</div>';
+
+    var allocRows = allocData.contributors.map(function(c) {
+      var pct = allocData.total > 0 ? Math.round((c.hours / allocData.total) * 100) : 0;
+      var roleCls = c.role === 'Lead' ? 'alloc-role--lead' : (c.role === 'Reviewer' ? 'alloc-role--reviewer' : '');
+      var init = c.name.split(' ').map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+      return '<tr><td><div style="display:flex;align-items:center;gap:8px;"><span class="oe-avatar oe-avatar--sm">' + init + '</span><span style="font-weight:500;">' + esc(c.name) + '</span></div></td>' +
+        '<td><span class="alloc-role ' + roleCls + '">' + esc(c.role) + '</span></td>' +
+        '<td><div class="alloc-share-bar"><div class="alloc-share-fill" style="width:' + pct + '%;background:var(--data-' + c.dataIdx + ');"></div></div></td>' +
+        '<td style="text-align:right;"><span class="oe-mono" style="font-size:12px;">' + Math.round(c.hours) + 'h</span></td>' +
+        '<td style="text-align:right;"><span class="oe-mono" style="font-size:12px;">' + pct + '%</span></td></tr>';
+    }).join('');
+
+    html += '<div class="oe-card pd-alloc-sum">' +
+      '<div class="pd-alloc-stat"><div class="oe-mono pd-alloc-stat-num">' + Math.round(allocData.total) + 'h</div><div class="oe-meta">Allocated</div></div>' +
+      '<div class="pd-alloc-stat-div"></div>' +
+      '<div class="pd-alloc-stat"><div class="oe-mono pd-alloc-stat-num">' + allocData.contributors.length + '</div><div class="oe-meta">Contributors</div></div>' +
+      '<div class="pd-alloc-stat-div"></div>' +
+      '<div class="pd-alloc-stat"><div class="oe-mono pd-alloc-stat-num" style="font-size:14px;">' + weeks + ' weeks active</div><div class="oe-meta">Range</div></div>' +
+    '</div>' +
+    '<div class="oe-card pd-alloc-chart-card">' +
+      '<div class="oe-meta" style="margin-bottom:14px;">Weekly load</div>' +
+      '<div class="alloc-chart" style="grid-template-columns:repeat(' + weeks + ', 1fr);">' + cols + '</div>' +
+      '<div class="alloc-legend">' + legendItems + '</div>' +
+    '</div>' +
+    '<div class="oe-card" style="padding:0;overflow:hidden;">' +
+      '<table class="oe-table"><thead><tr><th>Member</th><th style="width:110px;">Role</th><th>Share</th><th style="width:70px;text-align:right;">Hours</th><th style="width:60px;text-align:right;">%</th></tr></thead><tbody>' + allocRows + '</tbody></table>' +
+    '</div>';
+  } else {
+    html += '<div class="empty-state" style="padding:48px 24px;text-align:center;">No allocations recorded for this project yet.</div>';
+  }
+  html += '</div>'; // /#pd-panel-alloc
+  html += '</div>'; // /.oe-detail-main
+
+  // ── SIDEBAR ──
+  html += '<div class="oe-detail-side">';
+
+  // People card
+  html += '<div class="oe-card oe-side-card"><div class="oe-meta">People</div>' +
+    '<div class="oe-side-field"><div class="oe-side-label">Lead</div><div style="display:flex;align-items:center;gap:8px;">' +
+      (p.contact ? '<span class="oe-avatar oe-avatar--sm" style="background:var(--navy-500);color:var(--ink-paper);">' + esc(p.contact.split(' ').map(function(w) { return w[0]; }).join('').slice(0,2).toUpperCase()) + '</span><span style="font-size:13px;">' + esc(p.contact) + '</span>' : '<span style="color:var(--ink-4);">Unassigned</span>') +
+    '</div></div>' +
+    (supporting.length ? '<div class="oe-side-field"><div class="oe-side-label">Supporting</div><div style="display:flex;align-items:center;">' + supAvatars + '</div></div>' : '') +
+    (p.partner_dept ? '<div class="oe-side-field"><div class="oe-side-label">Partner dept.</div><div style="font-size:13px;">' + esc(p.partner_dept) + '</div></div>' : '') +
+    (p.itd_team ? '<div class="oe-side-field"><div class="oe-side-label">Unit</div><div style="font-size:13px;">' + esc(p.itd_team) + '</div></div>' : '') +
+  '</div>';
+
+  // Schedule card
+  html += '<div class="oe-card oe-side-card"><div class="oe-meta">Schedule</div>' +
+    '<div class="oe-side-field"><div class="oe-side-label">Started</div><div><span class="oe-mono" style="font-size:12px;">' + (startDate || '—') + '</span></div></div>' +
+    '<div class="oe-side-field"><div class="oe-side-label">Due</div><div><span class="oe-mono" style="font-size:12px;">' + (dueDate || '—') + '</span></div></div>' +
+    (timeRemaining ? '<div class="oe-side-field"><div class="oe-side-label">Time remaining</div><div><span style="font-size:13px;color:' + (timeRemaining.overdue ? 'var(--status-overdue-fg)' : 'var(--ink-7)') + ';font-weight:600;"><span class="oe-mono">' + (timeRemaining.overdue ? Math.abs(timeRemaining.days) + ' days overdue' : timeRemaining.days + ' days') + '</span></span></div></div>' : '') +
+    (p.actual_end ? '<div class="oe-side-field"><div class="oe-side-label">Completed</div><div><span class="oe-mono" style="font-size:12px;">' + esc(p.actual_end) + '</span></div></div>' : '') +
+  '</div>';
+
+  // Effort card
+  if (loggedHrs > 0 || estimatedHrs > 0) {
+    html += '<div class="oe-card oe-side-card"><div class="oe-meta">Effort</div>' +
+      '<div class="oe-side-field"><div class="oe-side-label">Logged</div><div><span class="oe-mono" style="font-size:12px;">' + loggedHrs + 'h</span></div></div>' +
+      (estimatedHrs > 0 ? '<div class="oe-side-field"><div class="oe-side-label">Estimated</div><div><span class="oe-mono" style="font-size:12px;">~' + estimatedHrs + 'h <span style="color:var(--ink-5);">(' + esc(p.project_size || '') + ')</span></span></div></div>' : '') +
+      (estimatedHrs > 0 ? '<div class="oe-side-field"><div class="oe-side-label">Capacity used</div><div style="display:flex;align-items:center;gap:8px;width:100%;"><div style="flex:1;height:4px;background:var(--ink-1);border-radius:2px;overflow:hidden;"><div style="width:' + capPct + '%;height:100%;background:' + (capPct > 100 ? 'var(--status-overdue-dot)' : 'var(--sage-500)') + ';"></div></div><span class="oe-mono" style="font-size:11px;">' + capPct + '%</span></div></div>' : '') +
+    '</div>';
+  }
+
+  // Data Program / size badges row
+  if (p.is_data_program || p.project_size) {
+    html += '<div class="oe-card oe-side-card"><div class="oe-meta">Tags</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+        (p.is_data_program ? '<span class="oe-chip" style="background:var(--ink-1);color:var(--ink-6);">Data Program</span>' : '') +
+        (p.project_size ? '<span class="oe-chip" style="background:var(--ink-1);color:var(--ink-6);">Size ' + esc(p.project_size) + '</span>' : '') +
+      '</div>' +
+    '</div>';
+  }
+
+  html += '</div>'; // /.oe-detail-side
+  html += '</div>'; // /.oe-detail-body
+  html += '</div>'; // /.oe-detail
+
+  return html;
+}
+
+// Tab switch for the OE project detail (Tasks ↔ Allocations).
+function showPdTab(name) {
+  ['tasks', 'alloc'].forEach(function(n) {
+    var panel = document.getElementById('pd-panel-' + n);
+    if (panel) panel.style.display = (n === name) ? '' : 'none';
+    var tab = document.getElementById('pd-tab-' + n);
+    if (tab) tab.setAttribute('aria-selected', (n === name) ? 'true' : 'false');
+  });
+}
+
+// ─── OE TASK DETAIL ────────────────────────────────────────────────────
+function renderTaskDetailOE(idx) {
+  var t = TASKS.find(function(x) { return x.objectId == idx; });
+  if (!t) return '<div class="empty-state">Task not found.</div>';
+  var proj = typeof getProjectByNumber === 'function' ? getProjectByNumber(t.project_number) : null;
+  var statusColor = STATUS_COLOR(t.status) || '#9CA3AF';
+  var isCompletable = t.status && t.status !== 'Complete' && t.status !== 'Canceled';
+  var loggedH = getTaskHours(t.idx);
+  var myH = getMyTaskHours(t.idx);
+
+  var due = t.working_due || t.due || '';
+  var timeRemaining = (function() {
+    if (!due || !isCompletable) return null;
+    var d = new Date(due + 'T00:00:00');
+    var today = new Date(); today.setHours(0,0,0,0);
+    var days = Math.round((d - today) / 86400000);
+    return { days: days, overdue: days < 0 };
+  })();
+
+  var html = '<div class="oe-detail oe-detail--task">';
+
+  // Breadcrumb
+  html += '<div class="oe-detail-crumbs">' +
+    '<a onclick="goBackFromDetail()" style="color:var(--ink-5);text-decoration:none;cursor:pointer;">Portfolio</a>' +
+    '<svg class="icon" aria-hidden="true" style="width:10px;height:10px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' +
+    (proj ? '<a onclick="openProject(' + proj.objectId + ')" style="color:var(--ink-5);text-decoration:none;cursor:pointer;">' + esc(proj.title) + '</a><svg class="icon" aria-hidden="true" style="width:10px;height:10px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' : '') +
+    '<span class="oe-mono" style="color:var(--ink-7);font-size:12px;">' + esc(t.task_number || '') + '</span>' +
+  '</div>';
+
+  // Header
+  html += '<div class="oe-detail-head oe-detail-head--task">' +
+    '<div class="oe-detail-head-left">' +
+      '<div class="oe-detail-pills">' +
+        '<span class="oe-mono" style="font-size:12px;color:var(--ink-5);letter-spacing:0.04em;">' + esc(t.task_number || '') + '</span>' +
+        '<span class="status-pill" data-status="' + esc(t.status || '') + '" style="background:' + statusColor + '22;color:var(--ink-7);"><span style="width:6px;height:6px;border-radius:50%;background:' + statusColor + ';display:inline-block;"></span>' + esc(t.status || '—') + '</span>' +
+        '<span class="priority-badge priority-' + (t.priority || 'null') + '">' + (t.priority || '—') + '</span>' +
+        (proj ? '<a style="font-size:13px;color:var(--ink-5);text-decoration:none;display:inline-flex;align-items:center;gap:4px;cursor:pointer;" onclick="openProject(' + proj.objectId + ')"><svg class="icon" aria-hidden="true" style="width:12px;height:12px;"><use href="#ph-folder-open"></use></svg><span class="oe-mono" style="font-size:11px;">' + esc(proj.project_number || '') + '</span><span style="color:var(--ink-6);">' + esc(proj.title) + '</span></a>' : '') +
+        (t.category ? '<span class="oe-body-sm" style="display:inline-flex;align-items:center;gap:4px;color:var(--ink-5);">' + esc(t.category) + '</span>' : '') +
+      '</div>' +
+      '<h1 class="oe-detail-title oe-detail-title--task">' + esc(t.title) + '</h1>' +
+      (t.assignee ? '<div class="oe-body-sm" style="margin-top:8px;display:inline-flex;align-items:center;gap:8px;"><span class="oe-avatar oe-avatar--sm" style="background:var(--navy-500);color:var(--ink-paper);">' + esc(t.assignee.split(' ').map(function(w) { return w[0]; }).join('').slice(0,2).toUpperCase()) + '</span>' + esc(t.assignee) + '</div>' : '') +
+    '</div>' +
+    '<div class="oe-detail-actions">' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">' +
+        (isCompletable ? '<button class="oe-btn oe-btn--primary oe-btn--sm" onclick="markTaskComplete(' + t.objectId + ')"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg>Mark complete</button>' : '') +
+        '<button class="oe-btn oe-btn--secondary oe-btn--sm" onclick="openFormModal(\'edit-task\',' + t.objectId + ')"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg>Edit</button>' +
+        '<button class="oe-btn oe-btn--ghost oe-btn--sm" onclick="confirmDeleteTask(' + t.objectId + ')" title="Delete" style="color:var(--status-overdue-fg);"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>' +
+      '</div>' +
+      (t.actual_end ? '<div class="oe-mono" style="font-size:10px;color:var(--ink-4);margin-top:8px;">Completed ' + t.actual_end + '</div>' : '') +
+    '</div>' +
+  '</div>';
+
+  // Two-column body
+  html += '<div class="oe-detail-body">';
+
+  // MAIN
+  html += '<div class="oe-detail-main">';
+
+  if (t.description) {
+    html += '<div class="oe-detail-mdsec"><div class="oe-meta" style="margin-bottom:8px;">Description</div><div class="oe-detail-prose">' + (typeof renderMd === 'function' ? renderMd(t.description) : esc(t.description)) + '</div></div>';
+  }
+  if (t.resolution) {
+    html += '<div class="oe-detail-mdsec"><div class="oe-meta" style="margin-bottom:8px;color:var(--sage-700);">Resolution</div><div class="oe-detail-prose">' + (typeof renderMd === 'function' ? renderMd(t.resolution) : esc(t.resolution)) + '</div></div>';
+  }
+  if (typeof renderTaskHistorySection === 'function') {
+    html += '<div class="oe-detail-mdsec">' + renderTaskHistorySection(t) + '</div>';
+  }
+
+  // Dependencies
+  if (typeof isFeatureOn === 'function' && isFeatureOn('dependencies')) {
+    var blockedBy = typeof parseBlockedBy === 'function' ? parseBlockedBy(t) : [];
+    var blocking  = typeof getBlockingTasks === 'function' ? getBlockingTasks(t.task_number) : [];
+    if (blockedBy.length || blocking.length) {
+      html += '<div class="oe-detail-mdsec"><div class="oe-meta" style="margin-bottom:10px;">Dependencies</div>';
+      if (blockedBy.length) {
+        html += '<div style="font-size:11px;font-weight:600;color:var(--ink-5);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Depends on</div>';
+        blockedBy.forEach(function(ref) {
+          var dep = typeof resolveDependency === 'function' ? resolveDependency(ref) : null;
+          if (!dep) { html += '<div class="oe-body-sm" style="padding:4px 0;">' + esc(ref) + ' (not found)</div>'; return; }
+          var isDone = dep.obj.status === 'Complete' || dep.obj.status === 'Canceled';
+          var sc = STATUS_COLOR(dep.obj.status);
+          var openFn = dep.type === 'project' ? ('openProject(' + dep.obj.objectId + ')') : ('openTask(' + dep.obj.objectId + ')');
+          html += '<div class="td-dep-row" onclick="' + openFn + '">' +
+            '<span class="oe-mono" style="font-size:11px;color:var(--ink-5);">' + esc(ref) + '</span>' +
+            '<span class="td-dep-title" style="' + (isDone ? 'text-decoration:line-through;color:var(--ink-5);' : '') + '">' + esc(dep.obj.title) + '</span>' +
+            '<span class="status-pill" data-status="' + esc(dep.obj.status) + '" style="background:' + sc + '22;color:var(--ink-7);font-size:11px;"><span style="width:5px;height:5px;border-radius:50%;background:' + sc + ';display:inline-block;"></span>' + esc(dep.obj.status) + '</span>' +
+          '</div>';
+        });
+      }
+      if (blocking.length) {
+        html += '<div style="font-size:11px;font-weight:600;color:var(--ink-5);text-transform:uppercase;letter-spacing:0.06em;margin:10px 0 6px;">Required by</div>';
+        blocking.forEach(function(bt) {
+          var sc = STATUS_COLOR(bt.status);
+          html += '<div class="td-dep-row" onclick="openTask(' + bt.objectId + ')">' +
+            '<span class="oe-mono" style="font-size:11px;color:var(--ink-5);">' + esc(bt.task_number || '') + '</span>' +
+            '<span class="td-dep-title">' + esc(bt.title) + '</span>' +
+            '<span class="status-pill" data-status="' + esc(bt.status) + '" style="background:' + sc + '22;color:var(--ink-7);font-size:11px;"><span style="width:5px;height:5px;border-radius:50%;background:' + sc + ';display:inline-block;"></span>' + esc(bt.status) + '</span>' +
+          '</div>';
+        });
+      }
+      html += '</div>';
+    }
+  }
+
+  html += '</div>'; // /.oe-detail-main
+
+  // SIDEBAR
+  html += '<div class="oe-detail-side">';
+
+  html += '<div class="oe-card oe-side-card"><div class="oe-meta">Assigned</div>' +
+    (t.assignee ? '<div style="display:flex;align-items:center;gap:8px;"><span class="oe-avatar oe-avatar--sm" style="background:var(--navy-500);color:var(--ink-paper);">' + esc(t.assignee.split(' ').map(function(w) { return w[0]; }).join('').slice(0,2).toUpperCase()) + '</span><span style="font-size:13px;">' + esc(t.assignee) + '</span></div>' : '<div style="color:var(--ink-4);font-size:13px;">Unassigned</div>') +
+  '</div>';
+
+  html += '<div class="oe-card oe-side-card"><div class="oe-meta">Schedule</div>' +
+    '<div class="oe-side-field"><div class="oe-side-label">Started</div><div><span class="oe-mono" style="font-size:12px;">' + (t.start || '—') + '</span></div></div>' +
+    '<div class="oe-side-field"><div class="oe-side-label">Due</div><div><span class="oe-mono" style="font-size:12px;">' + (due || '—') + '</span>' + (t.due && t.working_due && t.working_due !== t.due ? ' <span style="font-size:10px;color:var(--status-overdue-fg);">(moved)</span>' : '') + '</div></div>' +
+    (timeRemaining ? '<div class="oe-side-field"><div class="oe-side-label">Time remaining</div><div><span style="font-size:13px;color:' + (timeRemaining.overdue ? 'var(--status-overdue-fg)' : 'var(--ink-7)') + ';font-weight:600;"><span class="oe-mono">' + (timeRemaining.overdue ? Math.abs(timeRemaining.days) + ' days overdue' : timeRemaining.days + ' days') + '</span></span></div></div>' : '') +
+    (t.actual_end ? '<div class="oe-side-field"><div class="oe-side-label">Completed</div><div><span class="oe-mono" style="font-size:12px;">' + esc(t.actual_end) + '</span></div></div>' : '') +
+  '</div>';
+
+  if (loggedH > 0 || t.hours_worked) {
+    html += '<div class="oe-card oe-side-card"><div class="oe-meta">Effort</div>' +
+      '<div class="oe-side-field"><div class="oe-side-label">Logged</div><div><span class="oe-mono" style="font-size:12px;">' + (loggedH > 0 ? hoursLabel(loggedH, myH) : '—') + '</span></div></div>' +
+      (t.hours_worked ? '<div class="oe-side-field"><div class="oe-side-label">Reported</div><div><span class="oe-mono" style="font-size:12px;">' + esc(t.hours_worked) + 'h</span></div></div>' : '') +
+    '</div>';
+  }
+
+  if (proj) {
+    html += '<div class="oe-card oe-side-card"><div class="oe-meta">Parent project</div>' +
+      '<a class="td-parent" onclick="openProject(' + proj.objectId + ')">' +
+        '<svg class="icon" aria-hidden="true" style="width:14px;height:14px;color:var(--ink-5);"><use href="#ph-folder-open"></use></svg>' +
+        '<div style="flex:1;min-width:0;"><div class="oe-mono" style="font-size:11px;color:var(--ink-5);">' + esc(proj.project_number || '') + '</div><div style="font-size:13px;color:var(--ink-7);">' + esc(proj.title) + '</div></div>' +
+        '<svg class="icon" aria-hidden="true" style="width:11px;height:11px;color:var(--ink-4);flex-shrink:0;"><use href="#ph-caret-right"></use></svg>' +
+      '</a>' +
+    '</div>';
+  }
+
+  if (t.tool) {
+    html += '<div class="oe-card oe-side-card"><div class="oe-meta">Tool</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;"><span class="oe-chip" style="background:var(--ink-1);color:var(--ink-6);">' + esc(t.tool) + '</span></div>' +
+    '</div>';
+  }
+
+  html += '</div>'; // /.oe-detail-side
+  html += '</div>'; // /.oe-detail-body
+  html += '</div>'; // /.oe-detail
+
+  return html;
+}
+
 function sortDetailTasks(tasks) {
   var col = _dtSortCol;
   var dir = _dtSortDir === 'asc' ? 1 : -1;

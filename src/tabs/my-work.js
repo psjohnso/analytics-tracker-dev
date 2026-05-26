@@ -206,7 +206,9 @@ function toggleTaskView(mode) {
   // Re-render the detail page in place without scrolling to top
   var area = document.getElementById('content-area');
   if (currentDetail && currentDetail.type === 'project' && area) {
-    area.innerHTML = renderProjectDetail(currentDetail.id);
+    area.innerHTML = (typeof _oeDetail === 'function' && _oeDetail())
+      ? renderProjectDetailOE(currentDetail.id)
+      : renderProjectDetail(currentDetail.id);
     initSearchableSelect('batch-project');
   }
 }
