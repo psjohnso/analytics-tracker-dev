@@ -1343,6 +1343,21 @@ body[data-theme="dark"] .preset-menu { box-shadow:0 6px 22px rgba(0,0,0,0.5); }
 .account-menu-footer  { padding:8px 10px 4px; border-top:1px solid var(--border); margin-top:4px;
   font-family:monospace; font-size:10px; color:var(--text-muted); }
 
+/* Admin-only "Switch view" section inside the account menu: hosts the team
+   lens + act-as-role selects rendered by renderTeamSwitcher() (team-scope.js). */
+.account-menu-section { padding:8px 10px 6px; }
+.account-menu-sectionlabel { font-size:10px; font-weight:600; letter-spacing:0.08em;
+  text-transform:uppercase; color:var(--text-muted); margin-bottom:6px; }
+.account-menu-section #team-switcher-wrap { display:flex; flex-direction:column; gap:6px; }
+.account-menu-section #team-switcher-wrap select {
+  width:100% !important; max-width:none !important;
+  background:var(--white) !important; color:var(--text-dark) !important;
+  border:1px solid var(--border) !important; border-radius:4px !important;
+  padding:6px 8px !important; font-size:12px !important; font-weight:500 !important;
+  font-family:inherit !important;
+}
+.account-menu-section #team-switcher-wrap select:focus { outline:none; border-color:var(--navy) !important; }
+
 /* ── Collapsible sidebar filter sections (accordion) ───────────────── */
 .sidebar-section.collapsible { padding-top:0; padding-bottom:0; }
 .sidebar-acc-head {

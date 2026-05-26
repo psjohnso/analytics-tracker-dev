@@ -216,7 +216,19 @@ function renderTeamSwitcher() {
   // can switch back) even while impersonating a lead/member.
   var isRealAdmin = (typeof Auth !== 'undefined' && Auth && Auth.isTeamLead);
   var loggedIn = !(typeof Auth !== 'undefined' && Auth) || Auth.loggedIn !== false;
-  if (!isRealAdmin || !loggedIn) { wrap.innerHTML = ''; wrap.style.display = 'none'; return; }
+  // The switcher now lives inside the account menu, so toggle the surrounding
+  // section + divider together (renderTeamSwitcher is the single source of truth
+  // for "show admin chrome").
+  var _tsSection = (typeof document !== 'undefined') ? document.getElementById('account-menu-switchview') : null;
+  var _tsDivider = (typeof document !== 'undefined') ? document.getElementById('account-menu-switchview-divider') : null;
+  if (!isRealAdmin || !loggedIn) {
+    wrap.innerHTML = ''; wrap.style.display = 'none';
+    if (_tsSection) _tsSection.style.display = 'none';
+    if (_tsDivider) _tsDivider.style.display = 'none';
+    return;
+  }
+  if (_tsSection) _tsSection.style.display = '';
+  if (_tsDivider) _tsDivider.style.display = '';
   var cur = CURRENT_TEAM || '';
   // The header is pinned dark in the Dark theme, and --navy lightens there, so the
   // light-on-white select styling becomes unreadable. Branch on the dark theme.
