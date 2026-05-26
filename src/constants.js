@@ -10,7 +10,7 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.63.4.7';
+const APP_VERSION = '1.63.5.8';
 
 // ── Three-tier access (admin / lead / member) via ArcGIS groups ──────────
 // Tier is resolved at login from the user's group memberships (highest wins).

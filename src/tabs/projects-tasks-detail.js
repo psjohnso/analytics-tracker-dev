@@ -1473,9 +1473,12 @@ function renderProjectDetailOE(id) {
 
   var html = '<div class="oe-detail oe-detail--project">';
 
-  // Breadcrumb
+  // Breadcrumb — sticky so it's always reachable from anywhere on the page.
   html += '<div class="oe-detail-crumbs">' +
-    '<a onclick="goBackFromDetail()" style="color:var(--ink-5);text-decoration:none;cursor:pointer;">Portfolio</a>' +
+    '<a class="oe-detail-back" onclick="goBackFromDetail()" title="Back to where you came from">' +
+      '<svg class="icon" aria-hidden="true" style="width:12px;height:12px;"><use href="#ph-caret-left"></use></svg>' +
+      'Portfolio' +
+    '</a>' +
     '<svg class="icon" aria-hidden="true" style="width:10px;height:10px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' +
     '<span style="color:var(--ink-5);">' + esc(p.status || '—') + '</span>' +
     '<svg class="icon" aria-hidden="true" style="width:10px;height:10px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' +
@@ -1765,9 +1768,12 @@ function renderTaskDetailOE(idx) {
 
   var html = '<div class="oe-detail oe-detail--task">';
 
-  // Breadcrumb
+  // Breadcrumb — sticky so it's always reachable from anywhere on the page.
   html += '<div class="oe-detail-crumbs">' +
-    '<a onclick="goBackFromDetail()" style="color:var(--ink-5);text-decoration:none;cursor:pointer;">Portfolio</a>' +
+    '<a class="oe-detail-back" onclick="goBackFromDetail()" title="Back to where you came from">' +
+      '<svg class="icon" aria-hidden="true" style="width:12px;height:12px;"><use href="#ph-caret-left"></use></svg>' +
+      'Portfolio' +
+    '</a>' +
     '<svg class="icon" aria-hidden="true" style="width:10px;height:10px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' +
     (proj ? '<a onclick="openProject(' + proj.objectId + ')" style="color:var(--ink-5);text-decoration:none;cursor:pointer;">' + esc(proj.title) + '</a><svg class="icon" aria-hidden="true" style="width:10px;height:10px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' : '') +
     '<span class="oe-mono" style="color:var(--ink-7);font-size:12px;">' + esc(t.task_number || '') + '</span>' +
