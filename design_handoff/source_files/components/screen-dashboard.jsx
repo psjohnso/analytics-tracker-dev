@@ -6,7 +6,7 @@
 function ScreenDashboard() {
   return (
     <div className="oe" data-screen-label="01 Dashboard" style={{ width: '100%', height: '100%', overflow: 'auto', background: 'var(--ink-0)' }}>
-      <OETopBar activeTab="My Work" />
+      <OETopBar activeTab="My Work" showAccountMenu={true} />
 
       <div style={{ maxWidth: 1320, margin: '0 auto', padding: '40px 28px 64px' }}>
         {/* Editorial greeting */}

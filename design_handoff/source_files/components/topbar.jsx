@@ -3,7 +3,7 @@
 // Replaces: yellow numbers on navy, rainbow stripe, mixed buttons
 // ============================================================
 
-function OETopBar({ activeTab = 'My Work', stats }) {
+function OETopBar({ activeTab = 'My Work', stats, showAccountMenu = false }) {
   const defaultStats = stats || [
     { label: 'Active', value: '41' },
     { label: 'Open tasks', value: '135' },
@@ -47,14 +47,42 @@ function OETopBar({ activeTab = 'My Work', stats }) {
 
         <div style={{ height: 32, width: 1, background: 'var(--ink-2)' }}></div>
 
-        {/* Account */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span className="oe-avatar" style={{ background: 'var(--steel-100)', color: 'var(--steel-700)' }}>LS</span>
-          <div>
-            <div className="oe-h4" style={{ fontSize: 13, color: 'var(--ink-7)' }}>Laura Sharp</div>
-            <div className="oe-mono" style={{ fontSize: 10, color: 'var(--ink-5)' }}>ADMIN</div>
-          </div>
-          <button className="oe-btn oe-btn--ghost oe-btn--sm" style={{ marginLeft: 6 }}><i className="ph ph-sign-out"></i></button>
+        {/* Account dropdown trigger */}
+        <div style={{ position: 'relative' }}>
+          <button style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 8px 4px 4px', background: showAccountMenu ? 'var(--ink-1)' : 'transparent', border: 0, borderRadius: 6, cursor: 'pointer' }}>
+            <span className="oe-avatar" style={{ background: 'var(--steel-100)', color: 'var(--steel-700)' }}>LS</span>
+            <div style={{ textAlign: 'left' }}>
+              <div className="oe-h4" style={{ fontSize: 13, color: 'var(--ink-7)' }}>Laura Sharp</div>
+              <div className="oe-mono" style={{ fontSize: 10, color: 'var(--ink-5)' }}>ADMIN</div>
+            </div>
+            <i className="ph ph-caret-down" style={{ fontSize: 11, color: 'var(--ink-5)', marginLeft: 2 }}></i>
+          </button>
+
+          {showAccountMenu && (
+            <div style={{ position: 'absolute', top: 'calc(100% + 6px)', right: 0, background: 'var(--ink-paper)', border: '1px solid var(--ink-2)', borderRadius: 6, boxShadow: 'var(--shadow-3)', padding: 4, width: 240, zIndex: 50 }}>
+              {/* Header */}
+              <div style={{ padding: '8px 10px 10px', borderBottom: '1px solid var(--ink-2)', marginBottom: 4 }}>
+                <div className="oe-h4" style={{ fontSize: 13 }}>Laura Sharp</div>
+                <div className="oe-body-sm" style={{ fontSize: 11, color: 'var(--ink-5)' }}>laura.sharp@tucsonaz.gov</div>
+              </div>
+              <AccountMenuItem icon="user-circle" label="Profile &amp; preferences" />
+              <AccountMenuItem icon="bell" label="Notification settings" />
+              <AccountMenuItem icon="keyboard" label="Keyboard shortcuts" shortcut="?" />
+              <div style={{ height: 1, background: 'var(--ink-2)', margin: '4px 6px' }}></div>
+              <AccountMenuItem icon="download-simple" label="Download my data" />
+              <AccountMenuItem icon="file-arrow-down" label="Export current view" hint="CSV" />
+              <div style={{ height: 1, background: 'var(--ink-2)', margin: '4px 6px' }}></div>
+              <AccountMenuItem icon="question" label="About this tool" />
+              <AccountMenuItem icon="lifebuoy" label="Help &amp; documentation" />
+              <AccountMenuItem icon="chat-circle-text" label="Send feedback" />
+              <div style={{ height: 1, background: 'var(--ink-2)', margin: '4px 6px' }}></div>
+              <AccountMenuItem icon="sign-out" label="Sign out" />
+              {/* Footer version */}
+              <div style={{ padding: '8px 10px 4px', borderTop: '1px solid var(--ink-2)', marginTop: 4 }}>
+                <div className="oe-mono" style={{ fontSize: 10, color: 'var(--ink-5)' }}>v1.61.2.2 · refreshed 2m ago</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -79,3 +107,14 @@ function OETopBar({ activeTab = 'My Work', stats }) {
 }
 
 Object.assign(window, { OETopBar });
+
+function AccountMenuItem({ icon, label, hint, shortcut }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 4, cursor: 'pointer', color: 'var(--ink-7)' }}>
+      <i className={`ph ph-${icon}`} style={{ fontSize: 14, color: 'var(--ink-5)' }}></i>
+      <span style={{ flex: 1, fontSize: 13 }} dangerouslySetInnerHTML={{ __html: label }}></span>
+      {hint && <span className="oe-mono" style={{ fontSize: 10, color: 'var(--ink-5)', padding: '1px 5px', background: 'var(--ink-1)', borderRadius: 3 }}>{hint}</span>}
+      {shortcut && <span className="oe-mono" style={{ fontSize: 10, color: 'var(--ink-5)' }}>{shortcut}</span>}
+    </div>
+  );
+}

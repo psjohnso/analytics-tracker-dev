@@ -324,6 +324,29 @@ tr.row-group td: spans all columns, meta type, ink-1 bg — for section grouping
 
 IDs and dates use mono. Project name column: weight 500.
 
+### Account menu
+
+The avatar + name in the top bar is a **dropdown trigger** (caret-down indicator). Clicking opens a 240px menu anchored to the bottom-right of the trigger. Card surface, `--shadow-3`, 6px radius.
+
+**Menu structure** (4 groups separated by 1px ink-2 dividers):
+
+1. **Header** (non-interactive): user name (h4 13px) + email (body-sm 11px ink-5)
+2. **Profile group:**
+   - Profile &amp; preferences (`user-circle`)
+   - Notification settings (`bell`)
+   - Keyboard shortcuts (`keyboard`) · right-aligned shortcut `?`
+3. **Data group:**
+   - Download my data (`download-simple`)
+   - Export current view (`file-arrow-down`) · right-aligned hint chip "CSV"
+4. **Help group:**
+   - About this tool (`question`)
+   - Help &amp; documentation (`lifebuoy`)
+   - Send feedback (`chat-circle-text`)
+5. **Sign out** (`sign-out`)
+6. **Footer** (non-interactive): app version + "refreshed Xm ago" in mono 10px ink-5
+
+Each menu item: 7/10px padding, 4px radius, hover bg ink-1, icon 14px ink-5, label 13px ink-7. Reuse the menu-item pattern from `09 · Menus &amp; popovers`.
+
 ### Filter sidebar
 
 260px sticky. Collapsed sections: meta-cap title + count badge (navy-500 fill, white text, mono). Expanded sections: clickable rows with 7px colored dot, name, count. Active filter chips at top: navy-50 bg + navy-700 text + X icon.
