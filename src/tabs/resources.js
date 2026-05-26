@@ -440,6 +440,368 @@ function renderResources(area) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  OE CAPACITY · RESOURCES — Laura's screen-capacity.jsx (mock-first approved)
+//  Same data pipeline as Classic renderResources; OE re-shells the layout
+//  (editorial title row, 260px team sidebar card, member detail card with
+//  display-3 italic accent on last name, 4-up KPI grid, chart card with
+//  capacity line + legend, plus the Classic "Active Project Allocations"
+//  table kept verbatim under the chart per Peter's spec). Date format keeps
+//  the Classic "Jan 5 – May 24, 2026" rather than Laura's italic-year version.
+// ═══════════════════════════════════════════════════════════════════════════
+function _oeCapUtilColor(v) {
+  if (v >= 100) return 'var(--status-overdue-fg)';
+  if (v >= 75)  return 'var(--status-hold-fg)';
+  if (v > 0)    return 'var(--sage-700)';
+  return 'var(--ink-4)';
+}
+function _oeNameWithItalic(name) {
+  if (!name) return '';
+  var parts = String(name).trim().split(/\s+/);
+  if (parts.length < 2) return esc(name);
+  var last = parts.pop();
+  return esc(parts.join(' ')) + ' <span class="oe-italic-serif">' + esc(last) + '</span>';
+}
+
+function buildResourceTeamRowsOE(people, currentWeekIdx) {
+  return Object.entries(people)
+    .filter(function(entry) {
+      var name = entry[0];
+      return isFullMember(name) && (typeof inCurrentTeamPerson !== 'function' || inCurrentTeamPerson(name));
+    })
+    .map(function(entry) {
+      var name = entry[0], p = entry[1];
+      var curUtil = (p.utilization[currentWeekIdx] || 0) * 100;
+      var utilCol = _oeCapUtilColor(curUtil);
+      var initials = name.split(' ').map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+      var isActive = name === selectedPerson;
+      var avBg = isActive ? 'var(--navy-500)' : 'var(--ink-1)';
+      var avFg = isActive ? 'var(--ink-paper)' : 'var(--ink-6)';
+      var cls = 'oe-cap-row' + (isActive ? ' is-active' : '');
+      return '<button class="' + cls + '" onclick="selectPerson(\'' + name.replace(/'/g, "\\'") + '\')">' +
+        '<span class="oe-avatar oe-avatar--sm" style="background:' + avBg + ';color:' + avFg + ';">' + esc(initials) + '</span>' +
+        '<div class="oe-cap-row-name-wrap">' +
+          '<div class="oe-cap-row-name">' + esc(name) + '</div>' +
+          '<div class="oe-cap-util-bar"><div class="oe-cap-util-fill" style="width:' + Math.min(curUtil, 100) + '%;background:' + utilCol + ';"></div></div>' +
+        '</div>' +
+        '<span class="oe-cap-row-pct" style="color:' + utilCol + ';">' + curUtil.toFixed(0) + '%</span>' +
+      '</button>';
+    }).join('');
+}
+
+function renderResourcesOE(area) {
+  if (!RESOURCES_DATA) { area.innerHTML = '<div class="empty-state">Resources data is loading…</div>'; return; }
+  var weeks = RESOURCES_DATA.weeks;
+  var people = RESOURCES_DATA.people;
+  _resEnsureSelected();
+  var currentWeekIdx = window.currentWeekIdx;
+  var dataWeekIdx    = window.dataWeekIdx;
+
+  // ── Selected person + alloc dedup (same logic as Classic) ──
+  var p = people[selectedPerson];
+  var projTitleSet = new Set(PROJECTS.map(function(pr) { return pr.title; }));
+  function canonicalAllocTitle(raw) {
+    if (projTitleSet.has(raw)) return raw;
+    var stripped = raw.replace(/\s*-\s*[A-Z][A-Za-z .]+$/, '').trim();
+    return projTitleSet.has(stripped) ? stripped : raw;
+  }
+  var allocsByName = {};
+  p.allocations.forEach(function(a) {
+    var key = canonicalAllocTitle(a.project);
+    if (!allocsByName[key]) {
+      allocsByName[key] = Object.assign({}, a, { project: key, fracs: a.fracs.slice(), hours: a.hours.slice() });
+    } else {
+      var existing = allocsByName[key];
+      a.fracs.forEach(function(f, i) { existing.fracs[i] = (existing.fracs[i] || 0) + f; });
+      a.hours.forEach(function(h, i) { existing.hours[i] = (existing.hours[i] || 0) + h; });
+    }
+  });
+  var N = RESOURCES_DATA.weeks.length;
+  PROJECTS.forEach(function(proj) {
+    if (allocsByName[proj.title]) return;
+    var members = (proj.other_members || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+    var isContact = proj.contact === selectedPerson;
+    var isMember  = members.indexOf(selectedPerson) >= 0;
+    if (!isContact && !isMember) return;
+    allocsByName[proj.title] = { project: proj.title, status: proj.status, type: '', fracs: new Array(N).fill(0), hours: new Array(N).fill(0), analytics_id: proj.id };
+  });
+  Object.keys(allocsByName).forEach(function(projTitle) {
+    var liveProj = PROJECTS.find(function(pr) { return pr.title === projTitle; });
+    if (liveProj) allocsByName[projTitle].status = liveProj.status;
+  });
+  var allocs = Object.values(allocsByName).filter(function(a) { return a.status === 'Active' || a.status === 'On Hold'; });
+  var chartAllocs = Object.values(allocsByName).filter(function(a) {
+    if (a.status === 'Active' || a.status === 'On Hold') return true;
+    if (a.status === 'Complete' || a.status === 'Canceled') return a.fracs.some(function(f) { return f > 0; });
+    return false;
+  });
+
+  // ── KPIs (uses dataWeekIdx for numbers, currentWeekIdx for visuals) ──
+  var cwIdx = dataWeekIdx;
+  var calWeekIdx = currentWeekIdx;
+  var cwCap = p.proj_cap[cwIdx] || 0;
+  var cwAlloc = p.weekly_allocated[cwIdx] || 0;
+  var cwUtil = cwCap > 0 ? (cwAlloc / cwCap * 100) : 0;
+  var activeProjects = allocs.filter(function(a) { return a.fracs.some(function(f) { return f > 0; }); }).length;
+  var totalAllocYTD = p.weekly_allocated.slice(0, cwIdx + 1).reduce(function(s, v) { return s + v; }, 0);
+
+  // ── Chart geometry (smaller bars than Classic so the 20-week window fits the
+  //    OE 1fr main column without horizontal scroll on most viewports). ──
+  var windowSize = 20;
+  var wStart = Math.min(chartWindowStart, Math.max(0, weeks.length - windowSize));
+  var wEnd   = Math.min(wStart + windowSize, weeks.length);
+
+  var maxCap = Math.max.apply(null, p.proj_cap.slice(wStart, wEnd).concat([1]));
+  var chartH = 220;
+  var barW   = 28;
+  var gap    = 6;
+  var padL   = 42;
+  var padB   = 40;
+  var chartW = padL + (barW + gap) * (wEnd - wStart) + 16;
+
+  var projColorMap = {};
+  chartAllocs.forEach(function(a, i) { projColorMap[a.project] = PROJECT_COLORS[i % PROJECT_COLORS.length]; });
+
+  // OE chart colors (capacity line = navy; grid/axis pulled from ink tokens).
+  var _oeDark = (typeof document !== 'undefined' && document.body && document.body.dataset.theme === 'oe-dark');
+  var capLineColor = _oeDark ? '#b3c4e0' : '#1f3b6b';
+  var gridColor = _oeDark ? 'rgba(255,255,255,0.06)' : '#e8e2d3';
+  var axisColor = _oeDark ? 'rgba(255,255,255,0.18)' : '#d9d1bf';
+  var cwIndOpacity = _oeDark ? '0.10' : '0.05';
+  var labelTickColor = _oeDark ? '#8ea4c4' : '#a89e88';
+  var labelMonthColor = _oeDark ? '#c4d2e5' : '#6b6354';
+
+  var bars = '';
+  var xLabels = '';
+  var yLines = '';
+
+  for (var h = 0; h <= maxCap; h += Math.ceil(maxCap / 4)) {
+    var y = chartH - padB - (h / maxCap) * (chartH - padB);
+    yLines += '<line x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + chartW + '" y2="' + y.toFixed(1) + '" stroke="' + gridColor + '" stroke-width="1"/>';
+    yLines += '<text x="' + (padL - 6) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end" font-size="10" font-family="JetBrains Mono, monospace" fill="' + labelTickColor + '">' + h.toFixed(0) + '</text>';
+  }
+
+  for (var wi = wStart; wi < wEnd; wi++) {
+    var x = padL + (wi - wStart) * (barW + gap);
+    var cap = p.proj_cap[wi] || 0;
+    var capY = chartH - padB - (cap / maxCap) * (chartH - padB);
+
+    var stackY = chartH - padB;
+    chartAllocs.forEach(function(a) {
+      var hrs = a.hours[wi] || 0;
+      if (hrs <= 0) return;
+      var barH = (hrs / maxCap) * (chartH - padB);
+      stackY -= barH;
+      var col = projColorMap[a.project];
+      var isClosed = a.status === 'Complete' || a.status === 'Canceled';
+      var op = isClosed ? '0.45' : '0.95';
+      var statusSuffix = isClosed ? ' (' + a.status + ')' : '';
+      bars += '<rect x="' + x.toFixed(1) + '" y="' + stackY.toFixed(1) + '" width="' + barW + '" height="' + barH.toFixed(1) + '" fill="' + col + '" opacity="' + op + '" rx="2"><title>' + esc(a.project + statusSuffix) + ': ' + hrs.toFixed(1) + 'h</title></rect>';
+    });
+
+    // Capacity dot per week
+    bars += '<circle cx="' + (x + barW / 2).toFixed(1) + '" cy="' + capY.toFixed(1) + '" r="3" fill="' + capLineColor + '"/>';
+    // Current week indicator
+    if (wi === calWeekIdx) {
+      bars += '<rect x="' + x.toFixed(1) + '" y="0" width="' + barW + '" height="' + (chartH - padB) + '" fill="' + capLineColor + '" opacity="' + cwIndOpacity + '" rx="2"/>';
+    }
+
+    // X labels (month on first-of-month, day below)
+    var wDate = new Date(weeks[wi] + 'T00:00:00');
+    var prevDate = wi > 0 ? new Date(weeks[wi - 1] + 'T00:00:00') : null;
+    var monDate = new Date(wDate); monDate.setDate(monDate.getDate() + 1);
+    var prevMon = prevDate ? new Date(prevDate) : null;
+    if (prevMon) prevMon.setDate(prevMon.getDate() + 1);
+    var showLabel = !prevMon || prevMon.getMonth() !== monDate.getMonth();
+    if (showLabel) {
+      xLabels += '<text x="' + (x + barW / 2).toFixed(1) + '" y="' + (chartH - padB + 16).toFixed(1) + '" text-anchor="middle" font-size="10" font-family="JetBrains Mono, monospace" fill="' + labelMonthColor + '" font-weight="600">' + monDate.toLocaleDateString('en-US', { month: 'short' }) + '</text>';
+    }
+    xLabels += '<text x="' + (x + barW / 2).toFixed(1) + '" y="' + (chartH - padB + 28).toFixed(1) + '" text-anchor="middle" font-size="9" font-family="JetBrains Mono, monospace" fill="' + labelTickColor + '">' + monDate.getDate() + '</text>';
+  }
+
+  // Capacity line (dashed connecting capacity dots)
+  var capPath = '';
+  for (var wii = wStart; wii < wEnd; wii++) {
+    var xx = padL + (wii - wStart) * (barW + gap) + barW / 2;
+    var ccap = p.proj_cap[wii] || 0;
+    var yy = chartH - padB - (ccap / maxCap) * (chartH - padB);
+    capPath += (wii === wStart ? 'M' : ' L') + xx.toFixed(1) + ',' + yy.toFixed(1);
+  }
+
+  var svgChart = '<svg width="' + chartW + '" height="' + chartH + '" role="img" aria-label="Weekly project allocation for ' + esc(selectedPerson) + '" style="overflow:visible;display:block;">' +
+    yLines +
+    '<line x1="' + padL + '" y1="0" x2="' + padL + '" y2="' + (chartH - padB) + '" stroke="' + axisColor + '" stroke-width="1"/>' +
+    '<line x1="' + padL + '" y1="' + (chartH - padB) + '" x2="' + chartW + '" y2="' + (chartH - padB) + '" stroke="' + axisColor + '" stroke-width="1"/>' +
+    bars +
+    '<path d="' + capPath + '" fill="none" stroke="' + capLineColor + '" stroke-width="2" stroke-dasharray="4,3" opacity="0.65"/>' +
+    xLabels +
+  '</svg>';
+
+  // Legend — same shape as Classic, OE colors
+  var legend = Object.entries(projColorMap).map(function(entry) {
+    var proj = entry[0], col = entry[1];
+    var a = chartAllocs.find(function(x) { return x.project === proj; });
+    var isClosed = a && (a.status === 'Complete' || a.status === 'Canceled');
+    var baseLabel = proj.length > 35 ? proj.slice(0, 35) + '…' : proj;
+    var label = isClosed ? baseLabel + ' (' + a.status + ')' : baseLabel;
+    var dotStyle = 'width:10px;height:10px;border-radius:2px;background:' + col + ';flex-shrink:0;' + (isClosed ? 'opacity:0.5;' : '');
+    var textStyle = 'font-size:11px;color:var(--ink-6);' + (isClosed ? 'font-style:italic;opacity:0.75;' : '');
+    return '<div class="oe-cap-legend-item" style="' + textStyle + '"><span style="' + dotStyle + '"></span>' + esc(label) + '</div>';
+  }).join('');
+
+  // Period label — KEEP Classic format per Peter's note (Jan 5 – May 24, 2026)
+  var periodLabel = (function() {
+    var s = new Date(weeks[wStart] + 'T00:00:00'); s.setDate(s.getDate() + 1);
+    var e = new Date(weeks[wEnd - 1] + 'T00:00:00'); e.setDate(e.getDate() + 7);
+    return s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' – ' + e.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  })();
+
+  // Reuse the existing Active Project Allocations table builder verbatim.
+  var tableRows = buildResourceAllocTableRows(allocs, projColorMap, calWeekIdx);
+
+  // ── Layout assembly ──
+  var teamRows = buildResourceTeamRowsOE(people, currentWeekIdx);
+  var teamCount = Object.keys(people).filter(function(n) { return isFullMember(n) && (typeof inCurrentTeamPerson !== 'function' || inCurrentTeamPerson(n)); }).length;
+  var mode = Editor.resourceMode || 'summary';
+
+  var titleRow = '<div class="oe-cap-head">' +
+    '<div>' +
+      '<div class="oe-cap-eyebrow">Team capacity · ' + esc(periodLabel) + '</div>' +
+      '<h1 class="oe-cap-title">Capacity</h1>' +
+    '</div>' +
+  '</div>';
+
+  var sidebar = '<div class="oe-card oe-cap-sidecard">' +
+    '<div class="oe-cap-team-head">' +
+      '<span class="oe-meta">Team</span>' +
+      '<span class="oe-mono" style="margin-left:8px;font-size:11px;color:var(--ink-5);">' + teamCount + '</span>' +
+    '</div>' +
+    '<div class="oe-cap-team-rows">' + teamRows + '</div>' +
+  '</div>';
+
+  var memberRoleLine = esc(p.role || '') + (p.team ? ' · ' + esc(p.team) + ' team' : '') + ' · <span style="color:var(--sage-700);">' + (p.proj_pct * 100).toFixed(0) + '% project-available</span>' + (typeof calcInfoIcon === 'function' ? calcInfoIcon('projCapacity') : '');
+  var memberInitials = selectedPerson.split(' ').map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+  var memberHeader = '<div class="oe-card oe-cap-member">' +
+    '<div class="oe-cap-member-top">' +
+      '<span class="oe-avatar oe-avatar--lg" style="background:var(--navy-500);color:var(--ink-paper);width:48px;height:48px;font-size:16px;">' + esc(memberInitials) + '</span>' +
+      '<div>' +
+        '<h2 class="oe-cap-member-name">' + _oeNameWithItalic(selectedPerson) + '</h2>' +
+        '<div class="oe-cap-member-role">' + memberRoleLine + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="oe-cap-kpis">' +
+      '<div class="oe-cap-kpi">' +
+        '<div class="oe-cap-kpi-label">Most-recent-week utilization' + (typeof calcInfoIcon === 'function' ? calcInfoIcon('utilization') : '') + '</div>' +
+        '<div class="oe-cap-kpi-value' + (cwUtil >= 100 ? ' overdue' : '') + '">' + cwUtil.toFixed(0) + '%</div>' +
+        '<div class="oe-cap-kpi-sub">' + cwAlloc.toFixed(1) + 'h of ' + cwCap.toFixed(1) + 'h capacity</div>' +
+      '</div>' +
+      '<div class="oe-cap-kpi">' +
+        '<div class="oe-cap-kpi-label">Available (most recent week)' + (typeof calcInfoIcon === 'function' ? calcInfoIcon('availableHours') : '') + '</div>' +
+        '<div class="oe-cap-kpi-value">' + Math.max(0, cwCap - cwAlloc).toFixed(1) + 'h</div>' +
+        '<div class="oe-cap-kpi-sub">unallocated project hours</div>' +
+      '</div>' +
+      '<div class="oe-cap-kpi">' +
+        '<div class="oe-cap-kpi-label">Active projects</div>' +
+        '<div class="oe-cap-kpi-value">' + activeProjects + '</div>' +
+        '<div class="oe-cap-kpi-sub">with allocations</div>' +
+      '</div>' +
+      '<div class="oe-cap-kpi">' +
+        '<div class="oe-cap-kpi-label">Hours logged YTD' + (typeof calcInfoIcon === 'function' ? calcInfoIcon('ytdHours') : '') + '</div>' +
+        '<div class="oe-cap-kpi-value">' + totalAllocYTD.toFixed(0) + 'h</div>' +
+        '<div class="oe-cap-kpi-sub">through current week</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  var chartCard = '<div class="oe-card oe-cap-chart-card">' +
+    '<div class="oe-cap-chart-head">' +
+      '<div>' +
+        '<div class="oe-meta">Weekly project allocation</div>' +
+        '<div class="oe-cap-chart-period">' + esc(periodLabel) + '</div>' +
+      '</div>' +
+      '<div class="oe-spacer"></div>' +
+      '<div style="display:flex;gap:6px;">' +
+        '<button class="oe-btn oe-btn--ghost oe-btn--sm" onclick="shiftChart(-20)"><svg class="icon" aria-hidden="true"><use href="#ph-caret-left"></use></svg>Prev</button>' +
+        '<button class="oe-btn oe-btn--ghost oe-btn--sm" onclick="shiftChart(20)">Next<svg class="icon" aria-hidden="true"><use href="#ph-caret-right"></use></svg></button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="oe-cap-chart-body"><div style="overflow-x:auto;">' + svgChart + '</div>' +
+      '<div class="oe-cap-capline-key"><svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="' + capLineColor + '" stroke-width="2" stroke-dasharray="4,3" opacity="0.65"/></svg>Project capacity (after role ratio &amp; absences)</div>' +
+    '</div>' +
+    '<div class="oe-cap-chart-legend">' + legend + '</div>' +
+  '</div>';
+
+  // Active Project Allocations — preserved from Classic per Peter's note.
+  // Same table builder, wrapped in OE-styled card chrome.
+  var allocSection = '<div class="oe-cap-alloc-section">' +
+    '<div class="oe-cap-alloc-head">' +
+      '<div class="oe-meta">Active project allocations</div>' +
+      '<span class="oe-body-sm" style="color:var(--ink-5);font-size:11px;">Showing Active &amp; On Hold only</span>' +
+    '</div>' +
+    '<div class="oe-card oe-cap-alloc-card"><table class="oe-cap-alloc-table"><thead><tr>' +
+      '<th>Project</th><th>Status</th><th>Type</th><th>This Week %</th><th>Recent Trend</th><th>Total Hours</th>' +
+    '</tr></thead><tbody>' +
+      (tableRows || '<tr><td colspan="6" style="text-align:center;color:var(--ink-5);padding:24px;">No allocations found</td></tr>') +
+    '</tbody></table></div>' +
+  '</div>';
+
+  // Edit mode: re-use the existing ae-grid (allocation editor) wrapped in OE chrome.
+  var editBody = '<div class="oe-card oe-cap-member">' +
+    '<div class="oe-cap-member-top">' +
+      '<span class="oe-avatar oe-avatar--lg" style="background:var(--navy-500);color:var(--ink-paper);width:48px;height:48px;font-size:16px;">' + esc(memberInitials) + '</span>' +
+      '<div>' +
+        '<h2 class="oe-cap-member-name">' + _oeNameWithItalic(selectedPerson) + '</h2>' +
+        '<div class="oe-cap-member-role">' + esc(p.role || '') + ' · ' + esc(p.team || '') + ' team · ' + (p.proj_pct * 100).toFixed(0) + '% project-available</div>' +
+      '</div>' +
+      '<div class="oe-spacer"></div>' +
+      '<div class="oe-body-sm" style="text-align:right;">Cap <strong>' + cwCap.toFixed(1) + 'h</strong> · Allocated <strong>' + cwAlloc.toFixed(1) + 'h</strong> · <strong>' + cwUtil.toFixed(0) + '%</strong></div>' +
+    '</div>' +
+    '<div class="ae-fp-nav" style="margin-top:18px;">' +
+      '<button class="ae-nav-btn" id="ae-fp-prev-btn" onclick="aeShift(-1)">◀ Prev</button>' +
+      '<div class="ae-fp-nav-mid">' +
+        '<div class="ae-fp-nav-label" id="ae-fp-range-label">—</div>' +
+        '<div class="ae-fp-nav-sub" id="ae-fp-range-sub">—</div>' +
+      '</div>' +
+      '<div class="ae-fp-nav-right">' +
+        '<button class="ae-jump-today" onclick="aeJumpCurrent()">Jump to Current Week</button>' +
+        '<button class="ae-nav-btn" id="ae-fp-next-btn" onclick="aeShift(1)">Next ▶</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="ae-fp-grid-wrap"><table class="ae-grid" id="ae-fp-grid-table"><thead id="ae-fp-thead"></thead><tbody id="ae-fp-tbody"></tbody><tfoot id="ae-fp-tfoot"></tfoot></table></div>' +
+  '</div>';
+
+  var paneBody = (mode === 'edit')
+    ? editBody
+    : (memberHeader + chartCard + allocSection);
+
+  var actionsHtml = (mode === 'edit')
+    ? '<div style="margin-left:auto;display:flex;gap:8px;">' +
+        '<button class="oe-btn oe-btn--ghost oe-btn--sm" onclick="setResourceMode(\'summary\')">Discard</button>' +
+        '<button class="oe-btn oe-btn--primary oe-btn--sm" onclick="applyEditorChanges()"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg>Apply changes</button>' +
+      '</div>'
+    : '';
+
+  area.innerHTML =
+    '<div class="oe-cap-page">' +
+      titleRow +
+      '<div class="oe-cap-grid">' +
+        sidebar +
+        '<div class="oe-cap-main">' +
+          '<div class="oe-tabs">' +
+            '<button class="oe-tab" aria-selected="' + (mode === 'summary' ? 'true' : 'false') + '" onclick="setResourceMode(\'summary\')"><svg class="icon" aria-hidden="true"><use href="#ph-users-three"></use></svg>Summary</button>' +
+            '<button class="oe-tab" aria-selected="' + (mode === 'edit' ? 'true' : 'false') + '" onclick="setResourceMode(\'edit\')"><svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg>Edit allocations</button>' +
+            actionsHtml +
+          '</div>' +
+          paneBody +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  if (mode === 'edit' && typeof aeRenderGrid === 'function') {
+    aeRenderGrid();
+  }
+}
+
 // Switch between Summary and Edit modes inside the Resources pane.
 // Entering edit mode rebuilds Editor.draft for the currently-selected
 // person via openAllocEditor (which is now mode-aware and skips the
