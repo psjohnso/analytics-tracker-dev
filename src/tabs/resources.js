@@ -38,6 +38,14 @@ function initResourcesWeekIndices() {
   let dwi = cwi;
   while (dwi > 0 && allPeopleVals.every(p => p.weekly_allocated[dwi] === 0)) dwi--;
   window.dataWeekIdx = dwi;
+  // On first init only, position the 20-week chart window so the current week
+  // is visible near the right edge (~16 weeks of history + current + 3 ahead).
+  // Without this, the chart starts at week 0 (Jan) and the user has to click
+  // "Next" to ever see this week's allocation. Respects later Prev/Next clicks.
+  if (!window._chartWindowInitialized) {
+    window._chartWindowInitialized = true;
+    if (cwi >= 16) chartWindowStart = Math.max(0, Math.min(cwi - 16, weeks.length - 20));
+  }
   _resEnsureSelected();
 }
 
@@ -284,6 +292,12 @@ function renderResources(area) {
         <title>${esc(a.project + statusSuffix)}: ${hrs.toFixed(1)}h</title></rect>`;
     });
 
+    // Estimate hatch overlay — current + future weeks reflect planned
+    // allocation (not settled actuals), so flag them with a diagonal stripe.
+    if (wi >= calWeekIdx && stackY < chartH - padB) {
+      bars += `<rect x="${x.toFixed(1)}" y="${stackY.toFixed(1)}" width="${barW}" height="${(chartH - padB - stackY).toFixed(1)}" fill="url(#estimateHatch)" rx="2" pointer-events="none"/>`;
+    }
+
     // Capacity line segment
     const nextWi = wi + 1 < wEnd ? wi + 1 : wi;
     const nextCap = p.proj_cap[nextWi] || cap;
@@ -322,6 +336,11 @@ function renderResources(area) {
   }
 
   const svgChart = `<svg width="${chartW}" height="${chartH}" role="img" aria-label="Weekly project allocation for ${esc(selectedPerson)}: stacked hours per project with a project-capacity line." style="overflow:visible;display:block;">
+    <defs>
+      <pattern id="estimateHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+        <line x1="0" y1="0" x2="0" y2="6" stroke="#fff" stroke-width="2" opacity="0.45"/>
+      </pattern>
+    </defs>
     ${yLines}
     <line x1="${padL}" y1="0" x2="${padL}" y2="${chartH-padB}" stroke="${axisColor}" stroke-width="1"/>
     <line x1="${padL}" y1="${chartH-padB}" x2="${chartW}" y2="${chartH-padB}" stroke="${axisColor}" stroke-width="1"/>
@@ -378,7 +397,10 @@ function renderResources(area) {
       <div class="chart-header"><h3>Weekly Project Allocation</h3><div class="chart-nav"><button onclick="shiftChart(-20)">◀ Prev</button><span class="period-label">${periodLabel}</span><button onclick="shiftChart(20)">Next ▶</button></div></div>
       <div style="overflow-x:auto;">${svgChart}</div>
       <div style="margin-top:12px;line-height:2;">${legend}</div>
-      <div style="margin-top:8px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);"><svg width="20" height="12"><line x1="0" y1="6" x2="20" y2="6" stroke="${capLineColor}" stroke-width="2" stroke-dasharray="4,3" opacity="0.6"/></svg>Project capacity (after role ratio &amp; absences)</div>
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:16px;font-size:11px;color:var(--text-muted);">
+        <span style="display:inline-flex;align-items:center;gap:6px;"><svg width="20" height="12"><line x1="0" y1="6" x2="20" y2="6" stroke="${capLineColor}" stroke-width="2" stroke-dasharray="4,3" opacity="0.6"/></svg>Project capacity (after role ratio &amp; absences)</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="12"><defs><pattern id="estimateHatchLegend" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#666" stroke-width="2" opacity="0.7"/></pattern></defs><rect x="0" y="0" width="14" height="12" fill="${(typeof PROJECT_COLORS !== 'undefined' && PROJECT_COLORS[0]) || '#1f3b6b'}" opacity="0.85" rx="2"/><rect x="0" y="0" width="14" height="12" fill="url(#estimateHatchLegend)" rx="2"/></svg>Estimate · current and future weeks (may change as work progresses)</span>
+      </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><span style="font-size:13px;font-weight:700;color:var(--navy);">Active Project Allocations</span><span class="text-muted-sm">Showing Active &amp; On Hold only</span></div>
     <div class="proj-alloc-table"><table><thead><tr><th>Project</th><th>Status</th><th>Type</th><th>This Week %</th><th>Recent Trend</th><th>Total Hours</th></tr></thead><tbody>${tableRows || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No allocations found</td></tr>'}</tbody></table></div>
@@ -599,6 +621,12 @@ function renderResourcesOE(area) {
       bars += '<rect x="' + x.toFixed(1) + '" y="' + stackY.toFixed(1) + '" width="' + barW + '" height="' + barH.toFixed(1) + '" fill="' + col + '" opacity="' + op + '" rx="2"><title>' + esc(a.project + statusSuffix) + ': ' + hrs.toFixed(1) + 'h</title></rect>';
     });
 
+    // Estimate hatch overlay — current + future weeks reflect planned
+    // allocation (not settled actuals), so flag them with a diagonal stripe.
+    if (wi >= calWeekIdx && stackY < chartH - padB) {
+      bars += '<rect x="' + x.toFixed(1) + '" y="' + stackY.toFixed(1) + '" width="' + barW + '" height="' + (chartH - padB - stackY).toFixed(1) + '" fill="url(#oeEstimateHatch)" rx="2" pointer-events="none"/>';
+    }
+
     // Capacity dot per week
     bars += '<circle cx="' + (x + barW / 2).toFixed(1) + '" cy="' + capY.toFixed(1) + '" r="3" fill="' + capLineColor + '"/>';
     // Current week indicator
@@ -629,6 +657,7 @@ function renderResourcesOE(area) {
   }
 
   var svgChart = '<svg width="' + chartW + '" height="' + chartH + '" role="img" aria-label="Weekly project allocation for ' + esc(selectedPerson) + '" style="overflow:visible;display:block;">' +
+    '<defs><pattern id="oeEstimateHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="' + (_oeDark ? '#fff' : '#fff') + '" stroke-width="2" opacity="' + (_oeDark ? '0.30' : '0.45') + '"/></pattern></defs>' +
     yLines +
     '<line x1="' + padL + '" y1="0" x2="' + padL + '" y2="' + (chartH - padB) + '" stroke="' + axisColor + '" stroke-width="1"/>' +
     '<line x1="' + padL + '" y1="' + (chartH - padB) + '" x2="' + chartW + '" y2="' + (chartH - padB) + '" stroke="' + axisColor + '" stroke-width="1"/>' +
@@ -726,7 +755,10 @@ function renderResourcesOE(area) {
       '</div>' +
     '</div>' +
     '<div class="oe-cap-chart-body"><div style="overflow-x:auto;">' + svgChart + '</div>' +
-      '<div class="oe-cap-capline-key"><svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="' + capLineColor + '" stroke-width="2" stroke-dasharray="4,3" opacity="0.65"/></svg>Project capacity (after role ratio &amp; absences)</div>' +
+      '<div class="oe-cap-capline-key" style="display:flex;flex-wrap:wrap;gap:18px;">' +
+        '<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="' + capLineColor + '" stroke-width="2" stroke-dasharray="4,3" opacity="0.65"/></svg>Project capacity (after role ratio &amp; absences)</span>' +
+        '<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="12"><defs><pattern id="oeEstHatchKey" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="' + (_oeDark ? '#fff' : '#3f3a2d') + '" stroke-width="2" opacity="' + (_oeDark ? '0.45' : '0.75') + '"/></pattern></defs><rect x="0" y="0" width="14" height="12" fill="' + (PROJECT_COLORS && PROJECT_COLORS[0] || '#1f3b6b') + '" opacity="0.85" rx="2"/><rect x="0" y="0" width="14" height="12" fill="url(#oeEstHatchKey)" rx="2"/></svg>Estimate · current and future weeks (may change as work progresses)</span>' +
+      '</div>' +
     '</div>' +
     '<div class="oe-cap-chart-legend">' + legend + '</div>' +
   '</div>';
