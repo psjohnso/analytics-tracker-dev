@@ -368,18 +368,22 @@ function aeRenderGrid() {
     for (var i = 0; i < wIdxs.length; i++) {
       if ((a.fracs[wIdxs[i]] || 0) > 0) return true;
     }
+    // Active / On Hold / Waiting / Scheduled-and-started represent ongoing
+    // work. Even if working_due has slipped into the past, the lead still
+    // needs to allocate against it in the current window. Only Complete /
+    // Canceled get hidden when their end date falls before the window.
+    const isOngoing = a.status === 'Active' || a.status === 'On Hold' ||
+                      a.status === 'Waiting' || a.status === 'Scheduled';
     // (a) project active span overlaps the visible window
     const pStart = dates.start || '';
     const pEnd   = dates.end   || '';
     if (!pStart && !pEnd) {
       // No date metadata: only show if status is forward-looking so an
-      // empty row for an active project doesn't disappear. (Scheduled is
-      // handled above, so it's intentionally not listed here.)
-      return a.status === 'Active' || a.status === 'On Hold' ||
-             a.status === 'Waiting';
+      // empty row for an active project doesn't disappear.
+      return isOngoing;
     }
     if (pStart && winEndDate   < pStart) return false; // project starts after window ends
-    if (pEnd   && winStartDate > pEnd)   return false; // project ended before window starts
+    if (pEnd && winStartDate > pEnd && !isOngoing) return false; // closed project ended before window
     return true;
   }
   // _origIdx must reference position in the full draft array (cell change
