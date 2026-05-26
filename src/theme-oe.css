@@ -1432,3 +1432,182 @@ body[data-theme="oe"] .oe-cap-alloc-table .sparkline-cell, body[data-theme="oe-d
 body[data-theme="oe"] .oe-cap-alloc-table .spark-bar, body[data-theme="oe-dark"] .oe-cap-alloc-table .spark-bar {
   width: 5px; border-radius: 1px 1px 0 0;
 }
+
+/* ============================================================================
+   PHASE 14 · CAPACITY / FORECAST — extrapolated from Laura's capacity patterns
+   ----------------------------------------------------------------------------
+   Editorial header + segmented controls, planner (top, most actionable) with
+   status-pill availability + 13-week timeline bars, "who has capacity" cards,
+   team-load area chart, person × week heatmap. Status palette (sage/hold/
+   overdue) replaces the bright Bootstrap colors from Classic.
+   ============================================================================ */
+
+/* Page wrapper */
+body[data-theme="oe"] .oe-fc-page, body[data-theme="oe-dark"] .oe-fc-page {
+  padding: 24px 28px 64px; max-width: 1320px; margin: 0 auto;
+}
+
+/* Header */
+body[data-theme="oe"] .oe-fc-head, body[data-theme="oe-dark"] .oe-fc-head {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; flex-wrap: wrap;
+}
+body[data-theme="oe"] .oe-fc-eyebrow, body[data-theme="oe-dark"] .oe-fc-eyebrow {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;
+  color: var(--navy-300); margin-bottom: 6px;
+}
+body[data-theme="oe"] .oe-fc-title, body[data-theme="oe-dark"] .oe-fc-title {
+  font-family: var(--font-display) !important; font-size: 44px; line-height: 1.05;
+  letter-spacing: -0.01em; font-weight: 400; color: var(--ink-7); margin: 0;
+}
+body[data-theme="oe"] .oe-fc-sub, body[data-theme="oe-dark"] .oe-fc-sub {
+  font-size: 13px; line-height: 1.55; color: var(--ink-5); max-width: 600px; margin-top: 10px;
+}
+
+/* Segmented controls */
+body[data-theme="oe"] .oe-fc-controls, body[data-theme="oe-dark"] .oe-fc-controls {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+body[data-theme="oe"] .oe-fc-ctrl-label, body[data-theme="oe-dark"] .oe-fc-ctrl-label {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: var(--ink-5); margin-right: 4px;
+}
+body[data-theme="oe"] .oe-fc-segment, body[data-theme="oe-dark"] .oe-fc-segment {
+  display: inline-flex; border: 1px solid var(--ink-3); border-radius: var(--r-2); overflow: hidden; background: var(--ink-paper);
+}
+body[data-theme="oe"] .oe-fc-segment button, body[data-theme="oe-dark"] .oe-fc-segment button {
+  border: 0; background: transparent; padding: 6px 10px; font-size: 12px; font-weight: 500;
+  color: var(--ink-6); cursor: pointer; border-left: 1px solid var(--ink-3); font-family: inherit;
+}
+body[data-theme="oe"] .oe-fc-segment button:first-child, body[data-theme="oe-dark"] .oe-fc-segment button:first-child { border-left: 0; }
+body[data-theme="oe"] .oe-fc-segment button.on, body[data-theme="oe-dark"] .oe-fc-segment button.on { background: var(--ink-1); color: var(--ink-7); }
+
+/* Sections */
+body[data-theme="oe"] .oe-fc-section, body[data-theme="oe-dark"] .oe-fc-section { margin-bottom: 32px; }
+body[data-theme="oe"] .oe-fc-section-head, body[data-theme="oe-dark"] .oe-fc-section-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 14px; flex-wrap: wrap;
+}
+body[data-theme="oe"] .oe-fc-section-title, body[data-theme="oe-dark"] .oe-fc-section-title {
+  font-family: var(--font-display) !important; font-size: 24px; line-height: 1.1;
+  letter-spacing: -0.01em; font-weight: 400; color: var(--ink-7); margin: 0;
+}
+body[data-theme="oe"] .oe-fc-section-sub, body[data-theme="oe-dark"] .oe-fc-section-sub { font-size: 13px; color: var(--ink-5); }
+
+/* Planner */
+body[data-theme="oe"] .oe-fc-planner-controls, body[data-theme="oe-dark"] .oe-fc-planner-controls {
+  display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 14px;
+  padding: 18px 20px; border-bottom: 1px solid var(--ink-2); align-items: flex-end;
+}
+body[data-theme="oe"] .oe-fc-planner-controls label, body[data-theme="oe-dark"] .oe-fc-planner-controls label {
+  display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  font-weight: 600; color: var(--ink-5); margin-bottom: 6px;
+}
+body[data-theme="oe"] .oe-fc-planner-meta, body[data-theme="oe-dark"] .oe-fc-planner-meta {
+  font-size: 12px; color: var(--ink-5); padding-bottom: 8px; align-self: center;
+}
+body[data-theme="oe"] .oe-fc-row, body[data-theme="oe-dark"] .oe-fc-row {
+  padding: 14px 20px; border-bottom: 1px solid var(--ink-2);
+  display: grid; grid-template-columns: 1fr auto; gap: 12px 16px; align-items: center;
+}
+body[data-theme="oe"] .oe-fc-row:last-child, body[data-theme="oe-dark"] .oe-fc-row:last-child { border-bottom: 0; }
+body[data-theme="oe"] .oe-fc-who, body[data-theme="oe-dark"] .oe-fc-who {
+  display: flex; align-items: center; gap: 10px; min-width: 0;
+}
+body[data-theme="oe"] .oe-fc-name, body[data-theme="oe-dark"] .oe-fc-name { font-size: 13px; font-weight: 600; color: var(--ink-7); }
+body[data-theme="oe"] .oe-fc-role, body[data-theme="oe-dark"] .oe-fc-role { font-size: 11px; color: var(--ink-5); font-family: var(--font-mono) !important; }
+body[data-theme="oe"] .oe-fc-timeline, body[data-theme="oe-dark"] .oe-fc-timeline {
+  display: flex; align-items: flex-end; gap: 2px; height: 36px; grid-column: 1 / -1;
+}
+body[data-theme="oe"] .oe-fc-bar, body[data-theme="oe-dark"] .oe-fc-bar {
+  flex: 1; background: var(--ink-1); border-radius: 2px 2px 0 0;
+  min-height: 2px; height: 100%; display: flex; flex-direction: column-reverse;
+}
+body[data-theme="oe"] .oe-fc-bar-cur, body[data-theme="oe-dark"] .oe-fc-bar-cur { background: var(--navy-50); }
+body[data-theme="oe"] .oe-fc-bar-existing, body[data-theme="oe-dark"] .oe-fc-bar-existing {
+  width: 100%; border-radius: 1px 1px 0 0; opacity: 0.85;
+}
+body[data-theme="oe"] .oe-fc-bar-new, body[data-theme="oe-dark"] .oe-fc-bar-new {
+  width: 100%; background: var(--navy-500); opacity: 0.7;
+}
+body[data-theme="oe"] .oe-fc-blockers, body[data-theme="oe-dark"] .oe-fc-blockers {
+  grid-column: 1 / -1; font-size: 11px; color: var(--ink-5);
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+body[data-theme="oe"] .oe-fc-blocker-chip, body[data-theme="oe-dark"] .oe-fc-blocker-chip {
+  padding: 2px 7px; border-radius: var(--r-1); background: var(--ink-1); font-size: 11px; color: var(--ink-6);
+}
+
+/* Who-has-capacity cards */
+body[data-theme="oe"] .oe-fc-cap-grid, body[data-theme="oe-dark"] .oe-fc-cap-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px;
+}
+body[data-theme="oe"] .oe-fc-cap-card, body[data-theme="oe-dark"] .oe-fc-cap-card {
+  padding: 16px 18px; position: relative; overflow: hidden;
+}
+body[data-theme="oe"] .oe-fc-cap-strip, body[data-theme="oe-dark"] .oe-fc-cap-strip {
+  position: absolute; left: 0; right: 0; top: 0; height: 3px;
+}
+body[data-theme="oe"] .oe-fc-cap-name, body[data-theme="oe-dark"] .oe-fc-cap-name {
+  font-size: 14px; font-weight: 600; color: var(--ink-7); margin-top: 6px;
+}
+body[data-theme="oe"] .oe-fc-cap-role, body[data-theme="oe-dark"] .oe-fc-cap-role { font-size: 11px; color: var(--ink-5); margin-top: 2px; }
+body[data-theme="oe"] .oe-fc-cap-avail, body[data-theme="oe-dark"] .oe-fc-cap-avail {
+  font-family: var(--font-mono) !important; font-size: 24px; line-height: 1; margin-top: 14px;
+}
+body[data-theme="oe"] .oe-fc-cap-availlbl, body[data-theme="oe-dark"] .oe-fc-cap-availlbl {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: var(--ink-5); margin-top: 2px;
+}
+body[data-theme="oe"] .oe-fc-cap-spark-row, body[data-theme="oe-dark"] .oe-fc-cap-spark-row {
+  margin-top: 14px; height: 24px; display: flex; align-items: flex-end; gap: 1px;
+}
+body[data-theme="oe"] .oe-fc-spark, body[data-theme="oe-dark"] .oe-fc-spark {
+  flex: 1; min-height: 2px; border-radius: 1px 1px 0 0;
+}
+body[data-theme="oe"] .oe-fc-cap-bar, body[data-theme="oe-dark"] .oe-fc-cap-bar {
+  height: 4px; background: var(--ink-1); border-radius: 2px; overflow: hidden; margin-top: 10px;
+}
+body[data-theme="oe"] .oe-fc-cap-bar-fill, body[data-theme="oe-dark"] .oe-fc-cap-bar-fill { height: 100%; border-radius: 2px; }
+body[data-theme="oe"] .oe-fc-cap-meta, body[data-theme="oe-dark"] .oe-fc-cap-meta {
+  display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-5);
+  margin-top: 4px; font-family: var(--font-mono) !important;
+}
+
+/* Team load card */
+body[data-theme="oe"] .oe-fc-load-card, body[data-theme="oe-dark"] .oe-fc-load-card { padding: 18px 22px; }
+
+/* Heatmap */
+body[data-theme="oe"] .oe-fc-hm-wrap, body[data-theme="oe-dark"] .oe-fc-hm-wrap { padding: 0; overflow: hidden; }
+body[data-theme="oe"] .oe-fc-hm-scroll, body[data-theme="oe-dark"] .oe-fc-hm-scroll { overflow-x: auto; }
+body[data-theme="oe"] .oe-fc-hm-table, body[data-theme="oe-dark"] .oe-fc-hm-table {
+  width: 100%; border-collapse: separate; border-spacing: 0; font-size: 11px;
+}
+body[data-theme="oe"] .oe-fc-hm-table th, body[data-theme="oe-dark"] .oe-fc-hm-table th {
+  position: sticky; top: 0; background: var(--ink-1); color: var(--ink-5);
+  font-weight: 600; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 8px 6px; text-align: center; border-bottom: 1px solid var(--ink-2);
+}
+body[data-theme="oe"] .oe-fc-hm-table th.oe-fc-hm-name, body[data-theme="oe-dark"] .oe-fc-hm-table th.oe-fc-hm-name {
+  text-align: left; padding: 8px 14px; min-width: 160px; position: sticky; left: 0; z-index: 2;
+}
+body[data-theme="oe"] .oe-fc-hm-table td, body[data-theme="oe-dark"] .oe-fc-hm-table td {
+  padding: 0; border-bottom: 1px solid var(--ink-2);
+}
+body[data-theme="oe"] .oe-fc-hm-table td.oe-fc-hm-name, body[data-theme="oe-dark"] .oe-fc-hm-table td.oe-fc-hm-name {
+  padding: 8px 14px; background: var(--ink-paper); position: sticky; left: 0; z-index: 1; border-right: 1px solid var(--ink-2);
+}
+body[data-theme="oe"] .oe-fc-hm-pname, body[data-theme="oe-dark"] .oe-fc-hm-pname { font-size: 12px; font-weight: 500; color: var(--ink-7); }
+body[data-theme="oe"] .oe-fc-hm-prole, body[data-theme="oe-dark"] .oe-fc-hm-prole { font-size: 10px; color: var(--ink-5); font-family: var(--font-mono) !important; margin-top: 1px; }
+body[data-theme="oe"] .oe-fc-hm-cell, body[data-theme="oe-dark"] .oe-fc-hm-cell {
+  display: flex; align-items: center; justify-content: center; height: 34px; margin: 1px;
+  border-radius: 3px; font-family: var(--font-mono) !important; font-size: 11px;
+}
+body[data-theme="oe"] .oe-fc-hm-cur, body[data-theme="oe-dark"] .oe-fc-hm-cur {
+  box-shadow: inset 0 0 0 2px var(--navy-500); border-radius: 3px;
+}
+
+/* Legend strip (shared between planner + heatmap) */
+body[data-theme="oe"] .oe-fc-legend-strip, body[data-theme="oe-dark"] .oe-fc-legend-strip {
+  padding: 12px 20px; border-top: 1px solid var(--ink-2); display: flex; flex-wrap: wrap;
+  gap: 8px 18px; font-size: 11px; color: var(--ink-6); align-items: center;
+}
+body[data-theme="oe"] .oe-fc-ls-sw, body[data-theme="oe-dark"] .oe-fc-ls-sw {
+  width: 12px; height: 12px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle;
+}

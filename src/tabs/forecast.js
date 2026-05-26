@@ -194,6 +194,11 @@ function cpSetRole(val) { _cpRole = val; cpRenderPlanner(); }
 function cpSetTeam(val) { _cpTeam = val || ''; cpRenderPlanner(); }
 
 function cpRenderPlanner() {
+  // OE renderer when the OE theme is active — same data pipeline, different shell.
+  if (typeof _oeDetail === 'function' && _oeDetail() && typeof cpRenderPlannerOE === 'function') {
+    cpRenderPlannerOE();
+    return;
+  }
   var container = document.getElementById('cp-planner-body');
   if (!container || !RESOURCES_DATA || !RESOURCES_DATA.people) return;
   cpEnsureTeamInit();
@@ -323,6 +328,364 @@ function buildCapacityPlannerSection() {
       '<div style="font-size:12px;color:var(--text-muted);padding-bottom:6px;">' + pct + '% of project time/week' + calcInfoIcon('autoFillPct') + ' for ' + SIZE_DURATIONS[_cpSize] + ' weeks</div>' +
     '</div>' +
     '<div id="cp-planner-body"></div>' +
+  '</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  OE CAPACITY · FORECAST — extrapolated from Laura's capacity patterns
+//  (mock-first approved). Same fcAvailData / findEarliestStart pipeline as
+//  Classic; OE re-shells the page: editorial header, planner first, then
+//  who-has-capacity cards, team-load chart, person × week heatmap. Status
+//  colors (sage/hold/overdue) replace the Bootstrap-bright palette.
+// ═══════════════════════════════════════════════════════════════════════════
+function _oeFcAvailPill(earliest, curIdx) {
+  if (earliest === -1) return { cls: 'oe-pill--full', label: 'At capacity' };
+  if (earliest <= curIdx) return { cls: 'oe-pill--avail', label: 'Available now' };
+  if (earliest <= curIdx + 4) return { cls: 'oe-pill--soon', label: cpWeekLabel(earliest) };
+  return { cls: 'oe-pill--late', label: cpWeekLabel(earliest) };
+}
+function _oeFcUtilDot(u) {
+  if (u >= 1.0)  return 'var(--status-overdue-dot)';
+  if (u >= 0.85) return '#d4a830';
+  if (u >= 0.65) return 'var(--status-hold-dot)';
+  if (u > 0)     return 'var(--status-active-dot)';
+  return 'var(--ink-3)';
+}
+function _oeFcHmCell(u) {
+  if (u >= 1.10) return { bg: 'var(--status-overdue-dot)', fg: '#fff' };
+  if (u >= 1.00) return { bg: 'var(--status-overdue-bg)',  fg: 'var(--status-overdue-fg)' };
+  if (u >= 0.85) return { bg: '#f5d8a2',                   fg: 'var(--status-overdue-fg)' };
+  if (u >= 0.40) return { bg: 'var(--status-hold-bg)',     fg: 'var(--status-hold-fg)' };
+  if (u > 0)     return { bg: 'var(--status-active-bg)',   fg: 'var(--status-active-fg)' };
+  return { bg: 'var(--ink-1)', fg: 'var(--ink-5)' };
+}
+
+function cpRenderPlannerOE() {
+  var container = document.getElementById('cp-planner-body');
+  if (!container || !RESOURCES_DATA || !RESOURCES_DATA.people) return;
+  cpEnsureTeamInit();
+  var avData = fcAvailData();
+  var people = Object.keys(avData);
+  if (typeof inCurrentTeamPerson === 'function') people = people.filter(inCurrentTeamPerson);
+  if (_cpTeam) {
+    people = people.filter(function(name) {
+      var p = RESOURCES_DATA.people[name];
+      return p && p.team === _cpTeam;
+    });
+  }
+  var curIdx = window.currentWeekIdx || 9;
+  var pct = (_allocationDefaults[_cpSize] || {})[_cpRole] || 0;
+  var dur = SIZE_DURATIONS[_cpSize] || 6;
+
+  var results = people.map(function(name) {
+    var r = findEarliestStart(avData, name, _cpSize, _cpRole);
+    return { name: name, data: avData[name], earliest: r.startWeek, blockers: r.blockers };
+  }).sort(function(a, b) {
+    if (a.earliest === -1 && b.earliest === -1) return 0;
+    if (a.earliest === -1) return 1;
+    if (b.earliest === -1) return -1;
+    return a.earliest - b.earliest;
+  });
+
+  var showWeeks = Math.min(13, 52 - curIdx);
+  var html = '';
+  results.forEach(function(item) {
+    var d = item.data;
+    var initials = item.name.split(' ').map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+    var pill = _oeFcAvailPill(item.earliest, curIdx);
+    // Timeline bars
+    var bars = '';
+    for (var w = curIdx; w < curIdx + showWeeks && w < 52; w++) {
+      var cap = d.cap[w] || 1;
+      var alloc = d.alloc[w] || 0;
+      var u = Math.min(1.25, alloc / cap);
+      var existH = Math.min(100, u * 100);
+      var existCol = _oeFcUtilDot(u);
+      var newH = (item.earliest >= 0 && w >= item.earliest && w < item.earliest + dur) ? pct : 0;
+      var isCur = w === curIdx;
+      var stack = '';
+      if (existH > 0) stack += '<div class="oe-fc-bar-existing" style="height:' + existH + '%;background:' + existCol + ';"></div>';
+      if (newH > 0) stack += '<div class="oe-fc-bar-new" style="height:' + newH + '%;"></div>';
+      bars += '<div class="oe-fc-bar' + (isCur ? ' oe-fc-bar-cur' : '') + '">' + stack + '</div>';
+    }
+    var blockersHtml = '';
+    if (item.blockers && item.blockers.length > 0) {
+      var lbl = item.earliest === -1 ? 'Current projects' : 'Capacity held by';
+      blockersHtml = '<div class="oe-fc-blockers"><span class="oe-meta" style="font-size:10px;">' + lbl + '</span>' +
+        item.blockers.map(function(p) { return '<span class="oe-fc-blocker-chip">' + esc(p) + '</span>'; }).join('') +
+      '</div>';
+    }
+    html += '<div class="oe-fc-row">' +
+      '<div class="oe-fc-who">' +
+        '<span class="oe-avatar oe-avatar--sm">' + esc(initials) + '</span>' +
+        '<div><div class="oe-fc-name">' + esc(item.name) + '</div>' +
+          '<div class="oe-fc-role">' + esc(d.role || '') + ' · ' + Math.round((d.cap[curIdx] || 0)) + 'h/week</div></div>' +
+      '</div>' +
+      '<span class="oe-pill ' + pill.cls + '">' + esc(pill.label) + '</span>' +
+      '<div class="oe-fc-timeline">' + bars + '</div>' +
+      blockersHtml +
+    '</div>';
+  });
+  container.innerHTML = html || '<div style="padding:32px;text-align:center;color:var(--ink-5);">No team members match the current filter.</div>';
+}
+
+function buildForecastPageOE() {
+  if (!RESOURCES_DATA) return '<div class="empty-state">Resources data is loading…</div>';
+  cpEnsureTeamInit();
+  var rd = RESOURCES_DATA;
+  var weeks = rd.weeks;
+  var fullAvData = fcAvailData();
+  var avData = {};
+  var _fcTeam = (typeof isTeamScopingOn === 'function' && isTeamScopingOn() && CURRENT_TEAM)
+    ? CURRENT_TEAM
+    : (typeof HOME_TEAM !== 'undefined' ? HOME_TEAM : 'Data Intelligence');
+  Object.keys(fullAvData).forEach(function(name) {
+    var keep = (typeof sameTeam === 'function')
+      ? sameTeam((typeof personTeam === 'function' ? personTeam(name) : (rd.people[name] || {}).team), _fcTeam)
+      : (rd.people[name] && rd.people[name].team === _fcTeam);
+    if (keep) avData[name] = fullAvData[name];
+  });
+  var people = Object.keys(avData);
+  var curIdx = window.currentWeekIdx || 9;
+  var wStart = curIdx;
+  var wEnd = Math.min(52, wStart + fcWindow);
+  var wSlice = weeks.slice(wStart, wEnd);
+  var wLen = wSlice.length;
+  var firstWeekDate = (function() {
+    if (!wSlice[0]) return '';
+    var d = new Date(wSlice[0] + 'T12:00:00'); d.setDate(d.getDate() + 1);
+    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  })();
+
+  // ── Planner controls (top section) ──
+  var sizeLabels = { S: 'S — Small (2 wks)', M: 'M — Medium (6 wks)', L: 'L — Large (13 wks)', XL: 'XL — Extra large (26 wks)' };
+  var sizeOpts = ['S','M','L','XL'].map(function(s) {
+    return '<option value="' + s + '"' + (s === _cpSize ? ' selected' : '') + '>' + sizeLabels[s] + '</option>';
+  }).join('');
+  var roleOpts = ['Lead','Contributor','Reviewer'].map(function(r) {
+    return '<option value="' + r + '"' + (r === _cpRole ? ' selected' : '') + '>' + r + '</option>';
+  }).join('');
+  var teamOpts;
+  if (typeof isTeamScopingOn === 'function' && isTeamScopingOn() && CURRENT_TEAM) {
+    teamOpts = '<option value="' + esc(CURRENT_TEAM) + '" selected>' + esc(CURRENT_TEAM) + '</option>';
+  } else {
+    teamOpts = '<option value=""' + (_cpTeam === '' ? ' selected' : '') + '>All teams</option>';
+    CP_TEAMS.forEach(function(t) {
+      teamOpts += '<option value="' + esc(t) + '"' + (t === _cpTeam ? ' selected' : '') + '>' + esc(t) + '</option>';
+    });
+  }
+  var planPct = (_allocationDefaults[_cpSize] || {})[_cpRole] || 0;
+  var planDur = SIZE_DURATIONS[_cpSize] || 6;
+
+  // ── Who-has-capacity cards (sorted most-available first) ──
+  var sorted = people.slice().sort(function(a, b) {
+    var aAvg = avData[a].avail.slice(wStart, wEnd).reduce(function(s, v) { return s + v; }, 0) / wLen;
+    var bAvg = avData[b].avail.slice(wStart, wEnd).reduce(function(s, v) { return s + v; }, 0) / wLen;
+    return bAvg - aAvg;
+  });
+  var whoCards = sorted.map(function(name) {
+    var d = avData[name];
+    var sliceAvail = d.avail.slice(wStart, wEnd);
+    var sliceCap = d.cap.slice(wStart, wEnd);
+    var avgAvail = sliceAvail.reduce(function(s, v) { return s + v; }, 0) / wLen;
+    var avgCap = sliceCap.reduce(function(s, v) { return s + v; }, 0) / wLen || 1;
+    var avgUtil = Math.min(1.25, 1 - avgAvail / avgCap);
+    var pct = Math.round(avgUtil * 100);
+    var avHrs = Math.round(avgAvail * 10) / 10;
+    var stripCol = _oeFcUtilDot(avgUtil);
+    var valColor = avgUtil >= 0.95 ? 'var(--status-overdue-fg)' : avgUtil >= 0.80 ? 'var(--status-hold-fg)' : 'var(--sage-700)';
+    var sparks = '';
+    sliceCap.forEach(function(cap, i) {
+      var u = cap > 0 ? Math.min(1.25, (cap - sliceAvail[i]) / cap) : 0;
+      var col = _oeFcUtilDot(u);
+      var h = Math.max(2, Math.round(u * 22));
+      var isCur = (wStart + i) === curIdx;
+      sparks += '<div class="oe-fc-spark" style="height:' + h + 'px;background:' + (isCur ? 'var(--navy-500)' : col) + ';' + (u < 0.05 ? 'opacity:0.4;' : '') + '"></div>';
+    });
+    return '<div class="oe-card oe-fc-cap-card">' +
+      '<div class="oe-fc-cap-strip" style="background:' + stripCol + ';"></div>' +
+      '<div class="oe-fc-cap-name">' + esc(name) + '</div>' +
+      '<div class="oe-fc-cap-role">' + esc(d.role || '') + '</div>' +
+      '<div class="oe-fc-cap-avail" style="color:' + valColor + ';">' + avHrs + 'h</div>' +
+      '<div class="oe-fc-cap-availlbl">avg free / week</div>' +
+      '<div class="oe-fc-cap-spark-row">' + sparks + '</div>' +
+      '<div class="oe-fc-cap-bar"><div class="oe-fc-cap-bar-fill" style="width:' + pct + '%;background:' + stripCol + ';"></div></div>' +
+      '<div class="oe-fc-cap-meta"><span>' + pct + '% allocated</span><span>' + Math.round(avgCap) + 'h cap</span></div>' +
+    '</div>';
+  }).join('');
+
+  // ── Team load over time (area chart) ──
+  var teamAlloc = new Array(wLen).fill(0);
+  var teamCap = new Array(wLen).fill(0);
+  Object.values(avData).forEach(function(d) {
+    for (var i = 0; i < wLen; i++) { teamAlloc[i] += d.alloc[wStart + i]; teamCap[i] += d.cap[wStart + i]; }
+  });
+  var svgW = 900, svgH = 160, padL = 48, padB = 28, padT = 14;
+  var innerW = svgW - padL - 16, innerH = svgH - padB - padT;
+  var maxTeam = Math.max.apply(null, teamCap.concat([1]));
+  var xStep = innerW / Math.max(wLen - 1, 1);
+  var capPts = teamCap.map(function(v, i) { return (padL + i * xStep).toFixed(1) + ',' + (padT + innerH - (v / maxTeam) * innerH).toFixed(1); });
+  var allocPts = teamAlloc.map(function(v, i) { return (padL + i * xStep).toFixed(1) + ',' + (padT + innerH - (v / maxTeam) * innerH).toFixed(1); });
+  var allocArea = allocPts.join(' ') + ' ' + (padL + (wLen - 1) * xStep).toFixed(1) + ',' + (padT + innerH).toFixed(1) + ' ' + padL.toFixed(1) + ',' + (padT + innerH).toFixed(1);
+  var yGrid = '';
+  for (var t = 0; t <= 4; t++) {
+    var v = (maxTeam / 4) * t;
+    var y = (padT + innerH - (v / maxTeam) * innerH).toFixed(1);
+    yGrid += '<line x1="' + padL + '" y1="' + y + '" x2="' + (svgW - 16) + '" y2="' + y + '" stroke="var(--ink-2)" stroke-width="1"/>' +
+             '<text x="' + (padL - 6) + '" y="' + (parseFloat(y) + 4) + '" text-anchor="end" font-size="9" font-family="JetBrains Mono, monospace" fill="var(--ink-4)">' + Math.round(v) + 'h</text>';
+  }
+  var xLabels = '';
+  var prevMonth = null;
+  wSlice.forEach(function(w, i) {
+    var mo = new Date(w + 'T12:00:00').toLocaleString('default', { month: 'short' });
+    if (mo !== prevMonth) {
+      var x = (padL + i * xStep).toFixed(1);
+      xLabels += '<text x="' + x + '" y="' + (svgH - 6) + '" text-anchor="middle" font-size="9" font-family="JetBrains Mono, monospace" fill="var(--ink-5)">' + mo + '</text>' +
+                 '<line x1="' + x + '" y1="' + padT + '" x2="' + x + '" y2="' + (svgH - padB) + '" stroke="var(--ink-2)" stroke-width="1" stroke-dasharray="3,3"/>';
+      prevMonth = mo;
+    }
+  });
+  var curX = padL + (curIdx - wStart) * xStep;
+  var curLine = '<line x1="' + curX.toFixed(1) + '" y1="' + padT + '" x2="' + curX.toFixed(1) + '" y2="' + (svgH - padB) + '" stroke="var(--navy-500)" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>' +
+                '<text x="' + curX.toFixed(1) + '" y="' + (padT - 2) + '" text-anchor="middle" font-size="9" font-family="JetBrains Mono, monospace" fill="var(--navy-500)" font-weight="700">Today</text>';
+  var avgTeamUtil = teamAlloc.reduce(function(s, v) { return s + v; }, 0) / Math.max(teamCap.reduce(function(s, v) { return s + v; }, 0), 1);
+  var teamChartSVG = '<svg width="100%" viewBox="0 0 ' + svgW + ' ' + svgH + '" style="display:block;">' +
+    '<defs><linearGradient id="oeFcGrad" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="var(--navy-500)" stop-opacity="0.30"/>' +
+      '<stop offset="100%" stop-color="var(--navy-500)" stop-opacity="0.04"/>' +
+    '</linearGradient></defs>' +
+    yGrid + xLabels + curLine +
+    '<polygon points="' + allocArea + '" fill="url(#oeFcGrad)"/>' +
+    '<polyline points="' + allocPts.join(' ') + '" fill="none" stroke="var(--navy-500)" stroke-width="2" stroke-linejoin="round"/>' +
+    '<polyline points="' + capPts.join(' ') + '" fill="none" stroke="var(--status-overdue-dot)" stroke-width="1.5" stroke-dasharray="5,4"/>' +
+    '<text x="' + (svgW - 20) + '" y="' + (padT + innerH - (teamCap[wLen - 1] / maxTeam) * innerH - 6).toFixed(1) + '" text-anchor="end" font-size="10" font-family="Hanken Grotesk, sans-serif" font-weight="600" fill="var(--status-overdue-fg)">Capacity</text>' +
+    '<text x="' + (svgW - 20) + '" y="' + (padT + innerH - (teamAlloc[wLen - 1] / maxTeam) * innerH - 6).toFixed(1) + '" text-anchor="end" font-size="10" font-family="Hanken Grotesk, sans-serif" font-weight="600" fill="var(--navy-500)">Allocated</text>' +
+  '</svg>';
+
+  // ── Heatmap ──
+  var CELL_W = Math.max(28, Math.min(44, Math.floor(720 / wLen)));
+  var monthCells = '<th class="oe-fc-hm-name" rowspan="2">Person</th>';
+  var curMo = null, moSpan = 0;
+  var moGroups = [];
+  wSlice.forEach(function(w, i) {
+    var mo = new Date(w + 'T12:00:00').toLocaleString('default', { month: 'short', year: '2-digit' });
+    if (mo !== curMo) {
+      if (curMo !== null) moGroups.push({ label: curMo, span: moSpan });
+      curMo = mo; moSpan = 1;
+    } else { moSpan++; }
+  });
+  if (curMo) moGroups.push({ label: curMo, span: moSpan });
+  monthCells += moGroups.map(function(g) { return '<th colspan="' + g.span + '" style="min-width:' + (g.span * CELL_W) + 'px;">' + g.label + '</th>'; }).join('');
+  var weekThs = wSlice.map(function(w, i) {
+    var d = new Date(w + 'T12:00:00'); d.setDate(d.getDate() + 1);
+    var lbl = (d.getMonth() + 1) + '/' + d.getDate();
+    var isCur = (wStart + i) === curIdx;
+    return '<th style="min-width:' + CELL_W + 'px;' + (isCur ? 'color:var(--navy-500);' : '') + '">' + lbl + '</th>';
+  }).join('');
+  var hmRows = people.map(function(name) {
+    var d = avData[name];
+    var cells = wSlice.map(function(w, i) {
+      var wi = wStart + i;
+      var u = d.util[wi];
+      var avail = d.avail[wi];
+      var cap = d.cap[wi];
+      var s = _oeFcHmCell(u);
+      var isCur = wi === curIdx;
+      var label = fcMode === 'util'
+        ? (cap > 0 ? Math.round(u * 100) + '%' : '—')
+        : (cap > 0 ? Math.round(avail) + 'h' : '—');
+      var tip = name + ' | ' + w + ' | ' + Math.round(avail) + 'h free of ' + Math.round(cap) + 'h (' + Math.round(u * 100) + '% used)';
+      return '<td style="min-width:' + CELL_W + 'px;" title="' + esc(tip) + '">' +
+        '<div class="oe-fc-hm-cell' + (isCur ? ' oe-fc-hm-cur' : '') + '" style="background:' + s.bg + ';color:' + s.fg + ';">' + label + '</div>' +
+      '</td>';
+    }).join('');
+    return '<tr><td class="oe-fc-hm-name"><div class="oe-fc-hm-pname">' + esc(name) + '</div><div class="oe-fc-hm-prole">' + esc(d.role || '') + '</div></td>' + cells + '</tr>';
+  }).join('');
+
+  var winBtns = [4, 8, 13, 26].map(function(w) {
+    return '<button class="' + (fcWindow === w ? 'on' : '') + '" onclick="fcSetWindow(' + w + ')">' + w + ' wks</button>';
+  }).join('');
+  var modeBtns = '<button class="' + (fcMode === 'util' ? 'on' : '') + '" onclick="fcSetMode(\'util\')">% Used</button>' +
+                 '<button class="' + (fcMode === 'hours' ? 'on' : '') + '" onclick="fcSetMode(\'hours\')">Free hrs</button>';
+
+  return '<div class="oe-fc-page">' +
+    // Editorial header
+    '<div class="oe-fc-head">' +
+      '<div>' +
+        '<div class="oe-fc-eyebrow">Next ' + wLen + ' weeks · ' + people.length + ' people · From ' + esc(firstWeekDate) + '</div>' +
+        '<h1 class="oe-fc-title">Capacity <span class="oe-italic-serif">forecast</span>.</h1>' +
+        '<p class="oe-fc-sub">Plan new project starts, see who has free time over the window, and spot where the team is stretched.</p>' +
+      '</div>' +
+      '<div class="oe-fc-controls">' +
+        '<span class="oe-fc-ctrl-label">Window</span><div class="oe-fc-segment">' + winBtns + '</div>' +
+        '<span class="oe-fc-ctrl-label" style="margin-left:8px;">Show</span><div class="oe-fc-segment">' + modeBtns + '</div>' +
+      '</div>' +
+    '</div>' +
+
+    // Section 1: Planner
+    '<div class="oe-fc-section">' +
+      '<div class="oe-fc-section-head">' +
+        '<h2 class="oe-fc-section-title">Plan a new <span class="oe-italic-serif">project</span></h2>' +
+        '<div class="oe-fc-section-sub">When can each person take on a new project?' + (typeof calcInfoIcon === 'function' ? calcInfoIcon('earliestStart') : '') + '</div>' +
+      '</div>' +
+      '<div class="oe-card">' +
+        '<div class="oe-fc-planner-controls">' +
+          '<div><label>Team</label><select class="oe-input" onchange="cpSetTeam(this.value)">' + teamOpts + '</select></div>' +
+          '<div><label>Project size</label><select class="oe-input" onchange="cpSetSize(this.value)">' + sizeOpts + '</select></div>' +
+          '<div><label>Role</label><select class="oe-input" onchange="cpSetRole(this.value)">' + roleOpts + '</select></div>' +
+          '<div class="oe-fc-planner-meta">' + planPct + '% project time / week for ' + planDur + ' weeks' + (typeof calcInfoIcon === 'function' ? calcInfoIcon('autoFillPct') : '') + '</div>' +
+        '</div>' +
+        '<div id="cp-planner-body"></div>' +
+        '<div class="oe-fc-legend-strip">' +
+          '<span class="oe-meta" style="font-size:10px;">Legend</span>' +
+          '<span><span class="oe-fc-ls-sw" style="background:var(--status-active-dot);"></span>Available</span>' +
+          '<span><span class="oe-fc-ls-sw" style="background:var(--status-hold-dot);"></span>Tight (75–95%)</span>' +
+          '<span><span class="oe-fc-ls-sw" style="background:var(--status-overdue-dot);"></span>Over capacity</span>' +
+          '<span><span class="oe-fc-ls-sw" style="background:var(--navy-500); opacity:0.55;"></span>New project allocation</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    // Section 2: Who has capacity
+    '<div class="oe-fc-section">' +
+      '<div class="oe-fc-section-head">' +
+        '<h2 class="oe-fc-section-title">Who has capacity?</h2>' +
+        '<div class="oe-fc-section-sub">Sorted most-available first · averaged over the ' + fcWindow + '-week window' + (typeof calcInfoIcon === 'function' ? calcInfoIcon('avgFree') : '') + '</div>' +
+      '</div>' +
+      '<div class="oe-fc-cap-grid">' + whoCards + '</div>' +
+    '</div>' +
+
+    // Section 3: Team load
+    '<div class="oe-fc-section">' +
+      '<div class="oe-fc-section-head">' +
+        '<h2 class="oe-fc-section-title">How loaded is the team?</h2>' +
+        '<div class="oe-fc-section-sub"><span class="oe-mono" style="font-size:14px;color:var(--ink-7);">' + Math.round(avgTeamUtil * 100) + '%</span> avg team utilization over the window' + (typeof calcInfoIcon === 'function' ? calcInfoIcon('teamUtil') : '') + '</div>' +
+      '</div>' +
+      '<div class="oe-card oe-fc-load-card">' + teamChartSVG + '</div>' +
+    '</div>' +
+
+    // Section 4: Heatmap
+    '<div class="oe-fc-section">' +
+      '<div class="oe-fc-section-head">' +
+        '<h2 class="oe-fc-section-title">When is each person available?</h2>' +
+        '<div class="oe-fc-section-sub">Hover a cell for hours / capacity' + (typeof calcInfoIcon === 'function' ? calcInfoIcon('heatmapCell') : '') + '</div>' +
+      '</div>' +
+      '<div class="oe-card oe-fc-hm-wrap"><div class="oe-fc-hm-scroll">' +
+        '<table class="oe-fc-hm-table"><thead>' +
+          '<tr class="oe-fc-hm-mo">' + monthCells + '</tr>' +
+          '<tr>' + weekThs + '</tr>' +
+        '</thead><tbody>' + hmRows + '</tbody></table>' +
+      '</div>' +
+        '<div class="oe-fc-legend-strip">' +
+          '<span class="oe-meta" style="font-size:10px;">Utilization</span>' +
+          '<span><span class="oe-fc-ls-sw" style="background:var(--status-active-bg);border:1px solid var(--ink-2);"></span>&lt;40% open</span>' +
+          '<span><span class="oe-fc-ls-sw" style="background:var(--status-hold-bg);"></span>40–65%</span>' +
+          '<span><span class="oe-fc-ls-sw" style="background:#f5d8a2;"></span>65–85%</span>' +
+          '<span><span class="oe-fc-ls-sw" style="background:var(--status-overdue-bg);"></span>85–100%</span>' +
+          '<span><span class="oe-fc-ls-sw" style="background:var(--status-overdue-dot);"></span>Overloaded</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
   '</div>';
 }
 
