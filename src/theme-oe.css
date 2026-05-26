@@ -743,6 +743,110 @@ body[data-theme="oe"] #btn-submit-idea, body[data-theme="oe-dark"] #btn-submit-i
 }
 
 /* ============================================================================
+   OE BASE COMPONENTS (.oe-*) — ported from design_handoff/.../base.css
+   ----------------------------------------------------------------------------
+   These are Laura's reusable component primitives (buttons, avatars, cards,
+   tabs, table, type utilities). Previous OE passes restyled existing app
+   classes (.btn, .task-table-header, .preset-bar, …) by override. The detail
+   pages were the first work to reference the .oe-* classes directly, so this
+   block fills in the foundation. Scoped to the OE themes so the tokens these
+   rules consume (--ink-paper, --navy-500, --r-2) are guaranteed defined.
+   ============================================================================ */
+
+/* Type utilities */
+body[data-theme="oe"] .oe-body-sm, body[data-theme="oe-dark"] .oe-body-sm { font-size: 13px; line-height: 1.55; color: var(--ink-5); }
+body[data-theme="oe"] .oe-meta, body[data-theme="oe-dark"] .oe-meta {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: var(--ink-5);
+}
+body[data-theme="oe"] .oe-mono, body[data-theme="oe-dark"] .oe-mono {
+  font-family: var(--font-mono) !important; font-size: 12px; font-variant-numeric: tabular-nums; font-feature-settings: "tnum";
+}
+body[data-theme="oe"] .oe-italic-serif, body[data-theme="oe-dark"] .oe-italic-serif {
+  font-family: var(--font-display) !important; font-style: italic; font-weight: 400;
+}
+
+/* Buttons */
+body[data-theme="oe"] .oe-btn, body[data-theme="oe-dark"] .oe-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-sans); font-size: 13px; font-weight: 500; line-height: 1;
+  padding: 9px 14px; border-radius: var(--r-2); border: 1px solid transparent; cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  white-space: nowrap; letter-spacing: -0.005em;
+}
+body[data-theme="oe"] .oe-btn--primary, body[data-theme="oe-dark"] .oe-btn--primary {
+  background: var(--navy-500); color: var(--ink-paper);
+}
+body[data-theme="oe"] .oe-btn--primary:hover, body[data-theme="oe-dark"] .oe-btn--primary:hover { background: var(--navy-700); }
+body[data-theme="oe-dark"] .oe-btn--primary { color: #0e1c33; }
+body[data-theme="oe"] .oe-btn--secondary, body[data-theme="oe-dark"] .oe-btn--secondary {
+  background: var(--ink-paper); color: var(--ink-7); border-color: var(--ink-3);
+}
+body[data-theme="oe"] .oe-btn--secondary:hover, body[data-theme="oe-dark"] .oe-btn--secondary:hover {
+  background: var(--ink-1); border-color: var(--ink-4);
+}
+body[data-theme="oe"] .oe-btn--ghost, body[data-theme="oe-dark"] .oe-btn--ghost {
+  background: transparent; color: var(--ink-6);
+}
+body[data-theme="oe"] .oe-btn--ghost:hover, body[data-theme="oe-dark"] .oe-btn--ghost:hover { background: var(--ink-1); }
+body[data-theme="oe"] .oe-btn--sm, body[data-theme="oe-dark"] .oe-btn--sm { padding: 6px 10px; font-size: 12px; }
+body[data-theme="oe"] .oe-btn--icon, body[data-theme="oe-dark"] .oe-btn--icon { padding: 7px; }
+
+/* Avatars (the KC chip — must be a circle) */
+body[data-theme="oe"] .oe-avatar, body[data-theme="oe-dark"] .oe-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--navy-100); color: var(--navy-700);
+  font-size: 11px; font-weight: 600;
+  font-family: var(--font-sans);
+  flex: 0 0 auto; letter-spacing: 0;
+}
+body[data-theme="oe"] .oe-avatar--sm, body[data-theme="oe-dark"] .oe-avatar--sm { width: 22px; height: 22px; font-size: 10px; }
+body[data-theme="oe"] .oe-avatar--lg, body[data-theme="oe-dark"] .oe-avatar--lg { width: 36px; height: 36px; font-size: 13px; }
+
+/* Cards (progress strip, sidebar cards, alloc cards all need this) */
+body[data-theme="oe"] .oe-card, body[data-theme="oe-dark"] .oe-card {
+  background: var(--ink-paper); border: 1px solid var(--ink-2); border-radius: var(--r-3);
+}
+
+/* Tabs — Laura's in-content tabs (Tasks ↔ Allocations). Distinct from the
+   page-level .oe-pagetab system used on the Portfolio title row. */
+body[data-theme="oe"] .oe-tabs, body[data-theme="oe-dark"] .oe-tabs {
+  display: flex; gap: 24px; border-bottom: 1px solid var(--ink-2);
+}
+body[data-theme="oe"] .oe-tab, body[data-theme="oe-dark"] .oe-tab {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 2px; font-size: 13px; font-weight: 500; color: var(--ink-5);
+  border: 0; background: transparent; cursor: pointer; position: relative; letter-spacing: -0.005em;
+}
+body[data-theme="oe"] .oe-tab:hover, body[data-theme="oe-dark"] .oe-tab:hover { color: var(--ink-7); }
+body[data-theme="oe"] .oe-tab[aria-selected="true"], body[data-theme="oe-dark"] .oe-tab[aria-selected="true"] { color: var(--navy-500); }
+body[data-theme="oe"] .oe-tab[aria-selected="true"]::after, body[data-theme="oe-dark"] .oe-tab[aria-selected="true"]::after {
+  content: ''; position: absolute; inset: auto 0 -1px 0; height: 2px;
+  background: var(--navy-500); border-radius: 2px 2px 0 0;
+}
+body[data-theme="oe"] .oe-tab .oe-tab-count, body[data-theme="oe-dark"] .oe-tab .oe-tab-count {
+  font-family: var(--font-mono) !important; font-size: 11px; color: var(--ink-5);
+  background: var(--ink-1); padding: 1px 6px; border-radius: var(--r-pill);
+}
+body[data-theme="oe"] .oe-tab[aria-selected="true"] .oe-tab-count, body[data-theme="oe-dark"] .oe-tab[aria-selected="true"] .oe-tab-count {
+  background: var(--navy-50); color: var(--navy-500);
+}
+
+/* Table (Allocations per-person table) */
+body[data-theme="oe"] .oe-table, body[data-theme="oe-dark"] .oe-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+body[data-theme="oe"] .oe-table th, body[data-theme="oe-dark"] .oe-table th {
+  text-align: left; font-weight: 600; font-size: 11px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-5);
+  padding: 10px 12px; border-bottom: 1px solid var(--ink-2); background: var(--ink-1);
+}
+body[data-theme="oe"] .oe-table td, body[data-theme="oe-dark"] .oe-table td {
+  padding: 12px; border-bottom: 1px solid var(--ink-2); vertical-align: middle; color: var(--ink-7);
+}
+body[data-theme="oe"] .oe-table tr:hover td, body[data-theme="oe-dark"] .oe-table tr:hover td { background: var(--ink-1); }
+
+/* ============================================================================
    PHASE 11 · PROJECT + TASK DETAIL (Laura's screen-project-detail.jsx)
    ----------------------------------------------------------------------------
    Both detail pages get a fresh OE chrome (breadcrumb → header → optional
