@@ -637,6 +637,14 @@ function renderAbsenceEditor(name) {
   const startLabel = absMonLabel(wIdxs[0]);
   const endLabel = absMonLabel(wIdxs[wIdxs.length - 1]);
 
+  // Per-day grid: rows = weeks, cols = Mon Tue Wed Thu Fri | Total | Capacity.
+  // Each cell takes hours off for that day (0..scheduled-hours). Non-working
+  // days (scheduled = 0 — e.g. RDO on a 9/80 schedule) render disabled with
+  // a "—" placeholder. Total is read-only (sum of the 5 day cells). Capacity
+  // is the recomputed proj_cap after the absence is applied.
+  const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
+  const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
   let html = '<div class="settings-section">' +
     '<div class="settings-section-header">' +
       '<span>Absences — ' + esc(name) + '</span>' +
@@ -646,45 +654,44 @@ function renderAbsenceEditor(name) {
       '<button class="settings-btn settings-btn-secondary" onclick="absEditorShift(-1)" ' + (Editor.absWindowStart === 0 ? 'disabled' : '') + '>◀ Prev</button>' +
       '<div style="text-align:center;flex:1;">' +
         '<div style="font-weight:700;color:var(--navy);font-size:14px;">' + startLabel + ' — ' + endLabel + '</div>' +
-        '<div class="text-muted-sm">W' + (wIdxs[0]+1) + ' – W' + (wIdxs[wIdxs.length-1]+1) + ' · Enter hours off per week (0–40)</div>' +
+        '<div class="text-muted-sm">Enter hours off per day · disabled cells = non-working day on this schedule</div>' +
       '</div>' +
       '<button class="settings-btn settings-btn-secondary" onclick="absJumpCurrent()">Today</button>' +
       '<button class="settings-btn settings-btn-secondary" onclick="absEditorShift(1)" ' + (wEnd >= N ? 'disabled' : '') + '>Next ▶</button>' +
     '</div>' +
-    '<div class="abs-grid"><table><thead><tr><th style="text-align:left;min-width:60px;">Week</th>';
+    '<div class="abs-grid"><table><thead><tr>' +
+      '<th style="text-align:left;min-width:90px;">Week</th>';
+  dayLabels.forEach(function(d) { html += '<th style="min-width:60px;">' + d + '</th>'; });
+  html += '<th style="min-width:60px;">Total</th><th style="min-width:70px;">Capacity</th></tr></thead><tbody>';
 
-  // Header row: week labels
-  for (let ci = 0; ci < wIdxs.length; ci++) {
-    const wi = wIdxs[ci];
+  wIdxs.forEach(function(wi) {
     const isCur = wi === window.currentWeekIdx;
-    html += '<th class="' + (isCur ? 'abs-cur' : '') + '">' + absMonLabel(wi) + '</th>';
-  }
-  html += '</tr></thead><tbody><tr><td style="text-align:left;font-weight:700;color:var(--navy);font-size:12px;">Hours Off</td>';
-
-  // Input cells
-  for (let ci = 0; ci < wIdxs.length; ci++) {
-    const wi = wIdxs[ci];
-    const hrs = p.absences[wi] || 0;
-    const isCur = wi === window.currentWeekIdx;
-    const hasVal = hrs > 0;
-    html += '<td class="' + (isCur ? 'abs-cur' : '') + '">' +
-      '<input type="number" min="0" max="40" step="1" value="' + hrs + '" ' +
-      'class="abs-input' + (hasVal ? ' has-val' : '') + '" ' +
-      'data-name="' + esc(name) + '" data-wi="' + wi + '" ' +
-      'onchange="absValueChanged(this)" onfocus="this.select()">' +
-    '</td>';
-  }
-
-  // Capacity row (read-only, shows computed proj_cap)
-  html += '</tr><tr><td style="text-align:left;font-size:11px;color:var(--text-muted);">Proj Capacity</td>';
-  for (let ci = 0; ci < wIdxs.length; ci++) {
-    const wi = wIdxs[ci];
+    const sched = (typeof getDailySchedule === 'function') ? getDailySchedule(p, weeks[wi]) : { mon: 8, tue: 8, wed: 8, thu: 8, fri: 8 };
+    const byDay = p.absencesByDay && p.absencesByDay[wi] ? p.absencesByDay[wi] : { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
+    const total = days.reduce(function(s, d) { return s + (byDay[d] || 0); }, 0);
     const cap = p.proj_cap[wi] || 0;
-    const isCur = wi === window.currentWeekIdx;
-    html += '<td class="' + (isCur ? 'abs-cur' : '') + '" class="text-muted-sm">' + cap.toFixed(1) + 'h</td>';
-  }
+    html += '<tr class="' + (isCur ? 'abs-cur' : '') + '">';
+    html += '<td style="text-align:left;font-weight:600;color:var(--navy);font-size:12px;">' + absMonLabel(wi) + (isCur ? ' <span style="font-size:10px;color:var(--text-muted);">(this wk)</span>' : '') + '</td>';
+    days.forEach(function(d) {
+      const dSched = sched[d] || 0;
+      const dHrs = byDay[d] || 0;
+      const disabled = dSched === 0;
+      const hasVal = dHrs > 0;
+      html += '<td>' +
+        '<input type="number" min="0" max="' + dSched + '" step="0.5" ' +
+        'value="' + (disabled ? '' : dHrs) + '" ' +
+        'class="abs-input' + (hasVal ? ' has-val' : '') + '" ' +
+        (disabled ? 'disabled placeholder="—" title="Not a working day"' : 'title="Up to ' + dSched + 'h scheduled"') + ' ' +
+        'data-name="' + esc(name) + '" data-wi="' + wi + '" data-day="' + d + '" ' +
+        'onchange="absDayValueChanged(this)" onfocus="this.select()">' +
+      '</td>';
+    });
+    html += '<td style="font-weight:700;color:var(--navy);">' + total.toFixed(1) + 'h</td>';
+    html += '<td class="text-muted-sm">' + cap.toFixed(1) + 'h</td>';
+    html += '</tr>';
+  });
 
-  html += '</tr></tbody></table></div></div>';
+  html += '</tbody></table></div></div>';
   section.innerHTML = html;
 }
 
@@ -706,59 +713,65 @@ function absJumpCurrent() {
   renderAbsenceEditor(Editor.selectedMember);
 }
 
-async function absValueChanged(input) {
+async function absDayValueChanged(input) {
   const name = input.dataset.name;
   const wi = parseInt(input.dataset.wi);
-  const hrs = Math.min(40, Math.max(0, parseFloat(input.value) || 0));
-  input.value = hrs;
-  input.className = 'abs-input' + (hrs > 0 ? ' has-val' : '');
-
+  const day = input.dataset.day; // 'mon' | 'tue' | 'wed' | 'thu' | 'fri'
   const p = RESOURCES_DATA.people[name];
   if (!p) return;
 
-  const oldHrs = p.absences[wi] || 0;
-  p.absences[wi] = hrs;
+  // Clamp to that day's scheduled hours — typing 12 in a 6h cell silently caps.
+  const sched = (typeof getDailySchedule === 'function') ? getDailySchedule(p, RESOURCES_DATA.weeks[wi]) : null;
+  const maxHrs = sched ? (sched[day] || 0) : 24;
+  const hrs = Math.min(maxHrs, Math.max(0, parseFloat(input.value) || 0));
+  input.value = hrs;
+  input.className = 'abs-input' + (hrs > 0 ? ' has-val' : '');
 
-  // Recalculate proj_cap for this week: (40 - absences) × productivity × proj_pct
-  p.proj_cap[wi] = (40 - hrs) * _productivityRatio * p.proj_pct;
+  // Update in-memory: per-day map + sum + downstream capacity/util.
+  if (!p.absencesByDay[wi]) p.absencesByDay[wi] = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
+  p.absencesByDay[wi][day] = hrs;
+  const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
+  const newTotal = days.reduce(function(s, d) { return s + (p.absencesByDay[wi][d] || 0); }, 0);
+  p.absences[wi] = newTotal;
 
-  // Recalculate hours and utilization for this week
-  p.allocations.forEach(function(a) {
-    a.hours[wi] = (a.fracs[wi] || 0) * p.proj_cap[wi];
-  });
-  let totalHrs = 0;
-  p.allocations.forEach(function(a) { totalHrs += (a.hours[wi] || 0); });
-  p.weekly_allocated[wi] = totalHrs;
-  p.utilization[wi] = p.proj_cap[wi] > 0 ? totalHrs / p.proj_cap[wi] : 0;
+  const ppWeek = (typeof getPayPeriodWeek === 'function') ? getPayPeriodWeek(RESOURCES_DATA.weeks[wi]) : 'A';
+  const scheduledHours = (ppWeek === 'A') ? (p.week1_hours || 40) : (p.week2_hours || 40);
+  p.proj_cap[wi] = (scheduledHours - newTotal) * _productivityRatio * p.proj_pct;
+  p.allocations.forEach(function(a) { a.hours[wi] = (a.fracs[wi] || 0) * p.proj_cap[wi]; });
+  let totalAllocHrs = 0;
+  p.allocations.forEach(function(a) { totalAllocHrs += (a.hours[wi] || 0); });
+  p.weekly_allocated[wi] = totalAllocHrs;
+  p.utilization[wi] = p.proj_cap[wi] > 0 ? totalAllocHrs / p.proj_cap[wi] : 0;
 
-  // Update capacity display in the grid
   renderAbsenceEditor(name);
 
-  // Save to REST
+  // Save to AGOL. We write all 5 day fields + the total on every save so that
+  // legacy records (which had only absence_hours) get "locked in" to explicit
+  // per-day values on first edit — subsequent reads use those directly instead
+  // of recomputing the even-distribution fallback.
   const weekDate = RESOURCES_DATA.weeks[wi];
   try {
-    // Find existing absence record for this person+week
     const existing = await agolQuery(ARCGIS_CONFIG.absencesUrl,
       "name='" + name.replace(/'/g, "''") + "' AND week_date='" + weekDate + "'");
 
+    const dayAttrs = {};
+    days.forEach(function(d) { dayAttrs[d + '_hrs'] = p.absencesByDay[wi][d] || 0; });
+    dayAttrs.absence_hours = newTotal;
+
     if (existing.length > 0) {
       const oid = existing[0].attributes.OBJECTID || existing[0].attributes.ObjectId || existing[0].attributes.objectid || existing[0].attributes.FID;
-      if (hrs > 0) {
-        // Update existing
-        await agolApplyEdits(ARCGIS_CONFIG.absencesUrl, {
-          updates: [{ attributes: { ObjectId: oid, absence_hours: hrs } }]
-        });
+      if (newTotal > 0) {
+        dayAttrs.ObjectId = oid;
+        await agolApplyEdits(ARCGIS_CONFIG.absencesUrl, { updates: [{ attributes: dayAttrs }] });
       } else {
-        // Delete if zero
         await agolApplyEdits(ARCGIS_CONFIG.absencesUrl, { deletes: [oid] });
       }
-    } else if (hrs > 0) {
-      // Add new
-      await agolApplyEdits(ARCGIS_CONFIG.absencesUrl, {
-        adds: [{ attributes: { name: name, week_date: weekDate, absence_hours: hrs } }]
-      });
+    } else if (newTotal > 0) {
+      dayAttrs.name = name;
+      dayAttrs.week_date = weekDate;
+      await agolApplyEdits(ARCGIS_CONFIG.absencesUrl, { adds: [{ attributes: dayAttrs }] });
     }
-    console.log('[Settings] Saved absence for', name, 'week', weekDate, ':', hrs, 'hours');
+    console.log('[Settings] Saved absence for', name, 'week', weekDate, ':', JSON.stringify(p.absencesByDay[wi]), '=', newTotal, 'h');
   } catch (err) {
     console.error('[Settings] Absence save failed:', err);
     showToast('Absence save failed: ' + err.message, 'error');

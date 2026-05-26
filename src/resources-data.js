@@ -4,6 +4,35 @@
 // Relies on globals defined elsewhere (RESOURCES_DATA, PROJECTS, ARCGIS_CONFIG,
 // agolQuery, getPayPeriodWeek, epochToDateStr, initResourcesWeekIndices…).
 
+// ── Per-day schedule helpers ──
+// Returns the per-day scheduled hours object for a given person + week date.
+// Uses wk1_* fields on pay-period A weeks and wk2_* on B weeks (9/80 alternates;
+// 5/8 schedules have identical wk1/wk2 so this still works).
+function getDailySchedule(person, weekDateStr) {
+  const ppWeek = (typeof getPayPeriodWeek === 'function') ? getPayPeriodWeek(weekDateStr) : 'A';
+  const prefix = (ppWeek === 'A') ? 'wk1_' : 'wk2_';
+  return {
+    mon: person[prefix + 'mon'] || 0,
+    tue: person[prefix + 'tue'] || 0,
+    wed: person[prefix + 'wed'] || 0,
+    thu: person[prefix + 'thu'] || 0,
+    fri: person[prefix + 'fri'] || 0,
+  };
+}
+
+// Distribute a weekly absence total evenly across the person's working days
+// for that week (used to interpret legacy weekly absence records that pre-date
+// per-day capture). Days with zero scheduled hours don't share the load.
+function distributeAbsenceHours(totalHrs, schedule) {
+  const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
+  const workingDays = days.filter(function(d) { return (schedule[d] || 0) > 0; });
+  const byDay = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
+  if (workingDays.length === 0 || totalHrs <= 0) return byDay;
+  const perDay = totalHrs / workingDays.length;
+  workingDays.forEach(function(d) { byDay[d] = perDay; });
+  return byDay;
+}
+
 // ── Generate 52 Sunday week-start dates for a given year ──
 function generateWeeks(year) {
   const weeks = [];
@@ -136,6 +165,9 @@ async function loadResourcesData() {
       data_program_lead_team: ci('data_program_lead_team') || null,
       proj_cap:         new Array(N).fill(0),
       absences:         new Array(N).fill(0),
+      // Per-day absence breakdown — one entry per week, value is { mon, tue, wed, thu, fri }.
+      // Sum of a week's day fields equals absences[wi] (invariant maintained on read + save).
+      absencesByDay:    Array.from({ length: N }, function() { return { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }; }),
       allocations:      [],
       weekly_allocated: new Array(N).fill(0),
       utilization:      new Array(N).fill(0),
@@ -187,13 +219,31 @@ async function loadResourcesData() {
     }
   });
 
-  // Fill absences
+  // Fill absences — per-day model with backwards-compatible distribution.
+  // If the AGOL record has explicit per-day hours (mon_hrs..fri_hrs), use them.
+  // If it has only the legacy absence_hours total, distribute evenly across
+  // that person's working days for the week (Mon..Fri filtered by their
+  // scheduled hours, A vs B for 9/80 schedules). The invariant
+  //   absences[wi] === sum(absencesByDay[wi])
+  // is maintained either way, so the existing capacity formula
+  // (scheduled_hours - absences[wi]) × productivity × proj_pct still works.
   absenceFeatures.forEach(function(f) {
     const a = f.attributes;
     const nm = a.name;
     const wk = epochToDateStr(a.week_date);
-    if (people[nm] && weekIdx[wk] !== undefined) {
-      people[nm].absences[weekIdx[wk]] = a.absence_hours || 0;
+    if (!people[nm] || weekIdx[wk] === undefined) return;
+    const wi = weekIdx[wk];
+    const p = people[nm];
+    const totalHrs = a.absence_hours || 0;
+    const mon = a.mon_hrs || 0, tue = a.tue_hrs || 0, wed = a.wed_hrs || 0, thu = a.thu_hrs || 0, fri = a.fri_hrs || 0;
+    const dayTotal = mon + tue + wed + thu + fri;
+    if (dayTotal > 0) {
+      p.absencesByDay[wi] = { mon: mon, tue: tue, wed: wed, thu: thu, fri: fri };
+      p.absences[wi] = dayTotal; // trust explicit per-day data over a possibly-stale weekly field
+    } else if (totalHrs > 0) {
+      // Legacy weekly record — distribute evenly across this person's working days
+      p.absencesByDay[wi] = distributeAbsenceHours(totalHrs, getDailySchedule(p, weeks[wi]));
+      p.absences[wi] = totalHrs;
     }
   });
 

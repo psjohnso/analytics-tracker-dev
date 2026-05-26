@@ -1067,20 +1067,37 @@ function renderMyWork(area) {
       return p && p.title ? p.title : 'Project ' + pk;
     }
 
+    // Per-day absence map for this person + this week. Days where the user is
+    // fully out (absence >= scheduled) get marked OFF on the strip; partial
+    // absences shrink the day's effective scheduled hours, which in turn
+    // shrinks the working-day count used for the bar denominator.
+    var _hAbsByDay = {};
+    if (typeof RESOURCES_DATA !== 'undefined' && RESOURCES_DATA && RESOURCES_DATA.people && RESOURCES_DATA.people[name] && RESOURCES_DATA.people[name].absencesByDay) {
+      var _hAbsWk = RESOURCES_DATA.people[name].absencesByDay[typeof currentWeekIdx !== 'undefined' ? currentWeekIdx : 0];
+      if (_hAbsWk) _hAbsByDay = _hAbsWk;
+    }
+    var _hAbsKey = ['mon', 'tue', 'wed', 'thu', 'fri'];
+
     // Compute the bar's denominator as "average daily project hours" —
-    // weekAllocHours spread evenly across this week's working days. Using the
+    // weekAllocHours spread evenly across this week's working days. Days the
+    // person is fully absent don't count toward the divisor. Using the
     // scheduled workday (8h) would make the bar permanently empty for anyone
     // whose role is mostly meetings/admin (e.g. a manager with 10% project
     // time). This makes the fill reflect plan-vs-actual on project work.
     var _hWorkDays = 0;
     for (var _hwi = 0; _hwi < 5; _hwi++) {
-      if ((_weekDaily && _weekDaily[_hKeys[_hwi]] || 0) > 0) _hWorkDays++;
+      var _wkSched = (_weekDaily && _weekDaily[_hKeys[_hwi]]) || 0;
+      var _wkAbs = _hAbsByDay[_hAbsKey[_hwi]] || 0;
+      if (_wkSched > 0 && _wkAbs < _wkSched) _hWorkDays++;
     }
     var _hDailyTarget = _hWorkDays > 0 ? weekAllocHours / _hWorkDays : 0;
 
     for (var _hi = 0; _hi < 5; _hi++) {
       var _hd = new Date(_hMon); _hd.setDate(_hMon.getDate() + _hi);
-      var _hh = (_weekDaily && _weekDaily[_hKeys[_hi]]) || 0, _hoff = _hh === 0;
+      var _hh = (_weekDaily && _weekDaily[_hKeys[_hi]]) || 0;
+      var _hDayAbs = _hAbsByDay[_hAbsKey[_hi]] || 0;
+      // OFF when scheduled = 0 (always-off day) or fully absent (absence >= scheduled).
+      var _hoff = _hh === 0 || (_hh > 0 && _hDayAbs >= _hh);
 
       // Build the bar fill: track is full-width, fill is dayLogged / dailyTarget,
       // segments inside the fill are sized by each project's share of the day.
