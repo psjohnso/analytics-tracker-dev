@@ -43,6 +43,13 @@ function getMyTasks(viewName) {
 function switchMyWorkUser(selectEl) {
   const val = selectEl.value;
   _myWorkViewUser = (val === Auth.fullName) ? null : val;
+  // Sync Capacity's selectedPerson so the Resources tab lands on the same
+  // person when the admin clicks over. Bidirectional with selectPerson() in
+  // resources.js so the two tabs share one "who am I looking at?" state.
+  if (typeof selectedPerson !== 'undefined') {
+    selectedPerson = val;
+    if (typeof _positionChartOnCurrentWeek === 'function') _positionChartOnCurrentWeek();
+  }
   _ganttFilter = {}; // reset so new user's projects default to all visible
   _ganttCollapsed = {}; // reset collapse state
   renderMyWork(document.getElementById('content-area'));

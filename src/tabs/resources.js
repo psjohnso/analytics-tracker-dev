@@ -899,6 +899,11 @@ async function setResourceMode(mode) {
 
 function selectPerson(name) {
   selectedPerson = name;
+  // Sync My Work admin view-as so picking a person here carries through to
+  // their My Work tab (single "who am I looking at?" state). Self-selection
+  // resets to null = view own work. Tolerates Auth not being loaded.
+  var _self = (typeof Auth !== 'undefined' && Auth && Auth.fullName) ? Auth.fullName : null;
+  window._myWorkViewUser = (_self && name === _self) ? null : name;
   // Re-snap the chart to the current week for the new person — used to reset
   // to week 0 (Jan), which hid current-week allocations on any visit past
   // mid-May. The helper keeps "see this person's right-now" the default.
