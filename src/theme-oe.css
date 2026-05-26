@@ -610,6 +610,12 @@ body[data-theme="oe"] .preset-chip.on .pc-kebab, body[data-theme="oe-dark"] .pre
    group titles (color reserved for status). Structure is unchanged — this is a
    recolor/retype of the existing accordion + chip refactor. OE only.
    ============================================================================ */
+/* Match the content-area's edge spacing: sidebar gets the same left inset and
+   top inset that the project table's right edge / top has. */
+body[data-theme="oe"] .sidebar, body[data-theme="oe-dark"] .sidebar {
+  margin-left: 24px;
+  padding-top: 20px;
+}
 /* Group titles → neutral meta (was Tucson orange). */
 body[data-theme="oe"] .sidebar-label, body[data-theme="oe-dark"] .sidebar-label { color: var(--ink-5); }
 /* The navy "Task Filters" / "Project Filters" section bars → subtle neutral strip. */
