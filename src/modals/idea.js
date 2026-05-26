@@ -802,6 +802,129 @@ function renderIdeaReview() {
   </div>`;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  OE WEEKLY IDEA REVIEW (mock-first approved 2026-05-25)
+//  Dispatched from index.html alongside the Classic renderIdeaReview when
+//  _oeDetail() is true. Classic stays untouched.
+// ═══════════════════════════════════════════════════════════════════════════
+function renderIdeaReviewOE() {
+  var ideas = PROJECTS.filter(function(p) { return p.status === 'Idea'; });
+  var today = new Date();
+  var weekOf = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+  // Same priority sort as Classic.
+  var priOrder = { High: 0, Medium: 1, Low: 2 };
+  ideas.sort(function(a, b) {
+    var pa = priOrder[a.priority] !== undefined ? priOrder[a.priority] : 3;
+    var pb = priOrder[b.priority] !== undefined ? priOrder[b.priority] : 3;
+    return pa - pb;
+  });
+
+  function daysAgo(dateStr) {
+    if (!dateStr) return '';
+    var d = new Date(dateStr + 'T00:00:00');
+    var now = new Date(); now.setHours(0, 0, 0, 0);
+    var diff = Math.floor((now - d) / 86400000);
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Yesterday';
+    return diff + ' days ago';
+  }
+
+  // Route destinations rendered as OE status pills — the keystone of the
+  // redesign: each "button" visually previews the destination's pill in the
+  // Portfolio list, so the action and its outcome share one color language.
+  var routes = [
+    { status: 'Active',    pill: 'active',    tip: 'Start this project immediately. Allocations will be created for assigned team members.' },
+    { status: 'Scheduled', pill: 'scheduled', tip: 'Approve and commit this project with planned dates and resources.' },
+    { status: 'Future',    pill: 'future',    tip: 'Acknowledge this project but place it in the backlog. No dates or allocations are committed yet.' },
+    { status: 'On Hold',   pill: 'hold',      tip: 'Pause this project. Reviewed but not ready to proceed.' },
+    { status: 'Canceled',  pill: 'canceled',  tip: 'Decline this idea. It will be marked as Canceled.' }
+  ];
+
+  var crumb = '<div class="ir-crumb">' +
+    '<a class="ir-back" onclick="goBackFromDetail()" title="Back to where you came from">' +
+      '<svg class="icon" aria-hidden="true" style="width:12px;height:12px;"><use href="#ph-caret-left"></use></svg>Portfolio' +
+    '</a>' +
+    '<svg class="icon" aria-hidden="true" style="width:10px;height:10px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' +
+    '<span style="color:var(--ink-7);">Weekly idea review</span>' +
+  '</div>';
+
+  if (ideas.length === 0) {
+    return '<div class="ir-page">' + crumb +
+      '<div class="oe-card ir-empty" style="margin-top:60px;">' +
+        '<div class="ir-empty-title">All caught <span class="oe-italic-serif">up</span>.</div>' +
+        '<div class="ir-empty-sub">No new ideas are awaiting review. New submissions will appear here.</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  var cards = ideas.map(function(p) {
+    var ageLabel = p.start ? daysAgo(p.start) : '';
+    var initials = (p.contact || '').split(' ').map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+    var priClass = p.priority === 'High' ? 'high' : (p.priority === 'Medium' ? 'med' : (p.priority === 'Low' ? 'low' : ''));
+    var priChip = (p.priority && priClass) ? '<span class="oe-chip oe-chip--' + priClass + '">' + esc(p.priority) + '</span>' : '';
+    var routeBtns = routes.map(function(r) {
+      return '<button class="ir-route-btn" title="' + esc(r.tip) + '" onclick="promoteIdea(' + p.objectId + ', \'' + r.status + '\')">' +
+        '<span class="oe-pill oe-pill--' + r.pill + '">' + esc(r.status) + '</span>' +
+      '</button>';
+    }).join('');
+
+    return '<div class="oe-card ir-card" id="idea-card-' + p.objectId + '">' +
+      '<div class="ir-card-top">' +
+        '<span class="oe-pill oe-pill--idea">Idea</span>' +
+        (ageLabel ? '<span>' + esc(ageLabel) + '</span>' : '') +
+        (p.contact ? '<span class="ir-dot"></span><span style="display:inline-flex;align-items:center;gap:6px;"><span class="oe-avatar" style="background:var(--navy-500);color:var(--ink-paper);">' + esc(initials) + '</span>' + esc(p.contact) + '</span>' : '') +
+        (p.partner_dept ? '<span class="ir-dot"></span><span>' + esc(p.partner_dept) + '</span>' : '') +
+      '</div>' +
+      '<h2 class="ir-card-title" onclick="openProjectFromReview(' + p.objectId + ')">' + esc(p.title) + '</h2>' +
+      ((priChip || p.category) ? '<div class="ir-card-priority-row">' + priChip + (p.category ? '<span class="oe-body-sm" style="color:var(--ink-5);">' + esc(p.category) + '</span>' : '') + '</div>' : '') +
+      (p.problem_statement ? '<div class="ir-section"><div class="ir-section-label">Problem statement</div><div class="ir-section-body">' + esc(p.problem_statement) + '</div></div>' : '') +
+      (p.urgency_notes ? '<div class="ir-section"><div class="ir-section-label">Urgency / timeline</div><div class="ir-section-body">' + esc(p.urgency_notes) + '</div></div>' : '') +
+      (p.reviewer_notes ? '<div class="ir-section"><div class="ir-section-label">Previous notes</div><div class="ir-notes-block">' + esc(p.reviewer_notes) + '</div></div>' : '') +
+      '<div class="ir-section">' +
+        '<div class="ir-section-label">Reviewer notes</div>' +
+        '<textarea id="idea-notes-' + p.objectId + '" class="ir-input" placeholder="Add a note before routing — saves automatically." onblur="autoSaveIdeaNote(this, ' + p.objectId + ')"></textarea>' +
+        '<div class="ir-autosave"><span class="ir-autosave-dot"></span> No changes</div>' +
+      '</div>' +
+      '<div class="ir-route">' +
+        '<span class="ir-route-label">Route to</span>' +
+        routeBtns +
+        '<button class="oe-btn oe-btn--ghost oe-btn--sm ir-edit" onclick="openFormModal(\'edit-project\', ' + p.objectId + ')">' +
+          '<svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg>Edit' +
+        '</button>' +
+      '</div>' +
+      '<div class="ir-avail">' +
+        '<span class="ir-avail-toggle" onclick="toggleIdeaAvail(' + p.objectId + ')">' +
+          '<span id="idea-avail-arrow-' + p.objectId + '">▶</span> Team availability' +
+        '</span>' +
+        '<div id="idea-avail-body-' + p.objectId + '" style="display:none;margin-top:10px;"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  return '<div class="ir-page">' + crumb +
+    '<div class="ir-head">' +
+      '<div>' +
+        '<div class="ir-eyebrow">Week of ' + esc(weekOf) + ' · ' + ideas.length + ' idea' + (ideas.length !== 1 ? 's' : '') + '</div>' +
+        '<h1 class="oe-display-2">Weekly <span class="oe-italic-serif">idea</span> review.</h1>' +
+        '<p class="ir-sub">' + ideas.length + ' idea' + (ideas.length !== 1 ? 's were' : ' was') + ' submitted in the last 7 days. Read each, add reviewer notes, and route it to the right status.</p>' +
+      '</div>' +
+    '</div>' +
+    '<div class="ir-cards">' + cards + '</div>' +
+  '</div>';
+}
+
+// Auto-save reviewer notes on blur. We wait one short tick so a click on a
+// route pill (which itself saves the note via promoteIdea) fires first and
+// we don't double-save / race the re-render that promoteIdea triggers.
+async function autoSaveIdeaNote(textarea, id) {
+  if (!textarea || !textarea.value.trim()) return;
+  await new Promise(function(resolve) { setTimeout(resolve, 200); });
+  var fresh = document.getElementById('idea-notes-' + id);
+  if (!fresh || !fresh.value.trim()) return; // re-rendered away or cleared
+  if (typeof saveIdeaReviewNotes === 'function') saveIdeaReviewNotes(id);
+}
+
 async function promoteIdea(id, newStatus) {
   // Save any reviewer notes before promoting
   const notesEl = document.getElementById('idea-notes-' + id);
@@ -821,10 +944,14 @@ async function promoteIdea(id, newStatus) {
     card.style.opacity = '0';
     card.style.transform = 'scale(0.95)';
     setTimeout(() => {
-      document.getElementById('content-area').innerHTML = renderIdeaReview();
+      document.getElementById('content-area').innerHTML = (typeof _oeDetail === 'function' && _oeDetail())
+      ? renderIdeaReviewOE()
+      : renderIdeaReview();
     }, 300);
   } else {
-    document.getElementById('content-area').innerHTML = renderIdeaReview();
+    document.getElementById('content-area').innerHTML = (typeof _oeDetail === 'function' && _oeDetail())
+      ? renderIdeaReviewOE()
+      : renderIdeaReview();
   }
   // Update badge
   const badge = document.getElementById('idea-count-badge');
