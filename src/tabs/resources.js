@@ -38,15 +38,26 @@ function initResourcesWeekIndices() {
   let dwi = cwi;
   while (dwi > 0 && allPeopleVals.every(p => p.weekly_allocated[dwi] === 0)) dwi--;
   window.dataWeekIdx = dwi;
-  // On first init only, position the 20-week chart window so the current week
-  // is visible near the right edge (~16 weeks of history + current + 3 ahead).
-  // Without this, the chart starts at week 0 (Jan) and the user has to click
-  // "Next" to ever see this week's allocation. Respects later Prev/Next clicks.
+  // On first init only, snap the 20-week chart window so the current week is
+  // visible. Subsequent calls (e.g. after an allocation write) respect the
+  // user's current Prev/Next position. selectPerson() also calls the helper
+  // directly so switching people lands the chart on the current week, not Jan.
   if (!window._chartWindowInitialized) {
     window._chartWindowInitialized = true;
-    if (cwi >= 16) chartWindowStart = Math.max(0, Math.min(cwi - 16, weeks.length - 20));
+    _positionChartOnCurrentWeek();
   }
   _resEnsureSelected();
+}
+
+// Position the chart so the current week sits ~16 cells from the left edge of
+// the 20-week window — i.e. user sees ~16 weeks of history + current + ~3
+// weeks of forecast. Falls back to week 0 if we're early enough in the year
+// that the default Jan view already includes the current week.
+function _positionChartOnCurrentWeek() {
+  if (!RESOURCES_DATA) return;
+  var weeks = RESOURCES_DATA.weeks;
+  var cwi = window.currentWeekIdx || 0;
+  chartWindowStart = cwi >= 16 ? Math.max(0, Math.min(cwi - 16, weeks.length - 20)) : 0;
 }
 
 // Ensure selectedPerson is an active full member of the currently-scoped team;
@@ -872,7 +883,10 @@ async function setResourceMode(mode) {
 
 function selectPerson(name) {
   selectedPerson = name;
-  chartWindowStart = 0;
+  // Re-snap the chart to the current week for the new person — used to reset
+  // to week 0 (Jan), which hid current-week allocations on any visit past
+  // mid-May. The helper keeps "see this person's right-now" the default.
+  _positionChartOnCurrentWeek();
   // If we're in edit mode, rebuild the editor draft for the new person so
   // the rail-click flow ("edit member A then B then C") just works without
   // bouncing back to the Summary tab.
