@@ -1037,10 +1037,15 @@ function renderMyWork(area) {
     }
     var _hTracked = { Mon: {}, Tue: {}, Wed: {}, Thu: {}, Fri: {} };
     var _hProjOrder = [];
+    var _hMonYmd = _hYmd(_hMon), _hSunYmd = _hYmd(_hSun);
+    var _hWeekRecorded = 0; // full Mon..Sun sum (weekend entries still count toward the week total)
     if (typeof TIME_ENTRIES !== 'undefined' && Array.isArray(TIME_ENTRIES)) {
       TIME_ENTRIES.forEach(function(e) {
         if (!e || !e.work_date || !e.hours) return;
         if (e.name && e.name !== name) return; // viewed user's entries only
+        if (e.work_date >= _hMonYmd && e.work_date <= _hSunYmd) {
+          _hWeekRecorded += Number(e.hours || 0);
+        }
         var k = _hDateByKey[e.work_date];
         if (!k) return;
         var pk = e.project_id != null ? String(e.project_id) : 'unknown';
@@ -1048,6 +1053,7 @@ function renderMyWork(area) {
         _hTracked[k][pk] = (_hTracked[k][pk] || 0) + Number(e.hours || 0);
       });
     }
+    var _hRecorded = Math.round(_hWeekRecorded * 10) / 10;
     function _hProjTitle(pk) {
       if (pk === 'unknown') return 'Untracked project';
       var p = (typeof PROJECTS !== 'undefined' && PROJECTS) ? PROJECTS.find(function(pr) { return String(pr.project_number) === pk; }) : null;
@@ -1120,7 +1126,7 @@ function renderMyWork(area) {
     var _hHero = '<div class="oe-week-hero"><div class="oe-week-hero-row"><div>'
       + '<div class="oe-week-eyebrow">This week · ' + esc(_hLabel) + '</div>'
       + '<div class="oe-week-head">' + (weekAllocations.length === 0 ? 'No allocations <em>yet</em>.' : esc(_hAlloc) + 'h <span>allocated · ' + esc(Math.round(_hAvail * 10) / 10) + 'h available</span>') + '</div>'
-      + '</div><div class="oe-week-hoursbox"><div class="oe-week-hoursnum">' + esc(_hAlloc) + '<span>/' + esc(_hCap) + 'h</span></div>'
+      + '</div><div class="oe-week-hoursbox" title="' + esc(_hRecorded) + 'h recorded this week of ' + esc(_hCap) + 'h available (' + esc(myScheduleType) + ' schedule × role)"><div class="oe-week-hoursnum">' + esc(_hRecorded) + '<span>/' + esc(_hCap) + 'h</span></div>'
       + '<div class="oe-week-eyebrow">' + esc(myScheduleType) + ' schedule' + (myPayWeek ? ' · Week ' + esc(myPayWeek) : '') + '</div></div></div>'
       + '<div class="oe-week-strip">' + _hStrip + '</div>' + _hLegend + '</div>';
     var _hAch = (typeof renderMyWeekAchievementsOE === 'function') ? renderMyWeekAchievementsOE(name) : '';
