@@ -1047,17 +1047,6 @@ function prOpenLogModal(projectNumber, reviewTypeId, editObjectId) {
 
   var meetingDate = existing ? prEpochToInputDate(existing.meeting_date) :
     (function() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
-  var attendeesValue = existing ? existing.attendees : (rt.default_attendees ? rt.default_attendees.join(', ') : '');
-
-  // Build suggestion list: union of team_members names + review type defaults
-  var suggestionSet = {};
-  if (rt.default_attendees) rt.default_attendees.forEach(function(n) { suggestionSet[n] = true; });
-  if (RESOURCES_DATA && RESOURCES_DATA.people) {
-    Object.keys(RESOURCES_DATA.people).forEach(function(n) {
-      if (RESOURCES_DATA.people[n].active !== false) suggestionSet[n] = true;
-    });
-  }
-  var suggestions = Object.keys(suggestionSet).sort();
 
   var html = '';
   html += '<div class="pr-modal-header">';
@@ -1071,15 +1060,6 @@ function prOpenLogModal(projectNumber, reviewTypeId, editObjectId) {
 
   html += '<div class="pr-field"><label class="pr-field-label">Meeting Date</label>';
   html += '<input type="date" id="pr-input-meeting-date" value="' + esc(meetingDate) + '"></div>';
-
-  html += '<div class="pr-field"><label class="pr-field-label">Attendees</label>';
-  html += '<input type="text" id="pr-input-attendees" value="' + esc(attendeesValue) + '" placeholder="Comma-separated names">';
-  html += '<div class="pr-field-help">Free text. Click a chip to add.</div>';
-  html += '<div class="pr-suggestions">';
-  suggestions.forEach(function(n) {
-    html += '<span class="pr-sug-chip" onclick="prAddAttendeeChip(' + JSON.stringify(n).replace(/"/g, '&quot;') + ')">+ ' + esc(n) + '</span>';
-  });
-  html += '</div></div>';
 
   html += '<div class="pr-field"><label class="pr-field-label">Notes</label>';
   html += '<textarea id="pr-input-notes" placeholder="What did the team discuss? Status, blockers, dependencies…">' + esc(existing ? existing.notes : '') + '</textarea></div>';
@@ -1107,22 +1087,19 @@ function prCloseLogModal() {
   _prModalState = null;
 }
 
-function prAddAttendeeChip(name) {
-  var input = document.getElementById('pr-input-attendees');
-  if (!input) return;
-  var list = input.value.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
-  if (list.indexOf(name) >= 0) return;
-  list.push(name);
-  input.value = list.join(', ');
-}
-
 async function prSaveLog() {
   if (!_prModalState) return;
   var saveBtn = document.getElementById('pr-save-btn');
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
 
   var meetingDate = (document.getElementById('pr-input-meeting-date') || {}).value || '';
-  var attendees = (document.getElementById('pr-input-attendees') || {}).value || '';
+  // Attendees field was removed from the modal — preserve whatever's already
+  // on the record when editing so existing audit data isn't blanked out.
+  // New entries save '' (no attendees captured).
+  var _prExisting = _prModalState.editObjectId
+    ? PROJECT_REVIEWS.find(function(r) { return r.objectId === _prModalState.editObjectId; })
+    : null;
+  var attendees = _prExisting ? (_prExisting.attendees || '') : '';
   var notes = (document.getElementById('pr-input-notes') || {}).value || '';
   var decisions = (document.getElementById('pr-input-decisions') || {}).value || '';
   var actionItems = (document.getElementById('pr-input-action-items') || {}).value || '';
