@@ -845,8 +845,12 @@ function renderProjectReviewCard(p, rt) {
   if (p.category) html += '<span><strong>Category:</strong>' + esc(p.category) + '</span>';
   if (p.itd_team) html += '<span><strong>Unit:</strong>' + esc(p.itd_team) + '</span>';
   if (p.project_size) html += '<span><strong>Size:</strong>' + esc(p.project_size) + '</span>';
-  if (p.start || p.end) {
-    html += '<span><strong>Window:</strong>' + (p.start ? prFmtDate(p.start) : '—') + ' &mdash; ' + (p.end ? prFmtDate(p.end) : '—') + '</span>';
+  // Window end uses working_due first, falling back to the baseline `end` so
+  // the displayed range and the quarter bucket the project sits in always
+  // reflect the same target date (bucketing uses the same precedence).
+  var _prWinEnd = p.working_due || p.end;
+  if (p.start || _prWinEnd) {
+    html += '<span><strong>Window:</strong>' + (p.start ? prFmtDate(p.start) : '—') + ' &mdash; ' + (_prWinEnd ? prFmtDate(_prWinEnd) : '—') + '</span>';
   }
   html += '</div>';
   html += '</div>'; // pr-card-header-main
