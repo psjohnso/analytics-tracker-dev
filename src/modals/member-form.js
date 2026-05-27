@@ -675,7 +675,11 @@ function renderAbsenceEditor(name) {
     const isCur = wi === window.currentWeekIdx;
     const sched = (typeof getDailySchedule === 'function') ? getDailySchedule(p, weeks[wi]) : { mon: 8, tue: 8, wed: 8, thu: 8, fri: 8 };
     const byDay = p.absencesByDay && p.absencesByDay[wi] ? p.absencesByDay[wi] : { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
-    const total = days.reduce(function(s, d) { return s + (byDay[d] || 0); }, 0);
+    // Total only counts non-holiday days — holidays are already removed
+    // from capacity separately, so summing their hours into the personal-
+    // absence total would double-count.
+    const holDays = (typeof holidayDaysForWeek === 'function') ? holidayDaysForWeek(weeks[wi]) : {};
+    const total = days.reduce(function(s, d) { return s + (holDays[d] ? 0 : (byDay[d] || 0)); }, 0);
     const cap = p.proj_cap[wi] || 0;
     const weekMon = _absWeekMonday(weeks[wi]);
     html += '<tr class="' + (isCur ? 'abs-cur' : '') + '">';
@@ -751,7 +755,11 @@ async function absDayValueChanged(input) {
   if (!p.absencesByDay[wi]) p.absencesByDay[wi] = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
   p.absencesByDay[wi][day] = hrs;
   const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
-  const newTotal = days.reduce(function(s, d) { return s + (p.absencesByDay[wi][d] || 0); }, 0);
+  // newTotal excludes any holiday days — holidays are removed from capacity
+  // by the formula separately, so counting their hours in absence_hours
+  // double-charges.
+  const holDays = (typeof holidayDaysForWeek === 'function') ? holidayDaysForWeek(RESOURCES_DATA.weeks[wi]) : {};
+  const newTotal = days.reduce(function(s, d) { return s + (holDays[d] ? 0 : (p.absencesByDay[wi][d] || 0)); }, 0);
   p.absences[wi] = newTotal;
 
   const ppWeek = (typeof getPayPeriodWeek === 'function') ? getPayPeriodWeek(RESOURCES_DATA.weeks[wi]) : 'A';

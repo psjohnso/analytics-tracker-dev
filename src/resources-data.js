@@ -56,6 +56,25 @@ function weekContainsHoliday(weekDateStr) {
   return false;
 }
 
+// Day-of-week keys ('mon'..'fri') that are city holidays within the given
+// week. Used to keep holiday-day hours OUT of the personal-absence sum so
+// the capacity formula doesn't double-count (holidays are subtracted
+// separately by the formula already).
+function holidayDaysForWeek(weekDateStr) {
+  var set = {};
+  if (!HOLIDAYS.length || !weekDateStr) return set;
+  var weekStart = new Date(weekDateStr + 'T00:00:00');
+  weekStart.setDate(weekStart.getDate() + 1);
+  var keys = ['mon', 'tue', 'wed', 'thu', 'fri'];
+  for (var i = 0; i < 5; i++) {
+    var d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    var ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    if (HOLIDAYS_BY_DATE[ds]) set[keys[i]] = true;
+  }
+  return set;
+}
+
 // Comma-separated holiday names within a given week — used for chart tooltips.
 function holidayNamesForWeek(weekDateStr) {
   if (!HOLIDAYS.length || !weekDateStr) return '';
@@ -89,10 +108,13 @@ function getDailySchedule(person, weekDateStr) {
 
 // Distribute a weekly absence total evenly across the person's working days
 // for that week (used to interpret legacy weekly absence records that pre-date
-// per-day capture). Days with zero scheduled hours don't share the load.
-function distributeAbsenceHours(totalHrs, schedule) {
+// per-day capture). Days with zero scheduled hours OR holiday days don't share
+// the load — holiday days have their hours subtracted from capacity separately,
+// so dumping personal absence onto them would double-charge.
+function distributeAbsenceHours(totalHrs, schedule, holidayDays) {
   const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
-  const workingDays = days.filter(function(d) { return (schedule[d] || 0) > 0; });
+  const holDays = holidayDays || {};
+  const workingDays = days.filter(function(d) { return (schedule[d] || 0) > 0 && !holDays[d]; });
   const byDay = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
   if (workingDays.length === 0 || totalHrs <= 0) return byDay;
   const perDay = totalHrs / workingDays.length;
@@ -325,14 +347,27 @@ async function loadResourcesData() {
     const p = people[nm];
     const totalHrs = a.absence_hours || 0;
     const mon = a.mon_hrs || 0, tue = a.tue_hrs || 0, wed = a.wed_hrs || 0, thu = a.thu_hrs || 0, fri = a.fri_hrs || 0;
+    const byDayRaw = { mon: mon, tue: tue, wed: wed, thu: thu, fri: fri };
     const dayTotal = mon + tue + wed + thu + fri;
+    // Holidays are subtracted from capacity separately, so day values that
+    // fall on a holiday must NOT flow into the personal-absence sum — that
+    // would double-charge. The raw per-day values stay in absencesByDay
+    // (preserved for round-trip if the holiday is later removed), but the
+    // running absences[wi] used by the capacity formula only counts
+    // non-holiday days.
+    const holDays = holidayDaysForWeek(weeks[wi]);
+    const nonHolidayTotal = ['mon', 'tue', 'wed', 'thu', 'fri']
+      .reduce(function(s, d) { return s + (holDays[d] ? 0 : (byDayRaw[d] || 0)); }, 0);
     if (dayTotal > 0) {
-      p.absencesByDay[wi] = { mon: mon, tue: tue, wed: wed, thu: thu, fri: fri };
-      p.absences[wi] = dayTotal; // trust explicit per-day data over a possibly-stale weekly field
+      p.absencesByDay[wi] = byDayRaw;
+      p.absences[wi] = nonHolidayTotal;
     } else if (totalHrs > 0) {
-      // Legacy weekly record — distribute evenly across this person's working days
-      p.absencesByDay[wi] = distributeAbsenceHours(totalHrs, getDailySchedule(p, weeks[wi]));
-      p.absences[wi] = totalHrs;
+      // Legacy weekly record — distribute evenly across working, non-holiday days
+      p.absencesByDay[wi] = distributeAbsenceHours(totalHrs, getDailySchedule(p, weeks[wi]), holDays);
+      // After distribution, the legacy total already excludes holiday days
+      // (they got 0 share), so the sum equals the post-distribution total.
+      p.absences[wi] = ['mon', 'tue', 'wed', 'thu', 'fri']
+        .reduce(function(s, d) { return s + (p.absencesByDay[wi][d] || 0); }, 0);
     }
   });
 

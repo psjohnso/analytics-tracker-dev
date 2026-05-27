@@ -608,12 +608,19 @@ function recomputeCapacityAfterHolidayChange() {
   if (!RESOURCES_DATA || !RESOURCES_DATA.people) return;
   var weeks = RESOURCES_DATA.weeks;
   var N = weeks.length;
+  var days = ['mon', 'tue', 'wed', 'thu', 'fri'];
   Object.values(RESOURCES_DATA.people).forEach(function(p) {
     for (var i = 0; i < N; i++) {
       var ppWeek = (typeof getPayPeriodWeek === 'function') ? getPayPeriodWeek(weeks[i]) : 'A';
       var scheduledHours = (ppWeek === 'A') ? (p.week1_hours || 40) : (p.week2_hours || 40);
       var holidayHrs = (typeof holidayHoursForPersonWeek === 'function') ? holidayHoursForPersonWeek(p, weeks[i], i) : 0;
-      p.proj_cap[i] = Math.max(0, (scheduledHours - (p.absences[i] || 0) - holidayHrs) * (_productivityRatio || 0.75) * p.proj_pct);
+      // Recompute non-holiday absence sum so a newly-added holiday on a day
+      // that already had PTO doesn't double-charge (and conversely, removing
+      // a holiday restores that day's PTO into the sum).
+      var holDays = (typeof holidayDaysForWeek === 'function') ? holidayDaysForWeek(weeks[i]) : {};
+      var byDay = (p.absencesByDay && p.absencesByDay[i]) || { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
+      p.absences[i] = days.reduce(function(s, d) { return s + (holDays[d] ? 0 : (byDay[d] || 0)); }, 0);
+      p.proj_cap[i] = Math.max(0, (scheduledHours - p.absences[i] - holidayHrs) * (_productivityRatio || 0.75) * p.proj_pct);
       // Reflow allocation hours from fractions and the new cap.
       (p.allocations || []).forEach(function(a) { a.hours[i] = (a.fracs[i] || 0) * p.proj_cap[i]; });
       var totalAlloc = (p.allocations || []).reduce(function(s, a) { return s + (a.hours[i] || 0); }, 0);
