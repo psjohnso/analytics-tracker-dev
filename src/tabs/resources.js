@@ -335,6 +335,12 @@ function renderResources(area) {
     if (wi === calWeekIdx) {
       bars += `<rect x="${x.toFixed(1)}" y="0" width="${barW}" height="${chartH-padB}" fill="${capLineColor}" opacity="${cwIndOpacity}" rx="2"/>`;
     }
+    // Holiday-week marker — sunset-colored cap at the top of the column with
+    // a tooltip listing the observed holidays in that week.
+    if (typeof weekContainsHoliday === 'function' && weekContainsHoliday(weeks[wi])) {
+      const _holNames = (typeof holidayNamesForWeek === 'function') ? holidayNamesForWeek(weeks[wi]) : 'Holiday';
+      bars += `<rect x="${x.toFixed(1)}" y="0" width="${barW}" height="4" fill="#b85630" opacity="0.85" rx="1"><title>Holiday: ${esc(_holNames)}</title></rect>`;
+    }
 
     // X label: show month on first week of month
     const wDate = new Date(weeks[wi] + 'T00:00:00');
@@ -658,6 +664,12 @@ function renderResourcesOE(area) {
     // Current week indicator
     if (wi === calWeekIdx) {
       bars += '<rect x="' + x.toFixed(1) + '" y="0" width="' + barW + '" height="' + (chartH - padB) + '" fill="' + capLineColor + '" opacity="' + cwIndOpacity + '" rx="2"/>';
+    }
+    // Holiday-week marker — sunset cap at the top of the column with a
+    // tooltip listing the observed holidays.
+    if (typeof weekContainsHoliday === 'function' && weekContainsHoliday(weeks[wi])) {
+      var _holNames = (typeof holidayNamesForWeek === 'function') ? holidayNamesForWeek(weeks[wi]) : 'Holiday';
+      bars += '<rect x="' + x.toFixed(1) + '" y="0" width="' + barW + '" height="4" fill="#b85630" opacity="0.9" rx="1"><title>Holiday: ' + esc(_holNames) + '</title></rect>';
     }
 
     // X labels (month on first-of-month, day below)

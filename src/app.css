@@ -3808,6 +3808,8 @@ body[data-theme="dark"] .confirm-dialog.danger .confirm-title { color: #F87171; 
 .abs-input { width:46px; padding:5px 2px; text-align:center; border:1px solid #E8E6DF; border-radius:4px; font-size:13px; font-family:Lato,sans-serif; }
 .abs-input:focus { outline:none; border-color:var(--navy); box-shadow:0 0 0 2px rgba(0,38,105,0.15); }
 .abs-input.has-val { background:#FFF7ED; border-color:#F59E0B; font-weight:700; }
+.abs-cell-holiday { background:rgba(184,86,48,0.08); }
+.abs-cell-holiday .abs-input { background:transparent; border-color:rgba(184,86,48,0.35); color:rgba(0,0,0,0.45); cursor:not-allowed; }
 
 /* Member form modal */
 #member-form-backdrop { display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.4); align-items:center; justify-content:center; }

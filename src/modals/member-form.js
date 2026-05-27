@@ -664,24 +664,44 @@ function renderAbsenceEditor(name) {
   dayLabels.forEach(function(d) { html += '<th style="min-width:60px;">' + d + '</th>'; });
   html += '<th style="min-width:60px;">Total</th><th style="min-width:70px;">Capacity</th></tr></thead><tbody>';
 
+  // Pre-compute the Monday-of-each-visible-week so we can map day-of-week to
+  // a calendar date for the holiday lookup.
+  function _absWeekMonday(weekDateStr) {
+    var d = new Date(weekDateStr + 'T00:00:00');
+    d.setDate(d.getDate() + 1); // Sun → Mon
+    return d;
+  }
   wIdxs.forEach(function(wi) {
     const isCur = wi === window.currentWeekIdx;
     const sched = (typeof getDailySchedule === 'function') ? getDailySchedule(p, weeks[wi]) : { mon: 8, tue: 8, wed: 8, thu: 8, fri: 8 };
     const byDay = p.absencesByDay && p.absencesByDay[wi] ? p.absencesByDay[wi] : { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
     const total = days.reduce(function(s, d) { return s + (byDay[d] || 0); }, 0);
     const cap = p.proj_cap[wi] || 0;
+    const weekMon = _absWeekMonday(weeks[wi]);
     html += '<tr class="' + (isCur ? 'abs-cur' : '') + '">';
     html += '<td style="text-align:left;font-weight:600;color:var(--navy);font-size:12px;">' + absMonLabel(wi) + (isCur ? ' <span style="font-size:10px;color:var(--text-muted);">(this wk)</span>' : '') + '</td>';
-    days.forEach(function(d) {
+    days.forEach(function(d, dIdx) {
       const dSched = sched[d] || 0;
       const dHrs = byDay[d] || 0;
-      const disabled = dSched === 0;
+      // Compute this cell's calendar date and check whether it's a holiday.
+      const cellDate = new Date(weekMon); cellDate.setDate(weekMon.getDate() + dIdx);
+      const cellYmd = cellDate.getFullYear() + '-' + String(cellDate.getMonth() + 1).padStart(2, '0') + '-' + String(cellDate.getDate()).padStart(2, '0');
+      const holiday = (typeof getHolidayForDate === 'function') ? getHolidayForDate(cellYmd) : null;
+      // Disabled when the person doesn't work that day OR the day is a city
+      // holiday (already removed from capacity — no per-person PTO entry needed).
+      const disabledNonWork = dSched === 0;
+      const disabledHoliday = !!holiday && dSched > 0;
+      const disabled = disabledNonWork || disabledHoliday;
       const hasVal = dHrs > 0;
-      html += '<td>' +
+      const dispValue = disabledHoliday ? '' : (disabledNonWork ? '' : dHrs);
+      const placeholder = disabledHoliday ? '🎉' : (disabledNonWork ? '—' : '');
+      const tooltipExtra = disabledHoliday ? holiday.name : (disabledNonWork ? 'Not a working day' : ('Up to ' + dSched + 'h scheduled'));
+      html += '<td' + (disabledHoliday ? ' class="abs-cell-holiday"' : '') + '>' +
         '<input type="number" min="0" max="' + dSched + '" step="0.5" ' +
-        'value="' + (disabled ? '' : dHrs) + '" ' +
-        'class="abs-input' + (hasVal ? ' has-val' : '') + '" ' +
-        (disabled ? 'disabled placeholder="—" title="Not a working day"' : 'title="Up to ' + dSched + 'h scheduled"') + ' ' +
+        'value="' + dispValue + '" ' +
+        'class="abs-input' + (hasVal && !disabled ? ' has-val' : '') + '" ' +
+        (disabled ? 'disabled placeholder="' + placeholder + '" ' : '') +
+        'title="' + esc(tooltipExtra) + '" ' +
         'data-name="' + esc(name) + '" data-wi="' + wi + '" data-day="' + d + '" ' +
         'onchange="absDayValueChanged(this)" onfocus="this.select()">' +
       '</td>';

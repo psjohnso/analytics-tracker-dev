@@ -447,6 +447,183 @@ function updateBetaPref(featureKey, enabled) {
   showToast(BETA_FEATURES[featureKey].label + (enabled ? ' enabled.' : ' disabled.'), 'success');
 }
 
+// ── City Holidays panel ─────────────────────────────────────────────
+// Admin-only Settings section that lists and manages observed-date holidays.
+// HOLIDAYS is loaded by loadResourcesData() — this panel handles adds/deletes
+// directly against ARCGIS_CONFIG.holidaysUrl and refreshes the in-memory
+// list so capacity recomputes immediately.
+function buildHolidaysPanel() {
+  if (!ARCGIS_CONFIG.holidaysUrl) {
+    return '<div class="settings-panel-title">Holidays</div>' +
+      '<div class="settings-panel-desc">The holidays layer isn\'t configured yet. See notebooks/setup_holidays_table.ipynb to create it, then paste the layer URL into ARCGIS_CONFIG.holidaysUrl.</div>';
+  }
+  var list = (typeof HOLIDAYS !== 'undefined' && HOLIDAYS) ? HOLIDAYS : [];
+  // Group by calendar year (extracted from date string for cheap sort).
+  var byYear = {};
+  list.forEach(function(h) {
+    var yr = (h.date || '').slice(0, 4);
+    if (!yr) return;
+    if (!byYear[yr]) byYear[yr] = [];
+    byYear[yr].push(h);
+  });
+  var years = Object.keys(byYear).sort();
+  var thisYear = String(new Date().getFullYear());
+
+  var sections = years.map(function(yr) {
+    var rows = byYear[yr].map(function(h) {
+      var d = new Date(h.date + 'T12:00:00');
+      var dow = d.toLocaleDateString('en-US', { weekday: 'short' });
+      var fmt = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return '<tr>' +
+        '<td style="font-weight:700;color:var(--navy);white-space:nowrap;">' + esc(fmt) + '</td>' +
+        '<td style="color:var(--text-muted);font-size:11px;">' + esc(dow) + '</td>' +
+        '<td>' + esc(h.name) + '</td>' +
+        '<td style="text-align:right;">' +
+          '<button class="settings-btn settings-btn-danger" onclick="btnPending(this, () => deleteHoliday(' + h.objectId + '), \'Delete?\')"><svg class="icon" aria-hidden="true"><use href="#ph-trash"></use></svg></button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+    var isThisYear = yr === thisYear;
+    var copyBtn = '<button class="settings-btn settings-btn-secondary" onclick="copyHolidaysToNextYear(\'' + yr + '\')" title="Duplicate this year\'s holidays to next year, preserving day-of-week"><svg class="icon" aria-hidden="true"><use href="#ph-copy"></use></svg> Copy to ' + (parseInt(yr, 10) + 1) + '</button>';
+    return '<div style="margin-bottom:18px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+        '<div style="font-size:14px;font-weight:700;color:var(--navy);">' + yr + (isThisYear ? ' <span style="font-size:10px;color:var(--text-muted);font-weight:600;margin-left:4px;">this year</span>' : '') + ' <span style="font-size:11px;color:var(--text-muted);font-weight:500;margin-left:6px;">' + byYear[yr].length + '</span></div>' +
+        copyBtn +
+      '</div>' +
+      '<div style="overflow-x:auto;border:1px solid #E8E6DF;border-radius:8px;background:var(--white);">' +
+        '<table class="member-table" style="margin:0;"><thead><tr><th style="text-align:left;">Date</th><th style="text-align:left;">Day</th><th style="text-align:left;">Name</th><th style="text-align:right;">Actions</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  if (!years.length) sections = '<div class="settings-panel-desc" style="padding:16px;background:var(--white);border:1px dashed #E8E6DF;border-radius:8px;">No holidays yet. Add the city\'s observed dates below.</div>';
+
+  return '<div class="settings-panel-title">Holidays</div>' +
+    '<div class="settings-panel-desc">Observed-date city holidays. Each holiday reduces every team member\'s project capacity by their scheduled hours for that day-of-week (full day off; RDOs absorb without penalty).</div>' +
+    '<div style="background:var(--white);border:1px solid #E8E6DF;border-radius:10px;padding:16px 20px;margin-bottom:18px;">' +
+      '<div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">Add holiday</div>' +
+      '<div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">' +
+        '<div><label style="display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">Date</label><input type="date" id="settings-holiday-date" style="padding:6px 8px;border:1px solid #E8E6DF;border-radius:6px;font-size:13px;font-family:Lato,sans-serif;"></div>' +
+        '<div style="flex:1;min-width:200px;"><label style="display:block;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">Name</label><input type="text" id="settings-holiday-name" placeholder="e.g. Memorial Day" style="width:100%;padding:6px 8px;border:1px solid #E8E6DF;border-radius:6px;font-size:13px;font-family:Lato,sans-serif;"></div>' +
+        '<button class="settings-btn settings-btn-primary" onclick="btnPending(this, () => addHoliday(), \'\')">＋ Add</button>' +
+      '</div>' +
+    '</div>' +
+    sections;
+}
+
+async function addHoliday() {
+  var dateEl = document.getElementById('settings-holiday-date');
+  var nameEl = document.getElementById('settings-holiday-name');
+  var date = (dateEl || {}).value || '';
+  var name = ((nameEl || {}).value || '').trim();
+  if (!date) { showToast('Pick a date.', 'error'); return; }
+  if (!name) { showToast('Enter a holiday name.', 'error'); return; }
+  if (HOLIDAYS_BY_DATE[date]) { showToast('A holiday is already set for that date.', 'error'); return; }
+  try {
+    var result = await agolApplyEdits(ARCGIS_CONFIG.holidaysUrl, {
+      adds: [{ attributes: { holiday_date: date, name: name } }]
+    });
+    var ok = result && result.addResults && result.addResults[0] && result.addResults[0].success;
+    if (!ok) throw new Error('AGOL rejected the add');
+    var newOid = result.addResults[0].objectId;
+    HOLIDAYS.push({ objectId: newOid, date: date, name: name });
+    HOLIDAYS.sort(function(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+    HOLIDAYS_BY_DATE[date] = HOLIDAYS[HOLIDAYS.length - 1];
+    // Capacity needs to recompute now that holidays changed.
+    if (typeof recomputeCapacityAfterHolidayChange === 'function') recomputeCapacityAfterHolidayChange();
+    showToast('Holiday added.', 'success');
+    render();
+  } catch (err) {
+    console.error('[Settings] Add holiday failed:', err);
+    showToast('Add failed: ' + err.message, 'error');
+  }
+}
+
+async function deleteHoliday(objectId) {
+  if (!objectId) return;
+  try {
+    await agolApplyEdits(ARCGIS_CONFIG.holidaysUrl, { deletes: [objectId] });
+    var idx = HOLIDAYS.findIndex(function(h) { return h.objectId === objectId; });
+    if (idx >= 0) {
+      var removed = HOLIDAYS.splice(idx, 1)[0];
+      if (removed && HOLIDAYS_BY_DATE[removed.date]) delete HOLIDAYS_BY_DATE[removed.date];
+    }
+    if (typeof recomputeCapacityAfterHolidayChange === 'function') recomputeCapacityAfterHolidayChange();
+    showToast('Holiday removed.', 'success');
+    render();
+  } catch (err) {
+    console.error('[Settings] Delete holiday failed:', err);
+    showToast('Delete failed: ' + err.message, 'error');
+  }
+}
+
+// Duplicate a year's holidays into the following year, preserving day-of-week.
+// "Memorial Day was last Monday of May 2026" → "last Monday of May 2027". The
+// admin scans the resulting rows and adjusts the few that observe differently.
+async function copyHolidaysToNextYear(srcYear) {
+  var src = HOLIDAYS.filter(function(h) { return (h.date || '').slice(0, 4) === srcYear; });
+  if (!src.length) { showToast('Nothing to copy.', 'error'); return; }
+  var nextYr = parseInt(srcYear, 10) + 1;
+  var adds = [];
+  src.forEach(function(h) {
+    var srcDate = new Date(h.date + 'T12:00:00');
+    // Find the nth-weekday-of-month in the source date, then map to the same
+    // nth-weekday in next year.
+    var srcMonth = srcDate.getMonth();
+    var srcDay = srcDate.getDate();
+    var srcDow = srcDate.getDay();
+    var nthInMonth = Math.ceil(srcDay / 7);
+    // Build next year's nth-weekday of that month.
+    var firstOfMonth = new Date(nextYr, srcMonth, 1);
+    var offset = (srcDow - firstOfMonth.getDay() + 7) % 7;
+    var target = new Date(nextYr, srcMonth, 1 + offset + (nthInMonth - 1) * 7);
+    var targetStr = target.getFullYear() + '-' + String(target.getMonth() + 1).padStart(2, '0') + '-' + String(target.getDate()).padStart(2, '0');
+    if (HOLIDAYS_BY_DATE[targetStr]) return; // skip dates already populated
+    adds.push({ attributes: { holiday_date: targetStr, name: h.name } });
+  });
+  if (!adds.length) { showToast('All target dates already have holidays.', 'success'); return; }
+  try {
+    var result = await agolApplyEdits(ARCGIS_CONFIG.holidaysUrl, { adds: adds });
+    var ok = (result.addResults || []).filter(function(r) { return r.success; });
+    ok.forEach(function(r, i) {
+      var attrs = adds[i].attributes;
+      var entry = { objectId: r.objectId, date: attrs.holiday_date, name: attrs.name };
+      HOLIDAYS.push(entry);
+      HOLIDAYS_BY_DATE[entry.date] = entry;
+    });
+    HOLIDAYS.sort(function(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+    if (typeof recomputeCapacityAfterHolidayChange === 'function') recomputeCapacityAfterHolidayChange();
+    showToast('Copied ' + ok.length + ' holiday(s) to ' + nextYr + '. Review for federal-style observed-date shifts.', 'success');
+    render();
+  } catch (err) {
+    console.error('[Settings] Copy holidays failed:', err);
+    showToast('Copy failed: ' + err.message, 'error');
+  }
+}
+
+// Recompute proj_cap / utilization for every person after a holiday change so
+// the chart / KPIs / My Work hero reflect the new capacity without a page
+// reload. Mirrors what loadResourcesData does at the end of its load.
+function recomputeCapacityAfterHolidayChange() {
+  if (!RESOURCES_DATA || !RESOURCES_DATA.people) return;
+  var weeks = RESOURCES_DATA.weeks;
+  var N = weeks.length;
+  Object.values(RESOURCES_DATA.people).forEach(function(p) {
+    for (var i = 0; i < N; i++) {
+      var ppWeek = (typeof getPayPeriodWeek === 'function') ? getPayPeriodWeek(weeks[i]) : 'A';
+      var scheduledHours = (ppWeek === 'A') ? (p.week1_hours || 40) : (p.week2_hours || 40);
+      var holidayHrs = (typeof holidayHoursForPersonWeek === 'function') ? holidayHoursForPersonWeek(p, weeks[i], i) : 0;
+      p.proj_cap[i] = Math.max(0, (scheduledHours - (p.absences[i] || 0) - holidayHrs) * (_productivityRatio || 0.75) * p.proj_pct);
+      // Reflow allocation hours from fractions and the new cap.
+      (p.allocations || []).forEach(function(a) { a.hours[i] = (a.fracs[i] || 0) * p.proj_cap[i]; });
+      var totalAlloc = (p.allocations || []).reduce(function(s, a) { return s + (a.hours[i] || 0); }, 0);
+      p.weekly_allocated[i] = totalAlloc;
+      p.utilization[i] = p.proj_cap[i] > 0 ? totalAlloc / p.proj_cap[i] : 0;
+    }
+  });
+  if (typeof markDataDirty === 'function') markDataDirty();
+}
+
 function renderSettingsPage(area) {
   var isAdminUser = isAdmin();
   var leadTeam = (typeof getLeadTeam === 'function') ? getLeadTeam() : null;
@@ -514,6 +691,7 @@ function renderSettingsPage(area) {
       navItem('categories', 'Categories and tools') +
       navItem('risk', 'Project Risk') +
       navItem('allocations', 'Allocations') +
+      navItem('holidays', 'Holidays', HOLIDAYS ? HOLIDAYS.length : 0) +
     '</div>' +
     '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">System</div>' +
@@ -627,6 +805,10 @@ function renderSettingsPage(area) {
       '<div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">Allocation defaults</div>' +
       '<div class="settings-panel-desc">Default weekly allocation percentages applied when auto-filling allocations. Values represent the percentage of a person\'s project-available time dedicated to a single project per week.</div>' +
       '<div id="alloc-defaults-editor"></div>';
+  }
+
+  else if (_settingsSection === 'holidays') {
+    panelHtml = buildHolidaysPanel();
   }
 
   else if (_settingsSection === 'timetracking') {

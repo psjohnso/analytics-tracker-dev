@@ -4,6 +4,73 @@
 // Relies on globals defined elsewhere (RESOURCES_DATA, PROJECTS, ARCGIS_CONFIG,
 // agolQuery, getPayPeriodWeek, epochToDateStr, initResourcesWeekIndices…).
 
+// ── City holidays ──
+// Global list of observed-date holidays, loaded from AGOL on each
+// loadResourcesData() call. Shape: [{ objectId, date: 'YYYY-MM-DD', name }, ...].
+// Empty when the holidays layer isn't configured / loaded.
+var HOLIDAYS = [];
+var HOLIDAYS_BY_DATE = {}; // 'YYYY-MM-DD' → holiday entry
+
+// Returns the holiday entry for a given date string, or null.
+function getHolidayForDate(dateStr) {
+  if (!dateStr) return null;
+  return HOLIDAYS_BY_DATE[String(dateStr).slice(0, 10)] || null;
+}
+
+// Sum of holiday hours a person loses to holidays in the given week. A
+// holiday only counts when it falls on a day the person normally works
+// (scheduled hours > 0) — RDOs and weekends absorb holidays without
+// reducing project capacity.
+function holidayHoursForPersonWeek(person, weekDateStr, weekIdx) {
+  if (!HOLIDAYS.length) return 0;
+  if (!weekDateStr) return 0;
+  // weekDateStr is the Sunday-of-week (see generateWeeks); Monday is +1.
+  var weekStart = new Date(weekDateStr + 'T00:00:00');
+  weekStart.setDate(weekStart.getDate() + 1); // Sunday → Monday
+  var schedule = getDailySchedule(person, weekDateStr);
+  var dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri'];
+  var total = 0;
+  for (var i = 0; i < 5; i++) {
+    var d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    var ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    if (HOLIDAYS_BY_DATE[ds]) {
+      total += (schedule[dayKeys[i]] || 0);
+    }
+  }
+  return total;
+}
+
+// True when the given week contains at least one holiday — used by the
+// capacity chart to draw a subtle marker on that column.
+function weekContainsHoliday(weekDateStr) {
+  if (!HOLIDAYS.length || !weekDateStr) return false;
+  var weekStart = new Date(weekDateStr + 'T00:00:00');
+  weekStart.setDate(weekStart.getDate() + 1);
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    var ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    if (HOLIDAYS_BY_DATE[ds]) return true;
+  }
+  return false;
+}
+
+// Comma-separated holiday names within a given week — used for chart tooltips.
+function holidayNamesForWeek(weekDateStr) {
+  if (!HOLIDAYS.length || !weekDateStr) return '';
+  var weekStart = new Date(weekDateStr + 'T00:00:00');
+  weekStart.setDate(weekStart.getDate() + 1);
+  var names = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    var ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    if (HOLIDAYS_BY_DATE[ds]) names.push(HOLIDAYS_BY_DATE[ds].name);
+  }
+  return names.join(', ');
+}
+
 // ── Per-day schedule helpers ──
 // Returns the per-day scheduled hours object for a given person + week date.
 // Uses wk1_* fields on pay-period A weeks and wk2_* on B weeks (9/80 alternates;
@@ -55,21 +122,43 @@ function generateWeeks(year) {
 async function loadResourcesData() {
   let N = 52; // weeks per year
 
-  // Query 3 services in parallel (weekly_capacity no longer needed —
-  // proj_cap is always computed from absences × proj_pct)
+  // Query 4 services in parallel — holidays is optional (older deployments
+  // without the table get an empty array and the feature stays inert).
+  const _holidaysQ = ARCGIS_CONFIG.holidaysUrl
+    ? agolQuery(ARCGIS_CONFIG.holidaysUrl).catch(function(e) { console.warn('[Resources] holidays load failed; continuing without:', e); return []; })
+    : Promise.resolve([]);
   const results = await Promise.all([
     agolQuery(ARCGIS_CONFIG.teamMembersUrl),
     agolQuery(ARCGIS_CONFIG.absencesUrl),
     agolQuery(ARCGIS_CONFIG.allocationsUrl),
+    _holidaysQ,
   ]);
   const memberFeatures = results[0];
   const absenceFeatures = results[1];
   const allocFeatures = results[2];
+  const holidayFeatures = results[3];
 
   // Log first feature from each for field-name debugging
   if (memberFeatures.length) console.log('[Resources] team_members fields:', Object.keys(memberFeatures[0].attributes));
   if (absenceFeatures.length) console.log('[Resources] absences fields:', Object.keys(absenceFeatures[0].attributes));
   if (allocFeatures.length) console.log('[Resources] allocations fields:', Object.keys(allocFeatures[0].attributes));
+  if (holidayFeatures.length) console.log('[Resources] holidays fields:', Object.keys(holidayFeatures[0].attributes));
+
+  // Build the global HOLIDAYS list — { date: 'YYYY-MM-DD', name, objectId }
+  // Sorted by date so the Settings UI list is naturally chronological.
+  HOLIDAYS = holidayFeatures.map(function(f) {
+    var a = f.attributes;
+    return {
+      objectId: a.OBJECTID || a.ObjectId || a.objectid,
+      date: epochToDateStr(a.holiday_date),
+      name: a.name || '',
+    };
+  }).filter(function(h) { return h.date; })
+    .sort(function(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  // Lookup map for the per-day "is this a holiday?" check (used in capacity
+  // calc, My Work day strip, absence editor, and the chart marker).
+  HOLIDAYS_BY_DATE = {};
+  HOLIDAYS.forEach(function(h) { HOLIDAYS_BY_DATE[h.date] = h; });
 
   // Generate weeks array (52 Sundays of 2026)
   const weeks = generateWeeks(2026);
@@ -256,15 +345,20 @@ async function loadResourcesData() {
 }
 
 function computeCapacityAndAllocations(people, weeks, weekIdx, allocFeatures, N) {
-  // Compute proj_cap from formula: (scheduled_hours - absence_hours) × _productivityRatio × proj_pct.
+  // Compute proj_cap from formula:
+  //   (scheduled_hours - absence_hours - holiday_hours) × _productivityRatio × proj_pct
   // _productivityRatio (default 0.75, admin-tunable) accounts for non-project overhead.
   // For 9/80 schedules, Week A = week1_hours (44), Week B = week2_hours (36).
+  // Holidays are subtracted on top of personal absences and only count when
+  // they fall on a day the person normally works (handled inside the helper).
   Object.entries(people).forEach(function(entry) {
     const p = entry[1];
     for (let i = 0; i < N; i++) {
       const ppWeek = getPayPeriodWeek(weeks[i]);
       const scheduledHours = (ppWeek === 'A') ? p.week1_hours : p.week2_hours;
-      p.proj_cap[i] = (scheduledHours - (p.absences[i] || 0)) * _productivityRatio * p.proj_pct;
+      const holidayHrs = holidayHoursForPersonWeek(p, weeks[i], i);
+      p.proj_cap[i] = (scheduledHours - (p.absences[i] || 0) - holidayHrs) * _productivityRatio * p.proj_pct;
+      if (p.proj_cap[i] < 0) p.proj_cap[i] = 0; // clamp absence + holiday over-subtraction
     }
   });
 

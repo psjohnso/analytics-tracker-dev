@@ -1105,8 +1105,13 @@ function renderMyWork(area) {
       var _hd = new Date(_hMon); _hd.setDate(_hMon.getDate() + _hi);
       var _hh = (_weekDaily && _weekDaily[_hKeys[_hi]]) || 0;
       var _hDayAbs = _hAbsByDay[_hAbsKey[_hi]] || 0;
-      // OFF when scheduled = 0 (always-off day) or fully absent (absence >= scheduled).
-      var _hoff = _hh === 0 || (_hh > 0 && _hDayAbs >= _hh);
+      // Holiday check — if this day is on the city holidays list, it overrides
+      // the OFF / absence display below with a HOLIDAY label + the holiday name.
+      var _hdYmd = _hd.getFullYear() + '-' + String(_hd.getMonth() + 1).padStart(2, '0') + '-' + String(_hd.getDate()).padStart(2, '0');
+      var _hHoliday = (typeof getHolidayForDate === 'function') ? getHolidayForDate(_hdYmd) : null;
+      var _hIsHoliday = !!_hHoliday && _hh > 0; // RDOs absorb holidays — no badge needed
+      // OFF when scheduled = 0 (always-off day), fully absent, or holiday on a working day.
+      var _hoff = _hh === 0 || (_hh > 0 && _hDayAbs >= _hh) || _hIsHoliday;
 
       // Build the bar fill: track is full-width, fill is dayLogged / dailyTarget,
       // segments inside the fill are sized by each project's share of the day.
@@ -1131,7 +1136,9 @@ function renderMyWork(area) {
         : (_barTarget > 0 ? '~' + _barTarget.toFixed(1) + 'h/day project target' : '');
       var _trackHtml = '<div class="oe-week-bar"' + (_barTip ? ' title="' + _barTip + '"' : '') + '><div class="oe-week-bar-fill" style="width:' + _barFillPct.toFixed(1) + '%;">' + _segs + '</div></div>';
       var _hrsLabel;
-      if (_hoff) {
+      if (_hIsHoliday) {
+        _hrsLabel = 'HOLIDAY';
+      } else if (_hoff) {
         _hrsLabel = 'OFF';
       } else if (_dayLogged > 0) {
         _hrsLabel = _dayLogged.toFixed(_dayLogged >= 10 ? 0 : 1) + 'h' + (_barTarget > 0 ? ' / ' + _barTarget.toFixed(1) + 'h' : '');
@@ -1142,7 +1149,11 @@ function renderMyWork(area) {
         _hrsLabel = _barTarget > 0 ? _barTarget.toFixed(1) + 'h' : '—';
       }
 
-      _hStrip += '<div class="oe-week-day' + (_hoff ? ' off' : '') + '"><div class="oe-week-dayname">' + _hLbls[_hi] + ' ' + _hd.getDate() + '</div>' + _trackHtml + '<div class="oe-week-dayhrs">' + _hrsLabel + '</div></div>';
+      // Holiday name as a small subtitle under the day label (e.g. "Memorial Day"),
+      // tooltip on the cell for the full text on hover.
+      var _hHolidayTitle = _hIsHoliday ? ' title="' + esc(_hHoliday.name) + '"' : '';
+      var _hHolidaySub = _hIsHoliday ? '<div class="oe-week-holiday-name">' + esc(_hHoliday.name) + '</div>' : '';
+      _hStrip += '<div class="oe-week-day' + (_hoff ? ' off' : '') + (_hIsHoliday ? ' holiday' : '') + '"' + _hHolidayTitle + '><div class="oe-week-dayname">' + _hLbls[_hi] + ' ' + _hd.getDate() + '</div>' + _trackHtml + '<div class="oe-week-dayhrs">' + _hrsLabel + '</div>' + _hHolidaySub + '</div>';
     }
 
     // Build a small project legend so users can see which color = which project.
