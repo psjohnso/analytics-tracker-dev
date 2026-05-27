@@ -214,9 +214,17 @@ function prGroupByFiscalQuarter(projects) {
       futureMap[fq.key].projects.push(p);
     }
   });
-  // Always show Past + Current sections (even if empty) so reviewers can confirm "nothing past due."
+  // Always show the Current section (even if empty) so reviewers can confirm
+  // "nothing for this quarter yet." Past section is only shown when it still
+  // has unfinished work — once every project that landed in a past quarter is
+  // Complete or Canceled, the section disappears.
   if (!currentBucket) currentBucket = { key: current.key, label: current.label + ' — current', defaultOpen: true, projects: [], sortIdx: current.sortIdx };
-  var buckets = [pastBucket, currentBucket];
+  var pastHasUnfinished = pastBucket.projects.some(function(p) {
+    return p.status !== 'Complete' && p.status !== 'Canceled';
+  });
+  var buckets = [];
+  if (pastHasUnfinished) buckets.push(pastBucket);
+  buckets.push(currentBucket);
   Object.keys(futureMap).map(function(k) { return futureMap[k]; })
     .sort(function(a, b) { return a.sortIdx - b.sortIdx; })
     .forEach(function(b) { buckets.push(b); });
