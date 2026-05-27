@@ -416,15 +416,21 @@ async function loadTimeEntries() {
   }
 }
 
+// Self-only time-tracking helpers — these power the time-tracking panel,
+// today's-entries reminder, active-timer chips and the duplicate-timer guard,
+// all of which are about the logged-in user's own work. Since v1.64.1.6
+// admins / leads load the whole team's entries (for admin view-as on My Work),
+// every helper here must filter by Auth.fullName or it would leak other
+// people's entries onto the current user's surfaces.
 function getActiveTimers() {
-  return TIME_ENTRIES.filter(function(e) { return !e.end_time; });
+  return TIME_ENTRIES.filter(function(e) { return !e.end_time && e.name === Auth.fullName; });
 }
 
 function getTodayEntries() {
   const now = new Date();
   const todayStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
   return TIME_ENTRIES.filter(function(e) {
-    return e.work_date === todayStr;
+    return e.name === Auth.fullName && e.work_date === todayStr;
   });
 }
 
@@ -442,7 +448,7 @@ function getWeekEntries() {
     dates.push(d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'));
   }
   return TIME_ENTRIES.filter(function(e) {
-    return dates.indexOf(e.work_date) >= 0;
+    return e.name === Auth.fullName && dates.indexOf(e.work_date) >= 0;
   });
 }
 
@@ -962,6 +968,7 @@ function buildTimeTrackingPanel() {
     return n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0');
   })();
   const recentEntries = TIME_ENTRIES.filter(function(e) {
+    if (e.name !== Auth.fullName) return false; // self only — admins have whole-team data loaded
     if (!e.end_time) return false;
     if (e.work_date === todayStr2) return false; // already in today's log
     // Last 7 days
