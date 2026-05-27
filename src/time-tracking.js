@@ -382,7 +382,12 @@ function getProjectHoursByPerson(projectTitle) {
 async function loadTimeEntries() {
   if (!Auth.fullName || !isTimeTrackingEnabled()) { TIME_ENTRIES = []; return; }
   try {
-    const features = await agolQuery(ARCGIS_CONFIG.timeEntriesUrl, "name='" + Auth.fullName.replace(/'/g, "''") + "'");
+    // Admins / leads load the whole team's entries so admin view-as on My Work
+    // can render each viewed user's tracked-time day bars. Regular members keep
+    // the self-scoped query (privacy + lighter payload).
+    const loadAll = (typeof isLead === 'function' && isLead());
+    const where = loadAll ? null : ("name='" + Auth.fullName.replace(/'/g, "''") + "'");
+    const features = await agolQuery(ARCGIS_CONFIG.timeEntriesUrl, where);
     TIME_ENTRIES = features.map(function(f) {
       const a = f.attributes;
       // work_date is esriFieldTypeDateOnly — comes as "YYYY-MM-DD" string
@@ -404,7 +409,7 @@ async function loadTimeEntries() {
         notes: a.notes || '',
       };
     });
-    console.log('[TimeTracking] Loaded', TIME_ENTRIES.length, 'entries for', Auth.fullName);
+    console.log('[TimeTracking] Loaded', TIME_ENTRIES.length, 'entries (' + (loadAll ? 'whole team' : Auth.fullName) + ')');
   } catch (err) {
     console.error('[TimeTracking] Load failed:', err);
     TIME_ENTRIES = [];
