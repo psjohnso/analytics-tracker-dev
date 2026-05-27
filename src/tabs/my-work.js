@@ -1078,19 +1078,28 @@ function renderMyWork(area) {
     }
     var _hAbsKey = ['mon', 'tue', 'wed', 'thu', 'fri'];
 
-    // Compute the bar's denominator as "average daily project hours" —
-    // weekAllocHours spread evenly across this week's working days. Days the
-    // person is fully absent don't count toward the divisor. Using the
-    // scheduled workday (8h) would make the bar permanently empty for anyone
-    // whose role is mostly meetings/admin (e.g. a manager with 10% project
-    // time). This makes the fill reflect plan-vs-actual on project work.
+    // Compute the bar's denominator as "average daily project hours."
+    // - With allocations: weekAllocHours spread across this week's working days.
+    // - Without allocations: fall back to role-adjusted daily project capacity
+    //   (weekCapHours = proj_cap[cwIdx], which is already
+    //   (scheduled - absences) × productivity × proj_pct). This keeps the
+    //   label meaningful for low-role-percentage users — a manager with 10%
+    //   project time sees ~0.6h/day expected, not the full 8h workday.
+    // Days the person is fully absent don't count toward the divisor.
     var _hWorkDays = 0;
     for (var _hwi = 0; _hwi < 5; _hwi++) {
       var _wkSched = (_weekDaily && _weekDaily[_hKeys[_hwi]]) || 0;
       var _wkAbs = _hAbsByDay[_hAbsKey[_hwi]] || 0;
       if (_wkSched > 0 && _wkAbs < _wkSched) _hWorkDays++;
     }
-    var _hDailyTarget = _hWorkDays > 0 ? weekAllocHours / _hWorkDays : 0;
+    var _hDailyTarget;
+    if (_hWorkDays === 0) {
+      _hDailyTarget = 0;
+    } else if (weekAllocHours > 0) {
+      _hDailyTarget = weekAllocHours / _hWorkDays;
+    } else {
+      _hDailyTarget = weekCapHours / _hWorkDays;
+    }
 
     for (var _hi = 0; _hi < 5; _hi++) {
       var _hd = new Date(_hMon); _hd.setDate(_hMon.getDate() + _hi);
@@ -1127,7 +1136,10 @@ function renderMyWork(area) {
       } else if (_dayLogged > 0) {
         _hrsLabel = _dayLogged.toFixed(_dayLogged >= 10 ? 0 : 1) + 'h' + (_barTarget > 0 ? ' / ' + _barTarget.toFixed(1) + 'h' : '');
       } else {
-        _hrsLabel = _barTarget > 0 ? _barTarget.toFixed(1) + 'h' : _hh + 'h';
+        // _barTarget = 0 only when both allocation AND proj_cap are 0
+        // (e.g. 0% project role or fully-absent week). Showing the scheduled
+        // workday here would mislead — em-dash signals "no project capacity."
+        _hrsLabel = _barTarget > 0 ? _barTarget.toFixed(1) + 'h' : '—';
       }
 
       _hStrip += '<div class="oe-week-day' + (_hoff ? ' off' : '') + '"><div class="oe-week-dayname">' + _hLbls[_hi] + ' ' + _hd.getDate() + '</div>' + _trackHtml + '<div class="oe-week-dayhrs">' + _hrsLabel + '</div></div>';
