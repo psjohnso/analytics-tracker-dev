@@ -357,10 +357,12 @@ function buildInsightsPageOE() {
   var lateCountAll = projStats.filter(function(p) { return p.onTime === false; }).length;
   var trackedCount = onTimeCount + lateCountAll;
 
-  // ── Editorial header ──
+  // ── Editorial header — page-level title lives in the global
+  //    #oe-page-head band (see updateOePageHead); drop the redundant
+  //    "Project insights." h1 here and keep the data-driven eyebrow +
+  //    sub-headline. ──
   var header = '<div class="oe-ins-head">' +
     '<div class="oe-ins-eyebrow">Last 12 months · ' + completed.length + ' completed projects · ' + Math.round(totalHrs) + 'h logged</div>' +
-    '<h1 class="oe-ins-title">Project <span class="oe-italic-serif">insights</span>.</h1>' +
     '<p class="oe-ins-sub">Retrospective view of completed work. As more time is logged, this becomes a reference library for estimating future projects.</p>' +
   '</div>';
 

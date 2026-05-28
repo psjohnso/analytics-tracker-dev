@@ -609,11 +609,13 @@ function buildForecastPageOE() {
                  '<button class="' + (fcMode === 'hours' ? 'on' : '') + '" onclick="fcSetMode(\'hours\')">Free hrs</button>';
 
   return '<div class="oe-fc-page">' +
-    // Editorial header
+    // Editorial header — the "Capacity" title lives in the global
+    // #oe-page-head band (see updateOePageHead); drop the redundant
+    // "Capacity forecast." h1 here and keep the data-driven eyebrow +
+    // sub-headline + controls.
     '<div class="oe-fc-head">' +
       '<div>' +
         '<div class="oe-fc-eyebrow">Next ' + wLen + ' weeks · ' + people.length + ' people · From ' + esc(firstWeekDate) + '</div>' +
-        '<h1 class="oe-fc-title">Capacity <span class="oe-italic-serif">forecast</span>.</h1>' +
         '<p class="oe-fc-sub">Plan new project starts, see who has free time over the window, and spot where the team is stretched.</p>' +
       '</div>' +
       '<div class="oe-fc-controls">' +

@@ -16,7 +16,10 @@
 
 function buildEffortShapePage() {
   var model = _esBuildModel();
-  var header = '<h1 class="tl-title">Effort Shape Analytics</h1>';
+  // Under OE the global #oe-page-head carries the "Analytics" title; drop
+  // the redundant in-page h1 here. Classic keeps it (no editorial band).
+  var _esOeActive = (typeof document !== 'undefined' && document.body && /^oe/.test(document.body.dataset.theme || ''));
+  var header = _esOeActive ? '' : '<h1 class="tl-title">Effort Shape Analytics</h1>';
   var filterRow = _esRenderFilters(model);
   var scopeChip = _esRenderScopeChip(model);
 

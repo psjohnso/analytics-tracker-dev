@@ -685,31 +685,62 @@ function updateOePageHead() {
   var el = document.getElementById('oe-page-head');
   if (!el) return;
   var groupId = TAB_TO_GROUP[currentTab];
+
+  // Shared helpers reused by every group branch. Counts come from the
+  // live sub-tab badges so they stay in sync with updateTabCounts().
+  function _cnt(id) { var s = document.getElementById(id); return s ? s.textContent : ''; }
+  function _ptab(tab, label, count, iconUse) {
+    var active = currentTab === tab;
+    var icon = iconUse ? '<svg class="icon" aria-hidden="true"><use href="#' + iconUse + '"></use></svg>' : '';
+    return '<button class="oe-pagetab' + (active ? ' active' : '') + '" onclick="switchTab(\'' + tab + '\')">' +
+      icon + label + (count !== '' && count != null ? ' <span class="oe-pagetab-count">' + esc(count) + '</span>' : '') + '</button>';
+  }
+  function _visible(sectionId) {
+    var sec = document.getElementById(sectionId);
+    return sec && sec.style.display !== 'none';
+  }
+
+  var headHtml = '';
+
   if (groupId === 'portfolio') {
-    // Right side: Projects / Tasks (+ Project Review when visible) tabs, mirroring
-    // the real sub-bar (which CSS hides under OE+portfolio). Counts are read from
-    // the live sub-tab badges so they stay in sync with updateTabCounts().
-    function _cnt(id) { var s = document.getElementById(id); return s ? s.textContent : ''; }
-    function _ptab(tab, label, count) {
-      var active = currentTab === tab;
-      return '<button class="oe-pagetab' + (active ? ' active' : '') + '" onclick="switchTab(\'' + tab + '\')">' +
-        label + (count !== '' && count != null ? ' <span class="oe-pagetab-count">' + esc(count) + '</span>' : '') + '</button>';
-    }
-    var prEl = document.getElementById('tab-projectreview');
-    var prVisible = prEl && prEl.style.display !== 'none';
-    var initEl = document.getElementById('tab-initiatives');
-    var initVisible = initEl && initEl.style.display !== 'none';
+    var prVisible = _visible('tab-projectreview');
+    var initVisible = _visible('tab-initiatives');
     var tabs = '<div class="oe-pagetabs">' +
       _ptab('projects', 'Projects', _cnt('proj-tab-count')) +
       _ptab('tasks', 'Tasks', _cnt('task-tab-count')) +
-      (initVisible ? _ptab('initiatives', 'Initiatives', _cnt('init-tab-count')) : '') +
-      (prVisible ? _ptab('projectReview', 'Project Review', '') : '') +
+      (initVisible ? _ptab('initiatives', 'Initiatives', _cnt('init-tab-count'), 'ph-flag-banner') : '') +
+      (prVisible ? _ptab('projectReview', 'Project Review', '', 'ph-repeat') : '') +
     '</div>';
-    el.innerHTML =
+    headHtml =
       '<div class="oe-page-head-left">' +
         '<div class="oe-page-eyebrow">All teams · City of Tucson</div>' +
         '<h1 class="oe-page-title">Portfolio</h1>' +
       '</div>' + tabs;
+  } else if (groupId === 'capacity') {
+    var tabsCap = '<div class="oe-pagetabs">' +
+      _ptab('resources', 'Resources', '') +
+      _ptab('forecast', 'Forecast', '', 'ph-chart-bar') +
+      _ptab('insights', 'Insights', '', 'ph-lightbulb') +
+    '</div>';
+    headHtml =
+      '<div class="oe-page-head-left">' +
+        '<div class="oe-page-eyebrow">All teams · City of Tucson</div>' +
+        '<h1 class="oe-page-title">Capacity</h1>' +
+      '</div>' + tabsCap;
+  } else if (groupId === 'analytics') {
+    var tabsAn = '<div class="oe-pagetabs">' +
+      _ptab('teamload', 'Team Load', '', 'ph-users-three') +
+      _ptab('effortshape', 'Effort Shape', '', 'ph-ruler') +
+    '</div>';
+    headHtml =
+      '<div class="oe-page-head-left">' +
+        '<div class="oe-page-eyebrow">All teams · City of Tucson</div>' +
+        '<h1 class="oe-page-title">Analytics</h1>' +
+      '</div>' + tabsAn;
+  }
+
+  if (headHtml) {
+    el.innerHTML = headHtml;
     el.classList.add('show');
   } else {
     el.classList.remove('show');

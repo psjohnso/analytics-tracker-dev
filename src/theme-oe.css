@@ -507,11 +507,17 @@ body[data-theme="oe"] .oe-page-title, body[data-theme="oe-dark"] .oe-page-title 
   color: var(--ink-7); margin: 0; line-height: var(--lh-heading);
 }
 
-/* Projects/Tasks tabs relocated into the title band (right side), Laura's layout.
-   The real sticky sub-bar is hidden under OE+Portfolio via [data-active-group]
-   below — a body hook so it reverts cleanly when the theme is toggled off. */
+/* Sub-bar replaced by the editorial #oe-page-head pattern on every multi-sub
+   primary group under OE — Portfolio, Capacity, Analytics all get the same
+   "All teams · City of Tucson / <Group>" eyebrow + right-aligned underline
+   tabs instead of the pill-button sub-bar. Hide the real sub-bar wherever
+   the page-head replaces it. (Reverts cleanly when the theme is toggled off.) */
 body[data-theme="oe"][data-active-group="portfolio"] #sub-bar,
-body[data-theme="oe-dark"][data-active-group="portfolio"] #sub-bar { display: none !important; }
+body[data-theme="oe-dark"][data-active-group="portfolio"] #sub-bar,
+body[data-theme="oe"][data-active-group="capacity"] #sub-bar,
+body[data-theme="oe-dark"][data-active-group="capacity"] #sub-bar,
+body[data-theme="oe"][data-active-group="analytics"] #sub-bar,
+body[data-theme="oe-dark"][data-active-group="analytics"] #sub-bar { display: none !important; }
 
 body[data-theme="oe"] .oe-pagetabs, body[data-theme="oe-dark"] .oe-pagetabs { display: flex; gap: var(--s-5); }
 body[data-theme="oe"] .oe-pagetab, body[data-theme="oe-dark"] .oe-pagetab {

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Editorial sub-tabs (Option C) — design mockup</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<style>
+:root {
+  --ink-0:#faf8f3; --ink-1:#f3efe6; --ink-2:#e8e2d3; --ink-3:#d9d1bf;
+  --ink-4:#a89e88; --ink-5:#6b6354; --ink-6:#3a3528; --ink-7:#1e1c14;
+  --ink-paper:#ffffff;
+  --navy-50:#eaeef5; --navy-100:#d2dbeb; --navy-300:#5d78a3;
+  --navy-500:#1f3b6b; --navy-700:#0e2240;
+  --tucson-saguaro:#8aa050; --tucson-sunset:#b85630;
+  --font-display:'Instrument Serif',Georgia,serif;
+  --font-sans:'Hanken Grotesk',-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',Consolas,monospace;
+  --r-2:5px; --r-3:8px; --r-pill:999px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: var(--font-sans); font-size: 14px; line-height: 1.55;
+  color: var(--ink-7); background: var(--ink-0);
+}
+.shell { max-width: 1320px; margin: 0 auto; padding: 0 28px; }
+
+/* Screen markers */
+.screen { padding: 48px 0 16px; border-bottom: 1px dashed var(--ink-3); }
+.screen:last-child { border-bottom: none; padding-bottom: 80px; }
+.screen-marker { padding: 12px 0 24px; }
+.screen-marker .label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; color: var(--navy-500); margin-bottom: 4px; }
+.screen-marker .desc { font-size: 13px; color: var(--ink-5); max-width: 760px; }
+
+/* Fake app chrome */
+.fake-header { background: var(--navy-700); color: #fff; padding: 12px 28px; display: flex; align-items: center; justify-content: space-between; }
+.fake-header .logo { font-family: var(--font-display); font-size: 16px; }
+.fake-header .stats { font-size: 11px; color: rgba(255,255,255,0.7); }
+
+/* Primary nav */
+.primary-nav {
+  display: flex; gap: 0; padding: 0 28px; background: var(--ink-paper);
+  border-bottom: 1px solid var(--ink-2); align-items: center;
+}
+.primary-tab {
+  background: transparent; border: 0; padding: 14px 18px; font-family: var(--font-sans);
+  font-size: 13px; font-weight: 500; color: var(--ink-5); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.primary-tab.active { color: var(--navy-500); border-bottom-color: var(--navy-500); font-weight: 600; }
+.primary-tab:hover { color: var(--ink-7); }
+.primary-tab .icon { font-size: 14px; }
+
+/* Editorial header (Laura's pattern — extended to every group in Option C) */
+.oe-page-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 22px 28px 0; background: var(--ink-0); gap: 16px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--ink-2);
+}
+.oe-page-head-left .eyebrow {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;
+  color: var(--navy-300); margin-bottom: 6px;
+}
+.oe-page-head-left h1 { font-size: 28px; font-weight: 600; margin: 0 0 14px 0; letter-spacing: -0.005em; }
+.oe-pagetabs { display: flex; gap: 22px; }
+.oe-pagetab {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: transparent; border: 0; cursor: pointer; padding: 12px 2px;
+  font-size: 13px; font-weight: 500; color: var(--ink-5);
+  position: relative; letter-spacing: -0.005em;
+}
+.oe-pagetab.active { color: var(--navy-500); box-shadow: inset 0 -2px 0 var(--navy-500); }
+.oe-pagetab-count {
+  font-family: var(--font-mono); font-size: 11px; color: var(--ink-5);
+  background: var(--ink-1); padding: 1px 6px; border-radius: var(--r-pill);
+  font-variant-numeric: tabular-nums;
+}
+.oe-pagetab.active .oe-pagetab-count { background: var(--navy-50); color: var(--navy-500); }
+.oe-pagetab .icon { font-size: 14px; }
+
+/* Old sub-bar (for current-state reference) */
+.sub-bar {
+  background: var(--ink-0); padding: 8px 28px; display: flex; gap: 6px;
+  align-items: center; border-bottom: 1px solid var(--ink-2);
+}
+.sub-tab {
+  padding: 6px 14px; border: 1px solid transparent; background: transparent;
+  font-family: var(--font-sans); font-size: 12px; font-weight: 700;
+  color: var(--ink-7); cursor: pointer; border-radius: 6px;
+  letter-spacing: 0.02em; display: inline-flex; align-items: center; gap: 6px;
+}
+.sub-tab.active { background: var(--ink-paper); color: var(--navy-500); border-color: var(--ink-2); }
+.sub-tab .tab-count {
+  display: inline-block; background: var(--ink-1); color: var(--ink-5);
+  border-radius: 10px; font-size: 11px; padding: 1px 6px; font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+.sub-tab.active .tab-count { background: var(--navy-50); color: var(--navy-500); }
+
+/* Content area stub */
+.content-area-stub { padding: 20px 28px; background: var(--ink-0); }
+.content-stub-banner {
+  background: var(--ink-paper); border: 1px dashed var(--ink-3); border-radius: var(--r-3);
+  padding: 28px; text-align: center; color: var(--ink-5); font-size: 13px;
+}
+
+/* Compare wrapper */
+.compare-cell { background: var(--ink-paper); border: 1px solid var(--ink-2); border-radius: var(--r-3); overflow: hidden; margin-bottom: 16px; }
+.compare-cell .cell-label {
+  color: rgba(255,255,255,0.95); padding: 8px 14px;
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
+}
+.compare-cell.before .cell-label { background: var(--ink-4); }
+.compare-cell.after .cell-label { background: var(--navy-500); }
+
+/* Notes */
+.notes-card { background: var(--ink-paper); border: 1px solid var(--ink-2); border-radius: var(--r-3); padding: 22px 26px; margin-top: 20px; }
+.notes-card h3 { font-family: var(--font-display); font-size: 22px; font-weight: 400; margin: 0 0 14px 0; }
+.notes-card ul { line-height: 1.7; padding-left: 22px; margin: 0; }
+.notes-card strong { color: var(--navy-700); }
+.notes-card code { font-family: var(--font-mono); font-size: 12px; background: var(--ink-1); padding: 2px 6px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- ================================================================ -->
+<!-- Intro                                                            -->
+<!-- ================================================================ -->
+<div class="screen">
+  <div class="screen-marker">
+    <div class="label">Option C · Editorial style applied everywhere</div>
+    <div class="desc">Reverse the direction: bring Capacity and Analytics up to match the Portfolio editorial header, instead of stripping Portfolio down. Every primary group gets an "All teams · City of Tucson" eyebrow + section title + right-aligned underline-style tabs. The sub-bar pill treatment disappears from the app entirely.</div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- Capacity — current vs Option C                                   -->
+<!-- ================================================================ -->
+<div class="screen">
+  <div class="screen-marker">
+    <div class="label">Capacity — current vs Option C</div>
+    <div class="desc">Today: sub-bar with pill tabs sits below the primary nav, then the page content starts with its own eyebrow + title. Option C: the page header becomes editorial, with Resources / Forecast / Insights as right-aligned underline tabs.</div>
+  </div>
+
+  <!-- CURRENT -->
+  <div class="compare-cell before">
+    <div class="cell-label">Current — Capacity / Resources</div>
+    <div class="fake-header">
+      <div class="logo">Project &amp; Task Tracker</div>
+      <div class="stats">ACTIVE · OPEN TASKS · COMPLETE · TOTAL</div>
+    </div>
+    <div class="primary-nav">
+      <button class="primary-tab">Overview</button>
+      <button class="primary-tab">My Work</button>
+      <button class="primary-tab">Portfolio</button>
+      <button class="primary-tab active">Capacity</button>
+      <button class="primary-tab">Analytics</button>
+      <button class="primary-tab">Slideshow</button>
+    </div>
+    <div class="sub-bar">
+      <button class="sub-tab active">Resources</button>
+      <button class="sub-tab"><i class="ph ph-chart-bar"></i> Forecast</button>
+      <button class="sub-tab"><i class="ph ph-lightbulb"></i> Insights</button>
+    </div>
+    <div class="content-area-stub">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:600; color:var(--navy-300); margin-bottom:6px;">Team capacity · Feb 2 – Jun 21, 2026</div>
+      <h2 style="margin:0 0 24px 0; font-size:28px;">Capacity</h2>
+      <div class="content-stub-banner">[ Team rail + member detail + capacity chart ]</div>
+    </div>
+  </div>
+
+  <!-- OPTION C -->
+  <div class="compare-cell after">
+    <div class="cell-label">Option C — editorial header for Capacity</div>
+    <div class="fake-header">
+      <div class="logo">Project &amp; Task Tracker</div>
+      <div class="stats">ACTIVE · OPEN TASKS · COMPLETE · TOTAL</div>
+    </div>
+    <div class="primary-nav">
+      <button class="primary-tab">Overview</button>
+      <button class="primary-tab">My Work</button>
+      <button class="primary-tab">Portfolio</button>
+      <button class="primary-tab active">Capacity</button>
+      <button class="primary-tab">Analytics</button>
+      <button class="primary-tab">Slideshow</button>
+    </div>
+    <div class="oe-page-head">
+      <div class="oe-page-head-left">
+        <div class="eyebrow">All teams · City of Tucson</div>
+        <h1>Capacity</h1>
+      </div>
+      <div class="oe-pagetabs">
+        <button class="oe-pagetab active">Resources</button>
+        <button class="oe-pagetab"><i class="ph ph-chart-bar"></i> Forecast</button>
+        <button class="oe-pagetab"><i class="ph ph-lightbulb"></i> Insights</button>
+      </div>
+    </div>
+    <div class="content-area-stub">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:600; color:var(--navy-300); margin-bottom:6px;">Team capacity · Feb 2 – Jun 21, 2026</div>
+      <div class="content-stub-banner">[ Team rail + member detail + capacity chart ]</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- Analytics — current vs Option C                                  -->
+<!-- ================================================================ -->
+<div class="screen">
+  <div class="screen-marker">
+    <div class="label">Analytics — current vs Option C</div>
+    <div class="desc">Same treatment for Analytics. Team Load / Effort Shape becomes underline tabs in an editorial header titled "Analytics".</div>
+  </div>
+
+  <!-- CURRENT -->
+  <div class="compare-cell before">
+    <div class="cell-label">Current — Analytics / Team Load</div>
+    <div class="primary-nav">
+      <button class="primary-tab">Overview</button>
+      <button class="primary-tab">My Work</button>
+      <button class="primary-tab">Portfolio</button>
+      <button class="primary-tab">Capacity</button>
+      <button class="primary-tab active">Analytics</button>
+      <button class="primary-tab">Slideshow</button>
+    </div>
+    <div class="sub-bar">
+      <button class="sub-tab active"><i class="ph ph-users-three"></i> Team Load</button>
+      <button class="sub-tab"><i class="ph ph-ruler"></i> Effort Shape</button>
+    </div>
+    <div class="content-area-stub">
+      <h2 style="margin:0 0 4px 0; font-size:22px; color:var(--navy-500);">Team Load</h2>
+      <p style="font-size:13px; color:var(--ink-5); margin:0 0 20px 0;">Weekly load across the team — utilization, allocations, capacity overruns.</p>
+      <div class="content-stub-banner">[ Team load chart + table ]</div>
+    </div>
+  </div>
+
+  <!-- OPTION C -->
+  <div class="compare-cell after">
+    <div class="cell-label">Option C — editorial header for Analytics</div>
+    <div class="primary-nav">
+      <button class="primary-tab">Overview</button>
+      <button class="primary-tab">My Work</button>
+      <button class="primary-tab">Portfolio</button>
+      <button class="primary-tab">Capacity</button>
+      <button class="primary-tab active">Analytics</button>
+      <button class="primary-tab">Slideshow</button>
+    </div>
+    <div class="oe-page-head">
+      <div class="oe-page-head-left">
+        <div class="eyebrow">All teams · City of Tucson</div>
+        <h1>Analytics</h1>
+      </div>
+      <div class="oe-pagetabs">
+        <button class="oe-pagetab active"><i class="ph ph-users-three"></i> Team Load</button>
+        <button class="oe-pagetab"><i class="ph ph-ruler"></i> Effort Shape</button>
+      </div>
+    </div>
+    <div class="content-area-stub">
+      <p style="font-size:13px; color:var(--ink-5); margin:0 0 20px 0;">Weekly load across the team — utilization, allocations, capacity overruns.</p>
+      <div class="content-stub-banner">[ Team load chart + table ]</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- Portfolio — unchanged (already editorial)                        -->
+<!-- ================================================================ -->
+<div class="screen">
+  <div class="screen-marker">
+    <div class="label">Portfolio — already editorial (unchanged in Option C)</div>
+    <div class="desc">Portfolio doesn't change — it's the model that the others are matching. Initiatives slots in as the 3rd underline tab.</div>
+  </div>
+
+  <div class="compare-cell after">
+    <div class="cell-label">Portfolio under Option C (same as today)</div>
+    <div class="primary-nav">
+      <button class="primary-tab">Overview</button>
+      <button class="primary-tab">My Work</button>
+      <button class="primary-tab active">Portfolio</button>
+      <button class="primary-tab">Capacity</button>
+      <button class="primary-tab">Analytics</button>
+      <button class="primary-tab">Slideshow</button>
+    </div>
+    <div class="oe-page-head">
+      <div class="oe-page-head-left">
+        <div class="eyebrow">All teams · City of Tucson</div>
+        <h1>Portfolio</h1>
+      </div>
+      <div class="oe-pagetabs">
+        <button class="oe-pagetab active">Projects <span class="oe-pagetab-count">399</span></button>
+        <button class="oe-pagetab">Tasks <span class="oe-pagetab-count">1,603</span></button>
+        <button class="oe-pagetab"><i class="ph ph-flag-banner"></i> Initiatives <span class="oe-pagetab-count">3</span></button>
+        <button class="oe-pagetab"><i class="ph ph-repeat"></i> Project Review</button>
+      </div>
+    </div>
+    <div class="content-area-stub">
+      <div class="content-stub-banner">[ Projects list table ]</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- Side-by-side — three primary groups, same treatment              -->
+<!-- ================================================================ -->
+<div class="screen">
+  <div class="screen-marker">
+    <div class="label">Three primary groups · same editorial treatment</div>
+    <div class="desc">Stacked view so you can see the consistency: all three multi-tab primary groups read with the same anatomy — eyebrow / large display title / right-aligned underline tabs.</div>
+  </div>
+
+  <div class="compare-cell after">
+    <div class="cell-label">Portfolio</div>
+    <div class="oe-page-head">
+      <div class="oe-page-head-left">
+        <div class="eyebrow">All teams · City of Tucson</div>
+        <h1>Portfolio</h1>
+      </div>
+      <div class="oe-pagetabs">
+        <button class="oe-pagetab active">Projects <span class="oe-pagetab-count">399</span></button>
+        <button class="oe-pagetab">Tasks <span class="oe-pagetab-count">1,603</span></button>
+        <button class="oe-pagetab"><i class="ph ph-flag-banner"></i> Initiatives <span class="oe-pagetab-count">3</span></button>
+        <button class="oe-pagetab"><i class="ph ph-repeat"></i> Project Review</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="compare-cell after">
+    <div class="cell-label">Capacity</div>
+    <div class="oe-page-head">
+      <div class="oe-page-head-left">
+        <div class="eyebrow">All teams · City of Tucson</div>
+        <h1>Capacity</h1>
+      </div>
+      <div class="oe-pagetabs">
+        <button class="oe-pagetab active">Resources</button>
+        <button class="oe-pagetab"><i class="ph ph-chart-bar"></i> Forecast</button>
+        <button class="oe-pagetab"><i class="ph ph-lightbulb"></i> Insights</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="compare-cell after">
+    <div class="cell-label">Analytics</div>
+    <div class="oe-page-head">
+      <div class="oe-page-head-left">
+        <div class="eyebrow">All teams · City of Tucson</div>
+        <h1>Analytics</h1>
+      </div>
+      <div class="oe-pagetabs">
+        <button class="oe-pagetab active"><i class="ph ph-users-three"></i> Team Load</button>
+        <button class="oe-pagetab"><i class="ph ph-ruler"></i> Effort Shape</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- What changes / trade-offs                                        -->
+<!-- ================================================================ -->
+<div class="screen">
+  <div class="screen-marker">
+    <div class="label">What this change involves &amp; what it costs</div>
+    <div class="desc">Bigger than Option A, but everything is plumbing in <code>updateOePageHead</code> + redundant page-title removal in three files.</div>
+  </div>
+
+  <div class="notes-card">
+    <h3>Build steps</h3>
+    <ul>
+      <li><strong>Extend <code>updateOePageHead</code>:</strong> add Capacity and Analytics branches alongside the existing Portfolio one. Each builds an <code>oe-page-head-left</code> (eyebrow + title) plus an <code>oe-pagetabs</code> strip mirroring the current sub-bar entries (Resources/Forecast/Insights for Capacity; Team Load/Effort Shape for Analytics). Tabs read counts where applicable.</li>
+      <li><strong>Extend the sub-bar CSS hide:</strong> the rule that currently hides the sub-bar only on Portfolio under OE — <code>body[data-theme="oe"][data-active-group="portfolio"] #sub-bar { display: none }</code> — extends to <code>[data-active-group="capacity"]</code> and <code>[data-active-group="analytics"]</code>.</li>
+      <li><strong>Remove redundant in-page section titles</strong> from Resources, Forecast, Insights, Team Load, and Effort Shape — each currently renders its own eyebrow + "Capacity" / "Analytics" / etc. h1. The editorial band above replaces them.</li>
+      <li><strong>Each tab's content-level header stays</strong> when it's tab-specific (e.g. Resources still shows the "Team capacity · Feb 2 – Jun 21" date eyebrow because that's data-driven and tab-specific, not the section title).</li>
+    </ul>
+    <p style="margin-top: 14px; color: var(--ink-5); font-size: 12px;">Estimate: ~80 lines of new/changed code across <code>render.js</code>, <code>theme-oe.css</code>, and 5 tab renderers. One commit.</p>
+  </div>
+
+  <div class="notes-card">
+    <h3>Trade-offs vs Option A</h3>
+    <ul>
+      <li><strong>Pro · brand consistency.</strong> Every primary group reads with the same Laura editorial framing — eyebrow, large serif display title, underline tabs. It looks like one designed product instead of two visual idioms.</li>
+      <li><strong>Pro · keeps the section-title affordance.</strong> Leadership / screenshots get "Capacity" rendered as a clear h1 the same way they get "Portfolio" — useful when paging through PDFs or copying surfaces into reports.</li>
+      <li><strong>Con · more vertical real estate.</strong> The editorial band is ~80px taller than the sub-bar. After the spacing-tighten commit we just shipped, this re-adds ~60px of top space on Capacity / Analytics. Worth noting because that's the opposite of yesterday's "shrink the empty space" request.</li>
+      <li><strong>Con · bigger change.</strong> Option A is a 3-line CSS toggle. Option C touches ~5 tab renderers to remove the in-page section titles that would duplicate the editorial band.</li>
+      <li><strong>Con · the count chips disappear in places.</strong> Resources / Forecast / Insights don't have counts today; Team Load / Effort Shape don't either. So the underline tabs read without chips — which is fine and matches the original Laura pattern, just noting it.</li>
+    </ul>
+  </div>
+
+  <div class="notes-card">
+    <h3>If you want to weigh Option A vs Option C</h3>
+    <ul>
+      <li><strong>Option A</strong> — Portfolio drops to sub-bar pills. <strong>Faster to ship, tighter spacing, every group reads like a utility.</strong> Loses Laura's intent on Portfolio.</li>
+      <li><strong>Option C</strong> — Capacity + Analytics adopt editorial headers. <strong>Honors Laura's design system across the app, every group reads with the same anatomy.</strong> Adds back ~60px of vertical space on Capacity / Analytics.</li>
+    </ul>
+  </div>
+</div>
+
+</div><!-- /.shell -->
+
+<div style="background:var(--navy-700); color:rgba(255,255,255,0.85); padding:32px 28px; margin-top:48px; font-size:13px;">
+  <div class="shell">
+    <strong style="color: #fff;">Mockup only · no code committed.</strong> &nbsp; This file shows Option C — bringing Capacity and Analytics up to Portfolio's editorial style. Compare against <code>portfolio-subtabs.html</code> (Option A) to decide direction.
+  </div>
+</div>
+
+</body>
+</html>

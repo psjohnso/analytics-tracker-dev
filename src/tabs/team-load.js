@@ -70,9 +70,15 @@ function buildTeamLoadPage() {
   var filterRow = _tlRenderFilters(model);
   var scopeChip = _tlRenderScopeChip(model);
 
+  // Under OE the global #oe-page-head band carries the "Analytics" title;
+  // dropping the in-page h1 here avoids duplicating that title. Classic keeps
+  // the h1 since it has no editorial band.
+  var _oeActive = (typeof document !== 'undefined' && document.body && /^oe/.test(document.body.dataset.theme || ''));
+  var _tlTitleH1 = _oeActive ? '' : '<h1 class="tl-title">Team Load Analytics</h1>';
+
   if (model.totalProjects === 0) {
     var d = model.diag || {};
-    var diagHtml = '<h1 class="tl-title">Team Load Analytics</h1>' + filterRow + scopeChip +
+    var diagHtml = _tlTitleH1 + filterRow + scopeChip +
       '<div class="tl-empty">' +
       '<div style="font-weight:700;color:var(--navy);font-size:14px;margin-bottom:8px;">Team Load: no data to show</div>' +
       (model.filters && model.filters.active
@@ -92,7 +98,7 @@ function buildTeamLoadPage() {
   }
 
   var html = '';
-  html += '<h1 class="tl-title">Team Load Analytics</h1>';
+  html += _tlTitleH1;
   html += '<p class="tl-lead">Where the team\'s allocated hours were directed year-to-date. ' +
           model.totalProjects + ' project' + (model.totalProjects === 1 ? '' : 's') + ' · ' +
           _tlFmt(model.totalHours) + ' allocated. ' +

@@ -731,10 +731,12 @@ function renderResourcesOE(area) {
   var teamCount = Object.keys(people).filter(function(n) { return isFullMember(n) && (typeof inCurrentTeamPerson !== 'function' || inCurrentTeamPerson(n)); }).length;
   var mode = Editor.resourceMode || 'summary';
 
+  // Title row eyebrow only — the "Capacity" h1 lives in the editorial
+  // #oe-page-head band (see updateOePageHead in render.js). Keep the
+  // data-driven period eyebrow as a sub-line; drop the redundant h1.
   var titleRow = '<div class="oe-cap-head">' +
     '<div>' +
       '<div class="oe-cap-eyebrow">Team capacity · ' + esc(periodLabel) + '</div>' +
-      '<h1 class="oe-cap-title">Capacity</h1>' +
     '</div>' +
   '</div>';
 
