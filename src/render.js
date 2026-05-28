@@ -697,9 +697,12 @@ function updateOePageHead() {
     }
     var prEl = document.getElementById('tab-projectreview');
     var prVisible = prEl && prEl.style.display !== 'none';
+    var initEl = document.getElementById('tab-initiatives');
+    var initVisible = initEl && initEl.style.display !== 'none';
     var tabs = '<div class="oe-pagetabs">' +
       _ptab('projects', 'Projects', _cnt('proj-tab-count')) +
       _ptab('tasks', 'Tasks', _cnt('task-tab-count')) +
+      (initVisible ? _ptab('initiatives', 'Initiatives', _cnt('init-tab-count')) : '') +
       (prVisible ? _ptab('projectReview', 'Project Review', '') : '') +
     '</div>';
     el.innerHTML =
