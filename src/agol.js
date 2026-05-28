@@ -23,6 +23,10 @@ const ARCGIS_CONFIG = {
   projectReviewsUrl: 'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/3',
   statusHistoryUrl:  'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/4',
   notificationsUrl:  'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/5',
+  // initiativesUrl — populated after running notebooks/setup_initiatives_table.ipynb.
+  // Leave empty until the table exists; the app feature-detects and shows an
+  // empty Initiatives list ("No initiatives yet") until configured.
+  initiativesUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_portfolio_v2/FeatureServer/6',
 
   teamMembersUrl:    'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity_v2/FeatureServer/0',
   absencesUrl:       'https://services3.arcgis.com/9coHY2fvuFjG9HQX/ArcGIS/rest/services/datateam_capacity_v2/FeatureServer/1',

@@ -93,6 +93,7 @@ async function loadArcGISData() {
     taskFeatures.forEach(function(f) { TASKS.push(agolTaskToLocal(f)); });
 
     updateLoadingOverlay('Loaded ' + PROJECTS.length + ' projects and ' + TASKS.length + ' tasks. Loading resources...');
+    if (typeof loadInitiatives === 'function') await loadInitiatives();
     await loadResourcesData();
     initResourcesWeekIndices();
     loadUserPrefs();

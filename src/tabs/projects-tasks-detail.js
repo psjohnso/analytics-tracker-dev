@@ -914,7 +914,21 @@ function renderProjectDetail(id) {
     ? canEditProject(p)
     : (isAdmin() || (Auth.fullName && p.contact === Auth.fullName));
 
+  // Initiative breadcrumb — slim navy band above the hero, shown when this
+  // project belongs to an initiative. Click-through opens the initiative
+  // detail page.
+  const _initiativeForP = (p.initiative_id && typeof getInitiative === 'function') ? getInitiative(p.initiative_id) : null;
+  const _initiativeBreadcrumb = _initiativeForP ? `<div class="proj-initiative-breadcrumb" onclick="initOpenFromProject('${esc(_initiativeForP.initiative_id).replace(/'/g, "\\'")}')">
+    <svg class="icon" aria-hidden="true"><use href="#ph-flag-banner"></use></svg>
+    <div>
+      <div class="proj-init-label">Part of initiative</div>
+      <div class="proj-init-name">${esc(_initiativeForP.name)}</div>
+    </div>
+    <div class="proj-init-siblings">${(typeof getProjectsForInitiative === 'function' ? getProjectsForInitiative(_initiativeForP.initiative_id).length - 1 : 0)} sibling project(s) · <span class="proj-init-link">View initiative →</span></div>
+  </div>` : '';
+
   return `<div class="detail-page">
+    ${_initiativeBreadcrumb}
     <div class="detail-hero">
       <div class="detail-hero-sidebar" style="background:${statusColor};color:${STATUS_TEXT_COLOR(p.status)};">
         <span class="detail-hero-sidebar-label">${esc(p.status || '—')}</span>
@@ -1484,6 +1498,21 @@ function renderProjectDetailOE(id) {
     '<svg class="icon" aria-hidden="true" style="width:10px;height:10px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' +
     '<span style="color:var(--ink-7);">' + esc(p.title) + '</span>' +
   '</div>';
+
+  // Initiative breadcrumb (OE) — slim navy band when this project belongs to
+  // an initiative. Click-through opens the initiative detail page.
+  var _initForP = (p.initiative_id && typeof getInitiative === 'function') ? getInitiative(p.initiative_id) : null;
+  if (_initForP) {
+    var _sibCount = (typeof getProjectsForInitiative === 'function') ? getProjectsForInitiative(_initForP.initiative_id).length - 1 : 0;
+    html += '<div class="proj-initiative-breadcrumb" onclick="initOpenFromProject(\'' + esc(_initForP.initiative_id).replace(/'/g, "\\'") + '\')">' +
+      '<svg class="icon" aria-hidden="true"><use href="#ph-flag-banner"></use></svg>' +
+      '<div>' +
+        '<div class="proj-init-label">Part of initiative</div>' +
+        '<div class="proj-init-name">' + esc(_initForP.name) + '</div>' +
+      '</div>' +
+      '<div class="proj-init-siblings">' + _sibCount + ' sibling project' + (_sibCount === 1 ? '' : 's') + ' · <span class="proj-init-link">View initiative →</span></div>' +
+    '</div>';
+  }
 
   // Header
   html += '<div class="oe-detail-head">' +

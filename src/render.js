@@ -586,7 +586,7 @@ function updateFilterIndicator() {
 const TAB_GROUPS = {
   overview:  { label: 'Overview',   subs: ['overview'] },                                  // single-destination
   mywork:    { label: 'My Work',    subs: ['mywork'] },                                    // single-destination, auth-only
-  portfolio: { label: 'Portfolio',  subs: ['projects', 'tasks', 'projectReview'] },
+  portfolio: { label: 'Portfolio',  subs: ['projects', 'tasks', 'initiatives', 'projectReview'] },
   capacity:  { label: 'Capacity',   subs: ['resources', 'forecast', 'insights'] },
   analytics: { label: 'Analytics',  subs: ['teamload', 'effortshape'] },                    // retrospective analytics over allocation data
   slideshow: { label: 'Slideshow',  subs: ['slideshow'] },                                // single-destination, opt-in
@@ -799,8 +799,9 @@ function switchTab(tab, preserveFilters) {
   if (_vcal) _vcal.classList.toggle('active', currentView === 'calendar');
   document.getElementById('sort-select').style.display = (tab === 'projects' || tab === 'tasks') ? '' : 'none';
   // Hide entire toolbar on tabs that don't need it (sort/view toggle/result
-  // count are list-view chrome — Resources, Forecast, etc. own their own UI).
-  document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'achievements' || tab === 'projectReview' || tab === 'teamload' || tab === 'effortshape' || tab === 'resources' || tab === 'forecast') ? 'none' : '';
+  // count are list-view chrome — Resources, Forecast, Initiatives, etc. own
+  // their own UI).
+  document.querySelector('.toolbar').style.display = (tab === 'mywork' || tab === 'settings' || tab === 'insights' || tab === 'issues' || tab === 'achievements' || tab === 'projectReview' || tab === 'teamload' || tab === 'effortshape' || tab === 'resources' || tab === 'forecast' || tab === 'initiatives') ? 'none' : '';
   if (typeof updateOePageHead === 'function') updateOePageHead();
   const addBtn = document.getElementById('btn-add-new');
   // Projects are created from the persistent header button (Submit Idea / New
@@ -1030,6 +1031,7 @@ function refreshIntakeButton() {
 function updateTabCounts() {
   document.getElementById('proj-tab-count').textContent = filterProjects().length;
   document.getElementById('task-tab-count').textContent = filterTasks().length;
+  if (typeof updateInitiativeTabCount === 'function') updateInitiativeTabCount();
   // Keep the OE title-band tabs (which mirror these counts) in sync.
   if (typeof updateOePageHead === 'function') updateOePageHead();
 }

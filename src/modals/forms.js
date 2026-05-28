@@ -597,6 +597,20 @@ function fmField(label, inputHtml, required, span2, hint) {
   return '<div class="' + cls + '"><label class="fm-label">' + label + req + info + '</label>' + inputHtml + '</div>';
 }
 
+// Initiative picker for the project form — single-select dropdown of every
+// initiative in INITIATIVES. Renders "— None —" when no initiative is set.
+// Bidirectional with the initiative-edit form's project picker: both surfaces
+// write to projects.initiative_id, so attach from either side.
+function fmInitiativeSelect(currentId) {
+  if (typeof INITIATIVES === 'undefined' || !INITIATIVES) return '<input type="hidden" id="fm-initiative-id" value="">';
+  var options = '<option value="">— None —</option>';
+  INITIATIVES.forEach(function(i) {
+    var sel = (currentId && String(currentId) === String(i.initiative_id)) ? ' selected' : '';
+    options += '<option value="' + esc(i.initiative_id) + '"' + sel + '>' + esc(i.name) + '</option>';
+  });
+  return '<select id="fm-initiative-id" style="width:100%;padding:8px 10px;font-family:Cardo,serif;font-size:14px;border:1px solid var(--border);border-radius:6px;background:var(--white);">' + options + '</select>';
+}
+
 // Inline "i" icon that, on click, shows the field's hint text in a popup.
 // Reuses the .calc-info visual style. Hint text travels via a data attribute
 // so arbitrary strings (quotes, ampersands, etc.) don't have to be escaped
@@ -1377,6 +1391,8 @@ function buildProjectForm(p) {
       '</label>',
       false, false,
       'Check if this project is part of the strategic Data Program initiative (not just owned by a DP-eligible team). Drives the Data Program slide on the Slideshow and the Data Program Lite app.');
+    var gInitiative = fmField('Initiative', fmInitiativeSelect(v('initiative_id')), false, false,
+      'Optional. Group this project under a strategic Initiative — appears on the Portfolio → Initiatives tab.');
     var gTeamAvail = '<div id="fm-team-avail-list"></div>' +
       '<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Select team members for this project. Availability' + calcInfoIcon('earliestStart') + ' is based on the project size selected above.</div>';
     var gDetails = '<div class="fm-grid">' +
@@ -1423,7 +1439,7 @@ function buildProjectForm(p) {
         fmField('Completion Date', fmInput('fm-actual-end', v('actual_end'), '', 'date'), true, false, 'When this project was actually completed — required to mark a project Complete') +
       '</div>' +
       '</div>') +
-      fmSec('4 · Details', '<div class="fm-grid">' + gDataProgram + '</div>' + gDetails, isEdit) +
+      fmSec('4 · Details', '<div class="fm-grid">' + gDataProgram + gInitiative + '</div>' + gDetails, isEdit) +
       gAlignment;
   }
 
@@ -1477,6 +1493,8 @@ function buildProjectForm(p) {
         '</label>',
         false, false,
         'Check if this project is part of the strategic Data Program initiative (not just owned by a DP-eligible team). Drives the Data Program slide on the Slideshow and the Data Program Lite app.') +
+      fmField('Initiative', fmInitiativeSelect(v('initiative_id')), false, false,
+        'Optional. Group this project under a strategic Initiative — appears on the Portfolio → Initiatives tab.') +
     '</div>') +
   fmSec('Details', '<div class="fm-grid">' +
       fmField('Problem Statement', fmMdTextarea('fm-problem', v('problem_statement'), 'Describe the problem this project solves…', 3, 4000), false, true) +
@@ -2092,6 +2110,7 @@ function collectProjectFields() {
       var dpg = collectCheckboxGroup('fm-dp-goal');
       return dpg && dpg.trim().length > 0 && dpg.trim() !== 'None' ? 1 : 0;
     })(),
+    initiative_id:     getVal('fm-initiative-id') || null,
     it_initiative:     collectCheckboxGroup('fm-it-initiative'),
     city_initiative:   collectCheckboxGroup('fm-city-initiative'),
     it_priority_project: collectCheckboxGroup('fm-it-priority'),
