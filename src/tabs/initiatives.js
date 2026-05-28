@@ -118,7 +118,7 @@ function renderInitiativeDetailPage(area) {
 
   // Compose the page
   var html = '<div class="init-page">';
-  html += '<a class="oe-btn oe-btn--ghost oe-btn--sm" onclick="initBackToList()" style="margin-bottom:6px;cursor:pointer;"><svg class="icon" aria-hidden="true"><use href="#ph-arrow-left"></use></svg> Initiatives</a>';
+  html += '<a class="init-back-link" onclick="initBackToList()"><svg class="icon" aria-hidden="true"><use href="#ph-arrow-left"></use></svg> All initiatives</a>';
 
   // HERO
   html += '<div class="init-hero">' +
@@ -419,8 +419,8 @@ function renderInitiativeEditPage(area) {
     return '<span class="attach-chip"><span class="proj-num">' + esc(p.project_number || '') + '</span> ' + esc(p.title || '') + ' <i class="ph ph-x" onclick="initDetachInForm(' + oid + ')" title="Remove from attached list"></i></span>';
   }).join('');
 
-  var html = '<div class="init-page">';
-  html += '<a class="oe-btn oe-btn--ghost oe-btn--sm" onclick="initBackToList()" style="margin-bottom:6px;cursor:pointer;"><svg class="icon" aria-hidden="true"><use href="#ph-arrow-left"></use></svg> Initiatives</a>';
+  var html = '<div class="init-page init-page--form">';
+  html += '<a class="init-back-link" onclick="initBackToList()"><svg class="icon" aria-hidden="true"><use href="#ph-arrow-left"></use></svg> All initiatives</a>';
   html += '<div class="init-page-eyebrow">' + (isNew ? 'New initiative' : 'Edit · ' + esc(initiative.name)) + '</div>';
   html += '<h1 class="init-page-title"><span class="init-display">' + (isNew ? 'Set up an objective' : 'Edit initiative') + '</span></h1>';
 
