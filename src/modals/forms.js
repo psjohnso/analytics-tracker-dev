@@ -2272,8 +2272,22 @@ async function handleFormSubmit(andDownload) {
   try {
     console.log('[Save] Starting save…', isEdit ? 'edit' : 'create', isProject ? 'project' : 'task', fields);
     if (isEdit) {
-      if (isProject) await DataStore.updateProject(Editor.editId, fields);
-      else           await DataStore.updateTask(Editor.editId, fields);
+      if (isProject) {
+        // Gate Complete/Canceled transitions behind the cascade modal so any
+        // open child tasks get resolved before the project state changes.
+        const _existingProj = PROJECTS.find(function(p) { return p.objectId == Editor.editId; });
+        const _willClose = _existingProj && fields.status && fields.status !== _existingProj.status
+          && (fields.status === 'Complete' || fields.status === 'Canceled');
+        if (_willClose && typeof closeProjectWithCascade === 'function') {
+          await closeProjectWithCascade(_existingProj, fields.status, async function() {
+            await DataStore.updateProject(Editor.editId, fields);
+          });
+        } else {
+          await DataStore.updateProject(Editor.editId, fields);
+        }
+      } else {
+        await DataStore.updateTask(Editor.editId, fields);
+      }
     } else {
       const created = isProject ? await DataStore.createProject(fields) : await DataStore.createTask(fields);
       // After create: open the new record's detail view

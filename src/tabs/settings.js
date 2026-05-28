@@ -631,6 +631,107 @@ function recomputeCapacityAfterHolidayChange() {
   if (typeof markDataDirty === 'function') markDataDirty();
 }
 
+// ── Project hygiene panel — historical orphan finder ────────────────
+// Open tasks whose parent project is already Complete or Canceled. Each
+// group's "Resolve these N" button opens the same modal as the close-time
+// cascade flow, just preloaded with that group's tasks. After the modal
+// applies, the panel re-renders (drops the resolved group).
+function buildProjectHygienePanel() {
+  var groups = (typeof findOrphanTaskGroups === 'function') ? findOrphanTaskGroups() : {};
+  var groupKeys = Object.keys(groups).sort(function(a, b) {
+    // Sort by parent's status (Canceled first since they're more clearly orphaned)
+    // then by number of orphan tasks descending, then by parent title.
+    var sa = (groups[a].project && groups[a].project.status) || '';
+    var sb = (groups[b].project && groups[b].project.status) || '';
+    if (sa !== sb) return sa.localeCompare(sb);
+    var na = groups[a].tasks.length, nb = groups[b].tasks.length;
+    if (na !== nb) return nb - na;
+    return ((groups[a].project && groups[a].project.title) || '').localeCompare((groups[b].project && groups[b].project.title) || '');
+  });
+
+  var totalTasks = 0;
+  groupKeys.forEach(function(k) { totalTasks += groups[k].tasks.length; });
+
+  var html = '<div class="settings-panel-title">Project hygiene</div>' +
+    '<div class="settings-panel-desc">Open tasks whose parent project is already Complete or Canceled. Resolving them keeps Open Tasks counts honest and stops orphan deadlines from polluting the slideshow.</div>';
+
+  if (totalTasks === 0) {
+    html += '<div class="hygiene-card"><div class="hygiene-empty"><strong>No orphan tasks.</strong> All open tasks belong to live projects.</div></div>';
+    return html;
+  }
+
+  html += '<div class="hygiene-card">';
+  groupKeys.forEach(function(pn) {
+    var grp = groups[pn];
+    var proj = grp.project;
+    if (!proj) return; // shouldn't happen — group only exists if parent does
+    var when = '';
+    if (proj.actual_end) when = 'Closed ' + _hygieneRelDate(proj.actual_end);
+    html += '<div class="hygiene-group">';
+    html += '<div class="hygiene-parent-line">';
+    html += '<span class="rt-pill rt-pill-' + esc(proj.status || '') + '">' + esc(proj.status || '—') + '</span>';
+    html += '<span class="hg-pn">' + esc(proj.project_number || '') + '</span>';
+    html += '<span class="hg-ttl">' + esc(proj.title || '(no title)') + '</span>';
+    if (when) html += '<span class="hg-when">' + esc(when) + '</span>';
+    html += '<button class="settings-btn settings-btn-primary" onclick="resolveOrphanGroup(\'' + esc(String(pn)).replace(/'/g, "\\'") + '\')" style="margin-left:14px;"><svg class="icon" aria-hidden="true"><use href="#ph-broom"></use></svg> Resolve these ' + grp.tasks.length + '</button>';
+    html += '</div>';
+    html += '<div class="hygiene-child-list">';
+    grp.tasks.slice(0, 6).forEach(function(t) {
+      html += '<div class="hygiene-child">' +
+        '<span class="hg-tn">' + esc(t.task_number || '') + '</span>' +
+        '<span class="hg-ttl">' + esc(t.title || '(no title)') + '</span>' +
+        '<span class="rt-pill rt-pill-' + esc((t.status || '').replace(/\s/g, '.')) + '">' + esc(t.status || '—') + '</span>' +
+        '<span class="hg-as">' + esc(t.assignee || '—') + '</span>' +
+      '</div>';
+    });
+    if (grp.tasks.length > 6) {
+      html += '<div class="hygiene-child" style="font-style:italic;color:var(--text-muted);">+ ' + (grp.tasks.length - 6) + ' more · click "Resolve these ' + grp.tasks.length + '" to see all</div>';
+    }
+    html += '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function _hygieneRelDate(dateStr) {
+  if (!dateStr) return '';
+  var d = new Date(String(dateStr).slice(0, 10) + 'T12:00:00');
+  if (isNaN(d.getTime())) return dateStr;
+  var ms = Date.now() - d.getTime();
+  var days = Math.floor(ms / 86400000);
+  if (days < 0) return 'in ' + Math.abs(days) + ' days';
+  if (days === 0) return 'today';
+  if (days < 7) return days + 'd ago';
+  if (days < 30) return Math.floor(days / 7) + 'w ago';
+  if (days < 365) return Math.floor(days / 30) + 'mo ago';
+  return Math.floor(days / 365) + 'y ago';
+}
+
+// Opens the resolve-tasks modal pre-loaded with one parent's orphan group.
+// No project status change happens after (the project is already closed) —
+// onApply just re-renders Settings so the resolved group drops off the list.
+function resolveOrphanGroup(projectNumber) {
+  if (typeof findOrphanTaskGroups !== 'function' || typeof openResolveTasksModal !== 'function') return;
+  var groups = findOrphanTaskGroups();
+  var grp = groups[String(projectNumber)];
+  if (!grp) { showToast('No orphan tasks for that project.', 'warn'); return; }
+  // For the hygiene case the parent IS already closed — show that as the
+  // context so the user understands the framing. Treat as "Canceled" target
+  // so the default action is Cancel (fast confirm); user can override per row.
+  openResolveTasksModal({
+    tasks: grp.tasks,
+    parentProject: grp.project,
+    targetStatus: 'Canceled', // drives default; the project status doesn't change
+    onApply: async function() {
+      // Project is already closed — no further project change needed.
+      // Just re-render so the resolved group drops off the panel.
+      if (typeof render === 'function') render();
+    },
+    onCancel: function() { /* no-op */ },
+  });
+}
+
 function renderSettingsPage(area) {
   var isAdminUser = isAdmin();
   var leadTeam = (typeof getLeadTeam === 'function') ? getLeadTeam() : null;
@@ -699,6 +800,13 @@ function renderSettingsPage(area) {
       navItem('risk', 'Project Risk') +
       navItem('allocations', 'Allocations') +
       navItem('holidays', 'Holidays', HOLIDAYS ? HOLIDAYS.length : 0) +
+      navItem('hygiene', 'Project hygiene', (function() {
+        if (typeof findOrphanTaskGroups !== 'function') return 0;
+        var g = findOrphanTaskGroups();
+        var total = 0;
+        Object.keys(g).forEach(function(k) { total += g[k].tasks.length; });
+        return total;
+      })()) +
     '</div>' +
     '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">System</div>' +
@@ -816,6 +924,10 @@ function renderSettingsPage(area) {
 
   else if (_settingsSection === 'holidays') {
     panelHtml = buildHolidaysPanel();
+  }
+
+  else if (_settingsSection === 'hygiene') {
+    panelHtml = buildProjectHygienePanel();
   }
 
   else if (_settingsSection === 'timetracking') {

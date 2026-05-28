@@ -381,10 +381,24 @@ async function markProjectComplete(objectId) {
   if (!proj) return;
   const today = new Date();
   const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
-  await DataStore.updateProject(objectId, { status: 'Complete', actual_end: todayStr });
-  showToast('Marked "' + proj.title + '" as Complete.', 'success');
-  markDataDirty();
-  render();
+  // Gate the status change behind the cascade modal. If the project has open
+  // child tasks, the modal blocks the status change until every task has a
+  // resolution. If there are no open children, closeProjectWithCascade just
+  // runs the callback directly.
+  if (typeof closeProjectWithCascade === 'function') {
+    await closeProjectWithCascade(proj, 'Complete', async function() {
+      await DataStore.updateProject(objectId, { status: 'Complete', actual_end: todayStr });
+      showToast('Marked "' + proj.title + '" as Complete.', 'success');
+      markDataDirty();
+      render();
+    });
+  } else {
+    // Fallback (resolve-tasks.js not loaded — shouldn't happen in practice)
+    await DataStore.updateProject(objectId, { status: 'Complete', actual_end: todayStr });
+    showToast('Marked "' + proj.title + '" as Complete.', 'success');
+    markDataDirty();
+    render();
+  }
 }
 
 function copyProjectSummary(objectId) {

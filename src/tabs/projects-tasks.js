@@ -240,7 +240,15 @@ async function boardDrop(e, newStatus) {
     return;
   }
   try {
-    await DataStore.updateProject(p.objectId, { status: newStatus });
+    // Gate Complete/Canceled transitions behind the cascade modal so open
+    // child tasks get resolved before the project state changes.
+    if ((newStatus === 'Complete' || newStatus === 'Canceled') && typeof closeProjectWithCascade === 'function') {
+      await closeProjectWithCascade(p, newStatus, async function() {
+        await DataStore.updateProject(p.objectId, { status: newStatus });
+      });
+    } else {
+      await DataStore.updateProject(p.objectId, { status: newStatus });
+    }
     if (typeof markDataDirty === 'function') markDataDirty();
     render();
   } catch (err) {

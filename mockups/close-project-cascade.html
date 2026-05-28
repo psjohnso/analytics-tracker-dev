@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Closing a project with open tasks — design mockup</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<style>
+:root {
+  --ink-0:#faf8f3; --ink-1:#f3efe6; --ink-2:#e8e2d3; --ink-3:#d9d1bf;
+  --ink-4:#a89e88; --ink-5:#6b6354; --ink-6:#3a3528; --ink-7:#1e1c14;
+  --ink-paper:#ffffff;
+  --navy-50:#eaeef5; --navy-100:#d2dbeb; --navy-300:#5d78a3;
+  --navy-500:#1f3b6b; --navy-700:#0e2240;
+  --sunset:#b85630; --saguaro:#8aa050; --sun:#c89500;
+  --status-active-bg:#eaefd9; --status-active-fg:#4d6310;
+  --status-future-bg:#dfe8f0; --status-future-fg:#2a4d70;
+  --status-complete-bg:#ebe2eb; --status-complete-fg:#4d2a4d;
+  --status-hold-bg:#f5ecc7; --status-hold-fg:#6e5200;
+  --status-canceled-bg:#e8e8e4; --status-canceled-fg:#5a5d52;
+  --r-2:5px; --r-3:8px; --r-pill:999px;
+}
+* { box-sizing: border-box; }
+body { margin:0; font-family:'Hanken Grotesk',sans-serif; color:var(--ink-7); background:var(--ink-0); font-size:14px; line-height:1.55; }
+.shell { max-width:1320px; margin:0 auto; padding:0 28px; }
+.screen { padding:48px 0 24px; border-bottom:1px dashed var(--ink-3); }
+.screen:last-child { border-bottom:none; padding-bottom:80px; }
+.screen-marker { padding:0 0 24px; }
+.screen-marker .label { font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:var(--navy-500); margin-bottom:4px; }
+.screen-marker .desc { font-size:13px; color:var(--ink-5); max-width:780px; }
+
+/* Status pill */
+.pill { display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:var(--r-pill); font-size:11px; font-weight:600; line-height:1.3; white-space:nowrap; }
+.pill::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; opacity:0.85; }
+.pill.Active { background:var(--status-active-bg); color:var(--status-active-fg); }
+.pill.Scheduled { background:var(--status-future-bg); color:var(--status-future-fg); }
+.pill.Complete { background:var(--status-complete-bg); color:var(--status-complete-fg); }
+.pill.OnHold, .pill.Waiting { background:var(--status-hold-bg); color:var(--status-hold-fg); }
+.pill.Canceled { background:var(--status-canceled-bg); color:var(--status-canceled-fg); }
+
+/* Buttons */
+.btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:var(--r-2); border:1px solid transparent; cursor:pointer; font-family:inherit; font-size:13px; font-weight:500; line-height:1; }
+.btn--primary { background:var(--navy-500); color:#fff; }
+.btn--secondary { background:var(--ink-paper); color:var(--ink-7); border-color:var(--ink-3); }
+.btn--ghost { background:transparent; color:var(--ink-6); }
+.btn--ghost:hover { background:var(--ink-1); }
+.btn--danger { background:var(--sunset); color:#fff; }
+.btn--sm { padding:5px 10px; font-size:12px; }
+.btn[disabled] { opacity:0.4; cursor:not-allowed; }
+
+/* ── Modal frame ── */
+.modal-wrap { background:rgba(14,34,64,0.4); padding:40px; border-radius:var(--r-3); }
+.modal { background:var(--ink-paper); border-radius:var(--r-3); overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.18); max-width:880px; margin:0 auto; }
+.modal-head { padding:18px 24px; border-bottom:1px solid var(--ink-2); display:flex; align-items:center; justify-content:space-between; }
+.modal-head h2 { font-family:'Instrument Serif',serif; font-size:22px; font-weight:400; margin:0; color:var(--ink-7); }
+.modal-head .close { background:transparent; border:0; cursor:pointer; color:var(--ink-5); font-size:20px; }
+
+.modal-summary {
+  padding:14px 24px; background:var(--ink-1); border-bottom:1px solid var(--ink-2);
+  font-size:13px; color:var(--ink-6); display:flex; gap:14px; align-items:center; flex-wrap:wrap;
+}
+.modal-summary .summary-num { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:600; color:var(--navy-500); }
+.modal-summary .proj-name { font-weight:600; color:var(--ink-7); }
+
+.batch-bar {
+  padding:12px 24px; background:var(--ink-paper); border-bottom:1px solid var(--ink-2);
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+}
+.batch-bar .label { font-size:11px; letter-spacing:0.06em; text-transform:uppercase; font-weight:700; color:var(--ink-5); margin-right:8px; }
+
+.task-list { max-height:420px; overflow-y:auto; }
+.task-row {
+  display:grid; grid-template-columns:24px 1fr 200px 240px; gap:14px;
+  padding:14px 24px; border-bottom:1px solid var(--ink-1); align-items:center;
+}
+.task-row:last-child { border-bottom:none; }
+.task-row.unresolved { background:#fff8eb; }
+.task-row .check { color:var(--saguaro); font-size:16px; }
+.task-row .pending { color:var(--ink-4); font-size:16px; }
+.task-row .task-title { font-weight:500; color:var(--ink-7); font-size:13px; }
+.task-row .task-meta { font-size:11px; color:var(--ink-5); margin-top:2px; font-family:'JetBrains Mono',monospace; }
+.task-row .task-assignee { font-size:12px; color:var(--ink-5); }
+.task-row .resolution-cell { display:flex; gap:6px; flex-wrap:wrap; }
+.res-btn {
+  padding:5px 8px; border:1px solid var(--ink-3); background:var(--ink-paper);
+  border-radius:var(--r-2); cursor:pointer; font-size:11px; font-weight:600; color:var(--ink-5);
+}
+.res-btn:hover { border-color:var(--ink-4); color:var(--ink-7); }
+.res-btn.active.complete { background:var(--status-complete-bg); border-color:var(--status-complete-fg); color:var(--status-complete-fg); }
+.res-btn.active.cancel { background:var(--status-canceled-bg); border-color:var(--ink-4); color:var(--status-canceled-fg); }
+.res-btn.active.transfer { background:var(--navy-50); border-color:var(--navy-500); color:var(--navy-500); }
+
+.transfer-tag {
+  display:inline-flex; align-items:center; gap:5px; padding:4px 10px;
+  background:var(--navy-50); color:var(--navy-500); border-radius:var(--r-pill);
+  font-size:11px; font-weight:600;
+}
+
+.modal-foot {
+  padding:14px 24px; background:var(--ink-1); border-top:1px solid var(--ink-2);
+  display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap;
+}
+.modal-foot .progress { font-size:12px; color:var(--ink-5); font-family:'JetBrains Mono',monospace; }
+.modal-foot .progress strong { color:var(--ink-7); }
+.modal-foot .progress.complete { color:var(--saguaro); font-weight:600; }
+.modal-foot .actions { display:flex; gap:8px; }
+
+/* Transfer-mode picker dropdown */
+.picker-popover {
+  background:var(--ink-paper); border:1px solid var(--ink-3); border-radius:var(--r-2);
+  padding:10px; box-shadow:0 8px 24px rgba(0,0,0,0.08); width:340px;
+  position:relative; margin:6px 0 0 0;
+}
+.picker-popover input[type=text] {
+  width:100%; padding:7px 10px; border:1px solid var(--ink-3); border-radius:var(--r-2);
+  font-family:inherit; font-size:13px; margin-bottom:6px;
+}
+.picker-popover .options { max-height:180px; overflow-y:auto; }
+.picker-popover .opt {
+  padding:8px 8px; font-size:12px; cursor:pointer; border-radius:var(--r-2); display:flex; gap:8px; align-items:center;
+}
+.picker-popover .opt:hover { background:var(--ink-1); }
+.picker-popover .opt .pn { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-5); }
+.picker-popover .opt .ttl { color:var(--ink-7); font-weight:500; }
+.picker-popover .opt .st { margin-left:auto; }
+
+/* Settings widget */
+.settings-card { background:var(--ink-paper); border:1px solid var(--ink-2); border-radius:var(--r-3); overflow:hidden; }
+.settings-card .head { padding:16px 22px; border-bottom:1px solid var(--ink-2); display:flex; justify-content:space-between; align-items:center; }
+.settings-card .head h3 { margin:0; font-size:16px; font-weight:600; }
+.settings-card .head .count {
+  display:inline-flex; align-items:center; gap:5px; padding:3px 9px; background:var(--sun); color:#fff;
+  border-radius:var(--r-pill); font-size:12px; font-weight:700; font-family:'JetBrains Mono',monospace;
+}
+.settings-card .body { padding:0; }
+.parent-group { padding:14px 22px; border-bottom:1px solid var(--ink-1); }
+.parent-group:last-child { border-bottom:none; }
+.parent-group .parent-line { display:flex; gap:10px; align-items:baseline; font-size:13px; margin-bottom:10px; }
+.parent-group .parent-line .pn { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-5); }
+.parent-group .parent-line .title { font-weight:600; color:var(--ink-7); }
+.parent-group .parent-line .closed-when { color:var(--ink-5); font-size:11px; margin-left:auto; }
+.parent-group .child-list { display:flex; flex-direction:column; gap:6px; padding-left:18px; }
+.parent-group .child { display:flex; gap:10px; align-items:center; font-size:12px; }
+.parent-group .child .tn { font-family:'JetBrains Mono',monospace; color:var(--ink-5); min-width:60px; }
+.parent-group .child .ttl { flex:1; color:var(--ink-7); }
+.parent-group .child .as { color:var(--ink-5); }
+
+.notes-card { background:var(--ink-paper); border:1px solid var(--ink-2); border-radius:var(--r-3); padding:22px 26px; margin-top:20px; }
+.notes-card h3 { font-family:'Instrument Serif',serif; font-size:22px; font-weight:400; margin:0 0 12px 0; }
+.notes-card ul { margin:0; padding-left:22px; line-height:1.7; }
+.notes-card strong { color:var(--navy-700); }
+.notes-card code { font-family:'JetBrains Mono',monospace; font-size:12px; background:var(--ink-1); padding:2px 6px; border-radius:3px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<!-- Screen 1 — Close-time modal · Canceled project, fast path           -->
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<div class="screen">
+  <div class="screen-marker">
+    <div class="label">Screen 1 · Close-time modal · Project being Canceled (fast path)</div>
+    <div class="desc">When the parent is being Canceled, every open task defaults to "Cancel" — single confirm click and done. User can override any row to Complete or Transfer if needed before clicking Apply.</div>
+  </div>
+
+  <div class="modal-wrap">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>Resolve child tasks before canceling</h2>
+        <button class="close"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="modal-summary">
+        <span><strong class="summary-num">5</strong> open tasks belong to</span>
+        <span class="proj-name">P-2026-014 · Power BI Workspace Cleanup</span>
+        <span style="margin-left:auto;"><span class="pill Active">Active</span> → <span class="pill Canceled">Canceled</span></span>
+      </div>
+      <div class="batch-bar">
+        <span class="label">Apply to all:</span>
+        <button class="btn btn--secondary btn--sm">Cancel all</button>
+        <button class="btn btn--ghost btn--sm">Complete all</button>
+        <span style="font-size:11px; color:var(--ink-5); margin-left:auto; font-style:italic;">defaults set to Cancel below — change any row to override</span>
+      </div>
+      <div class="task-list">
+        <div class="task-row">
+          <i class="ph ph-check-circle check"></i>
+          <div>
+            <div class="task-title">Audit existing workspace permissions</div>
+            <div class="task-meta">T-018 · Active</div>
+          </div>
+          <div class="task-assignee">Andrew Sutton</div>
+          <div class="resolution-cell">
+            <button class="res-btn">Complete</button>
+            <button class="res-btn active cancel">Cancel</button>
+            <button class="res-btn">Transfer to →</button>
+          </div>
+        </div>
+        <div class="task-row">
+          <i class="ph ph-check-circle check"></i>
+          <div>
+            <div class="task-title">Migrate workspace 1 to standardized template</div>
+            <div class="task-meta">T-019 · Active</div>
+          </div>
+          <div class="task-assignee">Joseph Ahumada</div>
+          <div class="resolution-cell">
+            <button class="res-btn">Complete</button>
+            <button class="res-btn">Cancel</button>
+            <button class="res-btn active transfer">Transfer to →</button>
+            <span class="transfer-tag"><i class="ph ph-arrow-right" style="font-size:11px;"></i> Power BI Migration Phase 2</span>
+          </div>
+        </div>
+        <div class="task-row">
+          <i class="ph ph-check-circle check"></i>
+          <div>
+            <div class="task-title">Migrate workspace 2 to standardized template</div>
+            <div class="task-meta">T-020 · Active</div>
+          </div>
+          <div class="task-assignee">Joseph Ahumada</div>
+          <div class="resolution-cell">
+            <button class="res-btn">Complete</button>
+            <button class="res-btn">Cancel</button>
+            <button class="res-btn active transfer">Transfer to →</button>
+            <span class="transfer-tag"><i class="ph ph-arrow-right" style="font-size:11px;"></i> Power BI Migration Phase 2</span>
+          </div>
+        </div>
+        <div class="task-row">
+          <i class="ph ph-check-circle check"></i>
+          <div>
+            <div class="task-title">Update workspace documentation</div>
+            <div class="task-meta">T-021 · On Hold</div>
+          </div>
+          <div class="task-assignee">Kate Carter</div>
+          <div class="resolution-cell">
+            <button class="res-btn active complete">Complete</button>
+            <button class="res-btn">Cancel</button>
+            <button class="res-btn">Transfer to →</button>
+          </div>
+        </div>
+        <div class="task-row">
+          <i class="ph ph-check-circle check"></i>
+          <div>
+            <div class="task-title">Decommission legacy workspace</div>
+            <div class="task-meta">T-022 · Scheduled</div>
+          </div>
+          <div class="task-assignee">Andrew Sutton</div>
+          <div class="resolution-cell">
+            <button class="res-btn">Complete</button>
+            <button class="res-btn active cancel">Cancel</button>
+            <button class="res-btn">Transfer to →</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <div class="progress complete">All <strong>5</strong> tasks resolved · 2 Cancel · 1 Complete · 2 Transfer</div>
+        <div class="actions">
+          <button class="btn btn--ghost">Back</button>
+          <button class="btn btn--primary"><i class="ph ph-check"></i> Apply &amp; close project</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<!-- Screen 2 — Modal with picker open (transfer flow)                   -->
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<div class="screen">
+  <div class="screen-marker">
+    <div class="label">Screen 2 · Transfer to project picker</div>
+    <div class="desc">When user clicks "Transfer to →" on a row, a searchable project picker drops down. Only Active / On Hold / Scheduled projects show. Selecting one tags the task with the new parent — applies on Apply.</div>
+  </div>
+
+  <div class="modal-wrap">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>Resolve child tasks before canceling</h2>
+        <button class="close"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="modal-summary">
+        <span><strong class="summary-num">5</strong> open tasks belong to</span>
+        <span class="proj-name">P-2026-014 · Power BI Workspace Cleanup</span>
+        <span style="margin-left:auto;"><span class="pill Active">Active</span> → <span class="pill Canceled">Canceled</span></span>
+      </div>
+      <div class="batch-bar">
+        <span class="label">Apply to all:</span>
+        <button class="btn btn--secondary btn--sm">Cancel all</button>
+        <button class="btn btn--ghost btn--sm">Complete all</button>
+      </div>
+      <div class="task-list">
+        <div class="task-row unresolved">
+          <i class="ph ph-circle pending"></i>
+          <div>
+            <div class="task-title">Migrate workspace 1 to standardized template</div>
+            <div class="task-meta">T-019 · Active</div>
+            <div class="picker-popover">
+              <input type="text" placeholder="Search projects by number or title…" value="Power BI">
+              <div class="options">
+                <div class="opt">
+                  <span class="pn">P-2026-024</span>
+                  <span class="ttl">Power BI Migration Phase 2</span>
+                  <span class="pill Active st">Active</span>
+                </div>
+                <div class="opt">
+                  <span class="pn">P-2026-031</span>
+                  <span class="ttl">Power BI Theme &amp; Template Library</span>
+                  <span class="pill Scheduled st">Scheduled</span>
+                </div>
+                <div class="opt">
+                  <span class="pn">P-2025-014</span>
+                  <span class="ttl">Power BI Workspace Admin Workflows</span>
+                  <span class="pill Active st">Active</span>
+                </div>
+                <div class="opt">
+                  <span class="pn">P-2025-088</span>
+                  <span class="ttl">Power BI Tenant Settings Audit</span>
+                  <span class="pill OnHold st">On Hold</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="task-assignee">Joseph Ahumada</div>
+          <div class="resolution-cell">
+            <button class="res-btn">Complete</button>
+            <button class="res-btn">Cancel</button>
+            <button class="res-btn active transfer">Transfer to → <i class="ph ph-caret-down" style="font-size:10px;"></i></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <div class="progress"><strong>3</strong> of 5 resolved · 1 pending picker selection · 1 with no resolution</div>
+        <div class="actions">
+          <button class="btn btn--ghost">Back</button>
+          <button class="btn btn--primary" disabled><i class="ph ph-check"></i> Apply &amp; close project</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<!-- Screen 3 — Close-time modal · Project being Completed (deliberate)  -->
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<div class="screen">
+  <div class="screen-marker">
+    <div class="label">Screen 3 · Close-time modal · Project being Completed (deliberate path)</div>
+    <div class="desc">When marking a project Complete, no default is set — every task starts unresolved (yellow highlight). User must pick per task or use a batch action. Apply stays disabled until 5/5 are resolved. The "Force a choice" stance applies here strongly: it's almost never accurate to silently mark unfinished tasks as Complete just because the parent is closing.</div>
+  </div>
+
+  <div class="modal-wrap">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>Resolve child tasks before completing</h2>
+        <button class="close"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="modal-summary">
+        <span><strong class="summary-num">3</strong> open tasks belong to</span>
+        <span class="proj-name">P-2026-008 · Self-serve portal — backend</span>
+        <span style="margin-left:auto;"><span class="pill Active">Active</span> → <span class="pill Complete">Complete</span></span>
+      </div>
+      <div class="batch-bar">
+        <span class="label">Apply to all:</span>
+        <button class="btn btn--secondary btn--sm">Complete all</button>
+        <button class="btn btn--ghost btn--sm">Cancel all</button>
+        <span style="font-size:11px; color:var(--ink-5); margin-left:auto; font-style:italic;">no default — each task needs a deliberate decision</span>
+      </div>
+      <div class="task-list">
+        <div class="task-row unresolved">
+          <i class="ph ph-circle pending"></i>
+          <div>
+            <div class="task-title">Migrate auth tokens to new IDP</div>
+            <div class="task-meta">T-101 · Active</div>
+          </div>
+          <div class="task-assignee">Jessica Fraver</div>
+          <div class="resolution-cell">
+            <button class="res-btn">Complete</button>
+            <button class="res-btn">Cancel</button>
+            <button class="res-btn">Transfer to →</button>
+          </div>
+        </div>
+        <div class="task-row unresolved">
+          <i class="ph ph-circle pending"></i>
+          <div>
+            <div class="task-title">Deploy production caching layer</div>
+            <div class="task-meta">T-102 · Waiting for Response</div>
+          </div>
+          <div class="task-assignee">Vladimir Berg</div>
+          <div class="resolution-cell">
+            <button class="res-btn">Complete</button>
+            <button class="res-btn">Cancel</button>
+            <button class="res-btn">Transfer to →</button>
+          </div>
+        </div>
+        <div class="task-row unresolved">
+          <i class="ph ph-circle pending"></i>
+          <div>
+            <div class="task-title">Document API versioning policy</div>
+            <div class="task-meta">T-103 · On Hold</div>
+          </div>
+          <div class="task-assignee">Peter Johnson</div>
+          <div class="resolution-cell">
+            <button class="res-btn">Complete</button>
+            <button class="res-btn">Cancel</button>
+            <button class="res-btn">Transfer to →</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <div class="progress"><strong>0</strong> of 3 resolved</div>
+        <div class="actions">
+          <button class="btn btn--ghost">Back</button>
+          <button class="btn btn--primary" disabled><i class="ph ph-check"></i> Apply &amp; close project</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<!-- Screen 4 — Settings → Project hygiene widget (historical orphans)   -->
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<div class="screen">
+  <div class="screen-marker">
+    <div class="label">Screen 4 · Settings → Project hygiene widget (historical orphans)</div>
+    <div class="desc">For projects closed before this feature shipped — or any that slipped through. Admin-only Settings section listing open tasks whose parent project is already Complete or Canceled. Grouped by parent project. "Resolve" opens the same modal as the close-time flow, just preloaded with these tasks instead of triggering on a status change.</div>
+  </div>
+
+  <div class="settings-card">
+    <div class="head">
+      <h3>Project hygiene · open tasks under closed projects</h3>
+      <span class="count"><i class="ph ph-warning"></i> 14 open tasks</span>
+    </div>
+    <div class="body">
+
+      <div class="parent-group">
+        <div class="parent-line">
+          <span class="pill Canceled">Canceled</span>
+          <span class="pn">P-2024-099</span>
+          <span class="title">Public Records Dashboard Cleanup</span>
+          <span class="closed-when">Canceled 4 months ago</span>
+          <button class="btn btn--primary btn--sm" style="margin-left:14px;"><i class="ph ph-broom"></i> Resolve these 3</button>
+        </div>
+        <div class="child-list">
+          <div class="child">
+            <span class="tn">T-201</span>
+            <span class="ttl">Update FOIA request workflow</span>
+            <span class="pill Active">Active</span>
+            <span class="as">Kate Carter</span>
+          </div>
+          <div class="child">
+            <span class="tn">T-202</span>
+            <span class="ttl">Migrate legacy report links</span>
+            <span class="pill OnHold">On Hold</span>
+            <span class="as">Andrew Sutton</span>
+          </div>
+          <div class="child">
+            <span class="tn">T-203</span>
+            <span class="ttl">Sunset old dashboard URL</span>
+            <span class="pill Scheduled">Scheduled</span>
+            <span class="as">Andrew Sutton</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="parent-group">
+        <div class="parent-line">
+          <span class="pill Complete">Complete</span>
+          <span class="pn">P-2024-122</span>
+          <span class="title">DI Team Knowledge Base Migration</span>
+          <span class="closed-when">Completed 6 weeks ago</span>
+          <button class="btn btn--primary btn--sm" style="margin-left:14px;"><i class="ph ph-broom"></i> Resolve these 5</button>
+        </div>
+        <div class="child-list">
+          <div class="child">
+            <span class="tn">T-310</span>
+            <span class="ttl">Archive legacy SharePoint site</span>
+            <span class="pill Active">Active</span>
+            <span class="as">Liz Wilshin</span>
+          </div>
+          <div class="child">
+            <span class="tn">T-311</span>
+            <span class="ttl">Update onboarding deck with new URLs</span>
+            <span class="pill Active">Active</span>
+            <span class="as">Peter Johnson</span>
+          </div>
+          <div class="child">
+            <span class="tn">T-312</span>
+            <span class="ttl">Migrate playbook PDFs to Confluence</span>
+            <span class="pill OnHold">On Hold</span>
+            <span class="as">Liz Wilshin</span>
+          </div>
+          <div class="child">
+            <span class="tn">T-313</span>
+            <span class="ttl">Update DNS for old KB domain</span>
+            <span class="pill Scheduled">Scheduled</span>
+            <span class="as">Vladimir Berg</span>
+          </div>
+          <div class="child">
+            <span class="tn">T-314</span>
+            <span class="ttl">Decommission Confluence trial workspace</span>
+            <span class="pill OnHold">On Hold</span>
+            <span class="as">Vladimir Berg</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="parent-group">
+        <div class="parent-line">
+          <span class="pill Canceled">Canceled</span>
+          <span class="pn">P-2025-077</span>
+          <span class="title">311 Service Request Analytics Pilot</span>
+          <span class="closed-when">Canceled 2 weeks ago</span>
+          <button class="btn btn--primary btn--sm" style="margin-left:14px;"><i class="ph ph-broom"></i> Resolve these 6</button>
+        </div>
+        <div class="child-list">
+          <div class="child">
+            <span class="tn">T-405</span>
+            <span class="ttl">Schema mapping with 311 vendor team</span>
+            <span class="pill Active">Active</span>
+            <span class="as">Daniel Jackson-Reeves</span>
+          </div>
+          <div class="child">
+            <span class="tn">T-406</span>
+            <span class="ttl">Wireframe pilot dashboard layout</span>
+            <span class="pill Active">Active</span>
+            <span class="as">Daniel Jackson-Reeves</span>
+          </div>
+          <div class="child">
+            <span class="tn">T-407 + 3 more</span>
+            <span class="ttl" style="color:var(--ink-5); font-style:italic;">— click "Resolve these 6" to see all</span>
+            <span style="margin-left:auto;"></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<!-- Notes                                                              -->
+<!-- ─────────────────────────────────────────────────────────────────── -->
+<div class="screen">
+  <div class="screen-marker">
+    <div class="label">Behavior notes &amp; what the build covers</div>
+    <div class="desc">Design intent locked in, ready for review before code goes in.</div>
+  </div>
+
+  <div class="notes-card">
+    <h3>Behavior summary</h3>
+    <ul>
+      <li><strong>Approach A · Close-time modal.</strong> Intercepts every project status change to Complete or Canceled. If the project has open child tasks, the modal opens with them pre-listed. Apply is disabled until every task has a resolution (Complete / Cancel / Transfer). After Apply: batch task updates → project status update → status-history entries written on each affected task with reason "parent project [X] [Completed/Canceled]".</li>
+      <li><strong>Approach B · Settings hygiene widget.</strong> Surfaces existing orphans (open tasks whose parent project is closed). Groups by parent so the context is clear. Each "Resolve these N" button opens the same modal preloaded with that group's tasks.</li>
+      <li><strong>Default behavior differs by parent status.</strong> Canceled project → every row defaults to Cancel (one-confirm flow, fast). Complete project → no default (deliberate per-task choice required).</li>
+      <li><strong>Transfer flow.</strong> Searchable picker, only Active / On Hold / Scheduled projects shown. On Apply, the task's <code>project_number</code> FK gets re-pointed; <code>task_number</code> stays as-is. Past time entries keep their original <code>project_id</code> (historical truth), future time goes to the new project.</li>
+      <li><strong>Notifications.</strong> When the cascade auto-changes a task's status or transfers it, a notification is written to its assignee so they hear about it.</li>
+      <li><strong>Audit trail.</strong> Status history entries note the parent action that triggered the cascade. Transfers note both old and new project numbers. Visible on the task detail page's status history strip.</li>
+      <li><strong>Re-opening a closed project.</strong> Does <em>not</em> reverse the cascade. Tasks that were auto-canceled or auto-completed stay that way. Manual restore from each task's detail page is the path.</li>
+      <li><strong>Permissions.</strong> Close-time modal: anyone who could close the project. Settings widget: admin-only.</li>
+    </ul>
+  </div>
+
+  <div class="notes-card">
+    <h3>What ships in the commit</h3>
+    <ul>
+      <li><strong>One shared modal component</strong> — opens with a list of tasks + a "parent context" describing what triggered it. Used by both Approach A and B.</li>
+      <li><strong>Hooks at every project-status-change entry point</strong> — the <code>markProjectComplete</code> button on the detail page, the status dropdown on the project detail, bulk actions that include status changes. Each one checks for open tasks before applying.</li>
+      <li><strong>Settings → Project hygiene section</strong> — admin-only, lives in the Project Config group.</li>
+      <li><strong>Status history + notifications integration</strong> — leverages existing tables; no new schema.</li>
+    </ul>
+    <p style="margin-top:14px; color:var(--ink-5); font-size:12px;">No AGOL schema changes. ~400 lines of new code (one new modal file + integration points + Settings panel). One commit.</p>
+  </div>
+</div>
+
+</div><!-- /.shell -->
+
+<div style="background:var(--navy-700); color:rgba(255,255,255,0.85); padding:32px 28px; margin-top:48px; font-size:13px;">
+  <div class="shell">
+    <strong style="color: #fff;">Mockup only — no code committed.</strong> &nbsp; Approve the UX and I'll build it in one commit. Things that aren't right: re-mock first, then build.
+  </div>
+</div>
+
+</body>
+</html>

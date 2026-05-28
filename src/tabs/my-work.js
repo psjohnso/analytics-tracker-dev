@@ -145,8 +145,23 @@ async function mwQuickStatus(selectEl) {
   } else if (type === 'project') {
     var pFields = { status: newStatus };
     if (newStatus === 'Complete') pFields.actual_end = todayStr;
+    // Gate Complete/Canceled transitions behind the cascade modal.
+    var mwProj = PROJECTS.find(function(p) { return p.objectId == id; });
+    var mwWillClose = mwProj && (newStatus === 'Complete' || newStatus === 'Canceled') && newStatus !== mwProj.status;
     try {
-      await DataStore.updateProject(id, pFields);
+      if (mwWillClose && typeof closeProjectWithCascade === 'function') {
+        var mwOldStatus = mwProj.status;
+        var mwOk = await closeProjectWithCascade(mwProj, newStatus, async function() {
+          await DataStore.updateProject(id, pFields);
+        });
+        if (!mwOk) {
+          // User canceled the modal — revert the dropdown UI to the old status
+          selectEl.value = mwOldStatus;
+          return;
+        }
+      } else {
+        await DataStore.updateProject(id, pFields);
+      }
       showToast('Project status updated to ' + newStatus + '.', 'success');
     } catch (err) {
       showToast('Failed to update: ' + err.message, 'error');
