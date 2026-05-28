@@ -1923,7 +1923,7 @@ body[data-theme="dark"] #bulk-bar { background:#20242C; border:1px solid var(--b
 
 /* ── Team Load Analytics page ──────────────────────────────────────── */
 .team-load-page {
-  padding: 28px 32px;
+  padding: 0 32px 28px;
   max-width: 1200px;
   margin: 0 auto;
   font-family: 'Lato', sans-serif;
@@ -2027,7 +2027,7 @@ body[data-theme="dark"] #bulk-bar { background:#20242C; border:1px solid var(--b
 /* ── Effort Shape page — inherits .team-load-page typography but adds
    sparklines and shape/intensity badges of its own. ─────────────────── */
 .effort-shape-page {
-  padding: 28px 32px;
+  padding: 0 32px 28px;
   max-width: 1280px;
   margin: 0 auto;
   font-family: 'Lato', sans-serif;
@@ -3812,7 +3812,7 @@ body[data-theme="dark"] .confirm-dialog.danger .confirm-title { color: #F87171; 
 .abs-cell-holiday .abs-input { background:transparent; border-color:rgba(184,86,48,0.35); color:rgba(0,0,0,0.45); cursor:not-allowed; }
 
 /* ── INITIATIVES tab — list, detail, edit form, project breadcrumb ── */
-.init-page { max-width:1320px; margin:0 auto; padding:24px 28px 60px; }
+.init-page { max-width:1320px; margin:0 auto; padding:0 28px 60px; }
 /* Form view is narrower so the edit page reads like a document — centered on
    wide screens, full-width on smaller. */
 .init-page.init-page--form { max-width:900px; }

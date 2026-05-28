@@ -1283,9 +1283,10 @@ body[data-theme="oe"] .ir-empty-sub, body[data-theme="oe-dark"] .ir-empty-sub {
    resources.js is rendered as-is — just wrapped in OE chrome.
    ============================================================================ */
 
-/* Page wrapper */
+/* Page wrapper — top padding zeroed so the page aligns with Portfolio (which
+   uses just the content-area's 20px). Horizontal padding stays for edges. */
 body[data-theme="oe"] .oe-cap-page, body[data-theme="oe-dark"] .oe-cap-page {
-  padding: 24px 28px 64px;
+  padding: 0 28px 64px;
 }
 
 /* Title row */
@@ -1463,7 +1464,7 @@ body[data-theme="oe"] .oe-cap-alloc-table .spark-bar, body[data-theme="oe-dark"]
 
 /* Page wrapper */
 body[data-theme="oe"] .oe-fc-page, body[data-theme="oe-dark"] .oe-fc-page {
-  padding: 24px 28px 64px; max-width: 1320px; margin: 0 auto;
+  padding: 0 28px 64px; max-width: 1320px; margin: 0 auto;
 }
 
 /* Header */
@@ -1640,7 +1641,7 @@ body[data-theme="oe"] .oe-fc-ls-sw, body[data-theme="oe-dark"] .oe-fc-ls-sw {
    ============================================================================ */
 
 body[data-theme="oe"] .oe-ins-page, body[data-theme="oe-dark"] .oe-ins-page {
-  padding: 24px 28px 64px; max-width: 1320px; margin: 0 auto;
+  padding: 0 28px 64px; max-width: 1320px; margin: 0 auto;
 }
 
 body[data-theme="oe"] .oe-ins-head, body[data-theme="oe-dark"] .oe-ins-head { margin-bottom: 24px; }
