@@ -632,12 +632,24 @@ function recomputeCapacityAfterHolidayChange() {
 }
 
 // ── Project hygiene panel — historical orphan finder ────────────────
-// Open tasks whose parent project is already Complete or Canceled. Each
-// group's "Resolve these N" button opens the same modal as the close-time
-// cascade flow, just preloaded with that group's tasks. After the modal
-// applies, the panel re-renders (drops the resolved group).
+// Open tasks whose parent project is already Complete or Canceled. Visible
+// to admins, team leads, AND project leads (anyone the canEditProject
+// helper says can edit the parent). Each group's "Resolve these N"
+// button opens the same modal as the close-time cascade flow. After the
+// modal applies, the panel re-renders (drops the resolved group).
 function buildProjectHygienePanel() {
-  var groups = (typeof findOrphanTaskGroups === 'function') ? findOrphanTaskGroups() : {};
+  var rawGroups = (typeof findOrphanTaskGroups === 'function') ? findOrphanTaskGroups() : {};
+  // Filter to groups the viewer is allowed to act on. Reuses canEditProject
+  // (auth.js) so the rule stays in lockstep with the rest of the app:
+  // admins see everything, team leads see their team's projects, project
+  // leads (contact === viewer) see their own projects.
+  var groups = {};
+  Object.keys(rawGroups).forEach(function(pn) {
+    var grp = rawGroups[pn];
+    if (!grp || !grp.project) return;
+    if (typeof canEditProject === 'function' && !canEditProject(grp.project)) return;
+    groups[pn] = grp;
+  });
   var groupKeys = Object.keys(groups).sort(function(a, b) {
     // Sort by parent's status (Canceled first since they're more clearly orphaned)
     // then by number of orphan tasks descending, then by parent title.
@@ -652,8 +664,14 @@ function buildProjectHygienePanel() {
   var totalTasks = 0;
   groupKeys.forEach(function(k) { totalTasks += groups[k].tasks.length; });
 
+  // Subtitle adapts to viewer's scope so they know what they're looking at.
+  var subtitle = 'Open tasks whose parent project is already Complete or Canceled. Resolving them keeps Open Tasks counts honest and stops orphan deadlines from polluting the slideshow.';
+  if (!(typeof isAdmin === 'function' && isAdmin())) {
+    subtitle += ' <strong>Showing only projects you lead or co-own.</strong>';
+  }
+
   var html = '<div class="settings-panel-title">Project hygiene</div>' +
-    '<div class="settings-panel-desc">Open tasks whose parent project is already Complete or Canceled. Resolving them keeps Open Tasks counts honest and stops orphan deadlines from polluting the slideshow.</div>';
+    '<div class="settings-panel-desc">' + subtitle + '</div>';
 
   if (totalTasks === 0) {
     html += '<div class="hygiene-card"><div class="hygiene-empty"><strong>No orphan tasks.</strong> All open tasks belong to live projects.</div></div>';
@@ -741,11 +759,14 @@ function renderSettingsPage(area) {
     area.innerHTML = '<div class="empty-state">Sign in to access Settings.</div>';
     return;
   }
-  // Access: admins see all sections; team leads see Preferences + their own
-  // team's members; everyone else sees Preferences only.
+  // Access: admins see all sections; team leads see Preferences + their team's
+  // sections; everyone else sees Preferences. Project hygiene is universally
+  // accessible (the panel itself filters to projects the viewer can edit, so a
+  // project lead who isn't a team lead can still clean up after themselves).
   if (!isAdminUser) {
     var leadOk = isLeadUser && (_settingsSection === 'team' || _settingsSection === 'teamintro' || _settingsSection === 'reviewtypes' || _settingsSection === 'intake');
-    if (_settingsSection !== 'preferences' && !leadOk) _settingsSection = 'preferences';
+    var hygieneOk = _settingsSection === 'hygiene'; // anyone can access; panel self-scopes
+    if (_settingsSection !== 'preferences' && !leadOk && !hygieneOk) _settingsSection = 'preferences';
   }
 
   // ── Sidebar navigation ──────────────────────────────────
@@ -756,10 +777,26 @@ function renderSettingsPage(area) {
   }
 
   var navHtml = '<div class="settings-nav">';
-  // Preferences — visible to everyone
+  // Personal — visible to everyone. Project hygiene shows here because every
+  // tier (project lead / team lead / admin) might need to clean up after a
+  // project they own/lead. The badge count is filtered to projects the
+  // viewer can edit, so leads only see their own.
   navHtml += '<div class="settings-nav-group">';
   navHtml += '<div class="settings-nav-label">Personal</div>';
   navHtml += navItem('preferences', 'Preferences');
+  navHtml += navItem('hygiene', 'Project hygiene', (function() {
+    if (typeof findOrphanTaskGroups !== 'function') return 0;
+    var g = findOrphanTaskGroups();
+    var total = 0;
+    Object.keys(g).forEach(function(k) {
+      var grp = g[k];
+      if (!grp || !grp.project) return;
+      // Filter to what the viewer can edit so the badge matches the panel.
+      if (typeof canEditProject === 'function' && !canEditProject(grp.project)) return;
+      total += grp.tasks.length;
+    });
+    return total;
+  })());
   navHtml += '</div>';
 
   // People data — admins see everyone; team leads see only their own team.
@@ -800,13 +837,6 @@ function renderSettingsPage(area) {
       navItem('risk', 'Project Risk') +
       navItem('allocations', 'Allocations') +
       navItem('holidays', 'Holidays', HOLIDAYS ? HOLIDAYS.length : 0) +
-      navItem('hygiene', 'Project hygiene', (function() {
-        if (typeof findOrphanTaskGroups !== 'function') return 0;
-        var g = findOrphanTaskGroups();
-        var total = 0;
-        Object.keys(g).forEach(function(k) { total += g[k].tasks.length; });
-        return total;
-      })()) +
     '</div>' +
     '<div class="settings-nav-group">' +
       '<div class="settings-nav-label">System</div>' +
@@ -833,6 +863,10 @@ function renderSettingsPage(area) {
 
   if (_settingsSection === 'preferences') {
     panelHtml = buildPreferencesPanel();
+  } else if (_settingsSection === 'hygiene') {
+    // Universally accessible; the panel itself filters via canEditProject so
+    // non-admins only see groups for projects they lead or co-own.
+    panelHtml = buildProjectHygienePanel();
   } else if (!isAdminUser && !(isLeadUser && (_settingsSection === 'team' || _settingsSection === 'teamintro' || _settingsSection === 'reviewtypes' || _settingsSection === 'intake'))) {
     panelHtml = '<div class="empty-state">You do not have access to this section.</div>';
   } else {
@@ -924,10 +958,6 @@ function renderSettingsPage(area) {
 
   else if (_settingsSection === 'holidays') {
     panelHtml = buildHolidaysPanel();
-  }
-
-  else if (_settingsSection === 'hygiene') {
-    panelHtml = buildProjectHygienePanel();
   }
 
   else if (_settingsSection === 'timetracking') {
