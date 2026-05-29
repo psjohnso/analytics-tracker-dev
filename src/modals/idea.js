@@ -858,16 +858,53 @@ function renderIdeaReviewOE() {
     '</div>';
   }
 
+  // Beta: when the staffingPlanner feature is on, the existing
+  // collapsible "Team availability" expander is replaced by a richer
+  // ranked-candidates panel (see staffing-planner.js). Route buttons +
+  // promote flow are re-rendered through the same module so an armed
+  // "Promote with X as lead" button appears when a lead is picked.
+  var staffingOn = (typeof isFeatureOn === 'function' && isFeatureOn('staffingPlanner') && typeof window.spRenderStaffingPanel === 'function');
+
   var cards = ideas.map(function(p) {
     var ageLabel = p.start ? daysAgo(p.start) : '';
     var initials = (p.contact || '').split(' ').map(function(w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
     var priClass = p.priority === 'High' ? 'high' : (p.priority === 'Medium' ? 'med' : (p.priority === 'Low' ? 'low' : ''));
     var priChip = (p.priority && priClass) ? '<span class="oe-chip oe-chip--' + priClass + '">' + esc(p.priority) + '</span>' : '';
-    var routeBtns = routes.map(function(r) {
-      return '<button class="ir-route-btn" title="' + esc(r.tip) + '" onclick="promoteIdea(' + p.objectId + ', \'' + r.status + '\')">' +
-        '<span class="oe-pill oe-pill--' + r.pill + '">' + esc(r.status) + '</span>' +
-      '</button>';
-    }).join('');
+
+    var routeBlock;
+    var availBlock;
+    if (staffingOn) {
+      // Staffing panel replaces the Team availability expander.
+      availBlock = window.spRenderStaffingPanel(p);
+      // Route buttons rendered by the module — same set, but Active /
+      // Scheduled route through the promote modal when a lead is picked.
+      routeBlock =
+        '<div class="ir-route" id="sp-route-' + p.objectId + '">' +
+          window.spRenderRouteButtons(p.objectId, null) +
+        '</div>';
+    } else {
+      // Classic behavior — original route buttons + collapsible avail.
+      var routeBtns = routes.map(function(r) {
+        return '<button class="ir-route-btn" title="' + esc(r.tip) + '" onclick="promoteIdea(' + p.objectId + ', \'' + r.status + '\')">' +
+          '<span class="oe-pill oe-pill--' + r.pill + '">' + esc(r.status) + '</span>' +
+        '</button>';
+      }).join('');
+      routeBlock =
+        '<div class="ir-route">' +
+          '<span class="ir-route-label">Route to</span>' +
+          routeBtns +
+          '<button class="oe-btn oe-btn--ghost oe-btn--sm ir-edit" onclick="openFormModal(\'edit-project\', ' + p.objectId + ')">' +
+            '<svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg>Edit' +
+          '</button>' +
+        '</div>';
+      availBlock =
+        '<div class="ir-avail">' +
+          '<span class="ir-avail-toggle" onclick="toggleIdeaAvail(' + p.objectId + ')">' +
+            '<span id="idea-avail-arrow-' + p.objectId + '">▶</span> Team availability' +
+          '</span>' +
+          '<div id="idea-avail-body-' + p.objectId + '" style="display:none;margin-top:10px;"></div>' +
+        '</div>';
+    }
 
     return '<div class="oe-card ir-card" id="idea-card-' + p.objectId + '">' +
       '<div class="ir-card-top">' +
@@ -886,19 +923,10 @@ function renderIdeaReviewOE() {
         '<textarea id="idea-notes-' + p.objectId + '" class="ir-input" placeholder="Add a note before routing — saves automatically." onblur="autoSaveIdeaNote(this, ' + p.objectId + ')"></textarea>' +
         '<div class="ir-autosave"><span class="ir-autosave-dot"></span> No changes</div>' +
       '</div>' +
-      '<div class="ir-route">' +
-        '<span class="ir-route-label">Route to</span>' +
-        routeBtns +
-        '<button class="oe-btn oe-btn--ghost oe-btn--sm ir-edit" onclick="openFormModal(\'edit-project\', ' + p.objectId + ')">' +
-          '<svg class="icon" aria-hidden="true"><use href="#ph-pencil-simple"></use></svg>Edit' +
-        '</button>' +
-      '</div>' +
-      '<div class="ir-avail">' +
-        '<span class="ir-avail-toggle" onclick="toggleIdeaAvail(' + p.objectId + ')">' +
-          '<span id="idea-avail-arrow-' + p.objectId + '">▶</span> Team availability' +
-        '</span>' +
-        '<div id="idea-avail-body-' + p.objectId + '" style="display:none;margin-top:10px;"></div>' +
-      '</div>' +
+      // Beta: staffing panel renders here (above route); Classic: avail expander stays at the bottom (below route)
+      (staffingOn ? availBlock : '') +
+      routeBlock +
+      (staffingOn ? '' : availBlock) +
     '</div>';
   }).join('');
 

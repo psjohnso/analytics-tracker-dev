@@ -10,7 +10,7 @@
 // initialized at runtime by applyAppConfig() and stay in index.html.
 // ─────────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '1.70.0.0';
+const APP_VERSION = '1.71.0.0';
 
 // ── Three-tier access (admin / lead / member) via ArcGIS groups ──────────
 // Tier is resolved at login from the user's group memberships (highest wins).
@@ -222,6 +222,7 @@ var BETA_FEATURES = {
   projectReview: { flag: 'FEATURE_PROJECT_REVIEW', label: 'Project Review', desc: 'Recurring portfolio review tab — walk through projects with the people assigned, log notes/decisions/action items per cycle. Configurable review types (e.g., Data Intelligence weekly, Data Team biweekly).' },
   durationEstimate: { flag: 'FEATURE_DURATION_ESTIMATE', label: 'Project duration estimate', desc: 'Adds a live duration estimate to the project form. Predicts how long a project will take from the actual durations of similar completed projects (by category and partner department), with a suggested target end date and a confidence level. Self-updating as projects close.' },
   notifications: { flag: 'FEATURE_NOTIFICATIONS', label: 'Notifications & @mentions', desc: 'Adds a header inbox (🔔) and @mentions in the project journal. Type @ to mention a teammate in a project entry — they get an in-app notification. Notifications are pull-based (seen when you open the app); email/Teams delivery would be a later add.' },
+  staffingPlanner: { flag: 'FEATURE_STAFFING_PLANNER', label: 'Staffing planner on Idea Review', desc: 'On the Weekly Idea Review, replaces the "Team availability" expander with a ranked staffing panel. Candidates are scored 40% on-time × 40% completed × 20% recency from the team\'s history in the idea\'s category, with a calibrated finish date from Insights\' Schedule Multiplier. Pick a lead inline — Active/Scheduled routes confirm via a promote modal and write a [Staffing] entry to the project journal.' },
 };
 
 // ── Strategic Alignment Options ──────────────────────────────────────
