@@ -1754,6 +1754,39 @@ function renderProjectDetailOE(id) {
     (p.actual_end ? '<div class="oe-side-field"><div class="oe-side-label">Completed</div><div><span class="oe-mono" style="font-size:12px;">' + esc(p.actual_end) + '</span></div></div>' : '') +
   '</div>';
 
+  // Calibrated forecast — applies the team's learned Schedule Multiplier (from
+  // completed projects in this project's category, last 12 months) to project
+  // a realistic end date. Quietly omitted when there's no signal (no category,
+  // no planned dates, or <3 similar completed siblings).
+  if (typeof projectScheduleForecast === 'function') {
+    var fc = projectScheduleForecast(p);
+    if (fc) {
+      var calibFmt = (function() {
+        var d = new Date(fc.calibratedEnd + 'T12:00:00');
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      })();
+      var deltaWksAbs = Math.abs(fc.deltaWks);
+      var deltaLbl, deltaCol;
+      if (fc.deltaWks > 0.5) {
+        var lateWks = deltaWksAbs >= 1 ? Math.round(deltaWksAbs) : Number(deltaWksAbs.toFixed(1));
+        deltaLbl = '+' + lateWks + ' wk' + (Math.round(lateWks) === 1 ? '' : 's') + ' later';
+        deltaCol = 'var(--status-overdue-fg)';
+      } else if (fc.deltaWks < -0.5) {
+        var earlyWks = deltaWksAbs >= 1 ? Math.round(deltaWksAbs) : Number(deltaWksAbs.toFixed(1));
+        deltaLbl = '−' + earlyWks + ' wk' + (Math.round(earlyWks) === 1 ? '' : 's') + ' earlier';
+        deltaCol = 'var(--sage-700)';
+      } else {
+        deltaLbl = 'On plan';
+        deltaCol = 'var(--ink-7)';
+      }
+      html += '<div class="oe-card oe-side-card"><div class="oe-meta">Calibrated forecast' + (typeof calcInfoIcon === 'function' ? calcInfoIcon('calibMultiplier') : '') + '</div>' +
+        '<div class="oe-side-field"><div class="oe-side-label">Projected end</div><div><span class="oe-mono" style="font-size:12px;">' + esc(calibFmt) + '</span></div></div>' +
+        '<div class="oe-side-field"><div class="oe-side-label">vs original plan</div><div><span style="font-size:12px;color:' + deltaCol + ';font-weight:600;">' + deltaLbl + '</span></div></div>' +
+        '<div style="font-size:11px;color:var(--ink-5);margin-top:8px;line-height:1.45;">From <strong>' + fc.n + '</strong> completed ' + esc(fc.category) + ' project' + (fc.n === 1 ? '' : 's') + ' · <span class="oe-mono">' + fc.multiplier.toFixed(2) + '×</span> · <span style="color:' + fc.confidence.fg + ';font-weight:700;text-transform:uppercase;letter-spacing:0.03em;font-size:10px;">' + fc.confidence.label + '</span></div>' +
+      '</div>';
+    }
+  }
+
   // Effort card
   if (loggedHrs > 0 || estimatedHrs > 0) {
     html += '<div class="oe-card oe-side-card"><div class="oe-meta">Effort</div>' +

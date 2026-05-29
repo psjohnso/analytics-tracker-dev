@@ -149,6 +149,68 @@ function _calibConfChip(conf) {
     conf.bg + ';color:' + conf.fg + ';">' + conf.label + '</span>';
 }
 
+// Per-project calibrated forecast — applies the Schedule Multiplier learned
+// from completed projects in this project's category (last 12 months) to the
+// project's original planned weeks, producing a projected end date. Returns
+// null when there isn't enough signal: no category, no start/end dates, or
+// fewer than 3 comparable completed siblings.
+//
+// Original commitment (end_date) is used on both sides — siblings' actual ÷
+// original_planned, applied to this project's original end_date. working_due
+// drifts during a project's life so it's a noisier baseline; end_date is
+// locked at project creation and is the most stable signal. The resulting
+// projected end gets shown alongside working_due so a manager can compare
+// the three numbers (original / plan-of-record / calibrated).
+function projectScheduleForecast(p) {
+  if (!p || !p.start || !p.end) return null;
+  if (p.status === 'Complete' || p.status === 'Canceled') return null;
+  var category = p.category || '';
+  if (!category) return null;
+
+  var WK = 7 * 86400000;
+  var startMs = new Date(p.start + 'T12:00:00').getTime();
+  var endMs   = new Date(p.end   + 'T12:00:00').getTime();
+  var plannedWks = (endMs - startMs) / WK;
+  if (plannedWks <= 0) return null;
+
+  var nowMs = Date.now();
+  var twelveMoAgoMs = nowMs - 365 * 86400000;
+  var all = (typeof teamProjects === 'function' ? teamProjects() : (typeof PROJECTS !== 'undefined' ? PROJECTS : [])) || [];
+  var mults = [];
+  all.forEach(function(q) {
+    if (q.status !== 'Complete' || !q.actual_end || !q.start || !q.end) return;
+    if ((q.category || '') !== category) return;
+    var qActualMs = new Date(q.actual_end + 'T12:00:00').getTime();
+    if (qActualMs < twelveMoAgoMs) return;
+    var qStartMs = new Date(q.start + 'T12:00:00').getTime();
+    var qEndMs   = new Date(q.end   + 'T12:00:00').getTime();
+    var qPlannedWks = (qEndMs - qStartMs) / WK;
+    var qActualWks = (qActualMs - qStartMs) / WK;
+    if (qPlannedWks > 0 && qActualWks > 0) mults.push(qActualWks / qPlannedWks);
+  });
+
+  if (mults.length < 3) return null;
+  var median = _calibMedian(mults);
+  if (median == null || !isFinite(median) || median <= 0) return null;
+
+  var calibratedWks = plannedWks * median;
+  var calibratedEndMs = startMs + calibratedWks * WK;
+  var calibratedEnd = new Date(calibratedEndMs).toISOString().slice(0, 10);
+  var deltaWks = calibratedWks - plannedWks;
+
+  return {
+    plannedEnd:    p.end,
+    plannedWks:    plannedWks,
+    multiplier:    median,
+    n:             mults.length,
+    confidence:    _calibConf(mults.length),
+    calibratedWks: calibratedWks,
+    calibratedEnd: calibratedEnd,
+    deltaWks:      deltaWks,
+    category:      category
+  };
+}
+
 // Aggregate calibration projects by a key function.
 // Returns array of { key, n, nMult, medianPlanned, medianActual, mult, onTimePct, conf }.
 function _calibAggregate(items, keyFn) {
