@@ -1784,3 +1784,180 @@ body[data-theme="oe"] .oe-ins-tl-key, body[data-theme="oe-dark"] .oe-ins-tl-key 
 body[data-theme="oe"] .oe-ins-tl-dot, body[data-theme="oe-dark"] .oe-ins-tl-dot {
   width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 3px;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   TEAM LOAD + EFFORT SHAPE — OE polish (proof of pattern, 2026-05-28)
+   ────────────────────────────────────────────────────────────────────────
+   Overrides for the existing .team-load-page / .effort-shape-page renderers
+   without touching the JS. Brings them in line visually with Resources /
+   Forecast / Insights: editorial typography, OE KPI tiles, OE table chrome,
+   sage-tinted privacy / callout cards. Classic theme is unaffected.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Page typography — pick up the OE display font on big numbers; default to
+   Hanken on body. Classic .team-load-page sets font-family:'Lato'. */
+body[data-theme="oe"] .team-load-page, body[data-theme="oe-dark"] .team-load-page,
+body[data-theme="oe"] .effort-shape-page, body[data-theme="oe-dark"] .effort-shape-page {
+  font-family: var(--font-sans); color: var(--ink-7);
+}
+
+/* Lead sub-headline (the prose under the page title) — OE body-sm look */
+body[data-theme="oe"] .team-load-page .tl-lead, body[data-theme="oe-dark"] .team-load-page .tl-lead,
+body[data-theme="oe"] .effort-shape-page .tl-lead, body[data-theme="oe-dark"] .effort-shape-page .tl-lead {
+  font-size: 13px; line-height: 1.55; color: var(--ink-5); margin: 0 0 22px 0;
+}
+body[data-theme="oe"] .team-load-page .tl-lead em, body[data-theme="oe-dark"] .team-load-page .tl-lead em,
+body[data-theme="oe"] .effort-shape-page .tl-lead em, body[data-theme="oe-dark"] .effort-shape-page .tl-lead em {
+  font-family: var(--font-display); font-style: italic; color: var(--navy-500); font-size: 14px;
+}
+
+/* Section heads — eyebrow + clean h2 instead of the busy Classic style */
+body[data-theme="oe"] .team-load-page .tl-section, body[data-theme="oe-dark"] .team-load-page .tl-section,
+body[data-theme="oe"] .effort-shape-page .tl-section, body[data-theme="oe-dark"] .effort-shape-page .tl-section {
+  margin-bottom: 32px;
+}
+body[data-theme="oe"] .team-load-page .tl-section-head, body[data-theme="oe-dark"] .team-load-page .tl-section-head,
+body[data-theme="oe"] .effort-shape-page .tl-section-head, body[data-theme="oe-dark"] .effort-shape-page .tl-section-head {
+  display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+}
+body[data-theme="oe"] .team-load-page .tl-section-head h2, body[data-theme="oe-dark"] .team-load-page .tl-section-head h2,
+body[data-theme="oe"] .effort-shape-page .tl-section-head h2, body[data-theme="oe-dark"] .effort-shape-page .tl-section-head h2 {
+  font-family: var(--font-sans); font-size: 16px; font-weight: 600; color: var(--ink-7);
+  letter-spacing: -0.005em; margin: 0;
+}
+body[data-theme="oe"] .team-load-page .tl-section-head .tl-desc, body[data-theme="oe-dark"] .team-load-page .tl-section-head .tl-desc,
+body[data-theme="oe"] .effort-shape-page .tl-section-head .tl-desc, body[data-theme="oe-dark"] .effort-shape-page .tl-section-head .tl-desc {
+  font-size: 12px; color: var(--ink-5); font-style: normal;
+}
+
+/* Privacy box → OE info card (sage tint) */
+body[data-theme="oe"] .team-load-page .tl-privacy, body[data-theme="oe-dark"] .team-load-page .tl-privacy,
+body[data-theme="oe"] .effort-shape-page .tl-privacy, body[data-theme="oe-dark"] .effort-shape-page .tl-privacy {
+  background: var(--sage-100); border: 1px solid var(--sage-500); border-left: 3px solid var(--sage-500);
+  border-radius: var(--r-2); padding: 12px 16px; font-size: 12px; line-height: 1.55;
+  color: var(--sage-700); margin: 0 0 24px 0;
+}
+body[data-theme="oe"] .team-load-page .tl-privacy strong, body[data-theme="oe-dark"] .team-load-page .tl-privacy strong,
+body[data-theme="oe"] .effort-shape-page .tl-privacy strong, body[data-theme="oe-dark"] .effort-shape-page .tl-privacy strong {
+  color: var(--sage-700); font-weight: 700;
+}
+
+/* KPI cards — match Resources oe-cap-kpi pattern */
+body[data-theme="oe"] .team-load-page .kpi-row, body[data-theme="oe-dark"] .team-load-page .kpi-row,
+body[data-theme="oe"] .effort-shape-page .kpi-row, body[data-theme="oe-dark"] .effort-shape-page .kpi-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 28px;
+}
+body[data-theme="oe"] .team-load-page .res-kpi, body[data-theme="oe-dark"] .team-load-page .res-kpi,
+body[data-theme="oe"] .effort-shape-page .res-kpi, body[data-theme="oe-dark"] .effort-shape-page .res-kpi {
+  background: var(--ink-paper); border: 1px solid var(--ink-2); border-radius: var(--r-3); padding: 18px 20px;
+  box-shadow: none;
+}
+body[data-theme="oe"] .team-load-page .res-kpi .kpi-label, body[data-theme="oe-dark"] .team-load-page .res-kpi .kpi-label,
+body[data-theme="oe"] .effort-shape-page .res-kpi .kpi-label, body[data-theme="oe-dark"] .effort-shape-page .res-kpi .kpi-label {
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; color: var(--ink-5);
+  margin-bottom: 10px;
+}
+body[data-theme="oe"] .team-load-page .res-kpi .kpi-value, body[data-theme="oe-dark"] .team-load-page .res-kpi .kpi-value,
+body[data-theme="oe"] .effort-shape-page .res-kpi .kpi-value, body[data-theme="oe-dark"] .effort-shape-page .res-kpi .kpi-value {
+  font-size: 18px !important; line-height: 1.25 !important; font-weight: 600 !important;
+  color: var(--ink-7) !important; font-family: var(--font-sans) !important;
+}
+body[data-theme="oe"] .team-load-page .res-kpi .kpi-value span, body[data-theme="oe-dark"] .team-load-page .res-kpi .kpi-value span,
+body[data-theme="oe"] .effort-shape-page .res-kpi .kpi-value span, body[data-theme="oe-dark"] .effort-shape-page .res-kpi .kpi-value span {
+  color: var(--ink-5) !important; font-size: 11px !important; font-weight: 500 !important;
+  letter-spacing: 0.04em;
+}
+
+/* Tables — OE chrome with mono numbers and uppercase column heads */
+body[data-theme="oe"] .team-load-page .tl-tbl-wrap, body[data-theme="oe-dark"] .team-load-page .tl-tbl-wrap,
+body[data-theme="oe"] .effort-shape-page .tl-tbl-wrap, body[data-theme="oe-dark"] .effort-shape-page .tl-tbl-wrap {
+  background: var(--ink-paper); border: 1px solid var(--ink-2); border-radius: var(--r-3); overflow: hidden;
+  box-shadow: none;
+}
+body[data-theme="oe"] .team-load-page .tl-table, body[data-theme="oe-dark"] .team-load-page .tl-table,
+body[data-theme="oe"] .effort-shape-page .tl-table, body[data-theme="oe-dark"] .effort-shape-page .tl-table {
+  font-size: 13px;
+}
+body[data-theme="oe"] .team-load-page .tl-table th, body[data-theme="oe-dark"] .team-load-page .tl-table th,
+body[data-theme="oe"] .effort-shape-page .tl-table th, body[data-theme="oe-dark"] .effort-shape-page .tl-table th {
+  background: var(--ink-1); padding: 11px 16px; border-bottom: 1px solid var(--ink-2);
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; color: var(--ink-5);
+  text-align: left;
+}
+body[data-theme="oe"] .team-load-page .tl-table th.num, body[data-theme="oe-dark"] .team-load-page .tl-table th.num,
+body[data-theme="oe"] .effort-shape-page .tl-table th.num, body[data-theme="oe-dark"] .effort-shape-page .tl-table th.num {
+  text-align: right;
+}
+body[data-theme="oe"] .team-load-page .tl-table td, body[data-theme="oe-dark"] .team-load-page .tl-table td,
+body[data-theme="oe"] .effort-shape-page .tl-table td, body[data-theme="oe-dark"] .effort-shape-page .tl-table td {
+  padding: 11px 16px; border-bottom: 1px solid var(--ink-1); color: var(--ink-7); font-size: 12px;
+}
+body[data-theme="oe"] .team-load-page .tl-table td.num, body[data-theme="oe-dark"] .team-load-page .tl-table td.num,
+body[data-theme="oe"] .effort-shape-page .tl-table td.num, body[data-theme="oe-dark"] .effort-shape-page .tl-table td.num {
+  font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-7);
+}
+body[data-theme="oe"] .team-load-page .tl-table tr:last-child td, body[data-theme="oe-dark"] .team-load-page .tl-table tr:last-child td,
+body[data-theme="oe"] .effort-shape-page .tl-table tr:last-child td, body[data-theme="oe-dark"] .effort-shape-page .tl-table tr:last-child td {
+  border-bottom: 0;
+}
+body[data-theme="oe"] .team-load-page .tl-table tr:hover td, body[data-theme="oe-dark"] .team-load-page .tl-table tr:hover td,
+body[data-theme="oe"] .effort-shape-page .tl-table tr:hover td, body[data-theme="oe-dark"] .effort-shape-page .tl-table tr:hover td {
+  background: var(--ink-1);
+}
+/* Category / first-cell text — keep readable, slightly heavier */
+body[data-theme="oe"] .team-load-page .tl-table .tl-cat, body[data-theme="oe-dark"] .team-load-page .tl-table .tl-cat,
+body[data-theme="oe"] .effort-shape-page .tl-table .tl-cat, body[data-theme="oe-dark"] .effort-shape-page .tl-table .tl-cat {
+  font-weight: 600; color: var(--ink-7);
+}
+
+/* Share-of-team-time bar — restyle to OE muted tint */
+body[data-theme="oe"] .team-load-page .tl-share-bar, body[data-theme="oe-dark"] .team-load-page .tl-share-bar,
+body[data-theme="oe"] .effort-shape-page .tl-share-bar, body[data-theme="oe-dark"] .effort-shape-page .tl-share-bar {
+  display: inline-block; width: 80px; height: 7px; background: var(--ink-1); border-radius: 4px;
+  overflow: hidden; vertical-align: middle; margin-right: 8px;
+}
+body[data-theme="oe"] .team-load-page .tl-share-bar > div, body[data-theme="oe-dark"] .team-load-page .tl-share-bar > div,
+body[data-theme="oe"] .effort-shape-page .tl-share-bar > div, body[data-theme="oe-dark"] .effort-shape-page .tl-share-bar > div {
+  height: 100%; background: var(--navy-500); border-radius: 4px;
+}
+
+/* Filter row + scope chip — OE chip styling */
+body[data-theme="oe"] .team-load-page .tl-filter-row, body[data-theme="oe-dark"] .team-load-page .tl-filter-row,
+body[data-theme="oe"] .effort-shape-page .tl-filter-row, body[data-theme="oe-dark"] .effort-shape-page .tl-filter-row {
+  display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px 0; align-items: center;
+}
+body[data-theme="oe"] .team-load-page .tl-scope-chip, body[data-theme="oe-dark"] .team-load-page .tl-scope-chip,
+body[data-theme="oe"] .effort-shape-page .tl-scope-chip, body[data-theme="oe-dark"] .effort-shape-page .tl-scope-chip {
+  background: var(--navy-50); color: var(--navy-700); border: 1px solid var(--navy-100);
+  border-radius: var(--r-pill); padding: 4px 10px; font-size: 11px; font-weight: 600;
+}
+
+/* Closing callout — sage-tinted card matching other OE cards */
+body[data-theme="oe"] .team-load-page .tl-callout, body[data-theme="oe-dark"] .team-load-page .tl-callout,
+body[data-theme="oe"] .effort-shape-page .tl-callout, body[data-theme="oe-dark"] .effort-shape-page .tl-callout {
+  background: var(--ink-1); border: 1px solid var(--ink-2); border-radius: var(--r-3);
+  padding: 18px 22px; font-size: 13px; line-height: 1.6; color: var(--ink-6);
+}
+body[data-theme="oe"] .team-load-page .tl-callout strong, body[data-theme="oe-dark"] .team-load-page .tl-callout strong,
+body[data-theme="oe"] .effort-shape-page .tl-callout strong, body[data-theme="oe-dark"] .effort-shape-page .tl-callout strong {
+  color: var(--navy-700); font-weight: 700;
+}
+body[data-theme="oe"] .team-load-page .tl-callout ul, body[data-theme="oe-dark"] .team-load-page .tl-callout ul,
+body[data-theme="oe"] .effort-shape-page .tl-callout ul, body[data-theme="oe-dark"] .effort-shape-page .tl-callout ul {
+  margin: 10px 0 0 0; padding-left: 22px;
+}
+body[data-theme="oe"] .team-load-page .tl-callout li, body[data-theme="oe-dark"] .team-load-page .tl-callout li,
+body[data-theme="oe"] .effort-shape-page .tl-callout li, body[data-theme="oe-dark"] .effort-shape-page .tl-callout li {
+  margin: 5px 0;
+}
+
+/* Empty / diagnostic state */
+body[data-theme="oe"] .team-load-page .tl-empty, body[data-theme="oe-dark"] .team-load-page .tl-empty,
+body[data-theme="oe"] .effort-shape-page .tl-empty, body[data-theme="oe-dark"] .effort-shape-page .tl-empty {
+  background: var(--ink-paper); border: 1px dashed var(--ink-3); border-radius: var(--r-3);
+  padding: 28px 26px; color: var(--ink-5); font-size: 13px; line-height: 1.6;
+}
+body[data-theme="oe"] .team-load-page .tl-empty code, body[data-theme="oe-dark"] .team-load-page .tl-empty code,
+body[data-theme="oe"] .effort-shape-page .tl-empty code, body[data-theme="oe-dark"] .effort-shape-page .tl-empty code {
+  font-family: var(--font-mono); font-size: 11px; background: var(--ink-1); padding: 2px 6px; border-radius: 3px;
+}
