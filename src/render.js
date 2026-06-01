@@ -52,12 +52,13 @@ let activeFilters = {
 const STATUS_COLOR_MAP = {
   'Active': '#83AC16',              // Saguaro Green
   'Complete': '#0088FF',            // Sky Blue
-  'Canceled': '#B0B3AE',           // Monsoon Gray (darkened for visibility)
+  'Canceled': '#B0B3AE',            // Monsoon Gray (darkened for visibility)
   'Future': '#C24200',              // Sunset Orange
   'On Hold': '#FFDB22',             // Sun Yellow
   'Scheduled': '#9E0059',           // Cactus Fruit
   'Idea': '#E5D086',                // Sonoran Sand
-  'Pending': '#C24200',             // Sunset Orange
+  'Planned': '#9CA3AF',             // muted gray — committed but unscheduled
+  'Pending': '#C24200',             // Sunset Orange (legacy — task migration map handles new values)
   'Waiting for Response': '#002669',// Tucson Blue
 };
 // Okabe-Ito-derived alternates, used when UserPrefs.colorBlindMode is on.
@@ -73,7 +74,8 @@ const STATUS_COLOR_MAP_CB = {
   'On Hold': '#F0E442',              // Okabe yellow
   'Scheduled': '#CC79A7',            // reddish purple
   'Idea': '#E5D086',                 // sand (unchanged — light)
-  'Pending': '#D55E00',              // vermillion
+  'Planned': '#999999',              // neutral gray — committed but unscheduled
+  'Pending': '#D55E00',              // vermillion (legacy)
   'Waiting for Response': '#56B4E9'  // sky blue
 };
 // OE Redesign — subdued Tucson hues (the saturated "dot" colors). Used when an
@@ -87,7 +89,8 @@ const STATUS_COLOR_MAP_OE = {
   'On Hold': '#c89500',              // sun
   'Scheduled': '#1f3b6b',            // innovation
   'Idea': '#d4bc7a',                 // sand
-  'Pending': '#b85630',              // sunset
+  'Planned': '#8e8675',              // ink-4 — muted neutral for committed-but-unscheduled
+  'Pending': '#b85630',              // sunset (legacy)
   'Waiting for Response': '#3d5878', // steel
 };
 // STATUS_COLOR() returns a color for any status, including unknown ones.

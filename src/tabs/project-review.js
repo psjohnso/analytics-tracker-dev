@@ -282,8 +282,17 @@ function prGetTasksForProject(p, statusFilter, assigneeFilter, searchQuery) {
     if (!byPerson[who]) byPerson[who] = [];
     byPerson[who].push(t);
   }
-  // Sort each person's tasks: Active/InProgress first, then Pending/NotStarted, then OnHold/Waiting, then Complete/Canceled
-  var rank = { 'In Progress': 0, 'Active': 0, 'Not Started': 1, 'Pending': 1, 'Waiting for Response': 2, 'On Hold': 2, 'Complete': 3, 'Completed': 3, 'Canceled': 4, 'Cancelled': 4 };
+  // Sort each person's tasks: Active first, then Scheduled, Planned, then
+  // Waiting/On Hold, then Complete/Canceled. Legacy spellings included so
+  // sort survives any record that pre-dates the migration.
+  var rank = {
+    'Active': 0, 'In Progress': 0,
+    'Scheduled': 1,
+    'Planned': 2, 'Pending': 2, 'Not Started': 2,
+    'Waiting for Response': 3, 'On Hold': 3,
+    'Complete': 4, 'Completed': 4,
+    'Canceled': 5, 'Cancelled': 5
+  };
   Object.keys(byPerson).forEach(function(name) {
     byPerson[name].sort(function(a, b) {
       return ((rank[a.status] != null ? rank[a.status] : 5) - (rank[b.status] != null ? rank[b.status] : 5)) ||
@@ -632,7 +641,7 @@ function renderProjectReview(area) {
       statusCounts[s] = (statusCounts[s] || 0) + 1;
       totalForAll++;
     });
-    statusOrder = ['Active', 'In Progress', 'Pending', 'Not Started', 'Waiting for Response', 'On Hold', 'Complete', 'Canceled'];
+    statusOrder = ['Planned', 'Scheduled', 'Active', 'Waiting for Response', 'On Hold', 'Complete', 'Canceled'];
   } else {
     assigneeNarrowed.forEach(function(p) {
       var s = p.status || '(none)';
@@ -916,20 +925,20 @@ function renderProjectReviewCard(p, rt) {
   var byPerson = prGetTasksForProject(p, taskStatusFilter, taskAssigneeFilter, taskSearchFilter);
   var personNames = Object.keys(byPerson);
   var taskCount = personNames.reduce(function(s, n) { return s + byPerson[n].length; }, 0);
-  var counts = { Complete:0, Active:0, Pending:0, Other:0 };
+  var counts = { Complete:0, Active:0, Planned:0, Other:0 };
   personNames.forEach(function(n) {
     byPerson[n].forEach(function(t) {
       var s = t.status || '';
       if (s === 'Complete' || s === 'Completed') counts.Complete++;
       else if (s === 'Active' || s === 'In Progress') counts.Active++;
-      else if (s === 'Pending' || s === 'Not Started') counts.Pending++;
+      else if (s === 'Planned' || s === 'Scheduled' || s === 'Pending' || s === 'Not Started') counts.Planned++;
       else counts.Other++;
     });
   });
   var summaryParts = [taskCount + ' task' + (taskCount === 1 ? '' : 's')];
   if (counts.Complete) summaryParts.push(counts.Complete + ' complete');
   if (counts.Active) summaryParts.push(counts.Active + ' active');
-  if (counts.Pending) summaryParts.push(counts.Pending + ' pending');
+  if (counts.Planned) summaryParts.push(counts.Planned + ' planned');
   if (counts.Other) summaryParts.push(counts.Other + ' other');
 
   var openCls = (_prTasksOpen[pn] === false) ? '' : ' open';

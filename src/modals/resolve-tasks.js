@@ -14,7 +14,10 @@
 // ─────────────────────────────────────────────────────────────────────
 
 // Statuses that count as "open" for a task (means it still needs resolution).
-var RT_OPEN_TASK_STATUSES = ['Active', 'On Hold', 'Waiting for Response', 'Scheduled', 'Pending'];
+// Aligned with the 2026 task-status rework — Planned and Scheduled are the
+// two pre-Active open states; Pending lingers only as a legacy value that
+// agolTaskToLocal normalizes to Planned at load.
+var RT_OPEN_TASK_STATUSES = ['Planned', 'Scheduled', 'Active', 'Waiting for Response', 'On Hold'];
 
 // Statuses that count as "closed" for a project (its open tasks become orphans).
 var RT_CLOSED_PROJECT_STATUSES = ['Complete', 'Canceled'];

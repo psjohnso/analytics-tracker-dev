@@ -2053,7 +2053,72 @@ function openFormModal(mode, id) {
       }
     });
   }
+  // Task forms (not projects): wire the 2026 task-status soft prompts —
+  // Scheduled+no-date / future-start+Planned / On Hold→note suggestion.
+  if (!isProject) fmWireTaskStatusPrompts();
   fmWireA11y(); // associate labels, mark required, enable inline blur validation
+}
+
+// ── Task status soft prompts (2026 status rework) ────────────────────────
+// Three non-blocking hints that nudge the user toward consistent status +
+// date combinations without preventing save. Re-runs on every status/date
+// change; idempotent (each hint container is replaced on each update).
+function fmWireTaskStatusPrompts() {
+  var statusEl = document.getElementById('fm-status');
+  var startEl  = document.getElementById('fm-start');
+  if (!statusEl || !startEl) return;
+
+  function todayStr() {
+    var d = new Date(); d.setHours(0, 0, 0, 0);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function setHint(afterEl, id, html, actionBtnHtml) {
+    var existing = document.getElementById(id);
+    if (existing) existing.remove();
+    if (!html) return;
+    var hint = document.createElement('div');
+    hint.id = id;
+    hint.className = 'fm-soft-hint';
+    hint.innerHTML = '<span class="fm-soft-hint-icon">ⓘ</span><span>' + html + '</span>' + (actionBtnHtml || '');
+    afterEl.parentNode.insertBefore(hint, afterEl.nextSibling);
+  }
+  function update() {
+    var st = statusEl.value;
+    var sd = startEl.value;
+
+    // Hint A — Scheduled with no start date.
+    if (st === 'Scheduled' && !sd) {
+      setHint(startEl, 'fm-hint-start',
+        'Scheduled tasks usually have a start date. Set one to plan when this begins.', '');
+    } else {
+      setHint(startEl, 'fm-hint-start', '');
+    }
+
+    // Hint B / C — share the same slot under the Status select.
+    if (st === 'On Hold') {
+      setHint(statusEl, 'fm-hint-status',
+        '<strong>On Hold:</strong> note the reason in the description so the team knows what\'s blocking.', '');
+    } else if (st === 'Planned' && sd && sd > todayStr()) {
+      setHint(statusEl, 'fm-hint-status',
+        'Start date is in the future. Mark this task as <strong>Scheduled</strong>?',
+        '<button type="button" class="fm-soft-hint-btn" onclick="fmApplyScheduledHint()">Use Scheduled</button>');
+    } else {
+      setHint(statusEl, 'fm-hint-status', '');
+    }
+  }
+
+  statusEl.addEventListener('change', update);
+  startEl.addEventListener('change', update);
+  startEl.addEventListener('input', update);
+  update(); // initial pass in case existing state already warrants a hint
+}
+
+// Helper called by the "Use Scheduled" hint button.
+function fmApplyScheduledHint() {
+  var s = document.getElementById('fm-status');
+  if (!s) return;
+  s.value = 'Scheduled';
+  s.dispatchEvent(new Event('change'));
 }
 
 function closeFormModal() {

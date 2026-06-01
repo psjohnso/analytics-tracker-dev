@@ -266,6 +266,17 @@ function agolProjectToLocal(feature) {
   return local;
 }
 
+// Deprecated task statuses → canonical seven (2026 status rework).
+// Old values may linger in records that pre-date the migration notebook;
+// translate at load so every downstream consumer reads a current value.
+// Source of truth for the canonical list: enums.js's taskStatuses seed.
+const _TASK_STATUS_MIGRATIONS = {
+  'In Progress': 'Active',
+  'Not Started': 'Planned',
+  'Pending':     'Planned',
+  'Completed':   'Complete'
+};
+
 function agolTaskToLocal(feature) {
   const attrs = feature.attributes || {};
   const local = { objectId: attrs.ObjectId };
@@ -280,6 +291,10 @@ function agolTaskToLocal(feature) {
   if (local.task_number    != null) local.idx        = local.task_number;
   if (local.start_date     != null) local.start      = local.start_date;
   if (local.due_date       != null) local.due        = local.due_date;
+  // Normalize deprecated task statuses to the canonical seven.
+  if (local.status && _TASK_STATUS_MIGRATIONS[local.status]) {
+    local.status = _TASK_STATUS_MIGRATIONS[local.status];
+  }
   // Ensure hours_worked is numeric (this is the primary hours field for calculations)
   local.hours_worked = parseFloat(local.hours_worked) || 0;
   return local;

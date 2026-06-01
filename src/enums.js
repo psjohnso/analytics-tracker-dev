@@ -28,8 +28,13 @@ function getEnums() {
     _customProjCategories.map(function(c) { return c.name; }),
     PROJECTS.map(p => p.category)
   );
+  // Canonical task statuses (2026 rework — see CHANGELOG / migration notebook).
+  // Ordered roughly by lifecycle: Planned → Scheduled → Active → Complete,
+  // with Waiting for Response / On Hold as branches and Canceled as terminal.
+  // Deprecated values ('In Progress', 'Not Started', 'Pending', 'Completed')
+  // are normalized away in agolTaskToLocal — they should never reach this merge.
   const taskStatuses   = mergeEnums(
-    ['Active','On Hold','Pending','Waiting for Response','Complete','Canceled'],
+    ['Planned','Scheduled','Active','Waiting for Response','On Hold','Complete','Canceled'],
     TASKS.map(t => t.status)
   );
   const taskPriorities = mergeEnums(

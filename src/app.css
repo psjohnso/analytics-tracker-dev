@@ -5319,6 +5319,12 @@ body[data-theme="dark"] .confirm-dialog.danger .confirm-title { color: #F87171; 
   .pr-view-toggle { flex: 1 1 100%; }
 }
 
+/* ── Task-form soft hints (2026 status rework) ─────────────────────── */
+.fm-soft-hint{display:flex;align-items:center;gap:8px;margin-top:6px;padding:7px 12px;background:#FEF9C3;border:1px solid #FDE68A;border-radius:6px;font-size:12px;color:#854D0E;line-height:1.4;}
+.fm-soft-hint-icon{font-weight:700;font-size:13px;}
+.fm-soft-hint-btn{margin-left:auto;padding:4px 10px;background:var(--navy,#002669);color:#fff;border:0;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;font-family:Lato,'Hanken Grotesk',sans-serif;white-space:nowrap;}
+.fm-soft-hint-btn:hover{background:#001b4f;}
+
 /* ── Staffing planner (beta) — OE Weekly Idea Review ───────────────── */
 .sp-panel{margin-top:16px;background:#fcfaf3;border:1px solid #e7ddc1;border-radius:8px;overflow:hidden;font-family:'Hanken Grotesk',-apple-system,sans-serif;}
 .sp-panel-head{padding:14px 18px;display:flex;align-items:flex-end;justify-content:space-between;gap:14px;border-bottom:1px solid #e7ddc1;background:#f9f5e8;flex-wrap:wrap;}
