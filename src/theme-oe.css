@@ -36,13 +36,18 @@ body[data-theme="oe"] {
   /* subdued Tucson accents */
   --tucson-innovation:#1f3b6b; --tucson-sky:#4a7fae; --tucson-saguaro:#8aa050; --tucson-sunset:#b85630;
   --tucson-sun:#c89500; --tucson-cactus:#8a4c70; --tucson-night:#3d2e55; --tucson-sand:#d4bc7a; --tucson-monsoon:#b8b9b3;
-  /* semantic status */
-  --status-active-bg:#eaefd9;   --status-active-fg:#4d6310;   --status-active-dot:var(--tucson-saguaro);
-  --status-future-bg:#dfe8f0;   --status-future-fg:#2a4d70;   --status-future-dot:var(--tucson-sky);
-  --status-complete-bg:#ebe2eb; --status-complete-fg:#4d2a4d; --status-complete-dot:var(--tucson-cactus);
-  --status-hold-bg:#f5ecc7;     --status-hold-fg:#6e5200;     --status-hold-dot:var(--tucson-sun);
-  --status-canceled-bg:#e8e8e4; --status-canceled-fg:#5a5d52; --status-canceled-dot:var(--tucson-monsoon);
-  --status-overdue-bg:#f3dccc;  --status-overdue-fg:#6e2a0a;  --status-overdue-dot:var(--tucson-sunset);
+  /* semantic status — one tinted-bg + deep-fg + saturated-dot triple per status,
+     so every rendering surface (pill, dot, bar, chip) reaches the same colors. */
+  --status-active-bg:#eaefd9;    --status-active-fg:#4d6310;    --status-active-dot:var(--tucson-saguaro);
+  --status-scheduled-bg:#dde3ee; --status-scheduled-fg:#1a2f54; --status-scheduled-dot:var(--tucson-innovation);
+  --status-planned-bg:#ece9e0;   --status-planned-fg:#4a4434;   --status-planned-dot:#8e8675;
+  --status-future-bg:#dfe8f0;    --status-future-fg:#2a4d70;    --status-future-dot:var(--tucson-sky);
+  --status-waiting-bg:#fae5d8;   --status-waiting-fg:#6e2a0a;   --status-waiting-dot:var(--tucson-sunset);
+  --status-hold-bg:#f5ecc7;      --status-hold-fg:#6e5200;      --status-hold-dot:var(--tucson-sun);
+  --status-complete-bg:#ebe2eb;  --status-complete-fg:#4d2a4d;  --status-complete-dot:var(--tucson-cactus);
+  --status-canceled-bg:#e8e8e4;  --status-canceled-fg:#5a5d52;  --status-canceled-dot:var(--tucson-monsoon);
+  --status-idea-bg:#f2e8cf;      --status-idea-fg:#6b5826;      --status-idea-dot:var(--tucson-sand);
+  --status-overdue-bg:#f3dccc;   --status-overdue-fg:#6e2a0a;   --status-overdue-dot:var(--tucson-sunset);
   /* priority */
   --priority-high-bg:#f3dccc; --priority-high-fg:#6e2a0a;
   --priority-med-bg:#f5ecc7;  --priority-med-fg:#6e5200;
@@ -79,12 +84,16 @@ body[data-theme="oe-dark"] {
   --sage-50:#1a2818; --sage-100:#1f311c; --sage-300:#87a07f; --sage-500:#9ec096; --sage-700:#c4d8bd;
   --tucson-innovation:#1f3b6b; --tucson-sky:#4a7fae; --tucson-saguaro:#8aa050; --tucson-sunset:#b85630;
   --tucson-sun:#c89500; --tucson-cactus:#8a4c70; --tucson-night:#3d2e55; --tucson-sand:#d4bc7a; --tucson-monsoon:#b8b9b3;
-  --status-active-bg:#16291c;   --status-active-fg:#c4d68a;   --status-active-dot:#a8c060;
-  --status-future-bg:#122a44;   --status-future-fg:#9ec5e8;   --status-future-dot:#6aa3d4;
-  --status-complete-bg:#2a1c33; --status-complete-fg:#d8b8d5; --status-complete-dot:#9c6b95;
-  --status-hold-bg:#2a2510;     --status-hold-fg:#e6c860;     --status-hold-dot:#d4a830;
-  --status-canceled-bg:#1f2638; --status-canceled-fg:#b8b9b3; --status-canceled-dot:#8a8b86;
-  --status-overdue-bg:#2e1812;  --status-overdue-fg:#e89a73;  --status-overdue-dot:#d06a40;
+  --status-active-bg:#16291c;    --status-active-fg:#c4d68a;    --status-active-dot:#a8c060;
+  --status-scheduled-bg:#15203a; --status-scheduled-fg:#9ab1d8; --status-scheduled-dot:#5d78a3;
+  --status-planned-bg:#252319;   --status-planned-fg:#b3ab95;   --status-planned-dot:#8e8675;
+  --status-future-bg:#122a44;    --status-future-fg:#9ec5e8;    --status-future-dot:#6aa3d4;
+  --status-waiting-bg:#2e1812;   --status-waiting-fg:#e89a73;   --status-waiting-dot:#d06a40;
+  --status-hold-bg:#2a2510;      --status-hold-fg:#e6c860;      --status-hold-dot:#d4a830;
+  --status-complete-bg:#2a1c33;  --status-complete-fg:#d8b8d5;  --status-complete-dot:#9c6b95;
+  --status-canceled-bg:#1f2638;  --status-canceled-fg:#b8b9b3;  --status-canceled-dot:#8a8b86;
+  --status-idea-bg:#2d2616;      --status-idea-fg:#d4bc7a;      --status-idea-dot:#bba56a;
+  --status-overdue-bg:#2e1812;   --status-overdue-fg:#e89a73;   --status-overdue-dot:#d06a40;
   --priority-high-bg:#2e1812; --priority-high-fg:#e89a73;
   --priority-med-bg:#2a2510;  --priority-med-fg:#e6c860;
   --priority-low-bg:#16291c;  --priority-low-fg:#c4d68a;
@@ -141,22 +150,31 @@ body[data-theme="oe"], body[data-theme="oe-dark"] {
 
 /* ───────── Semantic class overrides (baked hex → Laura's palette, both themes) ─────────
    These classes carry hardcoded colors in app.css, so they need explicit re-maps.
-   Referencing the tokens means each rule serves light + dark automatically. */
+   One rule per canonical status — no more conflation between Scheduled/Future,
+   Waiting/Hold, or Idea/Hold. Deprecated values map to their canonical equivalent. */
 body[data-theme="oe"] .status-Active,        body[data-theme="oe-dark"] .status-Active,
 body[data-theme="oe"] .status-In\.Progress,  body[data-theme="oe-dark"] .status-In\.Progress {
-  background: var(--status-active-bg);   color: var(--status-active-fg); }
-body[data-theme="oe"] .status-Future,        body[data-theme="oe-dark"] .status-Future,
+  background: var(--status-active-bg);    color: var(--status-active-fg); }
 body[data-theme="oe"] .status-Scheduled,     body[data-theme="oe-dark"] .status-Scheduled {
-  background: var(--status-future-bg);   color: var(--status-future-fg); }
-body[data-theme="oe"] .status-Complete,      body[data-theme="oe-dark"] .status-Complete {
-  background: var(--status-complete-bg); color: var(--status-complete-fg); }
-body[data-theme="oe"] .status-On\.Hold,      body[data-theme="oe-dark"] .status-On\.Hold,
+  background: var(--status-scheduled-bg); color: var(--status-scheduled-fg); }
+body[data-theme="oe"] .status-Planned,       body[data-theme="oe-dark"] .status-Planned,
 body[data-theme="oe"] .status-Pending,       body[data-theme="oe-dark"] .status-Pending,
-body[data-theme="oe"] .status-Waiting,       body[data-theme="oe-dark"] .status-Waiting,
+body[data-theme="oe"] .status-Not\.Started,  body[data-theme="oe-dark"] .status-Not\.Started {
+  background: var(--status-planned-bg);   color: var(--status-planned-fg); }
+body[data-theme="oe"] .status-Future,        body[data-theme="oe-dark"] .status-Future {
+  background: var(--status-future-bg);    color: var(--status-future-fg); }
+body[data-theme="oe"] .status-Waiting,       body[data-theme="oe-dark"] .status-Waiting {
+  background: var(--status-waiting-bg);   color: var(--status-waiting-fg); }
+body[data-theme="oe"] .status-On\.Hold,      body[data-theme="oe-dark"] .status-On\.Hold {
+  background: var(--status-hold-bg);      color: var(--status-hold-fg); }
+body[data-theme="oe"] .status-Complete,      body[data-theme="oe-dark"] .status-Complete,
+body[data-theme="oe"] .status-Completed,     body[data-theme="oe-dark"] .status-Completed {
+  background: var(--status-complete-bg);  color: var(--status-complete-fg); }
+body[data-theme="oe"] .status-Canceled,      body[data-theme="oe-dark"] .status-Canceled,
+body[data-theme="oe"] .status-Cancelled,     body[data-theme="oe-dark"] .status-Cancelled {
+  background: var(--status-canceled-bg);  color: var(--status-canceled-fg); }
 body[data-theme="oe"] .status-Idea,          body[data-theme="oe-dark"] .status-Idea {
-  background: var(--status-hold-bg);     color: var(--status-hold-fg); }
-body[data-theme="oe"] .status-Canceled,      body[data-theme="oe-dark"] .status-Canceled {
-  background: var(--status-canceled-bg); color: var(--status-canceled-fg); }
+  background: var(--status-idea-bg);      color: var(--status-idea-fg); }
 body[data-theme="oe"] .priority-High,        body[data-theme="oe-dark"] .priority-High {
   background: var(--priority-high-bg);   color: var(--priority-high-fg); }
 body[data-theme="oe"] .priority-Medium,      body[data-theme="oe-dark"] .priority-Medium {
@@ -340,11 +358,23 @@ body[data-theme="oe"] .empty-state, body[data-theme="oe-dark"] .empty-state {
 
 /* My Work compact-row status pill hardcodes its own bg/fg (no STATUS_COLOR), so
    colour it per status via data-status. Text is already dark (ink-7) from the
-   .status-pill rule; this supplies Laura's tinted bg. */
+   .status-pill rule; this supplies Laura's tinted bg.
+   Every canonical status has a rule so list/card/detail pills land on the
+   same color family as the timeline bars / STATUS_COLOR_MAP_OE values. */
 body[data-theme="oe"] .status-pill[data-status="Active"], body[data-theme="oe-dark"] .status-pill[data-status="Active"] { background: var(--status-active-bg) !important; }
+body[data-theme="oe"] .status-pill[data-status="Scheduled"], body[data-theme="oe-dark"] .status-pill[data-status="Scheduled"] { background: var(--status-scheduled-bg) !important; }
+body[data-theme="oe"] .status-pill[data-status="Planned"], body[data-theme="oe-dark"] .status-pill[data-status="Planned"] { background: var(--status-planned-bg) !important; }
+body[data-theme="oe"] .status-pill[data-status="Future"], body[data-theme="oe-dark"] .status-pill[data-status="Future"] { background: var(--status-future-bg) !important; }
+body[data-theme="oe"] .status-pill[data-status="Waiting for Response"], body[data-theme="oe-dark"] .status-pill[data-status="Waiting for Response"] { background: var(--status-waiting-bg) !important; }
 body[data-theme="oe"] .status-pill[data-status="On Hold"], body[data-theme="oe-dark"] .status-pill[data-status="On Hold"] { background: var(--status-hold-bg) !important; }
-body[data-theme="oe"] .status-pill[data-status="Waiting for Response"], body[data-theme="oe-dark"] .status-pill[data-status="Waiting for Response"] { background: var(--status-future-bg) !important; }
 body[data-theme="oe"] .status-pill[data-status="Complete"], body[data-theme="oe-dark"] .status-pill[data-status="Complete"] { background: var(--status-complete-bg) !important; }
+body[data-theme="oe"] .status-pill[data-status="Canceled"], body[data-theme="oe-dark"] .status-pill[data-status="Canceled"] { background: var(--status-canceled-bg) !important; }
+body[data-theme="oe"] .status-pill[data-status="Idea"], body[data-theme="oe-dark"] .status-pill[data-status="Idea"] { background: var(--status-idea-bg) !important; }
+/* Deprecated values still in legacy records map to their canonical equivalent. */
+body[data-theme="oe"] .status-pill[data-status="In Progress"], body[data-theme="oe-dark"] .status-pill[data-status="In Progress"] { background: var(--status-active-bg) !important; }
+body[data-theme="oe"] .status-pill[data-status="Not Started"], body[data-theme="oe-dark"] .status-pill[data-status="Not Started"] { background: var(--status-planned-bg) !important; }
+body[data-theme="oe"] .status-pill[data-status="Pending"], body[data-theme="oe-dark"] .status-pill[data-status="Pending"] { background: var(--status-planned-bg) !important; }
+body[data-theme="oe"] .status-pill[data-status="Completed"], body[data-theme="oe-dark"] .status-pill[data-status="Completed"] { background: var(--status-complete-bg) !important; }
 
 /* My Work KPI row → Laura's KPI card: meta label on top, large mono value below,
    left-aligned on the card surface. The 5 cards + metrics already exist (Active
@@ -1113,21 +1143,25 @@ body[data-theme="oe"] .oe-pill, body[data-theme="oe-dark"] .oe-pill {
 body[data-theme="oe"] .oe-pill::before, body[data-theme="oe-dark"] .oe-pill::before {
   content: ''; width: 6px; height: 6px; border-radius: 50%; flex: 0 0 auto; opacity: 1;
 }
-body[data-theme="oe"] .oe-pill--idea, body[data-theme="oe-dark"] .oe-pill--idea          { background: var(--status-hold-bg);     color: var(--status-hold-fg); }
-body[data-theme="oe"] .oe-pill--idea::before, body[data-theme="oe-dark"] .oe-pill--idea::before { background: var(--status-hold-dot); }
-body[data-theme="oe"] .oe-pill--active, body[data-theme="oe-dark"] .oe-pill--active      { background: var(--status-active-bg);   color: var(--status-active-fg); }
+body[data-theme="oe"] .oe-pill--idea, body[data-theme="oe-dark"] .oe-pill--idea          { background: var(--status-idea-bg);      color: var(--status-idea-fg); }
+body[data-theme="oe"] .oe-pill--idea::before, body[data-theme="oe-dark"] .oe-pill--idea::before { background: var(--status-idea-dot); }
+body[data-theme="oe"] .oe-pill--active, body[data-theme="oe-dark"] .oe-pill--active      { background: var(--status-active-bg);    color: var(--status-active-fg); }
 body[data-theme="oe"] .oe-pill--active::before, body[data-theme="oe-dark"] .oe-pill--active::before { background: var(--status-active-dot); }
-body[data-theme="oe"] .oe-pill--scheduled, body[data-theme="oe-dark"] .oe-pill--scheduled,
-body[data-theme="oe"] .oe-pill--future, body[data-theme="oe-dark"] .oe-pill--future       { background: var(--status-future-bg);   color: var(--status-future-fg); }
-body[data-theme="oe"] .oe-pill--scheduled::before, body[data-theme="oe-dark"] .oe-pill--scheduled::before,
+body[data-theme="oe"] .oe-pill--scheduled, body[data-theme="oe-dark"] .oe-pill--scheduled { background: var(--status-scheduled-bg); color: var(--status-scheduled-fg); }
+body[data-theme="oe"] .oe-pill--scheduled::before, body[data-theme="oe-dark"] .oe-pill--scheduled::before { background: var(--status-scheduled-dot); }
+body[data-theme="oe"] .oe-pill--planned, body[data-theme="oe-dark"] .oe-pill--planned    { background: var(--status-planned-bg);   color: var(--status-planned-fg); }
+body[data-theme="oe"] .oe-pill--planned::before, body[data-theme="oe-dark"] .oe-pill--planned::before { background: var(--status-planned-dot); }
+body[data-theme="oe"] .oe-pill--future, body[data-theme="oe-dark"] .oe-pill--future       { background: var(--status-future-bg);    color: var(--status-future-fg); }
 body[data-theme="oe"] .oe-pill--future::before, body[data-theme="oe-dark"] .oe-pill--future::before { background: var(--status-future-dot); }
-body[data-theme="oe"] .oe-pill--hold, body[data-theme="oe-dark"] .oe-pill--hold           { background: var(--status-hold-bg);     color: var(--status-hold-fg); }
+body[data-theme="oe"] .oe-pill--waiting, body[data-theme="oe-dark"] .oe-pill--waiting    { background: var(--status-waiting-bg);   color: var(--status-waiting-fg); }
+body[data-theme="oe"] .oe-pill--waiting::before, body[data-theme="oe-dark"] .oe-pill--waiting::before { background: var(--status-waiting-dot); }
+body[data-theme="oe"] .oe-pill--hold, body[data-theme="oe-dark"] .oe-pill--hold           { background: var(--status-hold-bg);      color: var(--status-hold-fg); }
 body[data-theme="oe"] .oe-pill--hold::before, body[data-theme="oe-dark"] .oe-pill--hold::before { background: var(--status-hold-dot); }
-body[data-theme="oe"] .oe-pill--complete, body[data-theme="oe-dark"] .oe-pill--complete   { background: var(--status-complete-bg); color: var(--status-complete-fg); }
+body[data-theme="oe"] .oe-pill--complete, body[data-theme="oe-dark"] .oe-pill--complete   { background: var(--status-complete-bg);  color: var(--status-complete-fg); }
 body[data-theme="oe"] .oe-pill--complete::before, body[data-theme="oe-dark"] .oe-pill--complete::before { background: var(--status-complete-dot); }
-body[data-theme="oe"] .oe-pill--canceled, body[data-theme="oe-dark"] .oe-pill--canceled   { background: var(--status-canceled-bg); color: var(--status-canceled-fg); }
+body[data-theme="oe"] .oe-pill--canceled, body[data-theme="oe-dark"] .oe-pill--canceled   { background: var(--status-canceled-bg);  color: var(--status-canceled-fg); }
 body[data-theme="oe"] .oe-pill--canceled::before, body[data-theme="oe-dark"] .oe-pill--canceled::before { background: var(--status-canceled-dot); }
-body[data-theme="oe"] .oe-pill--overdue, body[data-theme="oe-dark"] .oe-pill--overdue     { background: var(--status-overdue-bg);  color: var(--status-overdue-fg); }
+body[data-theme="oe"] .oe-pill--overdue, body[data-theme="oe-dark"] .oe-pill--overdue     { background: var(--status-overdue-bg);   color: var(--status-overdue-fg); }
 body[data-theme="oe"] .oe-pill--overdue::before, body[data-theme="oe-dark"] .oe-pill--overdue::before { background: var(--status-overdue-dot); }
 
 /* Chips (.oe-chip) — base shape + priority variants. */
