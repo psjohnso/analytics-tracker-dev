@@ -1803,13 +1803,34 @@ function buildTaskForm(t) {
   const projTitles = PROJECTS.filter(function(p) {
     return p.status !== 'Canceled' && p.status !== 'Complete' && p.status !== 'Idea';
   }).map(function(p) { return p.title; }).sort();
+  // Milestone flag — a task with is_milestone=true is a date event, not a
+  // piece of work. The form layout adjusts (start date hides; status list
+  // narrows to Planned / Scheduled / Complete / Canceled) when the box is
+  // checked. Toggle handled by fmWireMilestoneToggle() after mount.
+  var isMs = !!(t && t.is_milestone);
+  var msStatusOpts = ['Planned', 'Scheduled', 'Complete', 'Canceled'];
+  var statusSelectFull = fmSelect('fm-status', FM_TASK_STATUSES, v('status'), 'Select status…');
+  var statusSelectMs   = fmSelect('fm-status', msStatusOpts,     v('status'), 'Select status…');
+  var milestoneCheckbox =
+    '<div class="fm-grid" style="margin-bottom:14px;">' +
+      '<label class="fm-milestone-check' + (isMs ? ' checked' : '') + '" for="fm-is-milestone">' +
+        '<input type="checkbox" id="fm-is-milestone"' + (isMs ? ' checked' : '') + '>' +
+        '<svg width="14" height="14" viewBox="0 0 28 28" aria-hidden="true">' +
+          '<polygon points="14,2 26,14 14,26 2,14" fill="' + (isMs ? 'var(--navy,#002669)' : 'none') + '" stroke="var(--navy,#002669)" stroke-width="2.5"/>' +
+        '</svg>' +
+        '<span>This is a milestone</span>' +
+        '<span class="fm-milestone-hint">A milestone is a single-date event — start date hides, status list shortens.</span>' +
+      '</label>' +
+    '</div>';
+
   return '<div class="fm-section-label">Basic Info</div>' +
     '<div class="fm-grid">' +
       fmField('Title', fmInput('fm-title-val', v('title'), 'Task title…'), true, true) +
-      fmField('Status', fmSelect('fm-status', FM_TASK_STATUSES, v('status'), 'Select status…'), true) +
+      fmField('Status', '<span id="fm-status-wrap" data-ms-status-full="' + esc(statusSelectFull).replace(/"/g, '&quot;') + '" data-ms-status-narrow="' + esc(statusSelectMs).replace(/"/g, '&quot;') + '">' + (isMs ? statusSelectMs : statusSelectFull) + '</span>', true) +
       fmField('Priority', fmSelect('fm-priority', FM_TASK_PRIORITIES, v('priority'), 'Select priority…')) +
       fmField('Assignee', fmSelect('fm-assignee', FM_ACTIVE_MEMBERS || FM_TASK_ASSIGNEES, v('assignee'), 'Select assignee…'), true) +
     '</div>' +
+    milestoneCheckbox +
     '<div class="fm-section-label">Details</div>' +
     '<div class="fm-grid">' +
       fmField('Description', fmMdTextarea('fm-description', v('description'), 'Task description…', 3, 4000), true, true) +
@@ -1827,11 +1848,13 @@ function buildTaskForm(t) {
         fmField('Depends on', '<div id="fm-blocked-by-list" style="border:1px solid #E8E6DF;border-radius:6px;padding:8px;font-size:12px;color:var(--text-muted);">Loading...</div>', false, true,
           'Search for tasks or projects that must be completed before this task can start.') +
       '</div>' : '') +
-    '<div class="fm-section-label">Timeline</div>' +
+    '<div class="fm-section-label">' + (isMs ? 'Milestone date' : 'Timeline') + '</div>' +
     '<div class="fm-grid">' +
-      fmField('Start Date', fmInput('fm-start', v('start'), '', 'date')) +
-      fmField('Original Due Date', fmInput('fm-due', v('due'), '', 'date')) +
-      fmField('Working Due Date', fmInput('fm-working-due', v('working_due'), '', 'date')) +
+      '<span id="fm-start-wrap"' + (isMs ? ' style="display:none;"' : '') + '>' +
+        fmField('Start Date', fmInput('fm-start', v('start'), '', 'date')) +
+      '</span>' +
+      fmField(isMs ? 'Date' : 'Original Due Date', fmInput('fm-due', v('due'), '', 'date')) +
+      fmField(isMs ? 'Revised date' : 'Working Due Date', fmInput('fm-working-due', v('working_due'), '', 'date')) +
       (t && t.status === 'Complete' ? fmField('Completion Date', fmInput('fm-actual-end', v('actual_end'), '', 'date'), false, false, 'When this task was actually completed') : '') +
     '</div>' +
     (t && (t.status === 'Complete' || t.status === 'Canceled') ?
@@ -2055,7 +2078,11 @@ function openFormModal(mode, id) {
   }
   // Task forms (not projects): wire the 2026 task-status soft prompts —
   // Scheduled+no-date / future-start+Planned / On Hold→note suggestion.
-  if (!isProject) fmWireTaskStatusPrompts();
+  // Plus the milestone-checkbox runtime toggle (hides start, narrows status).
+  if (!isProject) {
+    fmWireTaskStatusPrompts();
+    fmWireMilestoneToggle();
+  }
   fmWireA11y(); // associate labels, mark required, enable inline blur validation
 }
 
@@ -2119,6 +2146,54 @@ function fmApplyScheduledHint() {
   if (!s) return;
   s.value = 'Scheduled';
   s.dispatchEvent(new Event('change'));
+}
+
+// ── Milestone-checkbox runtime toggle ───────────────────────────────────
+// When the user flips the "This is a milestone" checkbox, three things
+// change live (without re-rendering the whole form, which would clobber
+// any other in-progress edits):
+//   - The Start Date field hides/shows
+//   - The Status dropdown swaps between the full list and the narrowed
+//     milestone-only list (Planned / Scheduled / Complete / Canceled).
+//     Current value is preserved when possible.
+//   - The checkbox label cosmetics flip (diamond fills, label goes navy).
+function fmWireMilestoneToggle() {
+  var cb = document.getElementById('fm-is-milestone');
+  if (!cb) return;
+  var wrap   = cb.closest('.fm-milestone-check');
+  var startWrap = document.getElementById('fm-start-wrap');
+  var statusWrap = document.getElementById('fm-status-wrap');
+  if (!statusWrap) return;
+
+  function applyState() {
+    var on = cb.checked;
+    // Start date field — hide for milestones.
+    if (startWrap) startWrap.style.display = on ? 'none' : '';
+    // Status dropdown — swap full / narrow list, preserve value where possible.
+    var currentValue = (document.getElementById('fm-status') || {}).value || '';
+    var nextHtml = on ? statusWrap.getAttribute('data-ms-status-narrow') : statusWrap.getAttribute('data-ms-status-full');
+    if (nextHtml) {
+      statusWrap.innerHTML = nextHtml;
+      var newSel = document.getElementById('fm-status');
+      // If the previously-selected status is still valid in the new list, keep it.
+      if (newSel && currentValue) {
+        var opts = Array.prototype.slice.call(newSel.options).map(function(o) { return o.value; });
+        if (opts.indexOf(currentValue) >= 0) newSel.value = currentValue;
+      }
+    }
+    // Label cosmetics — diamond fills, label navy.
+    if (wrap) {
+      wrap.classList.toggle('checked', on);
+      var poly = wrap.querySelector('svg polygon');
+      if (poly) poly.setAttribute('fill', on ? 'var(--navy,#002669)' : 'none');
+    }
+    // Re-run the task-status soft prompts since status may have changed.
+    if (typeof fmWireTaskStatusPrompts === 'function') {
+      var statusEl = document.getElementById('fm-status');
+      if (statusEl) statusEl.dispatchEvent(new Event('change'));
+    }
+  }
+  cb.addEventListener('change', applyState);
 }
 
 function closeFormModal() {
@@ -2212,6 +2287,13 @@ function collectTaskFields() {
     return null;
   }
 
+  // Milestone flag — when checked, start is forced null (milestones are
+  // single-date events). The form's runtime toggle already hides the start
+  // field; this just guarantees the saved value matches the UI state.
+  var msCheckbox = document.getElementById('fm-is-milestone');
+  var isMilestone = !!(msCheckbox && msCheckbox.checked);
+  var startVal = isMilestone ? null : (getVal('fm-start') || null);
+
   return {
     title:       title,
     status:      status,
@@ -2220,13 +2302,14 @@ function collectTaskFields() {
     project:     project,
     tool:        getVal('fm-tool')       || null,
     category:    getVal('fm-category')   || null,
-    start:       getVal('fm-start')      || null,
+    start:       startVal,
     due:         getVal('fm-due')        || null,
     working_due: getVal('fm-working-due')|| null,
     description: description,
     actual_end:  getVal('fm-actual-end') || null,
     resolution:  getVal('fm-resolution')|| null,
     phase_requirements: getVal('fm-phase-reqs-val') || null,
+    is_milestone: isMilestone,
     blocked_by: isFeatureOn('dependencies') ? (function() {
       var refs = depGetCurrentRefs();
       return refs.length > 0 ? refs.join(',') : null;

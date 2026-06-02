@@ -5319,6 +5319,16 @@ body[data-theme="dark"] .confirm-dialog.danger .confirm-title { color: #F87171; 
   .pr-view-toggle { flex: 1 1 100%; }
 }
 
+/* ── Task-form milestone checkbox (v1.73.0.0) ──────────────────────── */
+.fm-milestone-check{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #E8E6DF;border-radius:6px;cursor:pointer;background:var(--surface-2,#F3F1EB);transition:all 0.15s;}
+.fm-milestone-check:hover{background:#fff;border-color:var(--navy,#002669);}
+.fm-milestone-check.checked{background:#eef2f8;border-color:var(--navy,#002669);border-width:1.5px;padding:9.5px 13.5px;}
+.fm-milestone-check input[type="checkbox"]{margin:0;cursor:pointer;}
+.fm-milestone-check svg{flex-shrink:0;}
+.fm-milestone-check span{font-size:13px;color:var(--text-body);}
+.fm-milestone-check.checked > span:not(.fm-milestone-hint){color:var(--navy,#002669);font-weight:600;}
+.fm-milestone-hint{margin-left:auto;font-size:11px;color:var(--text-muted);font-style:italic;}
+
 /* ── Task-form soft hints (2026 status rework) ─────────────────────── */
 .fm-soft-hint{display:flex;align-items:center;gap:8px;margin-top:6px;padding:7px 12px;background:#FEF9C3;border:1px solid #FDE68A;border-radius:6px;font-size:12px;color:#854D0E;line-height:1.4;}
 .fm-soft-hint-icon{font-weight:700;font-size:13px;}

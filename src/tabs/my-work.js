@@ -401,6 +401,7 @@ function buildGanttBars() {
       const tsc = STATUS_COLOR(t.status) || '#93C5FD';
       const isMine = t.assignee === viewUser;
       const isBlocked = isFeatureOn('dependencies') && hasIncompleteBlockers(t);
+      const isMs = (typeof isMilestone === 'function') && isMilestone(t);
       const barOpacity = isMine ? '0.85' : '0.3';
       const labelStyle = isMine ? 'color:var(--text-body);font-weight:600;' : 'color:var(--text-muted);font-weight:400;opacity:0.7;';
       const blockedIcon = isBlocked ? '<svg class="icon" aria-hidden="true"><use href="#ph-lock"></use></svg> ' : '› ';
@@ -409,9 +410,32 @@ function buildGanttBars() {
       const taskBorder = isLastTask ? 'border-bottom:0.5px solid #E8E6DF;' : 'border-bottom:0.5px solid #F3F1EB;';
 
       html += '<div style="display:flex;align-items:flex-start;min-height:22px;' + taskBorder + '">';
-      html += '<div style="width:280px;flex-shrink:0;font-size:12px;padding-left:24px;padding-right:8px;padding-top:3px;padding-bottom:3px;cursor:pointer;line-height:1.3;' + labelStyle + '" onclick="openTask(' + t.objectId + ')" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + (isBlocked ? ' [DEPS PENDING]' : '') + '">' + blockedIcon + esc(t.title) + '</div>';
+
+      // Milestones get a leading diamond glyph next to the title (replaces
+      // the ›/lock icon), bolder label, and red label color when missed.
+      const msState = isMs ? milestoneState(t) : null;
+      const msLabelColor = (isMs && msState === 'missed') ? 'color:#EF4444;' : '';
+      const msLabelWeight = isMs ? 'font-weight:600;' : '';
+      const leadingIcon = isMs
+        ? renderMilestoneDiamond(t, 12, { dim: !isMine })
+        : blockedIcon;
+
+      html += '<div style="width:280px;flex-shrink:0;font-size:12px;padding-left:24px;padding-right:8px;padding-top:3px;padding-bottom:3px;cursor:pointer;line-height:1.3;display:flex;align-items:center;gap:4px;' + labelStyle + msLabelColor + msLabelWeight + '" onclick="openTask(' + t.objectId + ')" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + (isBlocked ? ' [DEPS PENDING]' : '') + (isMs ? ' [MILESTONE]' : '') + '">' + leadingIcon + (isMs ? '' : ' ') + esc(t.title) + '</div>';
+
       html += '<div style="flex:1;position:relative;height:14px;">';
-      html += '<div style="position:absolute;left:' + tLeftPct + '%;width:' + tWidth + '%;height:100%;' + blockedBarStyle + 'border-radius:3px;opacity:' + barOpacity + ';' + (tOverdue && isMine ? 'outline:2px solid #EF4444;outline-offset:1px;' : '') + '" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + ' ' + tStart + ' → ' + tEnd + (isBlocked ? ' [DEPS PENDING]' : '') + '"></div>';
+      if (isMs) {
+        // Milestone — diamond at the due date instead of a bar. Label sits
+        // to the right of the diamond, always visible.
+        const dotPct = ganttPct(tEnd);
+        const labelTxtColor = msState === 'missed' ? '#EF4444' : (isMine ? 'var(--text-body)' : 'var(--text-muted)');
+        const labelTxtWeight = isMine ? '600' : '400';
+        html += '<div style="position:absolute;left:' + dotPct + '%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + ' · milestone ' + tEnd + '">' +
+          renderMilestoneDiamond(t, 18, { dim: !isMine }) +
+        '</div>';
+      } else {
+        // Regular task — bar from start to due.
+        html += '<div style="position:absolute;left:' + tLeftPct + '%;width:' + tWidth + '%;height:100%;' + blockedBarStyle + 'border-radius:3px;opacity:' + barOpacity + ';' + (tOverdue && isMine ? 'outline:2px solid #EF4444;outline-offset:1px;' : '') + '" title="' + esc(t.title) + (t.assignee ? ' (' + esc(t.assignee) + ')' : '') + ' ' + tStart + ' → ' + tEnd + (isBlocked ? ' [DEPS PENDING]' : '') + '"></div>';
+      }
       html += '</div></div>';
     });
     } // end if (!isCollapsed)
@@ -763,7 +787,10 @@ function buildMyWorkTaskRow(t, statusColor, status, todayStr, hrsLabelFn) {
     out += '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + s + '</option>';
   });
   out += '</select>';
-  out += '<span class="mywork-compact-title" onclick="openTask(' + t.objectId + ')" style="cursor:pointer;">' + projectNumChip(t.task_number) + esc(t.title);
+  var _mwIsMs = (typeof isMilestone === 'function') && isMilestone(t);
+  var _mwMsLeading = _mwIsMs ? renderMilestoneDiamond(t, 12) + ' ' : '';
+  var _mwMsStyle = _mwIsMs ? ('font-weight:600;' + (milestoneState(t) === 'missed' ? 'color:#EF4444;' : '')) : '';
+  out += '<span class="mywork-compact-title" onclick="openTask(' + t.objectId + ')" style="cursor:pointer;' + _mwMsStyle + '">' + projectNumChip(t.task_number) + _mwMsLeading + esc(t.title);
   var _projTitle = getTaskProjectTitle(t);
   if (_projTitle) out += '<span style="display:block;font-size:11px;font-weight:400;color:var(--text-muted);margin-top:1px;">' + esc(_projTitle) + '</span>';
   out += renderAttBadges(taskAlerts);

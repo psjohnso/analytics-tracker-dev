@@ -295,6 +295,11 @@ function agolTaskToLocal(feature) {
   if (local.status && _TASK_STATUS_MIGRATIONS[local.status]) {
     local.status = _TASK_STATUS_MIGRATIONS[local.status];
   }
+  // is_milestone is stored as SmallInteger (1 = milestone, 0 / NULL = task).
+  // Normalize to a real boolean so consumers can just check `t.is_milestone`.
+  // Gracefully handles records that pre-date the schema field — they read as
+  // undefined, normalized to false.
+  local.is_milestone = (local.is_milestone === 1 || local.is_milestone === true || local.is_milestone === '1');
   // Ensure hours_worked is numeric (this is the primary hours field for calculations)
   local.hours_worked = parseFloat(local.hours_worked) || 0;
   return local;
@@ -328,6 +333,8 @@ function localToAgolTask(fields) {
     if (key === 'start')      { attrs.start_date     = val; continue; }
     if (key === 'due')        { attrs.due_date       = val; continue; }
     if (key === 'id')         continue;  // alias-only on projects, but skip if ever passed
+    // is_milestone — local booleans → SmallInteger on the wire (1 / 0).
+    if (key === 'is_milestone') { attrs.is_milestone = val ? 1 : 0; continue; }
     attrs[key] = val;
   }
   return attrs;

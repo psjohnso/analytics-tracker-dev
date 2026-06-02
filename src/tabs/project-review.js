@@ -970,8 +970,13 @@ function renderProjectReviewCard(p, rt) {
           if (t.actual_end) dueLabel = 'done ' + prFmtDateShort(t.actual_end);
           else if (t.due) dueLabel = 'due ' + prFmtDateShort(t.due);
           else if (t.start) dueLabel = 'start ' + prFmtDateShort(t.start);
-          html += '<div class="pr-tbp-task"><span class="' + dotCls + '"></span>' +
-            prHighlight(t.title || '(untitled task)', _reviewSearchQuery) +
+          var isMs = (typeof isMilestone === 'function') && isMilestone(t);
+          var msLeading = isMs ? renderMilestoneDiamond(t, 12) + ' ' : '<span class="' + dotCls + '"></span>';
+          var msTitleStyle = isMs ? ('font-weight:600;' + (milestoneState(t) === 'missed' ? 'color:#EF4444;' : '')) : '';
+          html += '<div class="pr-tbp-task">' + msLeading +
+            '<span' + (msTitleStyle ? ' style="' + msTitleStyle + '"' : '') + '>' +
+              prHighlight(t.title || '(untitled task)', _reviewSearchQuery) +
+            '</span>' +
             (dueLabel ? '<span class="pr-due">' + dueLabel + '</span>' : '') +
             '</div>';
         });

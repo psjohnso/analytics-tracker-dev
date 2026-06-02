@@ -584,7 +584,7 @@ function renderTaskList(data) {
     return `<div class="task-row" onclick="openTask(${t.objectId})">
       ${_bulkOn ? bulkCheckboxCell(t) : ''}
       <div class="task-cell" title="${esc(resolveProjectTitle(t))}"><strong style="color:var(--text-dark);">${esc(resolveProjectTitle(t)||'—')}</strong></div>
-      <div class="task-title-cell">${esc(t.title)}</div>
+      <div class="task-title-cell">${(typeof isMilestone === 'function' && isMilestone(t)) ? renderMilestoneDiamond(t, 12) + ' ' : ''}<span style="${(typeof isMilestone === 'function' && isMilestone(t)) ? 'font-weight:600;' : ''}${(typeof isMilestone === 'function' && isMilestone(t) && milestoneState(t) === 'missed') ? 'color:#EF4444;' : ''}">${esc(t.title)}</span></div>
       <div class="task-cell"><span class="status-pill" style="background:${statusColor}22;color:${statusColor};"><span style="width:5px;height:5px;border-radius:50%;background:${statusColor};display:inline-block;"></span>${t.status||'—'}</span></div>
       <div class="task-cell"><span class="priority-badge priority-${t.priority||'null'}">${t.priority||'—'}</span></div>
       <div class="task-cell">${esc(t.assignee||'—')}</div>

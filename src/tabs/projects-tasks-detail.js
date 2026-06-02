@@ -1395,8 +1395,12 @@ function _projAllocData(p) {
 }
 
 // Task-status segments for the OE progress strip (% complete + segmented bar).
+// Also breaks out milestones as a sub-count — every task counts toward the
+// main total (per design), and the milestone sub-line answers "are we hitting
+// our checkpoints?" separately from raw task throughput.
 function _projProgressSegments(relTasks) {
   var counts = { complete: 0, active: 0, hold: 0, future: 0, canceled: 0 };
+  var msTotal = 0, msHit = 0, msMissed = 0;
   relTasks.forEach(function(t) {
     var s = t.status || '';
     if (s === 'Complete') counts.complete++;
@@ -1404,11 +1408,18 @@ function _projProgressSegments(relTasks) {
     else if (s === 'On Hold' || s === 'Waiting for Response' || s === 'Pending') counts.hold++;
     else if (s === 'Canceled') counts.canceled++;
     else counts.future++;
+    if (typeof isMilestone === 'function' && isMilestone(t)) {
+      msTotal++;
+      var st = milestoneState(t);
+      if (st === 'hit') msHit++;
+      else if (st === 'missed') msMissed++;
+    }
   });
   var total = relTasks.length;
   var doneOrActive = counts.complete + counts.active;
   var pct = total > 0 ? Math.round((doneOrActive / total) * 100) : 0;
-  return { counts: counts, total: total, pct: pct, doneOrActive: doneOrActive };
+  return { counts: counts, total: total, pct: pct, doneOrActive: doneOrActive,
+           msTotal: msTotal, msHit: msHit, msMissed: msMissed };
 }
 
 // Build an OE-styled inline task row for the project detail Tasks tab. Mirrors
@@ -1424,7 +1435,7 @@ function _oeDetailTaskRow(t) {
   return '<div class="pd-task-row' + (isDone ? ' pd-task-row--done' : '') + '">' +
     '<div style="text-align:center;" onclick="event.stopPropagation()"><input type="checkbox" class="batch-task-cb" data-task-id="' + t.objectId + '" onchange="updateBatchBar()"></div>' +
     '<div><span class="oe-mono" style="font-size:11px;color:var(--ink-5);">' + esc(t.task_number || '—') + '</span></div>' +
-    '<div class="pd-task-title" onclick="openTaskFromProject(' + t.objectId + ')">' + (typeof getDependencyIcon === 'function' ? getDependencyIcon(t) : '') + esc(t.title) + '</div>' +
+    '<div class="pd-task-title" onclick="openTaskFromProject(' + t.objectId + ')">' + (typeof getDependencyIcon === 'function' ? getDependencyIcon(t) : '') + ((typeof isMilestone === 'function' && isMilestone(t)) ? renderMilestoneDiamond(t, 12) + ' ' : '') + '<span' + ((typeof isMilestone === 'function' && isMilestone(t)) ? ' style="font-weight:600;' + (milestoneState(t) === 'missed' ? 'color:var(--status-overdue-fg);' : '') + '"' : '') + '>' + esc(t.title) + '</span></div>' +
     '<div onclick="event.stopPropagation()"><select class="mw-status-select" data-type="task" data-id="' + t.objectId + '" onchange="mwQuickStatus(this)" style="background:' + sc + '18;color:' + sc + ';border-color:' + sc + '44;">' +
       ['Active','Pending','On Hold','Waiting for Response','Complete','Canceled'].map(function(s) { return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') +
     '</select></div>' +
@@ -1553,13 +1564,25 @@ function renderProjectDetailOE(id) {
     '</div>' +
   '</div>';
 
-  // Progress strip
+  // Progress strip — includes a milestone sub-line when any task on the
+  // project is flagged as a milestone (see _projProgressSegments).
   if (prog.total > 0) {
+    var msSubLine = '';
+    if (prog.msTotal > 0) {
+      var msIcon = '<svg width="11" height="11" viewBox="0 0 28 28" style="vertical-align:middle;"><polygon points="14,2 26,14 14,26 2,14" fill="var(--status-complete-dot,#8a4c70)" stroke="var(--status-complete-dot,#8a4c70)" stroke-width="2.5"/></svg>';
+      var msMissedNote = prog.msMissed > 0 ? ' · <span style="color:var(--status-overdue-fg,#6e2a0a);font-weight:600;">' + prog.msMissed + ' missed</span>' : '';
+      msSubLine =
+        '<span class="oe-body-sm" style="color:var(--ink-3,#d9d1bf);margin:0 4px;">·</span>' +
+        '<span class="oe-body-sm" style="color:var(--status-complete-fg,#4d2a4d);display:inline-flex;align-items:center;gap:4px;">' +
+          msIcon + '<strong>' + prog.msHit + ' of ' + prog.msTotal + ' milestone' + (prog.msTotal === 1 ? '' : 's') + ' hit</strong>' +
+        '</span>' + msMissedNote;
+    }
     html += '<div class="oe-card oe-detail-progress">' +
       '<div class="oe-detail-progress-num"><div class="oe-meta" style="margin-bottom:4px;">Progress</div>' +
-        '<div style="display:flex;align-items:baseline;gap:8px;">' +
+        '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">' +
           '<span class="oe-mono" style="font-size:22px;color:var(--ink-7);">' + prog.pct + '%</span>' +
           '<span class="oe-body-sm">' + prog.doneOrActive + ' of ' + prog.total + ' tasks complete or in progress</span>' +
+          msSubLine +
         '</div>' +
       '</div>' +
       '<div class="oe-detail-progress-bar-wrap">' +

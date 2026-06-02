@@ -122,6 +122,139 @@ function STATUS_TEXT_COLOR(s) {
 
 const PRIORITY_ORDER = { High: 0, Medium: 1, Low: 2 };
 
+// ─── MILESTONES ───────────────────────────────────────────────────────
+// One canonical helper set so the gantt, the task lists, the project
+// progress counter, and the task form all read milestones the same way.
+//
+// Data model: a task with t.is_milestone === true is a milestone.
+// Visually it's a diamond at its due date instead of a bar. State is
+// derived from status + date relative to today.
+
+function isMilestone(t) {
+  return !!(t && t.is_milestone);
+}
+
+// Returns 'upcoming' | 'hit' | 'missed' | 'canceled' for any milestone.
+// Used by the diamond renderer to pick fill / stroke / red-outline.
+function milestoneState(t) {
+  if (!t) return 'upcoming';
+  if (t.status === 'Canceled') return 'canceled';
+  if (t.status === 'Complete') return 'hit';
+  // For Planned / Scheduled (the two valid "upcoming" states): check the
+  // due date. If it's passed and we're not Complete, that's missed.
+  var due = t.working_due || t.due;
+  if (due) {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    if (new Date(due + 'T00:00:00') < today) return 'missed';
+  }
+  return 'upcoming';
+}
+
+// Render a milestone as inline SVG. Used by the gantt (size 18-20) and
+// the list views (size 14). Returns an SVG string ready to drop into
+// any container. Pass opts.dim=true for other-people's milestones.
+function renderMilestoneDiamond(t, size, opts) {
+  var sz = size || 14;
+  var dim = opts && opts.dim;
+  var state = milestoneState(t);
+  var fill, stroke, strokeW = 2.5, extra = '';
+
+  if (state === 'hit') {
+    fill = STATUS_COLOR('Complete');
+    stroke = fill;
+  } else if (state === 'missed') {
+    fill = STATUS_COLOR('Waiting for Response'); // sunset
+    stroke = '#EF4444';
+  } else if (state === 'canceled') {
+    fill = 'none';
+    stroke = STATUS_COLOR('Canceled');
+    extra = '<line x1="2" y1="14" x2="26" y2="14" stroke="' + stroke + '" stroke-width="2"/>';
+  } else { // upcoming
+    fill = 'none';
+    stroke = STATUS_COLOR(t.status === 'Planned' ? 'Planned' : 'Scheduled');
+  }
+
+  var op = dim ? ' opacity="0.30"' : '';
+  return '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 28 28" style="vertical-align:middle;flex-shrink:0;"' + op + '>' +
+    '<polygon points="14,2 26,14 14,26 2,14" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + strokeW + '"/>' +
+    extra +
+    '</svg>';
+}
+
+// Compact "◇" / "◆" glyph for very small inline contexts where SVG is
+// overkill (e.g. plain-text exports or copy-summary). The list views
+// use the SVG renderer above for crispness.
+function milestoneGlyph(t) {
+  if (!isMilestone(t)) return '';
+  return milestoneState(t) === 'hit' ? '◆' : '◇';
+}
+
+// ── Console-command helpers ─────────────────────────────────────────
+// Two-step migration to flag existing date-coincident tasks as milestones.
+// Browser-console only (window.* exposure). Idempotent.
+//
+//   findMilestoneCandidates()  — list candidates; no writes
+//   flagMilestones(window._msCandidates)  — apply (after you've reviewed)
+window.findMilestoneCandidates = function findMilestoneCandidates() {
+  if (typeof TASKS === 'undefined' || !TASKS) {
+    console.log('TASKS not loaded yet.');
+    return [];
+  }
+  var candidates = TASKS.filter(function(t) {
+    if (t.is_milestone) return false; // already flagged
+    if (t.status === 'Canceled') return false;
+    // Heuristic: start === due (same single day) OR start blank but due set.
+    if (t.start && t.due && t.start === t.due) return true;
+    if (!t.start && t.due) return true;
+    return false;
+  });
+  if (candidates.length === 0) {
+    console.log('%c✓ No date-coincident tasks found — nothing to migrate.', 'color:#15803d;font-weight:700;');
+    return [];
+  }
+  console.log('%c' + candidates.length + ' task(s) look like milestones:', 'font-weight:700;');
+  console.table(candidates.map(function(t) {
+    return {
+      task:     t.task_number || t.idx || '',
+      title:    t.title || '',
+      project:  (typeof getProjectByNumber === 'function' && getProjectByNumber(t.project_number) || {}).title || ('#' + (t.project_number || '?')),
+      assignee: t.assignee || '',
+      start:    t.start || '(none)',
+      due:      t.due || ''
+    };
+  }));
+  console.log('%cReview the table. To apply: window._msCandidates = (saved). Run flagMilestones() to flip is_milestone=true on all of them.', 'color:#6b6354;');
+  window._msCandidates = candidates;
+  return candidates;
+};
+
+window.flagMilestones = async function flagMilestones(list) {
+  list = list || window._msCandidates;
+  if (!list || list.length === 0) {
+    console.log('No candidates to flag. Run findMilestoneCandidates() first.');
+    return;
+  }
+  if (typeof DataStore === 'undefined' || !DataStore.updateTask) {
+    console.log('DataStore.updateTask not available.');
+    return;
+  }
+  console.log('%cFlagging ' + list.length + ' task(s) as milestones…', 'font-weight:700;');
+  var ok = 0, fail = 0;
+  for (var i = 0; i < list.length; i++) {
+    var t = list[i];
+    try {
+      await DataStore.updateTask(t.objectId, { is_milestone: true });
+      t.is_milestone = true; // reflect locally
+      ok++;
+    } catch (e) {
+      console.warn('  failed:', t.title, e);
+      fail++;
+    }
+  }
+  console.log('%c✓ Done — ' + ok + ' flagged, ' + fail + ' failed.', 'color:#15803d;font-weight:700;');
+  if (typeof render === 'function') render();
+};
+
 // ─── INIT ──────────────────────────────────────────────────────────────
 function init() {
   buildSidebarFilters();
