@@ -90,8 +90,8 @@ const STATUS_COLOR_MAP_OE = {
   'Scheduled': '#1f3b6b',            // innovation
   'Idea': '#d4bc7a',                 // sand
   'Planned': '#8e8675',              // ink-4 — muted neutral for committed-but-unscheduled
-  'Pending': '#b85630',              // sunset (legacy)
-  'Waiting for Response': '#3d5878', // steel
+  'Pending': '#3d5878',              // steel (legacy — was sunset; freed up for Waiting)
+  'Waiting for Response': '#b85630', // sunset — moved from steel so it's distinct from Scheduled's navy
 };
 // STATUS_COLOR() returns a color for any status, including unknown ones.
 // Unknown statuses get a deterministic color derived from the string itself
