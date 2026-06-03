@@ -462,7 +462,7 @@ function buildGanttBars() {
   html += '<div style="display:flex;gap:16px;margin-top:8px;padding-top:8px;border-top:1px solid #E8E6DF;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">';
   html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.85;display:inline-block;"></span> Your tasks</span>';
   html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:#83AC16;opacity:0.3;display:inline-block;"></span> Other members\' tasks</span>';
-  if (isFeatureOn('dependencies')) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:repeating-linear-gradient(45deg,#83AC16,#83AC16 2px,transparent 2px,transparent 4px);display:inline-block;"></span> <svg class="icon" aria-hidden="true"><use href="#ph-lock"></use></svg> Deps pending</span>';
+  if (isFeatureOn('dependencies')) html += '<span style="display:flex;align-items:center;gap:4px;"><span style="width:12px;height:8px;border-radius:2px;background:repeating-linear-gradient(45deg,#83AC16,#83AC16 2px,transparent 2px,transparent 4px);display:inline-block;"></span> <svg class="icon" aria-hidden="true"><use href="#ph-lock"></use></svg> Dependencies pending</span>';
   html += '</div>';
   return html;
 }
@@ -753,7 +753,7 @@ function getTaskAlerts(t, todayStr) {
   }
   // Active task with unresolved dependencies
   if (isFeatureOn('dependencies') && t.status === 'Active' && hasIncompleteBlockers(t)) {
-    alerts.push({ text: 'Deps pending', cls: 'mw-att-red', severity: 0 });
+    alerts.push({ text: 'Dependencies pending', cls: 'mw-att-red', severity: 0 });
   }
   if (['Active', 'Pending', 'Waiting for Response'].indexOf(t.status) >= 0) {
     var missing = [];

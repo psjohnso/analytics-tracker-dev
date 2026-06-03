@@ -2238,6 +2238,12 @@ function renderTaskEditOE(idx) {
     if (typeof fmWireA11y === 'function') fmWireA11y();
     if (typeof fmWireTaskStatusPrompts === 'function') fmWireTaskStatusPrompts();
     if (typeof fmWireMilestoneToggle === 'function') fmWireMilestoneToggle();
+    // Dependency picker — same wiring openFormModal does for the modal.
+    // Without this the "Depends on" field stays stuck on "Loading…".
+    if (typeof isFeatureOn === 'function' && isFeatureOn('dependencies') && typeof refreshBlockerList === 'function') {
+      var projTitle = (typeof getTaskProjectTitle === 'function') ? getTaskProjectTitle(t) : (t.project || '');
+      refreshBlockerList(projTitle, t.task_number || '', t.blocked_by || '');
+    }
     // Original due date is locked for edits (same rule as the modal).
     var origDateField = document.getElementById('fm-due');
     if (origDateField) {
