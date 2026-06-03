@@ -587,7 +587,7 @@ function renderTaskList(data) {
       <div class="task-title-cell">${(typeof isMilestone === 'function' && isMilestone(t)) ? renderMilestoneDiamond(t, 12) + ' ' : ''}<span style="${(typeof isMilestone === 'function' && isMilestone(t)) ? 'font-weight:600;' : ''}${(typeof isMilestone === 'function' && isMilestone(t) && milestoneState(t) === 'missed') ? 'color:#EF4444;' : ''}">${esc(t.title)}</span></div>
       <div class="task-cell"><span class="status-pill" style="background:${statusColor}22;color:${statusColor};"><span style="width:5px;height:5px;border-radius:50%;background:${statusColor};display:inline-block;"></span>${t.status||'—'}</span></div>
       <div class="task-cell"><span class="priority-badge priority-${t.priority||'null'}">${t.priority||'—'}</span></div>
-      <div class="task-cell">${esc(t.assignee||'—')}</div>
+      <div class="task-cell">${esc(t.assignee||'—')}${(typeof renderContributorAvatars === 'function') ? renderContributorAvatars(t, {size: 18, max: 3}) : ''}</div>
       <div class="task-cell pt-due" style="${dueCellStyle}">${dueStr||'—'}</div>
       <div class="task-cell" style="font-weight:700;color:var(--navy);">${tHrs > 0 ? hoursLabel(tHrs, mHrs) : '—'}</div>
     </div>`;

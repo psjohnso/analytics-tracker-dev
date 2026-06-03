@@ -37,7 +37,14 @@ function getMyProjects(viewName) {
 function getMyTasks(viewName) {
   const name = viewName || Auth.fullName;
   if (!name) return [];
-  return TASKS.filter(function(t) { return t.assignee === name; });
+  // Include tasks where the user is either the primary assignee OR
+  // listed as a contributor. isTaskMineOrContributing() lives in
+  // render.js and reads the comma-separated contributors field.
+  return TASKS.filter(function(t) {
+    return (typeof isTaskMineOrContributing === 'function')
+      ? isTaskMineOrContributing(t, name)
+      : (t.assignee === name);
+  });
 }
 
 function switchMyWorkUser(selectEl) {
@@ -403,7 +410,11 @@ function buildGanttBars() {
       const tWidth = Math.max(0.5, tRightPct - tLeftPct);
       const tOverdue = tEnd < todayStr;
       const tsc = STATUS_COLOR(t.status) || '#93C5FD';
-      const isMine = t.assignee === viewUser;
+      // "Mine" for visual purposes includes contributor status — both
+      // light up the bar at full opacity rather than the dimmed 0.3.
+      const isMine = (typeof isTaskMineOrContributing === 'function')
+        ? isTaskMineOrContributing(t, viewUser)
+        : (t.assignee === viewUser);
       const isBlocked = isFeatureOn('dependencies') && hasIncompleteBlockers(t);
       const isMs = (typeof isMilestone === 'function') && isMilestone(t);
       const barOpacity = isMine ? '0.85' : '0.3';
@@ -794,7 +805,7 @@ function buildMyWorkTaskRow(t, statusColor, status, todayStr, hrsLabelFn) {
   var _mwIsMs = (typeof isMilestone === 'function') && isMilestone(t);
   var _mwMsLeading = _mwIsMs ? renderMilestoneDiamond(t, 12) + ' ' : '';
   var _mwMsStyle = _mwIsMs ? ('font-weight:600;' + (milestoneState(t) === 'missed' ? 'color:#EF4444;' : '')) : '';
-  out += '<span class="mywork-compact-title" onclick="openTask(' + t.objectId + ')" style="cursor:pointer;' + _mwMsStyle + '">' + projectNumChip(t.task_number) + _mwMsLeading + esc(t.title);
+  out += '<span class="mywork-compact-title" onclick="openTask(' + t.objectId + ')" style="cursor:pointer;' + _mwMsStyle + '">' + projectNumChip(t.task_number) + _mwMsLeading + esc(t.title) + ((typeof renderContributorAvatars === 'function') ? renderContributorAvatars(t, {size: 16, max: 3}) : '');
   var _projTitle = getTaskProjectTitle(t);
   if (_projTitle) out += '<span style="display:block;font-size:11px;font-weight:400;color:var(--text-muted);margin-top:1px;">' + esc(_projTitle) + '</span>';
   out += renderAttBadges(taskAlerts);
@@ -1582,7 +1593,13 @@ function renderMyWork(area) {
     const projTasks = !pNum ? [] : TASKS.filter(function(t) {
       if (!(t.project_number != null && String(t.project_number) === pNum)) return false;
       if (t.status === 'Complete' || t.status === 'Canceled') return false;
-      if (!UserPrefs.timelineShowAll) return t.assignee === name;
+      // "Show only mine" includes contributor tasks — same definition as
+      // getMyTasks() above.
+      if (!UserPrefs.timelineShowAll) {
+        return (typeof isTaskMineOrContributing === 'function')
+          ? isTaskMineOrContributing(t, name)
+          : (t.assignee === name);
+      }
       return true;
     });
     // Determine role
