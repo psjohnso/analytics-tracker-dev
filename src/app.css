@@ -2698,6 +2698,12 @@ body[data-theme="dark"] .fm-field-err { color:#F87171; }
   border-radius:6px; font-family:'Lato',sans-serif; font-size:14px; font-weight:700;
   cursor:pointer; letter-spacing:0.03em; }
 .btn-fm-save:hover { background:#1a3a7c; }
+/* "Save & add another" — visually secondary to "Save Changes" so the primary
+   action stays unambiguous when both are visible on new-task forms. */
+.btn-fm-save--add { background:transparent; color:var(--navy); border:1.5px solid var(--navy);
+  padding:9px 18px; border-radius:6px; font-family:'Lato',sans-serif; font-size:14px;
+  font-weight:700; cursor:pointer; letter-spacing:0.03em; margin-right:6px; }
+.btn-fm-save--add:hover { background:var(--navy); color:#fff; }
 .btn-fm-cancel { background:transparent; color:var(--text-muted); border:1.5px solid #E1E2DD;
   padding:9px 18px; border-radius:6px; font-family:'Lato',sans-serif; font-size:14px;
   font-weight:700; cursor:pointer; }

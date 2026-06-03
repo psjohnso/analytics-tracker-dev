@@ -1993,6 +1993,15 @@ function openFormModal(mode, id) {
   document.getElementById('fm-save-btn').textContent     = isEdit ? 'Save Changes' : 'Create';
   document.getElementById('fm-save-btn').disabled         = false;
   document.getElementById('fm-save-btn').style.opacity    = '1';
+  // "Save & add another" — only meaningful when creating new tasks. It stays
+  // open across multiple saves so a user can lay out 4-5 tasks at once
+  // without re-opening the modal between each.
+  var saveAddBtn = document.getElementById('fm-save-add-btn');
+  if (saveAddBtn) {
+    saveAddBtn.style.display = (!isProject && !isEdit) ? 'inline-block' : 'none';
+    saveAddBtn.disabled = false;
+    saveAddBtn.style.opacity = '1';
+  }
   document.getElementById('fm-body').innerHTML           = isProject ? buildProjectForm(record) : buildTaskForm(record);
   // Lock original due date for tasks on edit (project lock is handled in buildProjectForm based on status)
   if (isEdit && !isProject) {
@@ -2317,9 +2326,11 @@ function collectTaskFields() {
   };
 }
 
-async function handleFormSubmit(andDownload) {
+async function handleFormSubmit(andDownload, andAddAnother) {
   const isProject = Editor.mode.indexOf('project') >= 0;
   const isEdit    = Editor.mode.indexOf('edit')    >= 0;
+  // "Save & add another" only makes sense when creating a new task.
+  if (andAddAnother && (isProject || isEdit)) andAddAnother = false;
   fmClearAllErrors(); // fresh validation pass — clear any prior inline errors
   const fields    = isProject ? collectProjectFields() : collectTaskFields();
   if (!fields) { fmFocusFirstError(); return; }
@@ -2460,24 +2471,78 @@ async function handleFormSubmit(andDownload) {
     return; // Don't close the form — let the user try again
   }
 
-  closeFormModal();
   if (andDownload) { saveAllData(); }
-
   markDataDirty();
+
+  if (andAddAnother) {
+    // Don't close the modal — just reset specific fields for the next entry
+    // while preserving Project / Assignee / Status / Priority / Category /
+    // Tool so the user can keep typing related tasks. Re-render the parent
+    // (project detail, task list, etc.) so the new task shows in the list
+    // immediately as the user adds another.
+    render();
+    fmResetForNextTask({ newTaskAssignee: fields.assignee, newTaskProject: fields.project });
+
+    // Restore the save button state and re-focus the title field for the
+    // next entry. The toast already confirmed the previous save.
+    if (saveBtn) { saveBtn.textContent = 'Create'; saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
+    var saveAddBtn2 = document.getElementById('fm-save-add-btn');
+    if (saveAddBtn2) { saveAddBtn2.disabled = false; saveAddBtn2.style.opacity = '1'; }
+
+    // AI phase suggestion (beta) still fires on the task we just saved,
+    // since the next entry can have entirely different phase requirements.
+    if (!isProject && _aiPhaseAssignment && fields.project && !fields.phase_requirements) {
+      suggestPhaseRequirements(Editor.editId);
+    }
+
+    // Editor.editId was set to the just-created task; clear it so the next
+    // save creates a new record rather than updating the previous one.
+    Editor.editId = null;
+    return;
+  }
+
+  closeFormModal();
   render();
 
-  // After a CREATE: open the detail view for the new record
-  // After an EDIT: re-render with existing filters preserved
+  // After a CREATE: project goes to its detail page; task stays on
+  // whatever page the user was on (usually the project detail where they
+  // clicked "+ Add task"). Routing a new task to its own detail page was
+  // forcing users to navigate back to the project to add the next task —
+  // the trip back is no longer needed.
+  // After an EDIT: re-render with existing filters preserved.
   if (!isEdit) {
     if (isProject && Editor.editId) openProject(Editor.editId);
-    else if (!isProject && Editor.editId) {
-      openTask(Editor.editId);
-      // Fire AI phase suggestion if enabled, task has a project, and no phase reqs were set
-      if (_aiPhaseAssignment && fields.project && !fields.phase_requirements) {
-        suggestPhaseRequirements(Editor.editId);
-      }
+    else if (!isProject && _aiPhaseAssignment && fields.project && !fields.phase_requirements) {
+      // Task created — stay on the current view, but still fire the AI
+      // phase suggestion (it operates on the new task's objectId).
+      suggestPhaseRequirements(Editor.editId);
     }
   }
+}
+
+// Reset only the fields that should change between consecutive task entries
+// during a "Save & add another" run. Project, assignee, status, priority,
+// category, and tool stay so the user doesn't repeat themselves on related
+// tasks. Title, description, dates, and the milestone flag clear.
+function fmResetForNextTask(carryFwd) {
+  function _clear(id, val) { var el = document.getElementById(id); if (el) el.value = val == null ? '' : val; }
+  _clear('fm-title-val', '');
+  _clear('fm-description', '');
+  _clear('fm-start', '');
+  _clear('fm-due', '');
+  _clear('fm-working-due', '');
+  _clear('fm-actual-end', '');
+  _clear('fm-resolution', '');
+  // Milestone checkbox — uncheck and re-run the toggle to show start date again.
+  var msCb = document.getElementById('fm-is-milestone');
+  if (msCb && msCb.checked) { msCb.checked = false; msCb.dispatchEvent(new Event('change')); }
+  // Phase requirements (beta) — clear so the next task starts fresh.
+  _clear('fm-phase-reqs-val', '');
+  // Clear inline error state from the previous validation pass.
+  if (typeof fmClearAllErrors === 'function') fmClearAllErrors();
+  // Refocus the title input so the user can type the next title immediately.
+  var titleEl = document.getElementById('fm-title-val');
+  if (titleEl) { try { titleEl.focus({ preventScroll: true }); } catch (e) { titleEl.focus(); } }
 }
 
 async function handleFormDelete() {
