@@ -300,9 +300,6 @@ function agolTaskToLocal(feature) {
   // Gracefully handles records that pre-date the schema field — they read as
   // undefined, normalized to false.
   local.is_milestone = (local.is_milestone === 1 || local.is_milestone === true || local.is_milestone === '1');
-  // Contributors — comma-separated names (mirrors projects' other_members).
-  // Records pre-dating the field are read as undefined; normalize to ''.
-  local.contributors = (typeof local.contributors === 'string') ? local.contributors : '';
   // Ensure hours_worked is numeric (this is the primary hours field for calculations)
   local.hours_worked = parseFloat(local.hours_worked) || 0;
   return local;

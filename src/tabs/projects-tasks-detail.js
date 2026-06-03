@@ -1958,22 +1958,8 @@ function renderTaskDetailOE(idx) {
   // SIDEBAR
   html += '<div class="oe-detail-side">';
 
-  // People card — assignee on top, contributors listed underneath.
-  var _tContribs = (typeof getTaskContributors === 'function') ? getTaskContributors(t) : [];
-  html += '<div class="oe-card oe-side-card"><div class="oe-meta">People</div>' +
-    '<div class="oe-side-field"><div class="oe-side-label">Assignee</div>' +
-      (t.assignee
-        ? '<div style="display:flex;align-items:center;gap:8px;"><span class="oe-avatar oe-avatar--sm" style="background:var(--navy-500);color:var(--ink-paper);">' + esc(t.assignee.split(' ').map(function(w) { return w[0]; }).join('').slice(0,2).toUpperCase()) + '</span><span style="font-size:13px;font-weight:600;">' + esc(t.assignee) + '</span></div>'
-        : '<div style="color:var(--ink-4);font-size:13px;">Unassigned</div>') +
-    '</div>' +
-    (_tContribs.length > 0
-      ? '<div class="oe-side-field"><div class="oe-side-label">Contributors</div><div style="display:flex;flex-direction:column;gap:6px;">' +
-          _tContribs.map(function(name) {
-            var init = name.split(/\s+/).map(function(w) { return w[0] || ''; }).join('').slice(0, 2).toUpperCase();
-            return '<div style="display:flex;align-items:center;gap:8px;"><span class="oe-avatar oe-avatar--sm" style="background:var(--ink-2);color:var(--ink-6);">' + esc(init) + '</span><span style="font-size:13px;">' + esc(name) + '</span></div>';
-          }).join('') +
-        '</div></div>'
-      : '') +
+  html += '<div class="oe-card oe-side-card"><div class="oe-meta">Assigned</div>' +
+    (t.assignee ? '<div style="display:flex;align-items:center;gap:8px;"><span class="oe-avatar oe-avatar--sm" style="background:var(--navy-500);color:var(--ink-paper);">' + esc(t.assignee.split(' ').map(function(w) { return w[0]; }).join('').slice(0,2).toUpperCase()) + '</span><span style="font-size:13px;">' + esc(t.assignee) + '</span></div>' : '<div style="color:var(--ink-4);font-size:13px;">Unassigned</div>') +
   '</div>';
 
   html += '<div class="oe-card oe-side-card"><div class="oe-meta">Schedule</div>' +
