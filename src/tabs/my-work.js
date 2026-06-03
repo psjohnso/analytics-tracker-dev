@@ -382,14 +382,18 @@ function buildGanttBars() {
 
     if (!isCollapsed) {
       var viewUser = g._viewUser || '';
-      // Sort: user's tasks first, then others; within each group sort by due date
+      // Sort by start date so the bars read left-to-right in chronological
+      // order. Milestones (no start) fall back to their due date, so they
+      // land at their actual event time on the timeline rather than at the
+      // bottom of the list. Title is the final tiebreaker for stable order.
       var sortedTasks = g.tasks.slice().sort(function(a, b) {
-        var aIsMine = a.assignee === viewUser ? 0 : 1;
-        var bIsMine = b.assignee === viewUser ? 0 : 1;
-        if (aIsMine !== bIsMine) return aIsMine - bIsMine;
+        var aStart = a.start || a.working_due || a.due || '9999';
+        var bStart = b.start || b.working_due || b.due || '9999';
+        if (aStart !== bStart) return aStart.localeCompare(bStart);
         var aEnd = a.working_due || a.due || '9999';
         var bEnd = b.working_due || b.due || '9999';
-        return aEnd.localeCompare(bEnd);
+        if (aEnd !== bEnd) return aEnd.localeCompare(bEnd);
+        return String(a.title || '').localeCompare(String(b.title || ''));
       });
       sortedTasks.forEach(function(t, tIdx) {
       const tStart = t.start || g.start || todayStr;
