@@ -1,0 +1,9 @@
+# CODEOWNERS — auto-requests Peter as the reviewer on every PR.
+#
+# Wired to branch protection via the "Require review from Code Owners"
+# checkbox in the main-branch ruleset. The Bypass list still includes
+# Repository admin, so Peter can self-merge his own PRs (the rule
+# enforces review for non-admin maintainers).
+#
+# Format: <path-pattern> <space-separated owners>. * = every file.
+* @psjohnso
