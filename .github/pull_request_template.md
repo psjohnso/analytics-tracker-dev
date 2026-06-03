@@ -114,7 +114,7 @@ _Concrete steps the reviewer can replay to verify the change works._
 ### Always (these apply to every PR)
 
 - [ ] **Pulled the branch and ran the app locally**
-  - _The fastest path:_ `pwsh scripts/qa-pr.ps1 <PR-number>`. _Approving from the diff alone misses runtime bugs that pass syntax checks._
+  - _The fastest path:_ `powershell -ExecutionPolicy Bypass -File scripts/qa-pr.ps1 <PR-number>`. _Approving from the diff alone misses runtime bugs that pass syntax checks._
 - [ ] **Walked through the author's "How tested" steps**
   - _Actually click the click-paths they described. Approving means you saw it work._
 - [ ] **Hard-refreshed and re-tested once**

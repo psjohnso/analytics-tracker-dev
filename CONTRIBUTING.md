@@ -150,7 +150,7 @@ Every PR, regardless of type:
    diff alone. Use the helper:
 
    ```powershell
-   pwsh scripts/qa-pr.ps1 <PR-number>
+   powershell -ExecutionPolicy Bypass -File scripts/qa-pr.ps1 <PR-number>
    ```
 
    This stashes any in-flight work, checks out the PR, opens the
@@ -160,7 +160,7 @@ Every PR, regardless of type:
    different port for each:
 
    ```powershell
-   pwsh scripts/qa-pr.ps1 5 -Port 8001
+   powershell -ExecutionPolicy Bypass -File scripts/qa-pr.ps1 5 -Port 8001
    ```
 
    Ports 8000–8003 are registered AGOL OAuth redirect URIs. Anything
