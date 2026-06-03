@@ -1812,7 +1812,7 @@ function buildTaskForm(t) {
   var statusSelectFull = fmSelect('fm-status', FM_TASK_STATUSES, v('status'), 'Select status…');
   var statusSelectMs   = fmSelect('fm-status', msStatusOpts,     v('status'), 'Select status…');
   var milestoneCheckbox =
-    '<div class="fm-grid" style="margin-bottom:14px;">' +
+    '<div class="fm-grid" style="margin-top:14px;margin-bottom:14px;">' +
       '<label class="fm-milestone-check' + (isMs ? ' checked' : '') + '" for="fm-is-milestone">' +
         '<input type="checkbox" id="fm-is-milestone"' + (isMs ? ' checked' : '') + '>' +
         '<svg width="14" height="14" viewBox="0 0 28 28" aria-hidden="true">' +
