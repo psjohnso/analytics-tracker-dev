@@ -278,18 +278,9 @@ function prGetTasksForProject(p, statusFilter, assigneeFilter, searchQuery) {
     var t = TASKS[i];
     if (t.project_id !== p.id) continue;
     if (!prTaskPassesFilters(t, p, statusFilter, assigneeFilter, qLower)) continue;
-    // Bucket under the assignee AND under every contributor — so when the
-    // review walks Liz's tasks, she sees both what she owns and what she's
-    // helping with. Tasks appear under each person they're tied to.
     var who = t.assignee || '(Unassigned)';
     if (!byPerson[who]) byPerson[who] = [];
     byPerson[who].push(t);
-    var contribs = (typeof getTaskContributors === 'function') ? getTaskContributors(t) : [];
-    contribs.forEach(function(cname) {
-      if (cname === t.assignee) return; // already counted as assignee
-      if (!byPerson[cname]) byPerson[cname] = [];
-      byPerson[cname].push(t);
-    });
   }
   // Sort each person's tasks: Active first, then Scheduled, Planned, then
   // Waiting/On Hold, then Complete/Canceled. Legacy spellings included so

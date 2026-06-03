@@ -1823,48 +1823,12 @@ function buildTaskForm(t) {
       '</label>' +
     '</div>';
 
-  // Contributors picker — comma-separated list, rendered as a checkbox
-  // grid of active members. Excludes whoever is currently selected as
-  // Assignee at mount time (re-renders inline when Assignee changes).
-  // Stored on the hidden #fm-contributors input that collectTaskFields
-  // reads. Mirrors the project form's other_members pattern.
-  var currentAssignee = v('assignee');
-  var contribValue = (t && typeof t.contributors === 'string') ? t.contributors : '';
-  var contribNames = contribValue.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
-  var membersList = FM_ACTIVE_MEMBERS || FM_TASK_ASSIGNEES || [];
-
-  function buildContribGrid(excludeName, checkedNames) {
-    var html = '<div id="fm-contributors-grid" data-exclude="' + esc(excludeName || '') + '" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px 12px;padding:10px 12px;border:1px solid var(--border,#E8E6DF);border-radius:6px;background:var(--surface-2,#F3F1EB);max-height:200px;overflow-y:auto;">';
-    membersList.forEach(function(name) {
-      if (name === excludeName) return; // Assignee can't also be a Contributor
-      var isChk = checkedNames.indexOf(name) >= 0;
-      var idSafe = name.replace(/[^a-zA-Z0-9]/g, '_');
-      html += '<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--text-body);" title="' + esc(name) + '">' +
-        '<input type="checkbox" name="fm-contributor-checkbox" data-contrib-name="' + esc(name) + '" value="' + esc(name) + '"' + (isChk ? ' checked' : '') + ' onchange="fmUpdateContributorsValue()" style="margin:0;flex-shrink:0;">' +
-        '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(name) + '</span>' +
-      '</label>';
-    });
-    html += '</div>';
-    return html;
-  }
-  var contribGridHtml = buildContribGrid(currentAssignee, contribNames);
-  var contribField =
-    '<input type="hidden" id="fm-contributors" value="' + esc(contribValue) + '">' +
-    contribGridHtml +
-    '<div id="fm-contributors-summary" style="font-size:11px;color:var(--text-muted);margin-top:4px;">' +
-      (contribNames.length === 0 ? 'No contributors selected.' : contribNames.length + ' contributor' + (contribNames.length === 1 ? '' : 's') + ' selected.') +
-    '</div>';
-
   return '<div class="fm-section-label">Basic Info</div>' +
     '<div class="fm-grid">' +
       fmField('Title', fmInput('fm-title-val', v('title'), 'Task title…'), true, true) +
       fmField('Status', '<span id="fm-status-wrap" data-ms-status-full="' + esc(statusSelectFull).replace(/"/g, '&quot;') + '" data-ms-status-narrow="' + esc(statusSelectMs).replace(/"/g, '&quot;') + '">' + (isMs ? statusSelectMs : statusSelectFull) + '</span>', true) +
       fmField('Priority', fmSelect('fm-priority', FM_TASK_PRIORITIES, v('priority'), 'Select priority…')) +
       fmField('Assignee', fmSelect('fm-assignee', FM_ACTIVE_MEMBERS || FM_TASK_ASSIGNEES, v('assignee'), 'Select assignee…'), true) +
-    '</div>' +
-    '<div class="fm-grid" style="margin-top:14px;">' +
-      fmField('Contributors', contribField, false, true,
-        'People helping with this task. Each will see it in their My Work and Project Review.') +
     '</div>' +
     milestoneCheckbox +
     '<div class="fm-section-label">Details</div>' +
@@ -2133,11 +2097,9 @@ function openFormModal(mode, id) {
   // Task forms (not projects): wire the 2026 task-status soft prompts —
   // Scheduled+no-date / future-start+Planned / On Hold→note suggestion.
   // Plus the milestone-checkbox runtime toggle (hides start, narrows status).
-  // Plus the contributor-grid sync (rebuilds when Assignee changes).
   if (!isProject) {
     fmWireTaskStatusPrompts();
     fmWireMilestoneToggle();
-    fmWireContributorAssigneeSync();
   }
   fmWireA11y(); // associate labels, mark required, enable inline blur validation
 }
@@ -2202,61 +2164,6 @@ function fmApplyScheduledHint() {
   if (!s) return;
   s.value = 'Scheduled';
   s.dispatchEvent(new Event('change'));
-}
-
-// ── Contributor picker wiring (task form) ────────────────────────────
-// Walks every checked checkbox in the contributors grid, joins the
-// names into the hidden #fm-contributors input, and updates the count
-// summary. Called from each checkbox's onchange.
-function fmUpdateContributorsValue() {
-  var hidden = document.getElementById('fm-contributors');
-  var summary = document.getElementById('fm-contributors-summary');
-  if (!hidden) return;
-  var checked = Array.prototype.slice.call(document.querySelectorAll('input[name="fm-contributor-checkbox"]:checked'));
-  var names = checked.map(function(cb) { return cb.value; });
-  hidden.value = names.join(', ');
-  if (summary) {
-    summary.textContent = names.length === 0
-      ? 'No contributors selected.'
-      : names.length + ' contributor' + (names.length === 1 ? '' : 's') + ' selected.';
-  }
-}
-
-// When the Assignee changes mid-edit, rebuild the contributor grid to
-// (a) un-list the new assignee (a person can't be both), and (b) keep
-// any previously-checked contributors checked. Called once at mount.
-function fmWireContributorAssigneeSync() {
-  var assigneeEl = document.getElementById('fm-assignee');
-  var grid = document.getElementById('fm-contributors-grid');
-  if (!assigneeEl || !grid) return;
-
-  assigneeEl.addEventListener('change', function() {
-    var newAssignee = assigneeEl.value;
-    var hidden = document.getElementById('fm-contributors');
-    var currentNames = hidden && hidden.value ? hidden.value.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
-    // If the new assignee was previously a contributor, drop them from the list.
-    currentNames = currentNames.filter(function(n) { return n !== newAssignee; });
-    // Rebuild the grid HTML with the new exclude + current checks.
-    var membersList = (typeof FM_ACTIVE_MEMBERS !== 'undefined' && FM_ACTIVE_MEMBERS) || (typeof FM_TASK_ASSIGNEES !== 'undefined' && FM_TASK_ASSIGNEES) || [];
-    var html = '';
-    membersList.forEach(function(name) {
-      if (name === newAssignee) return;
-      var isChk = currentNames.indexOf(name) >= 0;
-      html += '<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--text-body);" title="' + esc(name) + '">' +
-        '<input type="checkbox" name="fm-contributor-checkbox" data-contrib-name="' + esc(name) + '" value="' + esc(name) + '"' + (isChk ? ' checked' : '') + ' onchange="fmUpdateContributorsValue()" style="margin:0;flex-shrink:0;">' +
-        '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(name) + '</span>' +
-      '</label>';
-    });
-    grid.innerHTML = html;
-    grid.setAttribute('data-exclude', newAssignee || '');
-    if (hidden) hidden.value = currentNames.join(', ');
-    var summary = document.getElementById('fm-contributors-summary');
-    if (summary) {
-      summary.textContent = currentNames.length === 0
-        ? 'No contributors selected.'
-        : currentNames.length + ' contributor' + (currentNames.length === 1 ? '' : 's') + ' selected.';
-    }
-  });
 }
 
 // ── Milestone-checkbox runtime toggle ───────────────────────────────────
@@ -2421,14 +2328,6 @@ function collectTaskFields() {
     resolution:  getVal('fm-resolution')|| null,
     phase_requirements: getVal('fm-phase-reqs-val') || null,
     is_milestone: isMilestone,
-    contributors: (function() {
-      var v = getVal('fm-contributors');
-      // Trim, dedupe, and drop the assignee if accidentally present.
-      var arr = (v || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
-      var asgn = getVal('fm-assignee');
-      arr = arr.filter(function(n, i) { return arr.indexOf(n) === i && n !== asgn; });
-      return arr.length > 0 ? arr.join(', ') : null;
-    })(),
     blocked_by: isFeatureOn('dependencies') ? (function() {
       var refs = depGetCurrentRefs();
       return refs.length > 0 ? refs.join(',') : null;
