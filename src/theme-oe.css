@@ -1995,3 +1995,79 @@ body[data-theme="oe"] .team-load-page .tl-empty code, body[data-theme="oe-dark"]
 body[data-theme="oe"] .effort-shape-page .tl-empty code, body[data-theme="oe-dark"] .effort-shape-page .tl-empty code {
   font-family: var(--font-mono); font-size: 11px; background: var(--ink-1); padding: 2px 6px; border-radius: 3px;
 }
+
+/* ──────────────────────────────────────────────────────────────────────
+   Dedicated edit pages (project / task) — OE editorial header pattern
+   ──────────────────────────────────────────────────────────────────────
+   /project/:id/edit and /task/:id/edit. Same shell as the read-only
+   detail page so the user stays oriented; the header swaps "Edit / Add
+   task / Delete" actions for "Save changes / Cancel" and renders the
+   title as an editable input. Quiet chrome — no banner — per the
+   detail-editors.html mockup. */
+
+body[data-theme="oe"] .oe-edit-page, body[data-theme="oe-dark"] .oe-edit-page {
+  max-width: 1100px; margin: 0 auto; padding: 0 28px 64px;
+}
+body[data-theme="oe"] .oe-edit-crumbs, body[data-theme="oe-dark"] .oe-edit-crumbs {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--ink-5); padding: 14px 0 12px;
+}
+body[data-theme="oe"] .oe-edit-crumbs .oe-edit-back, body[data-theme="oe-dark"] .oe-edit-crumbs .oe-edit-back {
+  color: var(--navy-500, var(--ink-7)); font-weight: 500; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+}
+body[data-theme="oe"] .oe-edit-crumbs .oe-edit-back:hover, body[data-theme="oe-dark"] .oe-edit-crumbs .oe-edit-back:hover {
+  text-decoration: underline;
+}
+body[data-theme="oe"] .oe-edit-head, body[data-theme="oe-dark"] .oe-edit-head {
+  display: grid; grid-template-columns: 1fr auto; gap: 18px;
+  padding: 18px 0 22px; border-bottom: 1px solid var(--ink-2);
+}
+body[data-theme="oe"] .oe-edit-eyebrow, body[data-theme="oe-dark"] .oe-edit-eyebrow {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  font-weight: 600; color: var(--navy-300, var(--ink-5)); margin-bottom: 6px;
+}
+body[data-theme="oe"] .oe-edit-title-input, body[data-theme="oe-dark"] .oe-edit-title-input {
+  font-family: var(--font-display); font-size: 32px; line-height: 1.2;
+  font-weight: 400; color: var(--ink-7);
+  padding: 2px 8px; margin-left: -8px; margin-bottom: 4px;
+  border: 1px solid transparent; background: transparent;
+  width: 100%; min-width: 0; box-sizing: border-box;
+}
+body[data-theme="oe"] .oe-edit-title-input:hover, body[data-theme="oe-dark"] .oe-edit-title-input:hover {
+  border-color: var(--ink-2);
+}
+body[data-theme="oe"] .oe-edit-title-input:focus, body[data-theme="oe-dark"] .oe-edit-title-input:focus {
+  outline: none; border-color: var(--navy-500, var(--ink-7)); background: var(--ink-0);
+}
+body[data-theme="oe"] .oe-edit-context, body[data-theme="oe-dark"] .oe-edit-context {
+  font-size: 12px; color: var(--ink-5); margin-top: 6px;
+}
+body[data-theme="oe"] .oe-edit-context strong, body[data-theme="oe-dark"] .oe-edit-context strong {
+  color: var(--ink-7); font-weight: 600;
+}
+body[data-theme="oe"] .oe-edit-context .oe-mono, body[data-theme="oe-dark"] .oe-edit-context .oe-mono {
+  font-family: var(--font-mono); font-size: 11px;
+}
+body[data-theme="oe"] .oe-edit-dirty-dot, body[data-theme="oe-dark"] .oe-edit-dirty-dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--tucson-sunset, #b85630); margin-right: 5px; vertical-align: middle;
+}
+body[data-theme="oe"] .oe-edit-actions, body[data-theme="oe-dark"] .oe-edit-actions {
+  display: flex; gap: 8px; align-items: flex-start; flex-shrink: 0;
+}
+
+/* The form body — render buildProjectForm / buildTaskForm in here so all
+   the existing field machinery (a11y, milestone toggle, soft prompts,
+   markdown editors) lives in one place. The page's outer shell handles
+   the chrome; the form fills the inside. */
+body[data-theme="oe"] .oe-edit-body, body[data-theme="oe-dark"] .oe-edit-body {
+  padding: 24px 0 0;
+}
+
+/* Bottom action bar — Save / Cancel appear again at the natural end of
+   the page so the user doesn't have to scroll back up. */
+body[data-theme="oe"] .oe-edit-foot, body[data-theme="oe-dark"] .oe-edit-foot {
+  margin-top: 28px; padding: 18px 0 0; border-top: 1px solid var(--ink-2);
+  display: flex; justify-content: flex-end; gap: 8px;
+}

@@ -1971,6 +1971,15 @@ function fmFocusFirstError() {
 
 function openFormModal(mode, id) {
   if (!ensureValidSession(function() { openFormModal(mode, id); })) return;
+
+  // Edit flows route to the dedicated /project/:id/edit and /task/:id/edit
+  // pages under the OE theme — the modal is the fallback for non-OE themes
+  // and for create flows (where there's no record to render-on-page yet).
+  if (typeof _oeDetail === 'function' && _oeDetail()) {
+    if (mode === 'edit-project' && typeof openProjectEdit === 'function') { openProjectEdit(id); return; }
+    if (mode === 'edit-task'    && typeof openTaskEdit    === 'function') { openTaskEdit(id);    return; }
+  }
+
   refreshEnums(); // Rebuild enum lists from live data so new values are always present
   Editor.mode   = mode;
   Editor.editId = (id !== undefined) ? id : null;

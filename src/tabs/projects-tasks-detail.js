@@ -2015,3 +2015,291 @@ function sortDetailTasks(tasks) {
     return 0;
   });
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  OE EDIT PAGES — dedicated /project/:id/edit and /task/:id/edit views
+//
+//  Replaces the modal-based edit flow. Same data + validation as the
+//  modal (collectProjectFields / collectTaskFields → DataStore) but the
+//  experience is an editorial page that lives at its own currentDetail
+//  state. See mockups/detail-editors.html (Option C) for the design.
+//
+//  Module-local dirty-tracker — a snapshot of every visible input's
+//  value at mount time. Cancel compares current values against the
+//  snapshot to decide whether to prompt "Discard changes?".
+// ═══════════════════════════════════════════════════════════════════════════
+var _oeEditOriginalValues = null;
+
+// Snapshot every input/select/textarea inside the editor body so Cancel
+// can detect unsaved edits. Called once after the page mounts.
+function _oeEditCaptureSnapshot() {
+  var body = document.getElementById('fm-body');
+  if (!body) { _oeEditOriginalValues = null; return; }
+  _oeEditOriginalValues = {};
+  body.querySelectorAll('input, select, textarea').forEach(function(el) {
+    if (!el.id) return;
+    if (el.type === 'checkbox' || el.type === 'radio') {
+      _oeEditOriginalValues[el.id] = el.checked ? '1' : '0';
+    } else {
+      _oeEditOriginalValues[el.id] = el.value || '';
+    }
+  });
+  // Also capture the editorial title input (renders outside #fm-body).
+  var titleInput = document.getElementById('oe-edit-title-input');
+  if (titleInput) _oeEditOriginalValues['_oeEditTitle'] = titleInput.value || '';
+}
+
+// Compare current input values against the snapshot. Returns the number
+// of changed fields (0 means clean — no prompt needed on Cancel).
+function _oeEditCountChanges() {
+  if (!_oeEditOriginalValues) return 0;
+  var n = 0;
+  var body = document.getElementById('fm-body');
+  if (body) {
+    body.querySelectorAll('input, select, textarea').forEach(function(el) {
+      if (!el.id) return;
+      var orig = _oeEditOriginalValues[el.id];
+      var cur;
+      if (el.type === 'checkbox' || el.type === 'radio') cur = el.checked ? '1' : '0';
+      else cur = el.value || '';
+      if (orig === undefined) {
+        if (cur !== '') n++;
+      } else if (orig !== cur) {
+        n++;
+      }
+    });
+  }
+  var titleInput = document.getElementById('oe-edit-title-input');
+  if (titleInput && _oeEditOriginalValues['_oeEditTitle'] !== undefined
+      && titleInput.value !== _oeEditOriginalValues['_oeEditTitle']) {
+    n++;
+  }
+  return n;
+}
+
+// Refresh the eyebrow's "N unsaved changes" indicator. Called on every
+// input/change event inside the editor.
+function oeEditUpdateDirtyIndicator() {
+  var el = document.getElementById('oe-edit-dirty-indicator');
+  if (!el) return;
+  var n = _oeEditCountChanges();
+  if (n === 0) {
+    el.innerHTML = '<span class="oe-mono">No unsaved changes</span>';
+  } else {
+    el.innerHTML = '<span class="oe-edit-dirty-dot"></span><strong>' +
+      n + ' unsaved change' + (n === 1 ? '' : 's') + '</strong>';
+  }
+}
+
+// Wire the dirty-tracker after the editor body mounts: capture initial
+// snapshot, then listen for any input/change events to refresh the
+// counter. Also syncs the title input back to #fm-title-val so the
+// existing save pipeline (collectProjectFields/collectTaskFields)
+// picks it up without any per-field plumbing.
+function _oeEditWireDirtyTracker() {
+  setTimeout(function() {
+    _oeEditCaptureSnapshot();
+    oeEditUpdateDirtyIndicator();
+    var body = document.getElementById('fm-body');
+    if (body) {
+      body.addEventListener('input', oeEditUpdateDirtyIndicator);
+      body.addEventListener('change', oeEditUpdateDirtyIndicator);
+    }
+    var titleInput = document.getElementById('oe-edit-title-input');
+    var titleField = document.getElementById('fm-title-val');
+    if (titleInput && titleField) {
+      // Two-way bind: typing in the editorial header updates the hidden
+      // #fm-title-val that collectProjectFields/collectTaskFields reads.
+      titleField.value = titleInput.value;
+      titleInput.addEventListener('input', function() {
+        titleField.value = titleInput.value;
+        oeEditUpdateDirtyIndicator();
+      });
+    }
+  }, 0);
+}
+
+// Save handler — reuses handleFormSubmit so all validation, character
+// limits, business rules, and DataStore plumbing land in one place.
+// On success, routes back to the read-only view.
+async function oeEditSave() {
+  var saveBtn = document.getElementById('oe-edit-save-btn');
+  var cancelBtn = document.getElementById('oe-edit-cancel-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '0.6'; saveBtn.textContent = 'Saving…'; }
+  if (cancelBtn) { cancelBtn.disabled = true; cancelBtn.style.opacity = '0.6'; }
+
+  // handleFormSubmit reads Editor.mode + Editor.editId; the edit-page
+  // opener (openProjectEdit / openTaskEdit) sets those up before render.
+  try { await handleFormSubmit(false, false); } catch (e) { console.error('[oeEditSave]', e); }
+
+  // After save: the underlying save fired closeFormModal (no-op since
+  // the modal isn't open) and render(). currentDetail.type still says
+  // 'project-edit' / 'task-edit' — flip it back to the read-only view.
+  if (currentDetail && currentDetail.type === 'project-edit') currentDetail.type = 'project';
+  else if (currentDetail && currentDetail.type === 'task-edit') currentDetail.type = 'task';
+  _oeEditOriginalValues = null;
+  if (typeof render === 'function') render();
+
+  if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = '1'; saveBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg>Save changes'; }
+  if (cancelBtn) { cancelBtn.disabled = false; cancelBtn.style.opacity = '1'; }
+}
+
+// Cancel handler — prompts "Discard changes?" when the form is dirty.
+async function oeEditCancel() {
+  var n = _oeEditCountChanges();
+  if (n > 0) {
+    var msg = 'Discard ' + n + ' unsaved change' + (n === 1 ? '' : 's') + '?';
+    var ok = (typeof confirmDialog === 'function')
+      ? await confirmDialog(msg, { title: 'Discard changes?', confirmLabel: 'Discard', danger: true })
+      : confirm(msg);
+    if (!ok) return;
+  }
+  _oeEditOriginalValues = null;
+  if (currentDetail && currentDetail.type === 'project-edit') currentDetail.type = 'project';
+  else if (currentDetail && currentDetail.type === 'task-edit') currentDetail.type = 'task';
+  if (typeof render === 'function') render();
+}
+
+// ── Project edit page ────────────────────────────────────────────────
+function renderProjectEditOE(id) {
+  var p = PROJECTS.find(function(x) { return x.objectId == id; });
+  if (!p) return '<div class="empty-state">Project not found.</div>';
+
+  // Set up Editor.mode for handleFormSubmit + form wiring (a11y, soft prompts).
+  Editor.mode = 'edit-project';
+  Editor.editId = id;
+
+  var pNum = p.project_number != null ? String(p.project_number) : '';
+  var formHtml = (typeof buildProjectForm === 'function') ? buildProjectForm(p) : '<div class="empty-state">Form builder not available.</div>';
+
+  // Hide the duplicate Title field inside the form body — the editorial
+  // header above renders the title with serif typography. We keep
+  // #fm-title-val in the DOM (hidden) so collectProjectFields reads it.
+  formHtml = formHtml.replace(/<div class="fm-section-label">Basic Info<\/div>\s*<div class="fm-grid">/,
+    '<div class="fm-section-label" style="display:none;">Basic Info</div><div class="fm-grid" data-oe-edit-hide-title="1">');
+
+  // Schedule post-mount wiring (dirty tracker, label/a11y, soft prompts,
+  // milestone toggle). The form builders rely on the same DOM ids the
+  // modal uses; rendering them inside the page reuses everything.
+  setTimeout(function() {
+    if (typeof fmWireA11y === 'function') fmWireA11y();
+    // Hide the title row inside the form body — its content is duplicated
+    // by the editorial header at the top.
+    var titleField = document.querySelector('[data-oe-edit-hide-title="1"] > .fm-field:first-child');
+    if (titleField) titleField.style.display = 'none';
+    _oeEditWireDirtyTracker();
+  }, 0);
+
+  return '<div class="oe-edit-page">' +
+    '<div class="oe-edit-crumbs">' +
+      '<a class="oe-edit-back" onclick="oeEditCancel()" title="Back without saving">' +
+        '<svg class="icon" aria-hidden="true" style="width:11px;height:11px;"><use href="#ph-caret-left"></use></svg>Portfolio' +
+      '</a>' +
+      '<svg class="icon" aria-hidden="true" style="width:9px;height:9px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' +
+      '<span style="color:var(--ink-5);">' + esc(p.title) + '</span>' +
+      '<svg class="icon" aria-hidden="true" style="width:9px;height:9px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' +
+      '<span style="color:var(--ink-7);">Edit</span>' +
+    '</div>' +
+    '<div class="oe-edit-head">' +
+      '<div>' +
+        '<div class="oe-edit-eyebrow">Editing project' + (pNum ? ' · ' + esc(pNum) : '') + '</div>' +
+        '<input class="oe-edit-title-input" id="oe-edit-title-input" value="' + esc(p.title || '') + '" placeholder="Project title…">' +
+        '<div class="oe-edit-context" id="oe-edit-dirty-indicator"><span class="oe-mono">No unsaved changes</span></div>' +
+      '</div>' +
+      '<div class="oe-edit-actions">' +
+        '<button id="oe-edit-cancel-btn" class="oe-btn oe-btn--secondary oe-btn--sm" onclick="oeEditCancel()">Cancel</button>' +
+        '<button id="oe-edit-save-btn" class="oe-btn oe-btn--primary oe-btn--sm" onclick="oeEditSave()"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg>Save changes</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="oe-edit-body" id="fm-body">' + formHtml + '</div>' +
+    '<div class="oe-edit-foot">' +
+      '<button class="oe-btn oe-btn--secondary oe-btn--sm" onclick="oeEditCancel()">Cancel</button>' +
+      '<button class="oe-btn oe-btn--primary oe-btn--sm" onclick="oeEditSave()"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg>Save changes</button>' +
+    '</div>' +
+  '</div>';
+}
+
+// ── Task edit page ──────────────────────────────────────────────────
+function renderTaskEditOE(idx) {
+  var t = TASKS.find(function(x) { return x.objectId == idx; });
+  if (!t) return '<div class="empty-state">Task not found.</div>';
+
+  Editor.mode = 'edit-task';
+  Editor.editId = idx;
+
+  var tNum = t.task_number != null ? String(t.task_number) : '';
+  var formHtml = (typeof buildTaskForm === 'function') ? buildTaskForm(t) : '<div class="empty-state">Form builder not available.</div>';
+
+  // Hide the duplicate Title field inside the form body.
+  formHtml = formHtml.replace(/<div class="fm-section-label">Basic Info<\/div>\s*<div class="fm-grid">/,
+    '<div class="fm-section-label" style="display:none;">Basic Info</div><div class="fm-grid" data-oe-edit-hide-title="1">');
+
+  setTimeout(function() {
+    if (typeof fmWireA11y === 'function') fmWireA11y();
+    if (typeof fmWireTaskStatusPrompts === 'function') fmWireTaskStatusPrompts();
+    if (typeof fmWireMilestoneToggle === 'function') fmWireMilestoneToggle();
+    // Original due date is locked for edits (same rule as the modal).
+    var origDateField = document.getElementById('fm-due');
+    if (origDateField) {
+      origDateField.disabled = true;
+      origDateField.style.background = '#F3F1EB';
+      origDateField.style.color = '#6B7280';
+      origDateField.style.cursor = 'not-allowed';
+      origDateField.title = 'Original date is locked after creation. Use Working Due Date to adjust the timeline.';
+    }
+    var titleField = document.querySelector('[data-oe-edit-hide-title="1"] > .fm-field:first-child');
+    if (titleField) titleField.style.display = 'none';
+    _oeEditWireDirtyTracker();
+  }, 0);
+
+  var proj = (typeof getProjectByNumber === 'function') ? getProjectByNumber(t.project_number) : null;
+
+  return '<div class="oe-edit-page">' +
+    '<div class="oe-edit-crumbs">' +
+      '<a class="oe-edit-back" onclick="oeEditCancel()" title="Back without saving">' +
+        '<svg class="icon" aria-hidden="true" style="width:11px;height:11px;"><use href="#ph-caret-left"></use></svg>Portfolio' +
+      '</a>' +
+      (proj ? '<svg class="icon" aria-hidden="true" style="width:9px;height:9px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg><span style="color:var(--ink-5);">' + esc(proj.title) + '</span>' : '') +
+      '<svg class="icon" aria-hidden="true" style="width:9px;height:9px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' +
+      '<span style="color:var(--ink-5);">' + esc(t.title || '(untitled)') + '</span>' +
+      '<svg class="icon" aria-hidden="true" style="width:9px;height:9px;color:var(--ink-5);"><use href="#ph-caret-right"></use></svg>' +
+      '<span style="color:var(--ink-7);">Edit</span>' +
+    '</div>' +
+    '<div class="oe-edit-head">' +
+      '<div>' +
+        '<div class="oe-edit-eyebrow">Editing task' + (tNum ? ' · ' + esc(tNum) : '') + '</div>' +
+        '<input class="oe-edit-title-input" id="oe-edit-title-input" value="' + esc(t.title || '') + '" placeholder="Task title…">' +
+        '<div class="oe-edit-context" id="oe-edit-dirty-indicator"><span class="oe-mono">No unsaved changes</span></div>' +
+      '</div>' +
+      '<div class="oe-edit-actions">' +
+        '<button id="oe-edit-cancel-btn" class="oe-btn oe-btn--secondary oe-btn--sm" onclick="oeEditCancel()">Cancel</button>' +
+        '<button id="oe-edit-save-btn" class="oe-btn oe-btn--primary oe-btn--sm" onclick="oeEditSave()"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg>Save changes</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="oe-edit-body" id="fm-body">' + formHtml + '</div>' +
+    '<div class="oe-edit-foot">' +
+      '<button class="oe-btn oe-btn--secondary oe-btn--sm" onclick="oeEditCancel()">Cancel</button>' +
+      '<button class="oe-btn oe-btn--primary oe-btn--sm" onclick="oeEditSave()"><svg class="icon" aria-hidden="true"><use href="#ph-check"></use></svg>Save changes</button>' +
+    '</div>' +
+  '</div>';
+}
+
+// ── Navigation helpers ─────────────────────────────────────────────
+function openProjectEdit(id) {
+  // Only meaningful under the OE theme; non-OE themes fall back to the modal.
+  if (!_oeDetail()) {
+    if (typeof openFormModal === 'function') openFormModal('edit-project', id);
+    return;
+  }
+  currentDetail = { type: 'project-edit', id: id, _returnTo: (currentDetail && currentDetail.type === 'project') ? currentDetail : null };
+  render();
+}
+
+function openTaskEdit(id) {
+  if (!_oeDetail()) {
+    if (typeof openFormModal === 'function') openFormModal('edit-task', id);
+    return;
+  }
+  currentDetail = { type: 'task-edit', id: id, _returnTo: (currentDetail && currentDetail.type === 'task') ? currentDetail : null };
+  render();
+}
